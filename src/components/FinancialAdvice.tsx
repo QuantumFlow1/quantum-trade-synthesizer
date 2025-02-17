@@ -1,4 +1,3 @@
-
 import { TrendingUp, AlertCircle, Book, BarChart2, Sparkles, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -11,13 +10,11 @@ const FinancialAdvice = () => {
   const generateAIAdvice = async () => {
     setIsLoadingAI(true);
     try {
-      // Update de URL naar de Supabase Edge Function URL
       const response = await fetch('https://YOUR_PROJECT_REF.supabase.co/functions/v1/generate-advice', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Voeg de Supabase anon key toe voor authenticatie
-          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           marketData: {
