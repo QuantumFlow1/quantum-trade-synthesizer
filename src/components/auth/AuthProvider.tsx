@@ -2,16 +2,21 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
+import { UserProfile, UserRole } from '@/types/auth'
 
 type AuthContextType = {
   session: Session | null
   user: User | null
+  userProfile: UserProfile | null
+  isAdmin: boolean
+  isTrader: boolean
   signIn: {
     email: (email: string, password: string) => Promise<void>
     google: () => Promise<void>
     github: () => Promise<void>
   }
   signOut: () => Promise<void>
+  checkPermission: (requiredRole: UserRole) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -19,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -41,6 +47,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       subscription.unsubscribe()
     }
   }, [])
+
+  // Fetch user profile when user changes
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) {
+        setUserProfile(null)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (!error && data) {
+        setUserProfile(data as UserProfile)
+      }
+    }
+
+    fetchUserProfile()
+  }, [user])
+
+  const isAdmin = userProfile?.role === 'admin'
+  const isTrader = userProfile?.role === 'trader'
+
+  const checkPermission = (requiredRole: UserRole): boolean => {
+    if (!userProfile) return false
+    if (userProfile.role === 'admin') return true
+    return userProfile.role === requiredRole
+  }
 
   const signIn = {
     email: async (email: string, password: string) => {
@@ -76,11 +113,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (isLoading) {
-    return null // of een loading component
+    return null
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, signIn, signOut }}>
+    <AuthContext.Provider value={{ 
+      session, 
+      user, 
+      userProfile,
+      isAdmin,
+      isTrader,
+      signIn, 
+      signOut,
+      checkPermission 
+    }}>
       {children}
     </AuthContext.Provider>
   )
