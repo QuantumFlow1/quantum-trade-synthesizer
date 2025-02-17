@@ -25,16 +25,36 @@ export const LoginComponent = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    
+    if (!email || !password) {
+      toast({
+        title: "Missing fields",
+        description: "Please enter both email and password",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+      return
+    }
+
     try {
       await signIn.email(email, password)
       toast({
         title: "Successfully logged in",
         description: "Welcome back!",
       })
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Login error:', error)
+      let errorMessage = "Please check your email and password"
+      
+      if (error.message?.includes('credentials')) {
+        errorMessage = "Invalid email or password. Please try again."
+      } else if (error.message?.includes('verified')) {
+        errorMessage = "Please verify your email address before logging in."
+      }
+      
       toast({
         title: "Login failed",
-        description: "Please check your email and password",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
@@ -44,10 +64,29 @@ export const LoginComponent = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!signupEmail || !signupPassword || !confirmPassword) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      })
+      return
+    }
+    
     if (signupPassword !== confirmPassword) {
       toast({
         title: "Passwords don't match",
         description: "Please make sure your passwords match",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (signupPassword.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long",
         variant: "destructive",
       })
       return
@@ -60,10 +99,21 @@ export const LoginComponent = () => {
         title: "Account created",
         description: "Please check your email to confirm your account",
       })
+      // Clear signup form
+      setSignupEmail('')
+      setSignupPassword('')
+      setConfirmPassword('')
     } catch (error: any) {
+      console.error('Signup error:', error)
+      let errorMessage = "Please try again"
+      
+      if (error.message?.includes('email')) {
+        errorMessage = "This email is already registered. Please try logging in instead."
+      }
+      
       toast({
         title: "Signup failed",
-        description: error.message || "Please try again",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
