@@ -1,7 +1,7 @@
 
 import { 
   Bitcoin, DollarSign, Coins, BarChart4, 
-  Oil, Gem, CandlestickChart, 
+  Gem, CandlestickChart, 
   Warehouse, Building2
 } from "lucide-react";
 import PriceCard from "../components/PriceCard";
@@ -83,7 +83,7 @@ const Index = () => {
             price="$85.67"
             change="+2.14%"
             trend="up"
-            icon={<Oil className="w-6 h-6" />}
+            icon={<Coins className="w-6 h-6" />}
             market="commodities"
           />
           <PriceCard
