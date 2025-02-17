@@ -1,237 +1,226 @@
-
-import { LoginComponent } from "@/components/auth/LoginComponent"
-import { useAuth } from "@/components/auth/AuthProvider"
-import { useProfile } from "@/hooks/useProfile"
-import { useTrading } from "@/hooks/useTrading"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Loader2 } from "lucide-react"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { useState } from "react"
-import { TradeType } from "@/types/trading"
+import { 
+  Bitcoin, DollarSign, Coins, BarChart4, 
+  Gem, CandlestickChart, 
+  Warehouse, Building2,
+  AlertTriangle, 
+  Bell,
+  Shield,
+  LineChart,
+  Settings
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import PriceCard from "../components/PriceCard";
+import TradingChart from "../components/TradingChart";
+import TransactionList from "../components/TransactionList";
+import PerformanceMetrics from "../components/PerformanceMetrics";
+import TradeControls from "../components/TradeControls";
+import MarketOverview from "../components/MarketOverview";
+import RiskManagement from "../components/RiskManagement";
+import AutoTrading from "../components/AutoTrading";
+import AdminPanel from "../components/AdminPanel";
+import Alerts from "../components/Alerts";
+import FinancialAdvice from "../components/FinancialAdvice";
 
 const Index = () => {
-  const { user, signOut } = useAuth()
-  const { profile, isLoading: isLoadingProfile } = useProfile()
-  const { tradingPairs, trades, isLoading: isLoadingTrading, createTrade } = useTrading()
-  
-  const [selectedPairId, setSelectedPairId] = useState<string>("")
-  const [tradeType, setTradeType] = useState<TradeType>("buy")
-  const [amount, setAmount] = useState("")
-  const [price, setPrice] = useState("")
+  const { toast } = useToast();
+  const isAdmin = true; // In een echte implementatie zou dit van een auth system komen
 
-  const handleCreateTrade = () => {
-    if (!selectedPairId || !amount || !price) {
-      return
-    }
+  const handleAlert = () => {
+    toast({
+      title: "Nieuwe Marktwaarschuwing",
+      description: "BTC/USD volatiliteit boven threshold",
+      variant: "default",
+    });
+  };
 
-    createTrade({
-      pair_id: selectedPairId,
-      type: tradeType,
-      amount: parseFloat(amount),
-      price: parseFloat(price),
-      status: 'pending'
-    })
-
-    // Reset form
-    setAmount("")
-    setPrice("")
-  }
-
-  // Show login if no user
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <LoginComponent />
-      </div>
-    )
-  }
-
-  // Show loading state while checking profile
-  if (isLoadingProfile || isLoadingTrading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    )
-  }
-
-  // Show profile status messages if needed
-  if (profile?.status === 'pending') {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Account Pending Approval</h1>
-          <p className="text-muted-foreground">
-            Your account is pending approval. Please check back later.
-          </p>
-          <Button onClick={() => signOut()}>Sign Out</Button>
-        </div>
-      </div>
-    )
-  }
-
-  if (profile?.status === 'suspended') {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Account Suspended</h1>
-          <p className="text-muted-foreground">
-            Your account has been suspended. Please contact support.
-          </p>
-          <Button onClick={() => signOut()}>Sign Out</Button>
-        </div>
-      </div>
-    )
-  }
-
-  // Main trading interface
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto">
-        <header className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">
-              Welcome, {profile?.first_name || user.email}
-            </h1>
-            <p className="text-muted-foreground">
-              Role: {profile?.role || 'user'} | Subscription: {profile?.subscription_tier || 'free'}
-            </p>
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">QuantumFlow AI Trading</h1>
+          <p className="text-muted-foreground">Geavanceerd handelsplatform voor fysieke en digitale markten</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={handleAlert}>
+            <Bell className="w-4 h-4 mr-2" />
+            Alerts
+          </Button>
+          {isAdmin && (
+            <Badge variant="secondary" className="bg-purple-500/20 text-purple-400">
+              <Shield className="w-4 h-4 mr-1" />
+              Admin
+            </Badge>
+          )}
+        </div>
+      </header>
+
+      {/* Cryptocurrency Markten */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Cryptocurrency Markten</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <PriceCard
+            title="Bitcoin"
+            price="$45,234.12"
+            change="+5.24%"
+            trend="up"
+            icon={<Bitcoin className="w-6 h-6" />}
+            market="crypto"
+          />
+          <PriceCard
+            title="Ethereum"
+            price="$2,845.67"
+            change="+3.12%"
+            trend="up"
+            icon={<Coins className="w-6 h-6" />}
+            market="crypto"
+          />
+          <PriceCard
+            title="Cardano"
+            price="$1.24"
+            change="-1.45%"
+            trend="down"
+            icon={<CandlestickChart className="w-6 h-6" />}
+            market="crypto"
+          />
+          <PriceCard
+            title="Solana"
+            price="$98.34"
+            change="+2.78%"
+            trend="up"
+            icon={<Coins className="w-6 h-6" />}
+            market="crypto"
+          />
+        </div>
+      </div>
+
+      {/* Grondstoffen en Valuta */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Grondstoffen en Valuta</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <PriceCard
+            title="Goud"
+            price="$1,892.30"
+            change="+1.35%"
+            trend="up"
+            icon={<Coins className="w-6 h-6" />}
+            market="commodities"
+          />
+          <PriceCard
+            title="Zilver"
+            price="$24.85"
+            change="-0.45%"
+            trend="down"
+            icon={<Gem className="w-6 h-6" />}
+            market="commodities"
+          />
+          <PriceCard
+            title="Olie (Brent)"
+            price="$85.67"
+            change="+2.14%"
+            trend="up"
+            icon={<Coins className="w-6 h-6" />}
+            market="commodities"
+          />
+          <PriceCard
+            title="EUR/USD"
+            price="$1.0923"
+            change="-0.14%"
+            trend="down"
+            icon={<DollarSign className="w-6 h-6" />}
+            market="forex"
+          />
+        </div>
+      </div>
+
+      {/* Aandelen */}
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-4">Aandelen</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <PriceCard
+            title="AAPL"
+            price="$178.45"
+            change="+2.12%"
+            trend="up"
+            icon={<BarChart4 className="w-6 h-6" />}
+            market="stocks"
+          />
+          <PriceCard
+            title="MSFT"
+            price="$334.78"
+            change="+1.67%"
+            trend="up"
+            icon={<Building2 className="w-6 h-6" />}
+            market="stocks"
+          />
+          <PriceCard
+            title="GOOGL"
+            price="$2,845.12"
+            change="-0.34%"
+            trend="down"
+            icon={<BarChart4 className="w-6 h-6" />}
+            market="stocks"
+          />
+          <PriceCard
+            title="AMZN"
+            price="$145.24"
+            change="+3.45%"
+            trend="up"
+            icon={<Warehouse className="w-6 h-6" />}
+            market="stocks"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-2">
+          <div className="glass-panel p-4 mb-6">
+            <TradingChart />
           </div>
-          <div className="flex gap-4">
-            {profile?.role === 'admin' && (
-              <Button onClick={() => window.location.href = '/admin'} variant="outline">
-                Admin Dashboard
-              </Button>
-            )}
-            <Button onClick={() => signOut()}>Sign Out</Button>
+          <div className="glass-panel p-4">
+            <MarketOverview />
           </div>
-        </header>
+        </div>
+        <div className="space-y-6">
+          <div className="glass-panel p-4">
+            <PerformanceMetrics />
+          </div>
+          <div className="glass-panel p-4">
+            <TradeControls />
+          </div>
+        </div>
+      </div>
 
-        <main className="grid gap-6 md:grid-cols-2">
-          {/* Trading Form */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Create Trade</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Trading Pair</label>
-                <Select onValueChange={setSelectedPairId} value={selectedPairId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select trading pair" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tradingPairs?.map((pair) => (
-                      <SelectItem key={pair.id} value={pair.id}>
-                        {pair.symbol}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Nieuwe Secties */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="glass-panel p-4">
+          <AutoTrading />
+        </div>
+        <div className="glass-panel p-4">
+          <RiskManagement />
+        </div>
+      </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Trade Type</label>
-                <Select onValueChange={(value) => setTradeType(value as TradeType)} value={tradeType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select trade type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="buy">Buy</SelectItem>
-                    <SelectItem value="sell">Sell</SelectItem>
-                    <SelectItem value="short">Short</SelectItem>
-                    <SelectItem value="long">Long</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      <div className="glass-panel p-4 mb-6">
+        <FinancialAdvice />
+      </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Amount</label>
-                <Input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="Enter amount"
-                />
-              </div>
+      <div className="glass-panel p-4 mb-6">
+        <Alerts />
+      </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Price</label>
-                <Input
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  placeholder="Enter price"
-                />
-              </div>
+      {isAdmin && (
+        <div className="glass-panel p-4 mb-6">
+          <AdminPanel />
+        </div>
+      )}
 
-              <Button onClick={handleCreateTrade} className="w-full">
-                Create Trade
-              </Button>
-            </div>
-          </Card>
-
-          {/* Recent Trades */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Recent Trades</h2>
-            <div className="space-y-4">
-              {trades?.slice(0, 5).map((trade) => (
-                <div
-                  key={trade.id}
-                  className="flex items-center justify-between p-4 rounded-lg bg-secondary/50"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {trade.trading_pairs.symbol}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs ${
-                          trade.type === "buy" || trade.type === "long"
-                            ? "bg-green-500/20 text-green-400"
-                            : "bg-red-500/20 text-red-400"
-                        }`}
-                      >
-                        {trade.type.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      Amount: {trade.amount} • Price: ${trade.price}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Status: {trade.status}
-                    </div>
-                  </div>
-                  {trade.ai_confidence && (
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">AI Confidence:</span>{" "}
-                      <span
-                        className={`font-medium ${
-                          trade.ai_confidence > 70
-                            ? "text-green-400"
-                            : trade.ai_confidence > 40
-                            ? "text-yellow-400"
-                            : "text-red-400"
-                        }`}
-                      >
-                        {trade.ai_confidence}%
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </Card>
-        </main>
+      <div className="glass-panel p-4">
+        <TransactionList />
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Index
+export default Index;
