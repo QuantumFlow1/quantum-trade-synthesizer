@@ -12,6 +12,7 @@ type AuthContextType = {
     google: () => Promise<void>
     github: () => Promise<void>
   }
+  signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
 }
 
@@ -68,6 +69,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     },
   }
 
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    })
+    if (error) throw error
+  }
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
@@ -78,7 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, user, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   )
