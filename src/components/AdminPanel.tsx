@@ -1,10 +1,45 @@
-
-import { Shield, Search, AlertTriangle, Users } from "lucide-react";
+import { Shield, Search, AlertTriangle, Users, Plus, X, Play, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+
+interface Agent {
+  id: string;
+  name: string;
+  status: "active" | "paused" | "terminated";
+  type: "trading" | "analysis" | "risk";
+  performance: string;
+  lastActive: string;
+}
 
 const AdminPanel = () => {
   const { toast } = useToast();
+  const [agents, setAgents] = useState<Agent[]>([
+    {
+      id: "1",
+      name: "Trading Bot Alpha",
+      status: "active",
+      type: "trading",
+      performance: "+15.4%",
+      lastActive: "Nu"
+    },
+    {
+      id: "2",
+      name: "Market Analyzer Beta",
+      status: "paused",
+      type: "analysis",
+      performance: "98% accuracy",
+      lastActive: "5 min geleden"
+    },
+    {
+      id: "3",
+      name: "Risk Manager Gamma",
+      status: "active",
+      type: "risk",
+      performance: "Low risk",
+      lastActive: "Nu"
+    }
+  ]);
 
   const handleVerify = () => {
     toast({
@@ -13,11 +48,53 @@ const AdminPanel = () => {
     });
   };
 
+  const handleAgentAction = (agentId: string, action: "terminate" | "activate" | "pause") => {
+    setAgents(currentAgents => 
+      currentAgents.map(agent => {
+        if (agent.id === agentId) {
+          const newStatus = action === "terminate" ? "terminated" : 
+                          action === "activate" ? "active" : "paused";
+          return { ...agent, status: newStatus };
+        }
+        return agent;
+      })
+    );
+
+    toast({
+      title: `Agent ${action === "terminate" ? "Beëindigd" : action === "activate" ? "Geactiveerd" : "Gepauzeerd"}`,
+      description: `Agent status succesvol bijgewerkt`,
+    });
+  };
+
+  const handleAddAgent = () => {
+    const newAgent: Agent = {
+      id: `${agents.length + 1}`,
+      name: "Nieuwe AI Agent",
+      status: "paused",
+      type: "analysis",
+      performance: "N/A",
+      lastActive: "Nooit"
+    };
+
+    setAgents(current => [...current, newAgent]);
+    
+    toast({
+      title: "Nieuwe Agent Toegevoegd",
+      description: "AI Agent is klaar voor configuratie",
+    });
+  };
+
   return (
     <div>
-      <div className="flex items-center gap-2 mb-6">
-        <Shield className="w-5 h-5" />
-        <h2 className="text-xl font-semibold">Admin Control Panel</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Shield className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">Admin Control Panel</h2>
+        </div>
+        <Button onClick={handleAddAgent}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nieuwe Agent
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -36,6 +113,58 @@ const AdminPanel = () => {
         <div className="p-4 rounded-lg bg-secondary/50">
           <div className="font-medium mb-1">Systeem Status</div>
           <div className="text-2xl font-bold text-green-400">Normaal</div>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <h3 className="text-lg font-medium mb-4">AI Agent Management</h3>
+        <div className="space-y-4">
+          {agents.filter(agent => agent.status !== "terminated").map((agent) => (
+            <div key={agent.id} className="p-4 rounded-lg bg-secondary/50 flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="font-medium">{agent.name}</div>
+                <div className="text-sm text-muted-foreground">
+                  Type: {agent.type} • Performance: {agent.performance} • Laatst actief: {agent.lastActive}
+                </div>
+                <div className={`text-sm ${
+                  agent.status === "active" ? "text-green-400" : 
+                  agent.status === "paused" ? "text-yellow-400" : 
+                  "text-red-400"
+                }`}>
+                  Status: {agent.status}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {agent.status === "paused" ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleAgentAction(agent.id, "activate")}
+                  >
+                    <Play className="w-4 h-4 mr-1" />
+                    Activeer
+                  </Button>
+                ) : agent.status === "active" ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleAgentAction(agent.id, "pause")}
+                  >
+                    <Pause className="w-4 h-4 mr-1" />
+                    Pauzeer
+                  </Button>
+                ) : null}
+                <Button 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={() => handleAgentAction(agent.id, "terminate")}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Beëindig
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
