@@ -1,4 +1,3 @@
-
 import { LoginComponent } from "@/components/auth/LoginComponent"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { useProfile } from "@/hooks/useProfile"
@@ -101,7 +100,14 @@ const Index = () => {
               Role: {profile?.role} | Subscription: {profile?.subscription_tier}
             </p>
           </div>
-          <Button onClick={() => signOut()}>Sign Out</Button>
+          <div className="flex gap-4">
+            {profile?.role === 'admin' && (
+              <Button onClick={() => window.location.href = '/admin'} variant="outline">
+                Admin Dashboard
+              </Button>
+            )}
+            <Button onClick={() => signOut()}>Sign Out</Button>
+          </div>
         </header>
 
         <main className="grid gap-6 md:grid-cols-2">
