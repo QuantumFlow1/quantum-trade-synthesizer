@@ -11,10 +11,13 @@ const FinancialAdvice = () => {
   const generateAIAdvice = async () => {
     setIsLoadingAI(true);
     try {
-      const response = await fetch('/api/generate-advice', {
+      // Update de URL naar de Supabase Edge Function URL
+      const response = await fetch('https://YOUR_PROJECT_REF.supabase.co/functions/v1/generate-advice', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Voeg de Supabase anon key toe voor authenticatie
+          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
           marketData: {
