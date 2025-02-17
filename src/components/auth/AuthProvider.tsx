@@ -19,15 +19,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null)
   const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Initiële sessie ophalen
+    // Haal de huidige sessie op bij het laden
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
+      setIsLoading(false)
     })
 
-    // Luister naar auth veranderingen
+    // Luister naar auth status veranderingen
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -35,7 +37,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = {
@@ -49,12 +53,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     google: async () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
       })
       if (error) throw error
     },
     github: async () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
+        options: {
+          redirectTo: window.location.origin
+        }
       })
       if (error) throw error
     },
@@ -63,6 +73,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
+  }
+
+  if (isLoading) {
+    return null // of een loading component
   }
 
   return (
