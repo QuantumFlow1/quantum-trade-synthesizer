@@ -1,10 +1,11 @@
+
 import { LoginComponent } from "@/components/auth/LoginComponent"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { useProfile } from "@/hooks/useProfile"
 import { useTrading } from "@/hooks/useTrading"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Loader2, TrendingUp, TrendingDown, BarChart2 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -44,6 +45,7 @@ const Index = () => {
     setPrice("")
   }
 
+  // Show login if no user
   if (!user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -52,6 +54,7 @@ const Index = () => {
     )
   }
 
+  // Show loading state while checking profile
   if (isLoadingProfile || isLoadingTrading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -60,6 +63,7 @@ const Index = () => {
     )
   }
 
+  // Show profile status messages if needed
   if (profile?.status === 'pending') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -88,6 +92,7 @@ const Index = () => {
     )
   }
 
+  // Main trading interface
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-7xl mx-auto">
@@ -97,7 +102,7 @@ const Index = () => {
               Welcome, {profile?.first_name || user.email}
             </h1>
             <p className="text-muted-foreground">
-              Role: {profile?.role} | Subscription: {profile?.subscription_tier}
+              Role: {profile?.role || 'user'} | Subscription: {profile?.subscription_tier || 'free'}
             </p>
           </div>
           <div className="flex gap-4">
