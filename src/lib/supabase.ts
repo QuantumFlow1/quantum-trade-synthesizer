@@ -1,8 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js'
 
+// Vervang deze waarden met de keys uit je Supabase dashboard
 const supabaseUrl = 'https://tfmlretexydslgowlkid.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmbWxyZXRleHlkc2xnb3dsa2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTA4NjAxNjcsImV4cCI6MjAyNjQzNjE2N30.qp_BHy2g_qX1jgGyvf8ixD-CljfgE-bZVwFHRdEhFaU'
+const supabaseAnonKey = 'JOUW_NIEUWE_ANON_KEY' // Vervang dit met je nieuwe anon key
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   db: {
