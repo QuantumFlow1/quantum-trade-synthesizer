@@ -1,7 +1,7 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import AdminPanel from "@/components/AdminPanel";
-import LoginComponent from "@/components/auth/LoginComponent";
+import { LoginComponent } from "@/components/auth/LoginComponent";
 
 const Index = () => {
   const { user, userProfile, isAdmin } = useAuth();
