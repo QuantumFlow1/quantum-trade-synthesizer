@@ -2,21 +2,58 @@
 import { 
   Bitcoin, DollarSign, Coins, BarChart4, 
   Gem, CandlestickChart, 
-  Warehouse, Building2
+  Warehouse, Building2,
+  AlertTriangle, 
+  Bell,
+  Shield,
+  LineChart,
+  Settings
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import PriceCard from "../components/PriceCard";
 import TradingChart from "../components/TradingChart";
 import TransactionList from "../components/TransactionList";
 import PerformanceMetrics from "../components/PerformanceMetrics";
 import TradeControls from "../components/TradeControls";
 import MarketOverview from "../components/MarketOverview";
+import RiskManagement from "../components/RiskManagement";
+import AutoTrading from "../components/AutoTrading";
+import AdminPanel from "../components/AdminPanel";
+import Alerts from "../components/Alerts";
 
 const Index = () => {
+  const { toast } = useToast();
+  const isAdmin = true; // In een echte implementatie zou dit van een auth system komen
+
+  const handleAlert = () => {
+    toast({
+      title: "Nieuwe Marktwaarschuwing",
+      description: "BTC/USD volatiliteit boven threshold",
+      variant: "default",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">QuantumFlow AI Trading</h1>
-        <p className="text-muted-foreground">Geavanceerd handelsplatform voor fysieke en digitale markten</p>
+      <header className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight mb-2">QuantumFlow AI Trading</h1>
+          <p className="text-muted-foreground">Geavanceerd handelsplatform voor fysieke en digitale markten</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={handleAlert}>
+            <Bell className="w-4 h-4 mr-2" />
+            Alerts
+          </Button>
+          {isAdmin && (
+            <Badge variant="secondary" className="bg-purple-500/20 text-purple-400">
+              <Shield className="w-4 h-4 mr-1" />
+              Admin
+            </Badge>
+          )}
+        </div>
       </header>
 
       {/* Cryptocurrency Markten */}
@@ -154,6 +191,26 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Nieuwe Secties */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div className="glass-panel p-4">
+          <AutoTrading />
+        </div>
+        <div className="glass-panel p-4">
+          <RiskManagement />
+        </div>
+      </div>
+
+      <div className="glass-panel p-4 mb-6">
+        <Alerts />
+      </div>
+
+      {isAdmin && (
+        <div className="glass-panel p-4 mb-6">
+          <AdminPanel />
+        </div>
+      )}
 
       <div className="glass-panel p-4">
         <TransactionList />
