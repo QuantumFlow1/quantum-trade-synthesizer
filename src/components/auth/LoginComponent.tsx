@@ -16,13 +16,16 @@ export const LoginComponent = () => {
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    console.log('Attempting login with:', { email }) // We loggen niet het wachtwoord
     try {
       await signIn.email(email, password)
+      console.log('Login successful')
       toast({
         title: "Succesvol ingelogd",
         description: "Welkom terug!",
       })
     } catch (error) {
+      console.error('Login error:', error)
       toast({
         title: "Login mislukt",
         description: "Controleer uw email en wachtwoord",
