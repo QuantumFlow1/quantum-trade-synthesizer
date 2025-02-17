@@ -98,6 +98,99 @@ export type Database = {
         }
         Relationships: []
       }
+      trades: {
+        Row: {
+          ai_analysis: Json | null
+          ai_confidence: number | null
+          amount: number
+          created_at: string | null
+          executed_at: string | null
+          id: string
+          pair_id: string
+          price: number
+          status: Database["public"]["Enums"]["trade_status"] | null
+          type: Database["public"]["Enums"]["trade_type"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_confidence?: number | null
+          amount: number
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          pair_id: string
+          price: number
+          status?: Database["public"]["Enums"]["trade_status"] | null
+          type: Database["public"]["Enums"]["trade_type"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_confidence?: number | null
+          amount?: number
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          pair_id?: string
+          price?: number
+          status?: Database["public"]["Enums"]["trade_status"] | null
+          type?: Database["public"]["Enums"]["trade_type"]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trades_pair_id_fkey"
+            columns: ["pair_id"]
+            isOneToOne: false
+            referencedRelation: "trading_pairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trades_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trading_pairs: {
+        Row: {
+          base_asset: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          min_trade_amount: number
+          quote_asset: string
+          symbol: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_asset: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_trade_amount: number
+          quote_asset: string
+          symbol: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_asset?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_trade_amount?: number
+          quote_asset?: string
+          symbol?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -107,6 +200,8 @@ export type Database = {
     }
     Enums: {
       subscription_tier: "free" | "basic" | "premium" | "enterprise"
+      trade_status: "pending" | "executed" | "cancelled" | "failed"
+      trade_type: "buy" | "sell" | "short" | "long"
       user_role: "admin" | "trader" | "analyst"
       user_status: "active" | "suspended" | "pending"
     }
