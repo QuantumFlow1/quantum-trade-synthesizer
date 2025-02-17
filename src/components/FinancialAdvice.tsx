@@ -1,13 +1,93 @@
 
-import { TrendingUp, AlertCircle, Book, BarChart2 } from "lucide-react";
+import { TrendingUp, AlertCircle, Book, BarChart2, Sparkles, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 const FinancialAdvice = () => {
+  const { toast } = useToast();
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+
+  const generateAIAdvice = async () => {
+    setIsLoadingAI(true);
+    try {
+      const response = await fetch('/api/generate-advice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          marketData: {
+            btcPrice: 45234.12,
+            ethPrice: 2845.67,
+            marketSentiment: "bullish",
+            volatilityIndex: "high"
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error('AI analyse generatie mislukt');
+
+      const data = await response.json();
+      toast({
+        title: "AI Analyse Gereed",
+        description: "Nieuwe inzichten beschikbaar",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Kon geen AI analyse genereren",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-4">
-        <Book className="w-5 h-5" />
-        <h2 className="text-xl font-semibold">Financieel Advies Dashboard</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Book className="w-5 h-5" />
+          <h2 className="text-xl font-semibold">Financieel Advies Dashboard</h2>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={generateAIAdvice}
+          disabled={isLoadingAI}
+        >
+          <Brain className="w-4 h-4 mr-2" />
+          {isLoadingAI ? "AI Analyseert..." : "Genereer AI Analyse"}
+        </Button>
+      </div>
+
+      {/* AI Inzichten */}
+      <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+        <h3 className="font-medium mb-3 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-blue-400" />
+          <span className="text-blue-400">AI Trading Inzichten</span>
+        </h3>
+        <div className="space-y-3">
+          <div className="p-3 rounded bg-blue-500/5">
+            <div className="text-sm font-medium mb-1">Trend Analyse</div>
+            <div className="text-sm text-muted-foreground">
+              BTC toont bullish divergentie op 4H timeframe. Overweeg long positie met tight stop-loss.
+            </div>
+          </div>
+          <div className="p-3 rounded bg-blue-500/5">
+            <div className="text-sm font-medium mb-1">Sentiment Analyse</div>
+            <div className="text-sm text-muted-foreground">
+              Social sentiment indicators tonen toenemend optimisme. Volume ondersteunt de trend.
+            </div>
+          </div>
+          <div className="p-3 rounded bg-blue-500/5">
+            <div className="text-sm font-medium mb-1">Risk Assessment</div>
+            <div className="text-sm text-muted-foreground">
+              Huidige markt volatiliteit suggereert kleinere posities en wijdere stops.
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Portfolio Diversificatie */}
