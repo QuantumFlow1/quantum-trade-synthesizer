@@ -12,7 +12,7 @@ export const LoginComponent = () => {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
-  const { signIn, userProfile } = useAuth()
+  const { signIn, signOut, userProfile } = useAuth()
   const { toast } = useToast()
 
   // Toon een bericht als de account status 'pending' is
@@ -25,7 +25,7 @@ export const LoginComponent = () => {
             Je account wacht op goedkeuring. Probeer het later opnieuw.
           </p>
           <Button
-            onClick={() => signIn.signOut()}
+            onClick={signOut}
             variant="outline"
             className="mt-4"
           >
