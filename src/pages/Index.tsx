@@ -1,4 +1,3 @@
-
 import { 
   Bitcoin, DollarSign, Coins, BarChart4, 
   Gem, CandlestickChart, 
@@ -22,6 +21,7 @@ import RiskManagement from "../components/RiskManagement";
 import AutoTrading from "../components/AutoTrading";
 import AdminPanel from "../components/AdminPanel";
 import Alerts from "../components/Alerts";
+import FinancialAdvice from "../components/FinancialAdvice";
 
 const Index = () => {
   const { toast } = useToast();
@@ -200,6 +200,10 @@ const Index = () => {
         <div className="glass-panel p-4">
           <RiskManagement />
         </div>
+      </div>
+
+      <div className="glass-panel p-4 mb-6">
+        <FinancialAdvice />
       </div>
 
       <div className="glass-panel p-4 mb-6">
