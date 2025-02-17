@@ -12,8 +12,29 @@ export const LoginComponent = () => {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
-  const { signIn } = useAuth()
+  const { signIn, userProfile } = useAuth()
   const { toast } = useToast()
+
+  // Toon een bericht als de account status 'pending' is
+  if (userProfile?.status === 'pending') {
+    return (
+      <div className="w-full max-w-md space-y-6 p-6 bg-card rounded-lg shadow-lg">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-bold">Account in behandeling</h1>
+          <p className="text-muted-foreground">
+            Je account wacht op goedkeuring. Probeer het later opnieuw.
+          </p>
+          <Button
+            onClick={() => signIn.signOut()}
+            variant="outline"
+            className="mt-4"
+          >
+            Uitloggen
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,8 +66,8 @@ export const LoginComponent = () => {
         password,
         options: {
           data: {
-            role: 'viewer', // Default role for new users
-            status: 'active'
+            role: 'viewer',
+            status: 'active' // Zet de status direct op active
           }
         }
       })
