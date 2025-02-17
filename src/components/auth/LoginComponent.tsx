@@ -5,21 +5,21 @@ import { Input } from "@/components/ui/input"
 import { Github, Mail } from "lucide-react"
 import { useAuth } from './AuthProvider'
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from '@/lib/supabase'
 
 export const LoginComponent = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
   const { signIn } = useAuth()
   const { toast } = useToast()
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    console.log('Attempting login with:', { email }) // We loggen niet het wachtwoord
     try {
       await signIn.email(email, password)
-      console.log('Login successful')
       toast({
         title: "Succesvol ingelogd",
         description: "Welkom terug!",
@@ -36,14 +36,49 @@ export const LoginComponent = () => {
     }
   }
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role: 'viewer', // Default role for new users
+            status: 'active'
+          }
+        }
+      })
+      if (error) throw error
+      
+      toast({
+        title: "Registratie succesvol",
+        description: "Controleer uw email voor de verificatie link",
+      })
+      setIsRegistering(false)
+    } catch (error) {
+      console.error('Signup error:', error)
+      toast({
+        title: "Registratie mislukt",
+        description: "Probeer het opnieuw",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <div className="w-full max-w-md space-y-6 p-6 bg-card rounded-lg shadow-lg">
       <div className="space-y-2 text-center">
-        <h1 className="text-2xl font-bold">Login</h1>
-        <p className="text-muted-foreground">Kies een login methode</p>
+        <h1 className="text-2xl font-bold">{isRegistering ? 'Registreren' : 'Login'}</h1>
+        <p className="text-muted-foreground">
+          {isRegistering ? 'Maak een nieuw account aan' : 'Kies een login methode'}
+        </p>
       </div>
       
-      <form onSubmit={handleEmailLogin} className="space-y-4">
+      <form onSubmit={isRegistering ? handleSignUp : handleEmailLogin} className="space-y-4">
         <Input
           type="email"
           placeholder="Email"
@@ -60,9 +95,21 @@ export const LoginComponent = () => {
         />
         <Button type="submit" className="w-full" disabled={isLoading}>
           <Mail className="mr-2 h-4 w-4" />
-          {isLoading ? "Bezig met inloggen..." : "Login met Email"}
+          {isLoading 
+            ? "Even geduld..." 
+            : (isRegistering ? "Registreren" : "Login met Email")}
         </Button>
       </form>
+
+      <Button
+        variant="ghost"
+        className="w-full"
+        onClick={() => setIsRegistering(!isRegistering)}
+      >
+        {isRegistering 
+          ? "Al een account? Login hier" 
+          : "Nog geen account? Registreer hier"}
+      </Button>
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
