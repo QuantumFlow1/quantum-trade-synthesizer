@@ -1,9 +1,10 @@
 
-import { TrendingUp, TrendingDown, Bitcoin, DollarSign } from "lucide-react";
+import { TrendingUp, TrendingDown, Bitcoin, DollarSign, Coins, BarChart4 } from "lucide-react";
 import PriceCard from "../components/PriceCard";
 import TradingChart from "../components/TradingChart";
 import TransactionList from "../components/TransactionList";
 import PerformanceMetrics from "../components/PerformanceMetrics";
+import TradeControls from "../components/TradeControls";
 
 const Index = () => {
   return (
@@ -20,27 +21,31 @@ const Index = () => {
           change="+5.24%"
           trend="up"
           icon={<Bitcoin className="w-6 h-6" />}
+          market="crypto"
         />
         <PriceCard
-          title="Ethereum"
-          price="$2,345.67"
-          change="-2.14%"
+          title="EUR/USD"
+          price="$1.0923"
+          change="-0.14%"
           trend="down"
           icon={<DollarSign className="w-6 h-6" />}
+          market="forex"
         />
         <PriceCard
-          title="Trading Volume"
-          price="$1.2M"
-          change="+12.35%"
+          title="Gold"
+          price="$1,892.30"
+          change="+1.35%"
           trend="up"
-          icon={<TrendingUp className="w-6 h-6" />}
+          icon={<Coins className="w-6 h-6" />}
+          market="commodities"
         />
         <PriceCard
-          title="Portfolio Value"
-          price="$892,435.00"
-          change="+8.12%"
+          title="AAPL"
+          price="$178.45"
+          change="+2.12%"
           trend="up"
-          icon={<TrendingDown className="w-6 h-6" />}
+          icon={<BarChart4 className="w-6 h-6" />}
+          market="stocks"
         />
       </div>
 
@@ -53,7 +58,8 @@ const Index = () => {
         </div>
       </div>
 
-      <div className="glass-panel p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <TradeControls />
         <TransactionList />
       </div>
     </div>
