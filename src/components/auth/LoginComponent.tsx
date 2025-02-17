@@ -19,13 +19,13 @@ export const LoginComponent = () => {
     try {
       await signIn.email(email, password)
       toast({
-        title: "Succesvol ingelogd",
-        description: "Welkom terug!",
+        title: "Successfully logged in",
+        description: "Welcome back!",
       })
     } catch (error) {
       toast({
-        title: "Login mislukt",
-        description: "Controleer uw email en wachtwoord",
+        title: "Login failed",
+        description: "Please check your email and password",
         variant: "destructive",
       })
     } finally {
@@ -37,7 +37,7 @@ export const LoginComponent = () => {
     <div className="w-full max-w-md space-y-6 p-6 bg-card rounded-lg shadow-lg">
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold">Login</h1>
-        <p className="text-muted-foreground">Kies een login methode</p>
+        <p className="text-muted-foreground">Choose a login method</p>
       </div>
       
       <form onSubmit={handleEmailLogin} className="space-y-4">
@@ -50,14 +50,14 @@ export const LoginComponent = () => {
         />
         <Input
           type="password"
-          placeholder="Wachtwoord"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
         <Button type="submit" className="w-full" disabled={isLoading}>
           <Mail className="mr-2 h-4 w-4" />
-          {isLoading ? "Bezig met inloggen..." : "Login met Email"}
+          {isLoading ? "Logging in..." : "Login with Email"}
         </Button>
       </form>
 
@@ -67,7 +67,7 @@ export const LoginComponent = () => {
         </div>
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">
-            Of ga verder met
+            Or continue with
           </span>
         </div>
       </div>
