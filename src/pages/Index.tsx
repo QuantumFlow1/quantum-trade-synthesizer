@@ -12,11 +12,16 @@ const Index = () => {
   // Handle hash fragment for OAuth redirects
   useEffect(() => {
     const handleHashFragment = async () => {
+      console.log("Current URL:", window.location.href);
+      console.log("Hash:", window.location.hash);
+      console.log("Search:", window.location.search);
+      
       if (window.location.hash || window.location.search) {
         const hasError = window.location.search.includes('error');
         if (hasError) {
           const searchParams = new URLSearchParams(window.location.search);
           const errorDescription = searchParams.get('error_description');
+          console.log("Auth Error:", errorDescription);
           toast({
             title: "Authenticatie Error",
             description: errorDescription?.replace(/\+/g, ' ') || "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
