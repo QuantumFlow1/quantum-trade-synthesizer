@@ -2,16 +2,24 @@
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mail } from "lucide-react"
+import { Mail, Shield, ShieldAlert } from "lucide-react"
 import { useAuth } from './AuthProvider'
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from '@/lib/supabase'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export const LoginComponent = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<'viewer' | 'trader' | 'admin' | 'super_admin'>('viewer')
   const { signIn } = useAuth()
   const { toast } = useToast()
 
@@ -40,16 +48,25 @@ export const LoginComponent = () => {
     e.preventDefault()
     setIsLoading(true)
     try {
-      const { error } = await supabase.auth.signUp({
+      // Eerst de gebruiker aanmaken
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            role: 'admin',
-          }
-        }
       })
-      if (error) throw error
+      
+      if (authError) throw authError
+
+      if (authData.user) {
+        // Voeg de gebruikersrol toe
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: authData.user.id,
+            role: selectedRole
+          })
+
+        if (roleError) throw roleError
+      }
       
       toast({
         title: "Registratie succesvol",
@@ -93,6 +110,44 @@ export const LoginComponent = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          
+          {isRegistering && (
+            <Select
+              value={selectedRole}
+              onValueChange={(value: 'viewer' | 'trader' | 'admin' | 'super_admin') => setSelectedRole(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecteer een rol" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="viewer">
+                  <div className="flex items-center">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Viewer
+                  </div>
+                </SelectItem>
+                <SelectItem value="trader">
+                  <div className="flex items-center">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Trader
+                  </div>
+                </SelectItem>
+                <SelectItem value="admin">
+                  <div className="flex items-center">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Admin
+                  </div>
+                </SelectItem>
+                <SelectItem value="super_admin">
+                  <div className="flex items-center">
+                    <ShieldAlert className="mr-2 h-4 w-4" />
+                    Super Admin
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
           <Button type="submit" className="w-full" disabled={isLoading}>
             <Mail className="mr-2 h-4 w-4" />
             {isLoading 
