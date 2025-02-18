@@ -109,25 +109,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Reset local state first
-      setSession(null)
-      setUser(null)
-      setUserProfile(null)
-      
-      // Clear any stored data in localStorage
-      localStorage.removeItem('supabase.auth.token')
-      
-      // Then attempt to sign out from Supabase
-      await supabase.auth.signOut()
-      
-      // Forceer een pagina refresh om alle state te resetten
-      window.location.reload()
+      // First attempt to sign out from Supabase while we still have a valid session
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Supabase signout error:', error)
+      }
     } catch (error) {
-      console.error('Uitlog fout:', error)
-      // Bij een fout alsnog de state resetten en pagina herladen
+      console.error('Supabase signout error:', error)
+    } finally {
+      // Always clean up local state, regardless of Supabase signout success
       setSession(null)
       setUser(null)
       setUserProfile(null)
+      
+      // Clear local storage
+      localStorage.clear()
+      
+      // Force a full page reload to reset all state
       window.location.reload()
     }
   }
