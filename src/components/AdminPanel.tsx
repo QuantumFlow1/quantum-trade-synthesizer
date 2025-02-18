@@ -1,5 +1,5 @@
 
-import { Shield, Plus, LogOut, Users, Database, Activity, AlertTriangle } from "lucide-react";
+import { Shield, Plus, LogOut, Users, Database, Activity, AlertTriangle, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -8,6 +8,7 @@ import AIAgentCard from "./admin/AIAgentCard";
 import QuickActions from "./admin/QuickActions";
 import SystemAlerts from "./admin/SystemAlerts";
 import { useAuth } from "./auth/AuthProvider";
+import UserDashboard from "./UserDashboard";
 
 interface Agent {
   id: string;
@@ -21,6 +22,7 @@ interface Agent {
 const AdminPanel = () => {
   const { toast } = useToast();
   const { signOut, userProfile } = useAuth();
+  const [showUserDashboard, setShowUserDashboard] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([
     {
       id: "1",
@@ -51,6 +53,25 @@ const AdminPanel = () => {
   const [userCount, setUserCount] = useState(1234);
   const [systemLoad, setSystemLoad] = useState(67);
   const [errorRate, setErrorRate] = useState(0.5);
+
+  // Als de gebruiker naar het dashboard kijkt, toon dat
+  if (showUserDashboard) {
+    return (
+      <div>
+        <div className="p-4 bg-background border-b">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowUserDashboard(false)}
+            className="mb-4"
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            Terug naar Admin Paneel
+          </Button>
+        </div>
+        <UserDashboard />
+      </div>
+    );
+  }
 
   const handleVerify = () => {
     toast({
@@ -103,6 +124,15 @@ const AdminPanel = () => {
           <h2 className="text-xl font-semibold">Admin Control Panel</h2>
         </div>
         <div className="flex gap-4">
+          {userProfile?.role === 'super_admin' && (
+            <Button 
+              variant="outline" 
+              onClick={() => setShowUserDashboard(true)}
+            >
+              <LayoutDashboard className="w-4 h-4 mr-2" />
+              Naar Dashboard
+            </Button>
+          )}
           <Button onClick={handleAddAgent}>
             <Plus className="w-4 h-4 mr-2" />
             Nieuwe Agent
@@ -116,7 +146,7 @@ const AdminPanel = () => {
 
       <StatisticsPanel />
 
-      {userProfile?.role === 'admin' && (
+      {userProfile?.role === 'super_admin' && (
         <div className="mb-6 p-4 bg-secondary/10 rounded-lg border border-secondary">
           <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Database className="w-5 h-5" />
