@@ -1,4 +1,3 @@
-
 import { Shield, Plus, LogOut, Users, Database, Activity, AlertTriangle, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +53,6 @@ const AdminPanel = () => {
   const [systemLoad, setSystemLoad] = useState(67);
   const [errorRate, setErrorRate] = useState(0.5);
 
-  // Als de gebruiker naar het dashboard kijkt, toon dat
   if (showUserDashboard) {
     return (
       <div>
@@ -124,15 +122,13 @@ const AdminPanel = () => {
           <h2 className="text-xl font-semibold">Admin Control Panel</h2>
         </div>
         <div className="flex gap-4">
-          {userProfile?.role === 'super_admin' && (
-            <Button 
-              variant="outline" 
-              onClick={() => setShowUserDashboard(true)}
-            >
-              <LayoutDashboard className="w-4 h-4 mr-2" />
-              Naar Dashboard
-            </Button>
-          )}
+          <Button 
+            variant="outline" 
+            onClick={() => setShowUserDashboard(true)}
+          >
+            <LayoutDashboard className="w-4 h-4 mr-2" />
+            Naar Dashboard
+          </Button>
           <Button onClick={handleAddAgent}>
             <Plus className="w-4 h-4 mr-2" />
             Nieuwe Agent
