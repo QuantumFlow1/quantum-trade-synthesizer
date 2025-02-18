@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
@@ -108,22 +109,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Verwijder alle Supabase items uit localStorage
-      Object.keys(localStorage).forEach(key => {
+      // Eerst uitloggen bij Supabase
+      await supabase.auth.signOut()
+      
+      // Reset state na succesvolle uitlog
+      setUser(null)
+      setSession(null)
+      setUserProfile(null)
+      
+      // Verwijder alle Supabase gerelateerde items uit localStorage
+      const items = { ...localStorage }
+      Object.keys(items).forEach(key => {
         if (key.startsWith('sb-')) {
           localStorage.removeItem(key)
         }
       })
-      
-      // Reset state
-      setSession(null)
-      setUser(null)
-      setUserProfile(null)
-      
-      // Log uit bij Supabase
-      await supabase.auth.signOut()
     } catch (error) {
-      console.error('Signout error:', error)
+      console.error('Uitlog error:', error)
+      // Bij een error alsnog state resetten voor een clean slate
+      setUser(null)
+      setSession(null)
+      setUserProfile(null)
     }
   }
 
