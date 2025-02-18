@@ -15,27 +15,6 @@ export const LoginComponent = () => {
   const { signIn, signOut, userProfile } = useAuth()
   const { toast } = useToast()
 
-  // Toon een bericht als de account status 'pending' is
-  if (userProfile?.status === 'pending') {
-    return (
-      <div className="w-full max-w-md space-y-6 p-6 bg-card rounded-lg shadow-lg">
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold">Account in behandeling</h1>
-          <p className="text-muted-foreground">
-            Je account wacht op goedkeuring. Probeer het later opnieuw.
-          </p>
-          <Button
-            onClick={signOut}
-            variant="outline"
-            className="mt-4"
-          >
-            Uitloggen
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -45,11 +24,11 @@ export const LoginComponent = () => {
         title: "Succesvol ingelogd",
         description: "Welkom terug!",
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error)
       toast({
         title: "Login mislukt",
-        description: "Controleer uw email en wachtwoord",
+        description: error.message || "Controleer uw email en wachtwoord",
         variant: "destructive",
       })
     } finally {
@@ -66,8 +45,7 @@ export const LoginComponent = () => {
         password,
         options: {
           data: {
-            role: 'viewer',
-            status: 'active' // Zet de status direct op active
+            role: 'admin', // Alle nieuwe gebruikers krijgen admin rol
           }
         }
       })
@@ -75,14 +53,14 @@ export const LoginComponent = () => {
       
       toast({
         title: "Registratie succesvol",
-        description: "Controleer uw email voor de verificatie link",
+        description: "Je kunt nu inloggen met je account",
       })
       setIsRegistering(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error)
       toast({
         title: "Registratie mislukt",
-        description: "Probeer het opnieuw",
+        description: error.message || "Probeer het opnieuw",
         variant: "destructive",
       })
     } finally {
@@ -144,7 +122,7 @@ export const LoginComponent = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Button variant="outline" onClick={() => signIn.google()}>
+        <Button variant="outline" disabled className="opacity-50">
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -165,7 +143,7 @@ export const LoginComponent = () => {
           </svg>
           Google
         </Button>
-        <Button variant="outline" onClick={() => signIn.github()}>
+        <Button variant="outline" disabled className="opacity-50">
           <Github className="mr-2 h-4 w-4" />
           GitHub
         </Button>
