@@ -1,72 +1,23 @@
 
-import { useEffect } from "react";
-import { useAuth } from "@/components/auth/AuthProvider";
-import AdminPanel from "@/components/AdminPanel";
-import { LoginComponent } from "@/components/auth/LoginComponent";
-import { useToast } from "@/hooks/use-toast";
-import UserDashboard from "@/components/UserDashboard";
+import React from 'react';
+import MarketOverview from '@/components/MarketOverview';
+import TradeControls from '@/components/TradeControls';
+import RiskManagement from '@/components/RiskManagement';
+import AutoTrading from '@/components/AutoTrading';
 
 const Index = () => {
-  const { user, userProfile } = useAuth();
-  const { toast } = useToast();
-
-  // Handle hash fragment for OAuth redirects
-  useEffect(() => {
-    const handleHashFragment = async () => {
-      console.log("Current URL:", window.location.href);
-      console.log("Hash:", window.location.hash);
-      console.log("Search:", window.location.search);
+  return (
+    <div className="container mx-auto p-4 space-y-6">
+      <MarketOverview />
       
-      if (window.location.hash || window.location.search) {
-        const hasError = window.location.search.includes('error');
-        if (hasError) {
-          const searchParams = new URLSearchParams(window.location.search);
-          const errorDescription = searchParams.get('error_description');
-          console.log("Auth Error:", errorDescription);
-          toast({
-            title: "Authenticatie Error",
-            description: errorDescription?.replace(/\+/g, ' ') || "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
-            variant: "destructive",
-          });
-        }
-        // Remove the hash and search params without triggering a reload
-        window.history.replaceState(null, '', window.location.pathname);
-      }
-    };
-
-    handleHashFragment().catch(error => {
-      console.error('Error handling hash fragment:', error);
-      toast({
-        title: "Authenticatie Error",
-        description: "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
-        variant: "destructive",
-      });
-    });
-  }, [toast]);
-
-  // Als er geen gebruiker is ingelogd, toon login scherm
-  if (!user) {
-    return <LoginComponent />;
-  }
-
-  // Als er een gebruiker is maar nog geen profiel, toon laadscherm
-  if (!userProfile) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Even geduld...</h1>
-          <p className="text-muted-foreground">
-            Je profiel wordt geladen.
-          </p>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TradeControls />
+        <RiskManagement />
       </div>
-    );
-  }
-
-  // Toon AdminPanel voor admins en super_admins, anders het UserDashboard
-  return (userProfile.role === 'admin' || userProfile.role === 'super_admin') 
-    ? <AdminPanel /> 
-    : <UserDashboard />;
+      
+      <AutoTrading />
+    </div>
+  );
 };
 
 export default Index;
