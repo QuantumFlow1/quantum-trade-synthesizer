@@ -2,9 +2,17 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import AdminPanel from "@/components/AdminPanel";
 import { LoginComponent } from "@/components/auth/LoginComponent";
+import { useEffect } from "react";
 
 const Index = () => {
   const { user, userProfile, isAdmin } = useAuth();
+
+  useEffect(() => {
+    // Als er geen gebruiker is, forceer een page refresh om de login state correct te updaten
+    if (!user) {
+      window.location.reload();
+    }
+  }, [user]);
 
   // Als er geen gebruiker is ingelogd, toon login scherm
   if (!user) {
