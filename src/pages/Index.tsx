@@ -4,6 +4,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import AdminPanel from "@/components/AdminPanel";
 import { LoginComponent } from "@/components/auth/LoginComponent";
 import { useToast } from "@/hooks/use-toast";
+import UserDashboard from "@/components/UserDashboard";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
@@ -62,8 +63,8 @@ const Index = () => {
     );
   }
 
-  // Toon het AdminPanel voor alle ingelogde gebruikers
-  return <AdminPanel />;
+  // Toon AdminPanel voor admins, anders het UserDashboard
+  return userProfile.role === 'admin' ? <AdminPanel /> : <UserDashboard />;
 };
 
 export default Index;
