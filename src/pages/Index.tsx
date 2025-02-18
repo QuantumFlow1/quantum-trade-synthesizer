@@ -63,8 +63,10 @@ const Index = () => {
     );
   }
 
-  // Toon AdminPanel voor admins, anders het UserDashboard
-  return userProfile.role === 'admin' ? <AdminPanel /> : <UserDashboard />;
+  // Toon AdminPanel voor admins en super_admins, anders het UserDashboard
+  return (userProfile.role === 'admin' || userProfile.role === 'super_admin') 
+    ? <AdminPanel /> 
+    : <UserDashboard />;
 };
 
 export default Index;
