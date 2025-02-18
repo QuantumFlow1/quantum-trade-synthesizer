@@ -1,5 +1,5 @@
 
-import { Shield, Plus } from "lucide-react";
+import { Shield, Plus, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -7,6 +7,7 @@ import StatisticsPanel from "./admin/StatisticsPanel";
 import AIAgentCard from "./admin/AIAgentCard";
 import QuickActions from "./admin/QuickActions";
 import SystemAlerts from "./admin/SystemAlerts";
+import { useAuth } from "./auth/AuthProvider";
 
 interface Agent {
   id: string;
@@ -19,6 +20,7 @@ interface Agent {
 
 const AdminPanel = () => {
   const { toast } = useToast();
+  const { signOut } = useAuth();
   const [agents, setAgents] = useState<Agent[]>([
     {
       id: "1",
@@ -90,16 +92,22 @@ const AdminPanel = () => {
   };
 
   return (
-    <div>
+    <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5" />
           <h2 className="text-xl font-semibold">Admin Control Panel</h2>
         </div>
-        <Button onClick={handleAddAgent}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nieuwe Agent
-        </Button>
+        <div className="flex gap-4">
+          <Button onClick={handleAddAgent}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nieuwe Agent
+          </Button>
+          <Button variant="outline" onClick={signOut}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Uitloggen
+          </Button>
+        </div>
       </div>
 
       <StatisticsPanel />
