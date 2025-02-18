@@ -3,6 +3,15 @@ import { LogOut, Activity, LineChart, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
+import MarketOverview from "./MarketOverview";
+import TradingChart from "./TradingChart";
+import TradeControls from "./TradeControls";
+import TransactionList from "./TransactionList";
+import PerformanceMetrics from "./PerformanceMetrics";
+import AutoTrading from "./AutoTrading";
+import RiskManagement from "./RiskManagement";
+import Alerts from "./Alerts";
+import FinancialAdvice from "./FinancialAdvice";
 
 const UserDashboard = () => {
   const { signOut, userProfile } = useAuth();
@@ -16,11 +25,11 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Welkom, {userProfile?.email}</h1>
-          <p className="text-muted-foreground">Dashboard Overzicht</p>
+          <p className="text-muted-foreground">Trading Dashboard</p>
         </div>
         <Button variant="outline" onClick={signOut}>
           <LogOut className="w-4 h-4 mr-2" />
@@ -28,32 +37,41 @@ const UserDashboard = () => {
         </Button>
       </div>
 
-      {/* Statistieken */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="p-6 bg-card rounded-lg border shadow-sm">
-          <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-blue-500" />
-            <h3 className="font-medium">Actieve Sessies</h3>
+      {/* Top Row - Market Overview en Performance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MarketOverview />
+        <PerformanceMetrics />
+      </div>
+
+      {/* Trading Chart & Controls */}
+      <div className="grid grid-cols-1 gap-6">
+        <div className="bg-card rounded-lg border shadow-sm p-6">
+          <TradingChart />
+          <div className="mt-6">
+            <TradeControls />
           </div>
-          <p className="text-2xl font-bold mt-2">3</p>
-        </div>
-        <div className="p-6 bg-card rounded-lg border shadow-sm">
-          <div className="flex items-center gap-2">
-            <LineChart className="w-5 h-5 text-green-500" />
-            <h3 className="font-medium">Performance</h3>
-          </div>
-          <p className="text-2xl font-bold mt-2">+12.5%</p>
-        </div>
-        <div className="p-6 bg-card rounded-lg border shadow-sm">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-yellow-500" />
-            <h3 className="font-medium">Alerts</h3>
-          </div>
-          <p className="text-2xl font-bold mt-2">2</p>
         </div>
       </div>
 
-      {/* Acties */}
+      {/* Automatic Trading & Risk Management */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AutoTrading />
+        <RiskManagement />
+      </div>
+
+      {/* Transactions & Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-card rounded-lg border shadow-sm p-6">
+          <h3 className="text-lg font-medium mb-4">Recente Transacties</h3>
+          <TransactionList />
+        </div>
+        <div className="space-y-6">
+          <Alerts />
+          <FinancialAdvice />
+        </div>
+      </div>
+
+      {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="p-6 bg-card rounded-lg border shadow-sm">
           <h3 className="text-lg font-medium mb-4">Snelle Acties</h3>
@@ -78,24 +96,24 @@ const UserDashboard = () => {
         </div>
 
         <div className="p-6 bg-card rounded-lg border shadow-sm">
-          <h3 className="text-lg font-medium mb-4">Recent Alerts</h3>
+          <h3 className="text-lg font-medium mb-4">Systeem Status</h3>
           <div className="space-y-4">
-            <div className="p-3 bg-yellow-500/10 rounded-lg">
-              <div className="flex items-center gap-2 text-yellow-500">
-                <AlertCircle className="w-4 h-4" />
-                <p className="font-medium">Systeem Update</p>
+            <div className="p-3 bg-green-500/10 rounded-lg">
+              <div className="flex items-center gap-2 text-green-500">
+                <Activity className="w-4 h-4" />
+                <p className="font-medium">Trading Systeem Actief</p>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Er staat een nieuwe systeem update klaar
+                Alle systemen functioneren normaal
               </p>
             </div>
             <div className="p-3 bg-blue-500/10 rounded-lg">
               <div className="flex items-center gap-2 text-blue-500">
-                <Activity className="w-4 h-4" />
-                <p className="font-medium">Performance Alert</p>
+                <LineChart className="w-4 h-4" />
+                <p className="font-medium">Market Data Updates</p>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Positieve performance trend gedetecteerd
+                Real-time data wordt ontvangen
               </p>
             </div>
           </div>
