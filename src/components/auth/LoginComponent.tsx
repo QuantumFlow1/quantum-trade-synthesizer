@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Github, Mail } from "lucide-react"
+import { Github, Mail, Chrome } from "lucide-react"
 import { useAuth } from './AuthProvider'
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from '@/lib/supabase'
@@ -92,6 +92,20 @@ export const LoginComponent = () => {
     }
   }
 
+  const handleGoogleLogin = async () => {
+    try {
+      const { error } = await signIn.google()
+      if (error) throw error
+    } catch (error: any) {
+      console.error('Google login error:', error)
+      toast({
+        title: "Google login mislukt",
+        description: error.message || "Probeer het later opnieuw",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="w-full max-w-md space-y-8 p-8 bg-card rounded-lg shadow-lg border">
@@ -137,10 +151,17 @@ export const LoginComponent = () => {
             </div>
           </div>
 
-          <Button variant="outline" onClick={handleGithubLogin} className="w-full">
-            <Github className="mr-2 h-4 w-4" />
-            Login met GitHub
-          </Button>
+          <div className="grid gap-2">
+            <Button variant="outline" onClick={handleGoogleLogin} className="w-full">
+              <Chrome className="mr-2 h-4 w-4" />
+              Login met Google
+            </Button>
+
+            <Button variant="outline" onClick={handleGithubLogin} className="w-full">
+              <Github className="mr-2 h-4 w-4" />
+              Login met GitHub
+            </Button>
+          </div>
 
           <Button
             variant="ghost"
