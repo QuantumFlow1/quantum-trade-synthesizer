@@ -109,24 +109,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        console.error('Uitlog error:', error)
-        throw error
-      }
-      // Reset local state
+      // Reset local state first
       setSession(null)
       setUser(null)
       setUserProfile(null)
-      // Redirect naar login pagina
-      window.location.href = '/'
+      
+      // Clear any stored data in localStorage
+      localStorage.removeItem('supabase.auth.token')
+      
+      // Then attempt to sign out from Supabase
+      await supabase.auth.signOut()
+      
+      // Forceer een pagina refresh om alle state te resetten
+      window.location.reload()
     } catch (error) {
       console.error('Uitlog fout:', error)
-      // Als er een fout is, forceer een harde reset van de state
+      // Bij een fout alsnog de state resetten en pagina herladen
       setSession(null)
       setUser(null)
       setUserProfile(null)
-      window.location.href = '/'
+      window.location.reload()
     }
   }
 
