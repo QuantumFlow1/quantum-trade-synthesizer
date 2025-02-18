@@ -1,10 +1,32 @@
 
+import { useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import AdminPanel from "@/components/AdminPanel";
 import { LoginComponent } from "@/components/auth/LoginComponent";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
+  const { toast } = useToast();
+
+  // Handle hash fragment for OAuth redirects
+  useEffect(() => {
+    const handleHashFragment = async () => {
+      if (window.location.hash) {
+        // Remove the hash without triggering a reload
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+    };
+
+    handleHashFragment().catch(error => {
+      console.error('Error handling hash fragment:', error);
+      toast({
+        title: "Authentication Error",
+        description: "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
+        variant: "destructive",
+      });
+    });
+  }, [toast]);
 
   // Als er geen gebruiker is ingelogd, toon login scherm
   if (!user) {
