@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
@@ -108,39 +107,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   const signOut = async () => {
-    // Eerst lokaal opschonen
-    const cleanup = () => {
-      // Reset alle application state
+    try {
+      // Reset state first
       setSession(null)
       setUser(null)
       setUserProfile(null)
 
-      // Verwijder alle local storage items
-      for (const key of Object.keys(localStorage)) {
-        if (key.startsWith('supabase.')) {
+      // Clear Supabase items from localStorage
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
           localStorage.removeItem(key)
         }
-      }
-
-      // Verwijder alle session cookies
-      document.cookie.split(';').forEach(cookie => {
-        const name = cookie.split('=')[0].trim()
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
       })
-    }
 
-    try {
-      cleanup() // Eerst lokaal opschonen
-      
-      // Probeer daarna bij Supabase uit te loggen
-      try {
-        await supabase.auth.signOut({ scope: 'local' }) // Alleen lokaal uitloggen
-      } catch (e) {
-        console.warn('Supabase signout failed, maar lokale cleanup is succesvol:', e)
-      }
+      // Simple signout without scope
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Signout error:', error)
     } finally {
-      // Forceer een page reload om zeker te zijn dat alle state is gereset
-      window.location.href = '/'
+      // Redirect to home and force reload
+      window.location.replace('/')
     }
   }
 
