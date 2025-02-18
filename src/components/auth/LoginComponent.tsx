@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -94,8 +93,7 @@ export const LoginComponent = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      const { error } = await signIn.google()
-      if (error) throw error
+      await signIn.google()
     } catch (error: any) {
       console.error('Google login error:', error)
       toast({
