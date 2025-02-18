@@ -108,8 +108,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('Uitlog error:', error)
+        throw error
+      }
+      // Reset local state
+      setSession(null)
+      setUser(null)
+      setUserProfile(null)
+      // Redirect naar login pagina
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Uitlog fout:', error)
+      // Als er een fout is, forceer een harde reset van de state
+      setSession(null)
+      setUser(null)
+      setUserProfile(null)
+      window.location.href = '/'
+    }
   }
 
   if (isLoading) {
