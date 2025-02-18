@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
@@ -109,30 +108,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Eerst de access token verwijderen
-      localStorage.removeItem('sb-tfmlretexydslgowlkid-auth-token')
-      
-      // Dan proberen uit te loggen bij Supabase
-      await supabase.auth.signOut()
-      
-      // Reset alle state
-      setSession(null)
-      setUser(null)
-      setUserProfile(null)
-      
-      // Verwijder alle overige Supabase items
+      // Verwijder alle Supabase items uit localStorage
       Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-')) {
           localStorage.removeItem(key)
         }
       })
       
-      // Force een nieuwe pagina load zonder history
-      window.location.replace('/')
+      // Reset state
+      setSession(null)
+      setUser(null)
+      setUserProfile(null)
+      
+      // Log uit bij Supabase
+      await supabase.auth.signOut()
     } catch (error) {
       console.error('Signout error:', error)
-      // Als er een error is, alsnog redirecten
-      window.location.replace('/')
     }
   }
 
