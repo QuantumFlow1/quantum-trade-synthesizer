@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -68,6 +67,30 @@ export const LoginComponent = () => {
     }
   }
 
+  const handleGoogleLogin = async () => {
+    try {
+      await signIn.google()
+    } catch (error: any) {
+      toast({
+        title: "Google login mislukt",
+        description: error.message || "Probeer het later opnieuw",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleGithubLogin = async () => {
+    try {
+      await signIn.github()
+    } catch (error: any) {
+      toast({
+        title: "GitHub login mislukt",
+        description: error.message || "Probeer het later opnieuw",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <div className="w-full max-w-md space-y-6 p-6 bg-card rounded-lg shadow-lg">
       <div className="space-y-2 text-center">
@@ -122,7 +145,7 @@ export const LoginComponent = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Button variant="outline" disabled className="opacity-50">
+        <Button variant="outline" onClick={handleGoogleLogin}>
           <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
             <path
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -143,7 +166,7 @@ export const LoginComponent = () => {
           </svg>
           Google
         </Button>
-        <Button variant="outline" disabled className="opacity-50">
+        <Button variant="outline" onClick={handleGithubLogin}>
           <Github className="mr-2 h-4 w-4" />
           GitHub
         </Button>
