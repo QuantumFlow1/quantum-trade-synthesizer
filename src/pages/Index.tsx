@@ -12,8 +12,18 @@ const Index = () => {
   // Handle hash fragment for OAuth redirects
   useEffect(() => {
     const handleHashFragment = async () => {
-      if (window.location.hash) {
-        // Remove the hash without triggering a reload
+      if (window.location.hash || window.location.search) {
+        const hasError = window.location.search.includes('error');
+        if (hasError) {
+          const searchParams = new URLSearchParams(window.location.search);
+          const errorDescription = searchParams.get('error_description');
+          toast({
+            title: "Authenticatie Error",
+            description: errorDescription?.replace(/\+/g, ' ') || "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
+            variant: "destructive",
+          });
+        }
+        // Remove the hash and search params without triggering a reload
         window.history.replaceState(null, '', window.location.pathname);
       }
     };
@@ -21,7 +31,7 @@ const Index = () => {
     handleHashFragment().catch(error => {
       console.error('Error handling hash fragment:', error);
       toast({
-        title: "Authentication Error",
+        title: "Authenticatie Error",
         description: "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
         variant: "destructive",
       });
