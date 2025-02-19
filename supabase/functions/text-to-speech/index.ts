@@ -12,30 +12,32 @@ serve(async (req) => {
   }
 
   try {
-    const { text } = await req.json()
+    const { text, voiceId } = await req.json()
 
     if (!text) {
       throw new Error('Text is required')
     }
 
-    // Generate speech from text using OpenAI's API
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+    // Generate speech using ElevenLabs API
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Accept': 'audio/mpeg',
+        'xi-api-key': Deno.env.get('ELEVEN_LABS_API_KEY') || '',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'tts-1',
-        input: text,
-        voice: 'onyx', // Veranderd naar 'onyx' voor betere Nederlandse uitspraak
-        response_format: 'mp3',
+        text,
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        }
       }),
     })
 
     if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error?.message || 'Failed to generate speech')
+      throw new Error('Failed to generate speech')
     }
 
     // Convert audio buffer to base64

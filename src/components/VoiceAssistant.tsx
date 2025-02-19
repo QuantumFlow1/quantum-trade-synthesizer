@@ -1,10 +1,39 @@
-import { useState, useRef, useEffect } from 'react'
+
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Mic, Square, Upload, Volume2 } from 'lucide-react'
+import { Mic, Square, Upload, Volume2, User, Bot, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+const VOICE_TEMPLATES = [
+  {
+    id: "21m00Tcm4TlvDq8ikWAM",
+    name: "Rachel",
+    description: "Professionele stem",
+    prompt: "Je bent Rachel, een professionele AI assistent die altijd beleefd en behulpzaam is."
+  },
+  {
+    id: "AZnzlk1XvdvUeBnXmlld",
+    name: "Demi",
+    description: "Vriendelijke stem",
+    prompt: "Je bent Demi, een vriendelijke en enthousiaste AI assistent die mensen graag helpt."
+  },
+  {
+    id: "EXAVITQu4vr4xnSDxMaL",
+    name: "Sarah",
+    description: "Zakelijke stem",
+    prompt: "Je bent Sarah, een zakelijke AI assistent die efficiënt en direct communiceert."
+  },
+  {
+    id: "MF3mGyEYCl7XYWbV9V6O",
+    name: "Finn",
+    description: "Informele stem",
+    prompt: "Je bent Finn, een informele AI assistent die op een ontspannen manier communiceert."
+  }
+]
 
 export const VoiceAssistant = () => {
   const { toast } = useToast()
@@ -12,6 +41,7 @@ export const VoiceAssistant = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [lastTranscription, setLastTranscription] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
+  const [selectedVoice, setSelectedVoice] = useState(VOICE_TEMPLATES[0])
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const audioChunks = useRef<Blob[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -92,13 +122,13 @@ export const VoiceAssistant = () => {
       const base64Data = audioData.split('base64,')[1] || audioData
 
       const { data, error } = await supabase.functions.invoke('process-voice', {
-        body: { audioData: base64Data }
+        body: { 
+          audioData: base64Data,
+          voiceTemplate: selectedVoice.prompt
+        }
       })
 
-      if (error) {
-        console.error('Supabase function error:', error)
-        throw error
-      }
+      if (error) throw error
 
       if (!data?.transcription) {
         throw new Error('Geen transcriptie ontvangen')
@@ -128,7 +158,10 @@ export const VoiceAssistant = () => {
     setIsPlaying(true)
     try {
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
-        body: { text: lastTranscription }
+        body: { 
+          text: lastTranscription,
+          voiceId: selectedVoice.id
+        }
       })
 
       if (error) throw error
@@ -152,7 +185,7 @@ export const VoiceAssistant = () => {
 
         toast({
           title: "Afspelen",
-          description: "De tekst wordt voorgelezen...",
+          description: `Voorgelezen door ${selectedVoice.name}`,
         })
       }
     } catch (error) {
@@ -174,9 +207,31 @@ export const VoiceAssistant = () => {
   return (
     <Card className="w-full max-w-md mx-auto mt-8">
       <CardHeader>
-        <CardTitle className="text-center">Spraak Assistent</CardTitle>
+        <CardTitle className="text-center">AI Spraak Assistent</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col space-y-4">
+        <div className="flex items-center space-x-2 mb-4">
+          <User className="w-4 h-4" />
+          <Select
+            value={selectedVoice.id}
+            onValueChange={(value) => {
+              const voice = VOICE_TEMPLATES.find(v => v.id === value)
+              if (voice) setSelectedVoice(voice)
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Kies een stem" />
+            </SelectTrigger>
+            <SelectContent>
+              {VOICE_TEMPLATES.map((voice) => (
+                <SelectItem key={voice.id} value={voice.id}>
+                  {voice.name} - {voice.description}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="flex justify-center space-x-4">
           {!isRecording ? (
             <Button
@@ -212,7 +267,11 @@ export const VoiceAssistant = () => {
               disabled={isProcessing || isRecording || isPlaying}
               variant="outline"
             >
-              <Volume2 className="w-6 h-6 mr-2" />
+              {isPlaying ? (
+                <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+              ) : (
+                <Volume2 className="w-6 h-6 mr-2" />
+              )}
               Afspelen
             </Button>
           )}
@@ -227,15 +286,22 @@ export const VoiceAssistant = () => {
         />
         
         {isProcessing && (
-          <p className="text-center text-sm text-muted-foreground">
-            Audio wordt verwerkt...
-          </p>
+          <div className="flex items-center justify-center space-x-2">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <p className="text-sm text-muted-foreground">
+              Audio wordt verwerkt...
+            </p>
+          </div>
         )}
 
         {lastTranscription && (
-          <p className="text-center text-sm">
-            {lastTranscription}
-          </p>
+          <div className="p-4 bg-muted rounded-lg">
+            <div className="flex items-center space-x-2 mb-2">
+              <Bot className="w-4 h-4" />
+              <p className="text-sm font-medium">{selectedVoice.name}</p>
+            </div>
+            <p className="text-sm">{lastTranscription}</p>
+          </div>
         )}
       </CardContent>
     </Card>
