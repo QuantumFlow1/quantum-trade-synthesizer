@@ -23,10 +23,6 @@ const Index = () => {
     return <LoadingProfile />;
   }
 
-  if (userProfile.role === 'admin' || userProfile.role === 'super_admin') {
-    return <AdminPanel />;
-  }
-
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90">
       <ZoomControls
@@ -51,7 +47,11 @@ const Index = () => {
             transition={{ duration: 0.5 }}
           >
             <VoiceAssistant />
-            <UserDashboard />
+            {userProfile.role === 'admin' || userProfile.role === 'super_admin' ? (
+              <AdminPanel />
+            ) : (
+              <UserDashboard />
+            )}
           </motion.div>
         </AnimatePresence>
       </motion.div>
