@@ -1,5 +1,7 @@
 
-export const VOICE_TEMPLATES = [
+import { VoiceTemplate } from './types'
+
+export const VOICE_TEMPLATES: VoiceTemplate[] = [
   {
     id: "21m00Tcm4TlvDq8ikWAM",
     name: "Rachel",
@@ -24,4 +26,4 @@ export const VOICE_TEMPLATES = [
     description: "Informele stem",
     prompt: "Je bent Finn, een informele AI assistent die op een ontspannen manier communiceert."
   }
-] as const
+]

@@ -9,6 +9,7 @@ import { VoiceSelector } from './voice-assistant/VoiceSelector'
 import { AudioControls } from './voice-assistant/AudioControls'
 import { TranscriptionDisplay } from './voice-assistant/TranscriptionDisplay'
 import { VOICE_TEMPLATES } from '@/lib/voice-templates'
+import { VoiceTemplate } from '@/lib/types'
 
 export const VoiceAssistant = () => {
   const { toast } = useToast()
@@ -16,7 +17,7 @@ export const VoiceAssistant = () => {
   const [isProcessing, setIsProcessing] = useState(false)
   const [lastTranscription, setLastTranscription] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
-  const [selectedVoice, setSelectedVoice] = useState(VOICE_TEMPLATES[0])
+  const [selectedVoice, setSelectedVoice] = useState<VoiceTemplate>(VOICE_TEMPLATES[0])
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null)
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
