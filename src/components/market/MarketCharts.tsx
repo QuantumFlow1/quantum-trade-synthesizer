@@ -27,27 +27,16 @@ const tooltipStyle = {
 export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
   if (isLoading) return <LoadingChart />;
 
-  const commonProps = {
-    data,
-    width: "100%",
-    height: "100%",
-    children: (
-      <>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-        <XAxis dataKey="name" stroke="#888888" />
-        <YAxis stroke="#888888" />
-        <Tooltip contentStyle={tooltipStyle} />
-        <Legend />
-      </>
-    ),
-  };
-
   switch (type) {
     case 'overview':
       return (
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart {...commonProps}>
-            {commonProps.children}
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+            <XAxis dataKey="name" stroke="#888888" />
+            <YAxis stroke="#888888" />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend />
             <Bar dataKey="volume" fill="#4ade80" name="Volume" />
             <Bar dataKey="price" fill="#8b5cf6" name="Price" />
           </BarChart>
@@ -57,8 +46,12 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
     case 'volume':
       return (
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart {...commonProps}>
-            {commonProps.children}
+          <AreaChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+            <XAxis dataKey="name" stroke="#888888" />
+            <YAxis stroke="#888888" />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend />
             <Area type="monotone" dataKey="volume" fill="#4ade80" stroke="#4ade80" name="Volume" fillOpacity={0.2} />
           </AreaChart>
         </ResponsiveContainer>
@@ -67,8 +60,12 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
     case 'price':
       return (
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart {...commonProps}>
-            {commonProps.children}
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+            <XAxis dataKey="name" stroke="#888888" />
+            <YAxis stroke="#888888" />
+            <Tooltip contentStyle={tooltipStyle} />
+            <Legend />
             <Line type="monotone" dataKey="price" stroke="#8b5cf6" name="Price" />
             <Line type="monotone" dataKey="high" stroke="#4ade80" name="High" />
             <Line type="monotone" dataKey="low" stroke="#ef4444" name="Low" />
