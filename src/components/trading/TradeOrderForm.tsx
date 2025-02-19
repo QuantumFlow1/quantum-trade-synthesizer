@@ -1,25 +1,16 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { OrderTypeSelector } from "./OrderTypeSelector";
+import { OrderParameters } from "./OrderParameters";
+import { submitTrade } from "@/services/tradeService";
+import { TradeOrder } from "./types";
 
 interface TradeOrderFormProps {
   currentPrice: number;
   onSubmitOrder: (order: TradeOrder) => void;
-}
-
-interface TradeOrder {
-  type: "buy" | "sell";
-  amount: number;
-  price: number;
-  stopLoss?: number;
-  takeProfit?: number;
 }
 
 export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormProps) => {
@@ -53,21 +44,9 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     }
 
     setIsSubmitting(true);
-    console.log("Starting trade submission process");
 
     try {
-      console.log("Fetching trading pair");
-      const { data: pairs, error: pairError } = await supabase
-        .from("trading_pairs")
-        .select("id")
-        .eq("symbol", "BTC/USD")
-        .single();
-
-      if (pairError || !pairs) {
-        console.error("Trading pair error:", pairError);
-        throw new Error("Trading pair not found");
-      }
-      console.log("Found trading pair:", pairs);
+      await submitTrade(user.id, orderType, Number(amount), currentPrice);
 
       const order: TradeOrder = {
         type: orderType,
@@ -82,37 +61,6 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
       if (takeProfit && !isNaN(Number(takeProfit))) {
         order.takeProfit = Number(takeProfit);
       }
-
-      console.log("Creating trade record");
-      const { data: trade, error } = await supabase
-        .from("trades")
-        .insert({
-          user_id: user.id,
-          pair_id: pairs.id,
-          type: orderType,
-          amount: Number(amount),
-          price: currentPrice,
-          status: "pending",
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Trade creation error:", error);
-        throw error;
-      }
-      console.log("Trade created successfully:", trade);
-
-      console.log("Calling update-positions function");
-      const { error: updateError } = await supabase.functions.invoke('update-positions', {
-        body: { trade }
-      });
-
-      if (updateError) {
-        console.error("Position update error:", updateError);
-        throw updateError;
-      }
-      console.log("Position update completed");
 
       onSubmitOrder(order);
       toast({
@@ -138,68 +86,19 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
-      <div className="space-y-2">
-        <Label>Order Type</Label>
-        <RadioGroup
-          defaultValue="buy"
-          onValueChange={(value) => setOrderType(value as "buy" | "sell")}
-          className="flex space-x-4"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="buy" id="buy" />
-            <Label htmlFor="buy" className="flex items-center space-x-2 cursor-pointer">
-              <ArrowUpCircle className="w-4 h-4 text-green-500" />
-              <span>Buy</span>
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="sell" id="sell" />
-            <Label htmlFor="sell" className="flex items-center space-x-2 cursor-pointer">
-              <ArrowDownCircle className="w-4 h-4 text-red-500" />
-              <span>Sell</span>
-            </Label>
-          </div>
-        </RadioGroup>
-      </div>
+      <OrderTypeSelector 
+        value={orderType}
+        onValueChange={setOrderType}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="amount">Amount</Label>
-        <Input
-          id="amount"
-          type="number"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="bg-background/50"
-          placeholder="Enter amount..."
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="stopLoss">Stop Loss</Label>
-          <Input
-            id="stopLoss"
-            type="number"
-            value={stopLoss}
-            onChange={(e) => setStopLoss(e.target.value)}
-            className="bg-background/50"
-            placeholder="Optional..."
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="takeProfit">Take Profit</Label>
-          <Input
-            id="takeProfit"
-            type="number"
-            value={takeProfit}
-            onChange={(e) => setTakeProfit(e.target.value)}
-            className="bg-background/50"
-            placeholder="Optional..."
-          />
-        </div>
-      </div>
+      <OrderParameters
+        amount={amount}
+        stopLoss={stopLoss}
+        takeProfit={takeProfit}
+        onAmountChange={setAmount}
+        onStopLossChange={setStopLoss}
+        onTakeProfitChange={setTakeProfit}
+      />
 
       <Button 
         type="submit" 
