@@ -33,42 +33,44 @@ const MarketOverview = () => {
   }
 
   return (
-    <div className="w-full h-[600px] p-4 rounded-lg border bg-card">
-      <h2 className="text-xl font-semibold mb-4">Markt Overzicht</h2>
-      
-      <Tabs defaultValue="overview" className="w-full h-[calc(100%-2rem)]">
-        <TabsList className="mb-4">
-          <TabsTrigger value="overview">Overzicht</TabsTrigger>
-          <TabsTrigger value="volume">Volume Analyse</TabsTrigger>
-          <TabsTrigger value="price">Prijstrends</TabsTrigger>
-        </TabsList>
+    <div className="w-full bg-card rounded-lg border">
+      <div className="p-4">
+        <h2 className="text-xl font-semibold mb-4">Markt Overzicht</h2>
+        
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="overview">Overzicht</TabsTrigger>
+            <TabsTrigger value="volume">Volume Analyse</TabsTrigger>
+            <TabsTrigger value="price">Prijstrends</TabsTrigger>
+          </TabsList>
 
-        <div className="h-[calc(100%-3rem)] overflow-hidden">
-          <TabsContent value="overview" className="h-full mt-0">
-            <MarketCharts 
-              data={chartData} 
-              isLoading={isLoading} 
-              type="overview" 
-            />
-          </TabsContent>
+          <div className="h-[500px]">
+            <TabsContent value="overview" className="mt-0 h-full">
+              <MarketCharts 
+                data={chartData} 
+                isLoading={isLoading} 
+                type="overview" 
+              />
+            </TabsContent>
 
-          <TabsContent value="volume" className="h-full mt-0">
-            <MarketCharts 
-              data={chartData} 
-              isLoading={isLoading} 
-              type="volume" 
-            />
-          </TabsContent>
+            <TabsContent value="volume" className="mt-0 h-full">
+              <MarketCharts 
+                data={chartData} 
+                isLoading={isLoading} 
+                type="volume" 
+              />
+            </TabsContent>
 
-          <TabsContent value="price" className="h-full mt-0">
-            <MarketCharts 
-              data={chartData} 
-              isLoading={isLoading} 
-              type="price" 
-            />
-          </TabsContent>
-        </div>
-      </Tabs>
+            <TabsContent value="price" className="mt-0 h-full">
+              <MarketCharts 
+                data={chartData} 
+                isLoading={isLoading} 
+                type="price" 
+              />
+            </TabsContent>
+          </div>
+        </Tabs>
+      </div>
     </div>
   );
 };

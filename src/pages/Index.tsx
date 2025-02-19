@@ -4,7 +4,6 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
 import { useToast } from "@/hooks/use-toast";
 import AdminPanel from "@/components/AdminPanel";
-import UserDashboard from "@/components/UserDashboard";
 import MarketOverview from '@/components/MarketOverview';
 import TradeControls from '@/components/TradeControls';
 import RiskManagement from '@/components/RiskManagement';
@@ -14,7 +13,7 @@ const Index = () => {
   const { user, userProfile } = useAuth();
   const { toast } = useToast();
 
-  // Handle hash fragment for OAuth redirects - now with proper cleanup
+  // Handle hash fragment for OAuth redirects
   useEffect(() => {
     let isSubscribed = true;
 
@@ -56,11 +55,11 @@ const Index = () => {
       }
     });
 
-    // Cleanup function to prevent memory leaks and side effects
+    // Cleanup function
     return () => {
       isSubscribed = false;
     };
-  }, []); // Removed toast from dependencies to prevent re-renders
+  }, []); 
 
   // Als er geen gebruiker is ingelogd, toon login scherm
   if (!user) {
@@ -89,14 +88,14 @@ const Index = () => {
   // Voor normale gebruikers, toon trading interface
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <MarketOverview />
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <TradeControls />
-        <RiskManagement />
+      <div className="grid grid-cols-1 gap-6">
+        <MarketOverview />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <TradeControls />
+          <RiskManagement />
+        </div>
+        <AutoTrading />
       </div>
-      
-      <AutoTrading />
     </div>
   );
 };

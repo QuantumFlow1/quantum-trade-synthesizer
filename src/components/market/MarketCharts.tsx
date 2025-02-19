@@ -22,6 +22,7 @@ const tooltipStyle = {
   border: "none",
   borderRadius: "8px",
   color: "white",
+  padding: "8px",
 };
 
 export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
@@ -36,18 +37,16 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
   }
 
   const commonProps = {
-    width: "100%",
-    height: "100%",
     data: data,
-    margin: { top: 10, right: 30, left: 0, bottom: 0 }
+    margin: { top: 20, right: 30, left: 20, bottom: 20 }
   };
 
   switch (type) {
     case 'overview':
       return (
-        <div className="h-full">
-          <ResponsiveContainer {...commonProps}>
-            <BarChart>
+        <div className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart {...commonProps}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis dataKey="name" stroke="#888888" />
               <YAxis stroke="#888888" />
@@ -62,15 +61,22 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
 
     case 'volume':
       return (
-        <div className="h-full">
-          <ResponsiveContainer {...commonProps}>
-            <AreaChart>
+        <div className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart {...commonProps}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis dataKey="name" stroke="#888888" />
               <YAxis stroke="#888888" />
               <Tooltip contentStyle={tooltipStyle} />
               <Legend />
-              <Area type="monotone" dataKey="volume" fill="#4ade80" stroke="#4ade80" name="Volume" fillOpacity={0.2} />
+              <Area 
+                type="monotone" 
+                dataKey="volume" 
+                fill="#4ade80" 
+                stroke="#4ade80" 
+                name="Volume" 
+                fillOpacity={0.2} 
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -78,17 +84,35 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
 
     case 'price':
       return (
-        <div className="h-full">
-          <ResponsiveContainer {...commonProps}>
-            <LineChart>
+        <div className="h-full w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart {...commonProps}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis dataKey="name" stroke="#888888" />
               <YAxis stroke="#888888" />
               <Tooltip contentStyle={tooltipStyle} />
               <Legend />
-              <Line type="monotone" dataKey="price" stroke="#8b5cf6" name="Price" />
-              <Line type="monotone" dataKey="high" stroke="#4ade80" name="High" />
-              <Line type="monotone" dataKey="low" stroke="#ef4444" name="Low" />
+              <Line 
+                type="monotone" 
+                dataKey="price" 
+                stroke="#8b5cf6" 
+                name="Price" 
+                strokeWidth={2}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="high" 
+                stroke="#4ade80" 
+                name="High" 
+                strokeWidth={2}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="low" 
+                stroke="#ef4444" 
+                name="Low" 
+                strokeWidth={2}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
