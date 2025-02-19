@@ -134,10 +134,15 @@ export type Database = {
       risk_settings: {
         Row: {
           created_at: string | null
+          daily_loss_notification: boolean | null
           id: string
           max_daily_loss: number
           max_leverage: number | null
           max_position_size: number
+          portfolio_allocation_limit: number | null
+          position_size_calculation: string | null
+          risk_level: Database["public"]["Enums"]["risk_level"] | null
+          risk_reward_target: number | null
           stop_loss_percentage: number | null
           take_profit_percentage: number | null
           updated_at: string | null
@@ -145,10 +150,15 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          daily_loss_notification?: boolean | null
           id?: string
           max_daily_loss: number
           max_leverage?: number | null
           max_position_size: number
+          portfolio_allocation_limit?: number | null
+          position_size_calculation?: string | null
+          risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          risk_reward_target?: number | null
           stop_loss_percentage?: number | null
           take_profit_percentage?: number | null
           updated_at?: string | null
@@ -156,10 +166,15 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          daily_loss_notification?: boolean | null
           id?: string
           max_daily_loss?: number
           max_leverage?: number | null
           max_position_size?: number
+          portfolio_allocation_limit?: number | null
+          position_size_calculation?: string | null
+          risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          risk_reward_target?: number | null
           stop_loss_percentage?: number | null
           take_profit_percentage?: number | null
           updated_at?: string | null
@@ -306,6 +321,7 @@ export type Database = {
     Enums: {
       app_role: "viewer" | "trader" | "admin" | "super_admin"
       order_type: "market" | "limit" | "stop" | "stop_limit"
+      risk_level: "conservative" | "moderate" | "aggressive"
       subscription_tier: "free" | "basic" | "premium" | "enterprise"
       trade_status: "pending" | "executed" | "cancelled" | "failed"
       trade_type: "buy" | "sell" | "short" | "long"
