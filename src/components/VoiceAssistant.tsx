@@ -2,9 +2,10 @@
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Mic, Square, Volume2 } from 'lucide-react'
+import { Mic, Square, Upload, Volume2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
+import { Input } from '@/components/ui/input'
 
 export const VoiceAssistant = () => {
   const { toast } = useToast()
@@ -13,6 +14,7 @@ export const VoiceAssistant = () => {
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const audioChunks = useRef<Blob[]>([])
   const audioPlayer = useRef<HTMLAudioElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const startRecording = async () => {
     try {
@@ -39,14 +41,14 @@ export const VoiceAssistant = () => {
       setIsRecording(true)
       
       toast({
-        title: "Recording started",
-        description: "Speak now...",
+        title: "Opname gestart",
+        description: "Spreek nu...",
       })
     } catch (error) {
       console.error('Error accessing microphone:', error)
       toast({
-        title: "Error",
-        description: "Could not access microphone",
+        title: "Fout",
+        description: "Kon geen toegang krijgen tot de microfoon",
         variant: "destructive",
       })
     }
@@ -58,6 +60,29 @@ export const VoiceAssistant = () => {
       mediaRecorder.current.stream.getTracks().forEach(track => track.stop())
       setIsRecording(false)
     }
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('audio/')) {
+      toast({
+        title: "Fout",
+        description: "Alleen audiobestanden zijn toegestaan",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsProcessing(true)
+    const reader = new FileReader()
+    
+    reader.onloadend = async () => {
+      await processAudio(reader.result as string)
+    }
+    
+    reader.readAsDataURL(file)
   }
 
   const processAudio = async (audioData: string) => {
@@ -76,14 +101,14 @@ export const VoiceAssistant = () => {
       }
 
       toast({
-        title: "Processed",
+        title: "Verwerkt",
         description: data.transcription,
       })
     } catch (error) {
       console.error('Error processing audio:', error)
       toast({
-        title: "Error",
-        description: "Failed to process audio",
+        title: "Fout",
+        description: "Kon audio niet verwerken",
         variant: "destructive",
       })
     } finally {
@@ -91,29 +116,58 @@ export const VoiceAssistant = () => {
     }
   }
 
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click()
+  }
+
   return (
     <Card className="w-full max-w-md mx-auto mt-8">
       <CardHeader>
         <CardTitle className="text-center">Spraak Assistent</CardTitle>
       </CardHeader>
-      <CardContent className="flex justify-center space-x-4">
-        {!isRecording ? (
+      <CardContent className="flex flex-col space-y-4">
+        <div className="flex justify-center space-x-4">
+          {!isRecording ? (
+            <Button
+              onClick={startRecording}
+              disabled={isProcessing}
+              className="bg-blue-500 hover:bg-blue-600"
+            >
+              <Mic className="w-6 h-6 mr-2" />
+              Start Opname
+            </Button>
+          ) : (
+            <Button
+              onClick={stopRecording}
+              variant="destructive"
+            >
+              <Square className="w-6 h-6 mr-2" />
+              Stop Opname
+            </Button>
+          )}
+          
           <Button
-            onClick={startRecording}
-            disabled={isProcessing}
-            className="bg-blue-500 hover:bg-blue-600"
+            onClick={triggerFileUpload}
+            disabled={isProcessing || isRecording}
+            variant="outline"
           >
-            <Mic className="w-6 h-6 mr-2" />
-            Start Opname
+            <Upload className="w-6 h-6 mr-2" />
+            Upload Audio
           </Button>
-        ) : (
-          <Button
-            onClick={stopRecording}
-            variant="destructive"
-          >
-            <Square className="w-6 h-6 mr-2" />
-            Stop Opname
-          </Button>
+        </div>
+        
+        <Input
+          type="file"
+          ref={fileInputRef}
+          className="hidden"
+          accept="audio/*"
+          onChange={handleFileUpload}
+        />
+        
+        {isProcessing && (
+          <p className="text-center text-sm text-muted-foreground">
+            Audio wordt verwerkt...
+          </p>
         )}
       </CardContent>
     </Card>
