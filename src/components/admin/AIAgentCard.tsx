@@ -1,14 +1,16 @@
 
-import { Play, Pause, X } from "lucide-react";
+import { Play, Pause, X, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Agent {
   id: string;
   name: string;
   status: "active" | "paused" | "terminated";
-  type: "trading" | "analysis" | "risk";
+  type: "trading" | "analysis" | "risk" | "finance" | "compliance";
   performance: string;
   lastActive: string;
+  department: string;
+  expertise: string[];
 }
 
 interface AIAgentCardProps {
@@ -20,9 +22,15 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
   return (
     <div className="p-4 rounded-lg bg-secondary/50 flex items-center justify-between">
       <div className="space-y-1">
-        <div className="font-medium">{agent.name}</div>
+        <div className="font-medium flex items-center gap-2">
+          <Brain className="w-4 h-4" />
+          {agent.name}
+        </div>
         <div className="text-sm text-muted-foreground">
-          Type: {agent.type} • Performance: {agent.performance} • Laatst actief: {agent.lastActive}
+          Afdeling: {agent.department} • Expertise: {agent.expertise.join(", ")}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          Performance: {agent.performance} • Laatst actief: {agent.lastActive}
         </div>
         <div className={`text-sm ${
           agent.status === "active" ? "text-green-400" : 

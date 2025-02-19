@@ -16,6 +16,8 @@ interface Agent {
   type: "trading" | "analysis" | "risk";
   performance: string;
   lastActive: string;
+  department: string;
+  expertise: string[];
 }
 
 const AdminPanel = () => {
@@ -25,27 +27,43 @@ const AdminPanel = () => {
   const [agents, setAgents] = useState<Agent[]>([
     {
       id: "1",
+      name: "Risk Management Assistant",
+      status: "active",
+      type: "risk",
+      performance: "97% accuracy",
+      lastActive: "Nu",
+      department: "Risk Management",
+      expertise: ["Risk Analysis", "Portfolio Management", "Market Risk"]
+    },
+    {
+      id: "2",
       name: "Trading Bot Alpha",
       status: "active",
       type: "trading",
       performance: "+15.4%",
-      lastActive: "Nu"
-    },
-    {
-      id: "2",
-      name: "Market Analyzer Beta",
-      status: "paused",
-      type: "analysis",
-      performance: "98% accuracy",
-      lastActive: "5 min geleden"
+      lastActive: "Nu",
+      department: "Trading",
+      expertise: ["Technical Analysis", "Market Making", "Trend Following"]
     },
     {
       id: "3",
-      name: "Risk Manager Gamma",
+      name: "Compliance Monitor",
       status: "active",
-      type: "risk",
-      performance: "Low risk",
-      lastActive: "Nu"
+      type: "compliance",
+      performance: "100% compliance",
+      lastActive: "5 min geleden",
+      department: "Compliance",
+      expertise: ["Regulatory Compliance", "KYC/AML", "Audit Support"]
+    },
+    {
+      id: "4",
+      name: "Financial Analyst",
+      status: "paused",
+      type: "finance",
+      performance: "98% accuracy",
+      lastActive: "1 uur geleden",
+      department: "Finance",
+      expertise: ["Financial Analysis", "Reporting", "Budgeting"]
     }
   ]);
 
@@ -103,7 +121,9 @@ const AdminPanel = () => {
       status: "paused",
       type: "analysis",
       performance: "N/A",
-      lastActive: "Nooit"
+      lastActive: "Nooit",
+      department: "N/A",
+      expertise: []
     };
 
     setAgents(current => [...current, newAgent]);
@@ -175,7 +195,7 @@ const AdminPanel = () => {
       )}
 
       <div className="mb-6">
-        <h3 className="text-lg font-medium mb-4">AI Agent Management</h3>
+        <h3 className="text-lg font-medium mb-4">Departement AI Assistenten</h3>
         <div className="space-y-4">
           {agents.filter(agent => agent.status !== "terminated").map((agent) => (
             <AIAgentCard 
