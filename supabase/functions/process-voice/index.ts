@@ -13,25 +13,26 @@ serve(async (req) => {
   }
 
   try {
-    const { audioData } = await req.json()
+    const { audioData, voiceTemplate } = await req.json()
     
     if (!audioData) {
-      throw new Error('No audio data provided')
+      throw new Error('Geen audio data ontvangen')
     }
 
-    // Remove the data URL prefix if present
+    // Verwijder de data URL prefix als die aanwezig is
     const base64Data = audioData.includes('base64,') 
       ? audioData.split('base64,')[1] 
       : audioData
 
-    // Prepare form data for Whisper API
+    // Voorbereiden van form data voor Whisper API
     const formData = new FormData()
     const audioBlob = new Blob([Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))], { type: 'audio/webm' })
     formData.append('file', audioBlob, 'audio.webm')
     formData.append('model', 'whisper-1')
+    formData.append('language', 'nl')
 
-    // Send to Whisper API for transcription
-    const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    // Stuur naar OpenAI Whisper API voor transcriptie
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
@@ -39,20 +40,17 @@ serve(async (req) => {
       body: formData,
     })
 
-    if (!whisperResponse.ok) {
-      const errorData = await whisperResponse.text()
+    if (!response.ok) {
+      const errorData = await response.text()
       console.error('Whisper API error:', errorData)
       throw new Error(`Whisper API error: ${errorData}`)
     }
 
-    const { text: transcription } = await whisperResponse.json()
-    console.log('Transcription received:', transcription)
+    const { text: transcription } = await response.json()
+    console.log('Transcriptie ontvangen:', transcription)
 
     return new Response(
-      JSON.stringify({ 
-        transcription,
-        audioResponse: null
-      }),
+      JSON.stringify({ transcription }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
