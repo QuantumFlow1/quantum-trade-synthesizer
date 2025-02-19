@@ -1,63 +1,17 @@
-import { useState, useEffect } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine, Bar } from "recharts";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Activity, TrendingUp, TrendingDown, CandlestickChart, BarChart2 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Uitgebreide data met OHLC en technische indicatoren
-const generateData = () => {
-  const basePrice = 45000;
-  const points = 24;
-  return Array.from({ length: points }, (_, i) => {
-    const hour = i.toString().padStart(2, '0') + ":00";
-    const randomChange = Math.random() * 1000 - 500;
-    const open = basePrice + randomChange;
-    const high = open + Math.random() * 200;
-    const low = open - Math.random() * 200;
-    const close = (open + high + low) / 3;
-    const volume = Math.random() * 100 + 50;
-    
-    // Uitgebreide technische indicatoren
-    const sma = (open + close) / 2;
-    const ema = sma * 0.8 + (Math.random() * 100 - 50);
-    const rsi = Math.random() * 100;
-    const macd = Math.random() * 20 - 10;
-    const macdSignal = macd + (Math.random() * 4 - 2);
-    const macdHistogram = macd - macdSignal;
-    const bollingerUpper = high + (Math.random() * 300);
-    const bollingerLower = low - (Math.random() * 300);
-    const stochastic = Math.random() * 100;
-    const adx = Math.random() * 100;
-    
-    return {
-      name: hour,
-      open,
-      high,
-      low,
-      close,
-      volume,
-      sma,
-      ema,
-      rsi,
-      macd,
-      macdSignal,
-      macdHistogram,
-      bollingerUpper,
-      bollingerLower,
-      stochastic,
-      adx,
-      trend: close > open ? "up" : "down"
-    };
-  });
-};
+import { useState, useEffect } from "react";
+import { Activity, CandlestickChart, BarChart2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { generateTradingData, type TradingDataPoint } from "@/utils/tradingData";
+import { PriceCards } from "./trading/PriceCards";
+import { ChartViews } from "./trading/ChartViews";
+import { IndicatorSelector } from "./trading/IndicatorSelector";
 
 const TradingChart = () => {
-  const [data, setData] = useState(generateData());
+  const [data, setData] = useState<TradingDataPoint[]>(generateTradingData());
   const [view, setView] = useState<"price" | "volume" | "indicators">("price");
   const [indicator, setIndicator] = useState<"sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx">("sma");
 
-  // Simuleer real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
       setData(prev => {
@@ -67,23 +21,31 @@ const TradingChart = () => {
         const newClose = lastValue + randomChange;
         const hour = new Date().getHours().toString().padStart(2, '0') + ":00";
         
+        const open = lastValue;
+        const high = Math.max(lastValue, newClose) + Math.random() * 200;
+        const low = Math.min(lastValue, newClose) - Math.random() * 200;
+        const sma = (lastValue + newClose) / 2;
+        const ema = sma * 0.8 + (Math.random() * 100 - 50);
+        const macd = Math.random() * 20 - 10;
+        const macdSignal = macd + (Math.random() * 4 - 2);
+        
         newData.push({
           name: hour,
-          open: lastValue,
-          high: Math.max(lastValue, newClose) + Math.random() * 200,
-          low: Math.min(lastValue, newClose) - Math.random() * 200,
+          open,
+          high,
+          low,
           close: newClose,
           volume: Math.random() * 100 + 50,
-          sma: (lastValue + newClose) / 2,
-          ema: (lastValue + newClose) / 2,
+          sma,
+          ema,
           rsi: Math.random() * 100,
-          macd: Math.random() * 20 - 10,
-          macdSignal:  Math.random() * 20 - 10,
-          macdHistogram:  Math.random() * 20 - 10,
-          bollingerUpper:  Math.max(lastValue, newClose) + Math.random() * 200,
-          bollingerLower:  Math.min(lastValue, newClose) - Math.random() * 200,
-          stochastic:  Math.random() * 20 - 10,
-          adx:  Math.random() * 20 - 10,
+          macd,
+          macdSignal,
+          macdHistogram: macd - macdSignal,
+          bollingerUpper: high + (Math.random() * 300),
+          bollingerLower: low - (Math.random() * 300),
+          stochastic: Math.random() * 100,
+          adx: Math.random() * 100,
           trend: newClose > lastValue ? "up" : "down"
         });
         
@@ -94,50 +56,9 @@ const TradingChart = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const latestPrice = data[data.length - 1].close;
-  const priceChange = data[data.length - 1].close - data[0].close;
-  const percentageChange = ((priceChange / data[0].close) * 100).toFixed(2);
-  const isPositive = priceChange >= 0;
-
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 backdrop-blur-xl bg-secondary/20 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Current Price</span>
-            {isPositive ? (
-              <TrendingUp className="w-4 h-4 text-green-500" />
-            ) : (
-              <TrendingDown className="w-4 h-4 text-red-500" />
-            )}
-          </div>
-          <div className="mt-2 text-2xl font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
-            ${latestPrice.toFixed(2)}
-          </div>
-        </Card>
-
-        <Card className="p-4 backdrop-blur-xl bg-secondary/20 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">24h Change</span>
-            <Activity className="w-4 h-4" />
-          </div>
-          <div className={`mt-2 text-2xl font-bold ${
-            isPositive ? "text-green-500" : "text-red-500"
-          }`}>
-            {isPositive ? "+" : ""}{percentageChange}%
-          </div>
-        </Card>
-
-        <Card className="p-4 backdrop-blur-xl bg-secondary/20 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Volume</span>
-            <Activity className="w-4 h-4" />
-          </div>
-          <div className="mt-2 text-2xl font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
-            ${(data.reduce((acc, curr) => acc + curr.volume, 0) * 1000).toLocaleString()}
-          </div>
-        </Card>
-      </div>
+      <PriceCards data={data} />
 
       <Tabs defaultValue="price" className="w-full">
         <TabsList className="mb-4 bg-background/50 backdrop-blur-md">
@@ -157,192 +78,25 @@ const TradingChart = () => {
 
         <TabsContent value="price">
           <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4ade80" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#4ade80" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis dataKey="name" stroke="#888888" />
-                <YAxis stroke="#888888" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(0,0,0,0.8)",
-                    border: "none",
-                    borderRadius: "8px",
-                    color: "white",
-                    backdropFilter: "blur(16px)"
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="close"
-                  stroke="#4ade80"
-                  fillOpacity={1}
-                  fill="url(#colorValue)"
-                />
-                <ReferenceLine
-                  y={data[0].close}
-                  stroke="rgba(255,255,255,0.2)"
-                  strokeDasharray="3 3"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <ChartViews data={data} view="price" indicator={indicator} />
           </div>
         </TabsContent>
 
         <TabsContent value="volume">
           <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
-                <defs>
-                  <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis dataKey="name" stroke="#888888" />
-                <YAxis stroke="#888888" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "rgba(0,0,0,0.8)",
-                    border: "none",
-                    borderRadius: "8px",
-                    color: "white",
-                    backdropFilter: "blur(16px)"
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="volume"
-                  stroke="#8b5cf6"
-                  fillOpacity={1}
-                  fill="url(#colorVolume)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <ChartViews data={data} view="volume" indicator={indicator} />
           </div>
         </TabsContent>
 
         <TabsContent value="indicators">
           <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={indicator === "sma" ? "default" : "outline"}
-                onClick={() => setIndicator("sma")}
-                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
-              >
-                SMA
-              </Button>
-              <Button
-                variant={indicator === "ema" ? "default" : "outline"}
-                onClick={() => setIndicator("ema")}
-                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
-              >
-                EMA
-              </Button>
-              <Button
-                variant={indicator === "rsi" ? "default" : "outline"}
-                onClick={() => setIndicator("rsi")}
-                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
-              >
-                RSI
-              </Button>
-              <Button
-                variant={indicator === "macd" ? "default" : "outline"}
-                onClick={() => setIndicator("macd")}
-                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
-              >
-                MACD
-              </Button>
-              <Button
-                variant={indicator === "bollinger" ? "default" : "outline"}
-                onClick={() => setIndicator("bollinger")}
-                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
-              >
-                Bollinger
-              </Button>
-              <Button
-                variant={indicator === "stochastic" ? "default" : "outline"}
-                onClick={() => setIndicator("stochastic")}
-                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
-              >
-                Stochastic
-              </Button>
-              <Button
-                variant={indicator === "adx" ? "default" : "outline"}
-                onClick={() => setIndicator("adx")}
-                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
-              >
-                ADX
-              </Button>
-            </div>
+            <IndicatorSelector 
+              currentIndicator={indicator}
+              onIndicatorChange={setIndicator}
+            />
             
             <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-              <ResponsiveContainer width="100%" height="100%">
-                {indicator === "bollinger" ? (
-                  <LineChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="name" stroke="#888888" />
-                    <YAxis stroke="#888888" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(0,0,0,0.8)",
-                        border: "none",
-                        borderRadius: "8px",
-                        color: "white",
-                        backdropFilter: "blur(16px)"
-                      }}
-                    />
-                    <Line type="monotone" dataKey="close" stroke="#4ade80" strokeWidth={2} />
-                    <Line type="monotone" dataKey="bollingerUpper" stroke="#8b5cf6" strokeWidth={1} strokeDasharray="3 3" />
-                    <Line type="monotone" dataKey="bollingerLower" stroke="#8b5cf6" strokeWidth={1} strokeDasharray="3 3" />
-                  </LineChart>
-                ) : indicator === "macd" ? (
-                  <LineChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="name" stroke="#888888" />
-                    <YAxis stroke="#888888" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(0,0,0,0.8)",
-                        border: "none",
-                        borderRadius: "8px",
-                        color: "white",
-                        backdropFilter: "blur(16px)"
-                      }}
-                    />
-                    <Line type="monotone" dataKey="macd" stroke="#4ade80" strokeWidth={2} />
-                    <Line type="monotone" dataKey="macdSignal" stroke="#8b5cf6" strokeWidth={2} />
-                    <Bar dataKey="macdHistogram" fill="#6366f1" />
-                  </LineChart>
-                ) : (
-                  <LineChart data={data}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="name" stroke="#888888" />
-                    <YAxis stroke="#888888" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(0,0,0,0.8)",
-                        border: "none",
-                        borderRadius: "8px",
-                        color: "white",
-                        backdropFilter: "blur(16px)"
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey={indicator}
-                      stroke="#8b5cf6"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                )}
-              </ResponsiveContainer>
+              <ChartViews data={data} view="indicators" indicator={indicator} />
             </div>
           </div>
         </TabsContent>
