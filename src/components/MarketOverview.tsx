@@ -1,14 +1,12 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarketCharts } from "./market/MarketCharts";
-import { useMarketData } from "@/hooks/use-market-data";
+import { useMarketWebSocket } from "@/hooks/use-market-websocket";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 
 const MarketOverview = () => {
-  const { data: marketData, isLoading, error } = useMarketData();
-
-  console.log('MarketOverview received data:', marketData);
+  const { marketData } = useMarketWebSocket();
 
   const groupedData = marketData?.reduce((acc, item) => {
     if (!acc[item.market]) {
@@ -25,14 +23,13 @@ const MarketOverview = () => {
     return acc;
   }, {} as Record<string, any[]>) || {};
 
-  if (error) {
+  if (!marketData || marketData.length === 0) {
     return (
-      <Alert variant="destructive">
+      <Alert>
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
+        <AlertTitle>Wachten op market data...</AlertTitle>
         <AlertDescription>
-          Er is een fout opgetreden bij het laden van de marktdata. 
-          Probeer de pagina te verversen.
+          De verbinding met de markt wordt tot stand gebracht.
         </AlertDescription>
       </Alert>
     );
@@ -72,7 +69,7 @@ const MarketOverview = () => {
               >
                 <MarketCharts 
                   data={groupedData[market] || []} 
-                  isLoading={isLoading} 
+                  isLoading={!marketData} 
                   type="overview" 
                 />
               </TabsContent>
