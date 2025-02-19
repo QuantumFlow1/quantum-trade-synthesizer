@@ -25,59 +25,77 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Welkom, {userProfile?.email}</h1>
-          <p className="text-muted-foreground">Trading Dashboard</p>
+    <div className="min-h-screen p-6 space-y-6 bg-gradient-to-br from-background via-background/95 to-background/90 animate-in fade-in duration-1000">
+      {/* Command Center Header */}
+      <div className="relative backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 rounded-lg" />
+        <div className="relative flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-gradient">Welcome Commander, {userProfile?.email}</h1>
+            <p className="text-muted-foreground">Quantum Trading Interface</p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={signOut}
+            className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Uitloggen
+          </Button>
         </div>
-        <Button variant="outline" onClick={signOut}>
-          <LogOut className="w-4 h-4 mr-2" />
-          Uitloggen
-        </Button>
       </div>
 
-      {/* Top Row - Market Overview en Performance */}
+      {/* Main Command Center Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <MarketOverview />
-        <PerformanceMetrics />
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+          <MarketOverview />
+        </div>
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_32px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+          <PerformanceMetrics />
+        </div>
       </div>
 
-      {/* Trading Chart & Controls */}
-      <div className="grid grid-cols-1 gap-6">
-        <div className="bg-card rounded-lg border shadow-sm p-6">
+      {/* Trading Interface */}
+      <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+        <div className="space-y-6">
           <TradingChart />
-          <div className="mt-6">
-            <TradeControls />
+          <TradeControls />
+        </div>
+      </div>
+
+      {/* Trading Controls Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+          <AutoTrading />
+        </div>
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+          <RiskManagement />
+        </div>
+      </div>
+
+      {/* Data & Alerts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+          <h3 className="text-lg font-medium mb-4 text-gradient">Recent Transactions</h3>
+          <TransactionList />
+        </div>
+        <div className="space-y-6">
+          <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+            <Alerts />
+          </div>
+          <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+            <FinancialAdvice />
           </div>
         </div>
       </div>
 
-      {/* Automatic Trading & Risk Management */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AutoTrading />
-        <RiskManagement />
-      </div>
-
-      {/* Transactions & Alerts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-lg border shadow-sm p-6">
-          <h3 className="text-lg font-medium mb-4">Recente Transacties</h3>
-          <TransactionList />
-        </div>
-        <div className="space-y-6">
-          <Alerts />
-          <FinancialAdvice />
-        </div>
-      </div>
-
-      {/* Quick Actions */}
+      {/* Quick Actions & System Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="p-6 bg-card rounded-lg border shadow-sm">
-          <h3 className="text-lg font-medium mb-4">Snelle Acties</h3>
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+          <h3 className="text-lg font-medium mb-4 text-gradient">Quick Actions</h3>
           <div className="space-y-2">
             <Button 
-              className="w-full justify-start" 
+              className="w-full justify-start backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10" 
               variant="outline"
               onClick={() => handleAction("Data analyse")}
             >
@@ -85,7 +103,7 @@ const UserDashboard = () => {
               Start Data Analyse
             </Button>
             <Button 
-              className="w-full justify-start" 
+              className="w-full justify-start backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10" 
               variant="outline"
               onClick={() => handleAction("Rapport generatie")}
             >
@@ -95,10 +113,10 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        <div className="p-6 bg-card rounded-lg border shadow-sm">
-          <h3 className="text-lg font-medium mb-4">Systeem Status</h3>
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+          <h3 className="text-lg font-medium mb-4 text-gradient">System Status</h3>
           <div className="space-y-4">
-            <div className="p-3 bg-green-500/10 rounded-lg">
+            <div className="p-3 backdrop-blur-md bg-green-500/10 border border-green-500/20 rounded-lg">
               <div className="flex items-center gap-2 text-green-500">
                 <Activity className="w-4 h-4" />
                 <p className="font-medium">Trading Systeem Actief</p>
@@ -107,7 +125,7 @@ const UserDashboard = () => {
                 Alle systemen functioneren normaal
               </p>
             </div>
-            <div className="p-3 bg-blue-500/10 rounded-lg">
+            <div className="p-3 backdrop-blur-md bg-blue-500/10 border border-blue-500/20 rounded-lg">
               <div className="flex items-center gap-2 text-blue-500">
                 <LineChart className="w-4 h-4" />
                 <p className="font-medium">Market Data Updates</p>
