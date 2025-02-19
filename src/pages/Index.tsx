@@ -4,10 +4,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
 import { useToast } from "@/hooks/use-toast";
 import AdminPanel from "@/components/AdminPanel";
-import MarketOverview from '@/components/MarketOverview';
-import TradeControls from '@/components/TradeControls';
-import RiskManagement from '@/components/RiskManagement';
-import AutoTrading from '@/components/AutoTrading';
+import UserDashboard from "@/components/UserDashboard";
 import { motion, AnimatePresence } from "framer-motion";
 import { ZoomIn, ZoomOut, Minimize2, Maximize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -178,7 +175,7 @@ const Index = () => {
 
       {/* Main Content with Scale Transform */}
       <motion.div
-        className="container mx-auto p-4 space-y-6"
+        className="container mx-auto p-4"
         style={{ 
           scale,
           transition: "scale 0.2s ease-out"
@@ -190,32 +187,8 @@ const Index = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
-            className="grid grid-cols-1 gap-6"
           >
-            <MarketOverview />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <TradeControls />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <RiskManagement />
-              </motion.div>
-            </div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <AutoTrading />
-            </motion.div>
+            <UserDashboard />
           </motion.div>
         </AnimatePresence>
       </motion.div>
