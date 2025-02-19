@@ -1,17 +1,7 @@
 
 import { Play, Pause, X, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface Agent {
-  id: string;
-  name: string;
-  status: "active" | "paused" | "terminated";
-  type: "trading" | "analysis" | "risk" | "finance" | "compliance" | "security" | "legal";
-  performance: string;
-  lastActive: string;
-  department: string;
-  expertise: string[];
-}
+import { Agent } from "@/types/agent";
 
 interface AIAgentCardProps {
   agent: Agent;
