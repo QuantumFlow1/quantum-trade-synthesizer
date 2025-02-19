@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from "./use-toast";
 import { MarketData } from '@/components/market/types';
+import { supabase } from '@/lib/supabase';
 
 export const useMarketData = () => {
   const { toast } = useToast();
@@ -11,18 +12,13 @@ export const useMarketData = () => {
     queryFn: async () => {
       try {
         console.log('Fetching market data...');
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-market-data`, {
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-        });
+        const { data, error } = await supabase.functions.invoke('fetch-market-data');
         
-        if (!response.ok) {
-          console.error('Market data fetch failed:', response.status);
-          throw new Error('Failed to fetch market data');
+        if (error) {
+          console.error('Market data fetch failed:', error);
+          throw error;
         }
         
-        const data = await response.json();
         console.log('Market data received:', data);
         return data as MarketData[];
       } catch (error) {
