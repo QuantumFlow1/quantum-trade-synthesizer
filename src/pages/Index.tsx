@@ -14,39 +14,53 @@ const Index = () => {
   const { user, userProfile } = useAuth();
   const { toast } = useToast();
 
-  // Handle hash fragment for OAuth redirects
+  // Handle hash fragment for OAuth redirects - now with proper cleanup
   useEffect(() => {
+    let isSubscribed = true;
+
     const handleHashFragment = async () => {
-      console.log("Current URL:", window.location.href);
-      console.log("Hash:", window.location.hash);
-      console.log("Search:", window.location.search);
-      
-      if (window.location.hash || window.location.search) {
-        const hasError = window.location.search.includes('error');
+      if (!isSubscribed) return;
+
+      const currentUrl = window.location.href;
+      const hasHash = window.location.hash;
+      const searchParams = window.location.search;
+
+      if (hasHash || searchParams) {
+        const hasError = searchParams.includes('error');
         if (hasError) {
-          const searchParams = new URLSearchParams(window.location.search);
-          const errorDescription = searchParams.get('error_description');
-          console.log("Auth Error:", errorDescription);
-          toast({
-            title: "Authenticatie Error",
-            description: errorDescription?.replace(/\+/g, ' ') || "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
-            variant: "destructive",
-          });
+          const params = new URLSearchParams(searchParams);
+          const errorDescription = params.get('error_description');
+          if (isSubscribed) {
+            toast({
+              title: "Authenticatie Error",
+              description: errorDescription?.replace(/\+/g, ' ') || "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
+              variant: "destructive",
+            });
+          }
         }
         // Remove the hash and search params without triggering a reload
-        window.history.replaceState(null, '', window.location.pathname);
+        if (isSubscribed) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
       }
     };
 
     handleHashFragment().catch(error => {
-      console.error('Error handling hash fragment:', error);
-      toast({
-        title: "Authenticatie Error",
-        description: "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
-        variant: "destructive",
-      });
+      if (isSubscribed) {
+        console.error('Error handling hash fragment:', error);
+        toast({
+          title: "Authenticatie Error",
+          description: "Er is een fout opgetreden bij het inloggen. Probeer het opnieuw.",
+          variant: "destructive",
+        });
+      }
     });
-  }, [toast]);
+
+    // Cleanup function to prevent memory leaks and side effects
+    return () => {
+      isSubscribed = false;
+    };
+  }, []); // Removed toast from dependencies to prevent re-renders
 
   // Als er geen gebruiker is ingelogd, toon login scherm
   if (!user) {
