@@ -49,28 +49,28 @@ function generateMockMarketData() {
     { market: 'CAC40', symbol: 'BNP', basePrice: 65 },
     
     // Japanese Market - NIKKEI
-    { market: 'NIKKEI', symbol: 'TYO:7203', basePrice: 2800 }, // Toyota
-    { market: 'NIKKEI', symbol: 'TYO:6758', basePrice: 12500 }, // Sony
-    { market: 'NIKKEI', symbol: 'TYO:7974', basePrice: 6500 }, // Nintendo
-    { market: 'NIKKEI', symbol: 'TYO:9432', basePrice: 4200 }, // NTT
-    { market: 'NIKKEI', symbol: 'TYO:6861', basePrice: 5600 }, // Keyence
-    { market: 'NIKKEI', symbol: 'TYO:9984', basePrice: 6300 }, // SoftBank
+    { market: 'NIKKEI', symbol: 'TYO:7203', basePrice: 2800 },
+    { market: 'NIKKEI', symbol: 'TYO:6758', basePrice: 12500 },
+    { market: 'NIKKEI', symbol: 'TYO:7974', basePrice: 6500 },
+    { market: 'NIKKEI', symbol: 'TYO:9432', basePrice: 4200 },
+    { market: 'NIKKEI', symbol: 'TYO:6861', basePrice: 5600 },
+    { market: 'NIKKEI', symbol: 'TYO:9984', basePrice: 6300 },
     
     // Hong Kong Market - HSI
-    { market: 'HSI', symbol: 'HKG:0700', basePrice: 290 }, // Tencent
-    { market: 'HSI', symbol: 'HKG:9988', basePrice: 85 }, // Alibaba
-    { market: 'HSI', symbol: 'HKG:0941', basePrice: 45 }, // China Mobile
-    { market: 'HSI', symbol: 'HKG:0005', basePrice: 65 }, // HSBC
-    { market: 'HSI', symbol: 'HKG:1299', basePrice: 70 }, // AIA
-    { market: 'HSI', symbol: 'HKG:3690', basePrice: 110 }, // Meituan
+    { market: 'HSI', symbol: 'HKG:0700', basePrice: 290 },
+    { market: 'HSI', symbol: 'HKG:9988', basePrice: 85 },
+    { market: 'HSI', symbol: 'HKG:0941', basePrice: 45 },
+    { market: 'HSI', symbol: 'HKG:0005', basePrice: 65 },
+    { market: 'HSI', symbol: 'HKG:1299', basePrice: 70 },
+    { market: 'HSI', symbol: 'HKG:3690', basePrice: 110 },
     
     // Chinese Market - SSE
-    { market: 'SSE', symbol: 'SHA:601398', basePrice: 5 }, // ICBC
-    { market: 'SSE', symbol: 'SHA:601988', basePrice: 3.5 }, // Bank of China
-    { market: 'SSE', symbol: 'SHA:600519', basePrice: 1700 }, // Kweichow Moutai
-    { market: 'SSE', symbol: 'SHA:601318', basePrice: 65 }, // Ping An
-    { market: 'SSE', symbol: 'SHA:600036', basePrice: 35 }, // CMB
-    { market: 'SSE', symbol: 'SHA:601628', basePrice: 42 }, // China Life
+    { market: 'SSE', symbol: 'SHA:601398', basePrice: 5 },
+    { market: 'SSE', symbol: 'SHA:601988', basePrice: 3.5 },
+    { market: 'SSE', symbol: 'SHA:600519', basePrice: 1700 },
+    { market: 'SSE', symbol: 'SHA:601318', basePrice: 65 },
+    { market: 'SSE', symbol: 'SHA:600036', basePrice: 35 },
+    { market: 'SSE', symbol: 'SHA:601628', basePrice: 42 },
     
     // Crypto Markets
     { market: 'Crypto', symbol: 'BTC/USD', basePrice: 45000 },
@@ -82,18 +82,32 @@ function generateMockMarketData() {
   ];
 
   const data = markets.map(({ market, symbol, basePrice }) => {
-    const randomFactor = 0.95 + Math.random() * 0.1; // +/- 5%
+    // Dynamische prijsbeweging met meer volatiliteit
+    const volatility = market === 'Crypto' ? 0.1 : 0.05;
+    const randomFactor = 0.95 + Math.random() * volatility * 2;
     const price = basePrice * randomFactor;
-    const volume = Math.floor(1000000 + Math.random() * 9000000);
     
+    // Volume met realistische patronen
+    const baseVolume = market === 'Crypto' ? 1000000 : 100000;
+    const volumeMultiplier = 1 + Math.sin(Date.now() / 10000) * 0.5; // Cyclisch volume
+    const volume = Math.floor(baseVolume * volumeMultiplier * (0.5 + Math.random()));
+    
+    // Berekening van 24-uurs verandering
+    const change24h = parseFloat(((randomFactor - 1) * 100).toFixed(2));
+    
+    // High/Low berekening met realistische spreads
+    const spread = market === 'Crypto' ? 0.05 : 0.02;
+    const high24h = price * (1 + spread * Math.random());
+    const low24h = price * (1 - spread * Math.random());
+
     return {
       market,
       symbol,
       price: parseFloat(price.toFixed(2)),
       volume,
-      change24h: parseFloat((randomFactor - 1) * 100).toFixed(2),
-      high24h: parseFloat((price * 1.02).toFixed(2)),
-      low24h: parseFloat((price * 0.98).toFixed(2)),
+      change24h,
+      high24h: parseFloat(high24h.toFixed(2)),
+      low24h: parseFloat(low24h.toFixed(2)),
       timestamp: Date.now()
     };
   });
@@ -102,6 +116,7 @@ function generateMockMarketData() {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -110,9 +125,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Generating global market data...');
+    console.log('Generating real-time market data...');
     const mockData = generateMockMarketData();
-    console.log('Market data generated:', mockData);
+    console.log('Market data generated:', mockData.length, 'items');
 
     return new Response(
       JSON.stringify(mockData),
