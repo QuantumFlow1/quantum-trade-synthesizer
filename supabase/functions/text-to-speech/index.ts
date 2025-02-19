@@ -18,7 +18,11 @@ serve(async (req) => {
       throw new Error('Text is required')
     }
 
-    // Generate speech using ElevenLabs API
+    if (!voiceId) {
+      throw new Error('Voice ID is required')
+    }
+
+    // ElevenLabs API aanroepen voor text-to-speech
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
@@ -37,14 +41,13 @@ serve(async (req) => {
     })
 
     if (!response.ok) {
-      throw new Error('Failed to generate speech')
+      const errorData = await response.json()
+      throw new Error(`ElevenLabs API error: ${JSON.stringify(errorData)}`)
     }
 
-    // Convert audio buffer to base64
+    // Audio buffer naar base64 converteren
     const arrayBuffer = await response.arrayBuffer()
-    const base64Audio = btoa(
-      String.fromCharCode(...new Uint8Array(arrayBuffer))
-    )
+    const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
@@ -53,6 +56,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error('Text-to-speech error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
