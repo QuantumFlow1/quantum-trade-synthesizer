@@ -12,10 +12,22 @@ import AutoTrading from "./AutoTrading";
 import RiskManagement from "./RiskManagement";
 import Alerts from "./Alerts";
 import FinancialAdvice from "./FinancialAdvice";
+import { DashboardSettings } from "./DashboardSettings";
+import { useState } from "react";
 
 const UserDashboard = () => {
   const { signOut, userProfile } = useAuth();
   const { toast } = useToast();
+  const [visibleWidgets, setVisibleWidgets] = useState({
+    market: true,
+    performance: true,
+    trading: true,
+    autoTrading: true,
+    riskManagement: true,
+    transactions: true,
+    alerts: true,
+    advice: true
+  });
 
   const handleAction = (action: string) => {
     toast({
@@ -26,6 +38,8 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen p-6 space-y-6 bg-gradient-to-br from-background via-background/95 to-background/90 animate-in fade-in duration-1000">
+      <DashboardSettings />
+      
       {/* Command Center Header */}
       <div className="relative backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 rounded-lg" />
@@ -46,48 +60,70 @@ const UserDashboard = () => {
       </div>
 
       {/* Main Command Center Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-          <MarketOverview />
+      {visibleWidgets.market && visibleWidgets.performance && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {visibleWidgets.market && (
+            <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+              <MarketOverview />
+            </div>
+          )}
+          {visibleWidgets.performance && (
+            <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_32px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+              <PerformanceMetrics />
+            </div>
+          )}
         </div>
-        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_8px_24px_-4px_rgba(0,0,0,0.3)] hover:shadow-[0_12px_32px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-          <PerformanceMetrics />
-        </div>
-      </div>
+      )}
 
       {/* Trading Interface */}
-      <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-        <div className="space-y-6">
-          <TradingChart />
-          <TradeControls />
+      {visibleWidgets.trading && (
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+          <div className="space-y-6">
+            <TradingChart />
+            <TradeControls />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Trading Controls Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-          <AutoTrading />
+      {(visibleWidgets.autoTrading || visibleWidgets.riskManagement) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {visibleWidgets.autoTrading && (
+            <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+              <AutoTrading />
+            </div>
+          )}
+          {visibleWidgets.riskManagement && (
+            <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+              <RiskManagement />
+            </div>
+          )}
         </div>
-        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-          <RiskManagement />
-        </div>
-      </div>
+      )}
 
       {/* Data & Alerts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-          <h3 className="text-lg font-medium mb-4 text-gradient">Recent Transactions</h3>
-          <TransactionList />
-        </div>
-        <div className="space-y-6">
-          <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-            <Alerts />
+      {(visibleWidgets.transactions || visibleWidgets.alerts || visibleWidgets.advice) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {visibleWidgets.transactions && (
+            <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+              <h3 className="text-lg font-medium mb-4 text-gradient">Recent Transactions</h3>
+              <TransactionList />
+            </div>
+          )}
+          <div className="space-y-6">
+            {visibleWidgets.alerts && (
+              <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+                <Alerts />
+              </div>
+            )}
+            {visibleWidgets.advice && (
+              <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+                <FinancialAdvice />
+              </div>
+            )}
           </div>
-          <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-            <FinancialAdvice />
-          </div>
         </div>
-      </div>
+      )}
 
       {/* Quick Actions & System Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
