@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Agent } from "@/types/agent";
 import { useToast } from "@/hooks/use-toast";
@@ -6,6 +5,36 @@ import { useToast } from "@/hooks/use-toast";
 export const useAgents = () => {
   const { toast } = useToast();
   const [agents, setAgents] = useState<Agent[]>([
+    {
+      id: "trading-bot-1",
+      name: "Alpha Trading AI",
+      status: "active",
+      type: "trading",
+      performance: "+28.5% YTD",
+      lastActive: "Nu",
+      department: "Trading",
+      expertise: ["Technical Analysis", "Pattern Recognition", "Risk Management"],
+      riskLevel: "medium",
+      tradingStrategy: "Mean Reversion + Trend Following",
+      technicalIndicators: ["RSI", "MACD", "Bollinger Bands", "Volume Profile"],
+      metrics: {
+        winRate: 68.5,
+        profitFactor: 2.14,
+        sharpeRatio: 1.85,
+        maxDrawdown: 12.3,
+        totalTrades: 1247,
+        successfulTrades: 854
+      },
+      capabilities: [
+        "Real-time Market Analysis",
+        "Multi-timeframe Trading",
+        "Risk-adjusted Position Sizing",
+        "Automated Trade Execution"
+      ],
+      allowedPairs: ["BTC/USD", "ETH/USD", "EUR/USD", "GBP/USD"],
+      maxPositionSize: 100000,
+      currentPositions: 3
+    },
     {
       id: "1",
       name: "Risk Management Assistant",
@@ -112,20 +141,31 @@ export const useAgents = () => {
 
   const handleAddAgent = () => {
     const newAgent: Agent = {
-      id: `${agents.length + 1}`,
-      name: "Nieuwe AI Agent",
+      id: `trading-bot-${agents.length + 1}`,
+      name: "Nieuwe Trading AI",
       status: "paused",
-      type: "analysis",
+      type: "trading",
       performance: "N/A",
       lastActive: "Nooit",
-      department: "N/A",
-      expertise: []
+      department: "Trading",
+      expertise: ["Technical Analysis"],
+      riskLevel: "low",
+      tradingStrategy: "Wacht op configuratie",
+      technicalIndicators: ["RSI", "MACD"],
+      metrics: {
+        winRate: 0,
+        profitFactor: 0,
+        sharpeRatio: 0,
+        maxDrawdown: 0,
+        totalTrades: 0,
+        successfulTrades: 0
+      }
     };
 
     setAgents(current => [...current, newAgent]);
     
     toast({
-      title: "Nieuwe Agent Toegevoegd",
+      title: "Nieuwe Trading Agent Toegevoegd",
       description: "AI Agent is klaar voor configuratie",
     });
   };
