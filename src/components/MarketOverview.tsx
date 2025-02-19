@@ -10,14 +10,20 @@ const MarketOverview = () => {
 
   console.log('MarketOverview received data:', marketData);
 
-  const chartData = marketData?.map(item => ({
-    name: item.symbol,
-    volume: item.volume,
-    price: item.price,
-    change: item.change24h,
-    high: item.high24h,
-    low: item.low24h
-  })) || [];
+  const groupedData = marketData?.reduce((acc, item) => {
+    if (!acc[item.market]) {
+      acc[item.market] = [];
+    }
+    acc[item.market].push({
+      name: item.symbol,
+      volume: item.volume,
+      price: item.price,
+      change: item.change24h,
+      high: item.high24h,
+      low: item.low24h
+    });
+    return acc;
+  }, {} as Record<string, any[]>) || {};
 
   if (error) {
     return (
@@ -41,53 +47,43 @@ const MarketOverview = () => {
           Markt Overzicht
         </h2>
         
-        <Tabs defaultValue="overview" className="w-full">
+        <Tabs defaultValue="Crypto" className="w-full">
           <TabsList className="mb-6 bg-background/50 backdrop-blur-md relative">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
             <TabsTrigger 
-              value="overview" 
+              value="Crypto" 
               className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
             >
-              Overzicht
+              Crypto
             </TabsTrigger>
             <TabsTrigger 
-              value="volume" 
+              value="NASDAQ" 
               className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
             >
-              Volume Analyse
+              NASDAQ
             </TabsTrigger>
             <TabsTrigger 
-              value="price" 
+              value="EU" 
               className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
             >
-              Prijstrends
+              Europese Markten
             </TabsTrigger>
           </TabsList>
 
           <div className="h-[500px] transition-transform will-change-transform duration-500 ease-out">
-            <TabsContent value="overview" className="mt-0 h-full animate-in fade-in-50 duration-500 ease-out">
-              <MarketCharts 
-                data={chartData} 
-                isLoading={isLoading} 
-                type="overview" 
-              />
-            </TabsContent>
-
-            <TabsContent value="volume" className="mt-0 h-full animate-in fade-in-50 duration-500 ease-out">
-              <MarketCharts 
-                data={chartData} 
-                isLoading={isLoading} 
-                type="volume" 
-              />
-            </TabsContent>
-
-            <TabsContent value="price" className="mt-0 h-full animate-in fade-in-50 duration-500 ease-out">
-              <MarketCharts 
-                data={chartData} 
-                isLoading={isLoading} 
-                type="price" 
-              />
-            </TabsContent>
+            {Object.entries(groupedData).map(([market, data]) => (
+              <TabsContent 
+                key={market}
+                value={market} 
+                className="mt-0 h-full animate-in fade-in-50 duration-500 ease-out"
+              >
+                <MarketCharts 
+                  data={data} 
+                  isLoading={isLoading} 
+                  type="overview" 
+                />
+              </TabsContent>
+            ))}
           </div>
         </Tabs>
       </div>

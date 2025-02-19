@@ -7,14 +7,28 @@ const corsHeaders = {
 }
 
 function generateMockMarketData() {
-  const pairs = ['BTC/USD', 'ETH/USD', 'XRP/USD'];
-  const data = pairs.map(symbol => {
-    const basePrice = symbol.startsWith('BTC') ? 45000 : symbol.startsWith('ETH') ? 2500 : 1.5;
+  const markets = [
+    // Crypto pairs
+    { market: 'Crypto', symbol: 'BTC/USD', basePrice: 45000 },
+    { market: 'Crypto', symbol: 'ETH/USD', basePrice: 2500 },
+    { market: 'Crypto', symbol: 'XRP/USD', basePrice: 1.5 },
+    // NASDAQ stocks
+    { market: 'NASDAQ', symbol: 'AAPL', basePrice: 175 },
+    { market: 'NASDAQ', symbol: 'MSFT', basePrice: 380 },
+    { market: 'NASDAQ', symbol: 'GOOGL', basePrice: 140 },
+    // European stocks
+    { market: 'EU', symbol: 'AEX', basePrice: 850 },
+    { market: 'EU', symbol: 'DAX', basePrice: 17000 },
+    { market: 'EU', symbol: 'CAC40', basePrice: 7900 }
+  ];
+
+  const data = markets.map(({ market, symbol, basePrice }) => {
     const randomFactor = 0.95 + Math.random() * 0.1; // +/- 5%
     const price = basePrice * randomFactor;
     const volume = Math.floor(1000000 + Math.random() * 9000000);
     
     return {
+      market,
       symbol,
       price: parseFloat(price.toFixed(2)),
       volume,
