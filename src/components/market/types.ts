@@ -18,3 +18,4 @@ export interface ChartData {
   high: number;
   low: number;
 }
+
