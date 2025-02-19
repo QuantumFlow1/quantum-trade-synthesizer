@@ -18,19 +18,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// Add health check function
+// Add connection check function
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('count')
-      .limit(1)
+    const { data, error } = await supabase.functions.invoke('fetch-market-data')
     
     if (error) {
       console.error('Supabase connection error:', error)
       return false
     }
     
+    console.log('Supabase connection successful:', data)
     return true
   } catch (error) {
     console.error('Supabase connection check failed:', error)

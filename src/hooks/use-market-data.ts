@@ -11,12 +11,29 @@ export const useMarketData = () => {
     queryKey: ['marketData'],
     queryFn: async () => {
       try {
-        console.log('Fetching market data...');
-        const { data, error } = await supabase.functions.invoke('fetch-market-data');
+        console.log('Checking Supabase connection...');
+        const { data, error } = await supabase.functions.invoke('fetch-market-data', {
+          method: 'GET'
+        });
         
         if (error) {
           console.error('Market data fetch failed:', error);
+          toast({
+            title: "Connectie Error",
+            description: "Er kon geen verbinding worden gemaakt met de server. Controleer je internetverbinding.",
+            variant: "destructive",
+          });
           throw error;
+        }
+        
+        if (!data) {
+          console.error('No market data received');
+          toast({
+            title: "Data Error",
+            description: "Er zijn geen marktgegevens ontvangen. Probeer het later opnieuw.",
+            variant: "destructive",
+          });
+          throw new Error('No market data received');
         }
         
         console.log('Market data received:', data);
