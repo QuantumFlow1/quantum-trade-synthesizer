@@ -111,8 +111,8 @@ export const ChartViews = ({ data, view, indicator }: ChartViewsProps) => {
               <Line type="monotone" dataKey="macdSignal" stroke="#8b5cf6" strokeWidth={2} />
               <Bar 
                 dataKey="macdHistogram" 
-                fill="#4ade80"
-                stroke="#4ade80"
+                fill={({payload}) => (payload.macdHistogram >= 0 ? "#4ade80" : "#ef4444")}
+                stroke={({payload}) => (payload.macdHistogram >= 0 ? "#4ade80" : "#ef4444")}
               />
             </ComposedChart>
           </ResponsiveContainer>
