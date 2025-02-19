@@ -33,19 +33,36 @@ const MarketOverview = () => {
   }
 
   return (
-    <div className="w-full bg-card rounded-lg border">
-      <div className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Markt Overzicht</h2>
+    <div className="w-full bg-secondary/30 backdrop-blur-lg border border-secondary/50 rounded-lg shadow-lg transition-all duration-300">
+      <div className="p-6">
+        <h2 className="text-2xl font-semibold mb-6 bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+          Markt Overzicht
+        </h2>
         
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="overview">Overzicht</TabsTrigger>
-            <TabsTrigger value="volume">Volume Analyse</TabsTrigger>
-            <TabsTrigger value="price">Prijstrends</TabsTrigger>
+          <TabsList className="mb-6 bg-background/50 backdrop-blur-md">
+            <TabsTrigger 
+              value="overview" 
+              className="data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300"
+            >
+              Overzicht
+            </TabsTrigger>
+            <TabsTrigger 
+              value="volume" 
+              className="data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300"
+            >
+              Volume Analyse
+            </TabsTrigger>
+            <TabsTrigger 
+              value="price" 
+              className="data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300"
+            >
+              Prijstrends
+            </TabsTrigger>
           </TabsList>
 
-          <div className="h-[500px]">
-            <TabsContent value="overview" className="mt-0 h-full">
+          <div className="h-[500px] transition-all duration-500 ease-in-out">
+            <TabsContent value="overview" className="mt-0 h-full animate-in fade-in-50 duration-500">
               <MarketCharts 
                 data={chartData} 
                 isLoading={isLoading} 
@@ -53,7 +70,7 @@ const MarketOverview = () => {
               />
             </TabsContent>
 
-            <TabsContent value="volume" className="mt-0 h-full">
+            <TabsContent value="volume" className="mt-0 h-full animate-in fade-in-50 duration-500">
               <MarketCharts 
                 data={chartData} 
                 isLoading={isLoading} 
@@ -61,7 +78,7 @@ const MarketOverview = () => {
               />
             </TabsContent>
 
-            <TabsContent value="price" className="mt-0 h-full">
+            <TabsContent value="price" className="mt-0 h-full animate-in fade-in-50 duration-500">
               <MarketCharts 
                 data={chartData} 
                 isLoading={isLoading} 
