@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
@@ -12,9 +11,11 @@ export const VoiceAssistant = () => {
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [lastTranscription, setLastTranscription] = useState<string>('')
+  const [isPlaying, setIsPlaying] = useState(false)
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const audioChunks = useRef<Blob[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const startRecording = async () => {
     try {
@@ -88,7 +89,6 @@ export const VoiceAssistant = () => {
   const processAudio = async (audioData: string) => {
     setIsProcessing(true)
     try {
-      // Zorg ervoor dat we alleen het base64 deel van de data URL gebruiken
       const base64Data = audioData.split('base64,')[1] || audioData
 
       const { data, error } = await supabase.functions.invoke('process-voice', {
@@ -122,17 +122,49 @@ export const VoiceAssistant = () => {
     }
   }
 
-  const playTranscription = () => {
-    if (!lastTranscription) return
+  const playTranscription = async () => {
+    if (!lastTranscription || isPlaying) return
     
-    const utterance = new SpeechSynthesisUtterance(lastTranscription)
-    utterance.lang = 'nl-NL' // Nederlandse stem
-    speechSynthesis.speak(utterance)
-    
-    toast({
-      title: "Afspelen",
-      description: "De tekst wordt voorgelezen...",
-    })
+    setIsPlaying(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: { text: lastTranscription }
+      })
+
+      if (error) throw error
+
+      if (data?.audioContent) {
+        const audioBlob = await fetch(`data:audio/mp3;base64,${data.audioContent}`).then(r => r.blob())
+        const audioUrl = URL.createObjectURL(audioBlob)
+        
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl
+          await audioRef.current.play()
+        } else {
+          const audio = new Audio(audioUrl)
+          audioRef.current = audio
+          audio.onended = () => {
+            setIsPlaying(false)
+            URL.revokeObjectURL(audioUrl)
+          }
+          await audio.play()
+        }
+
+        toast({
+          title: "Afspelen",
+          description: "De tekst wordt voorgelezen...",
+        })
+      }
+    } catch (error) {
+      console.error('Error playing audio:', error)
+      toast({
+        title: "Fout",
+        description: "Kon de tekst niet afspelen",
+        variant: "destructive",
+      })
+    } finally {
+      setIsPlaying(false)
+    }
   }
 
   const triggerFileUpload = () => {
@@ -177,7 +209,7 @@ export const VoiceAssistant = () => {
           {lastTranscription && (
             <Button
               onClick={playTranscription}
-              disabled={isProcessing || isRecording}
+              disabled={isProcessing || isRecording || isPlaying}
               variant="outline"
             >
               <Volume2 className="w-6 h-6 mr-2" />
