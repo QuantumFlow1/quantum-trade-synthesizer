@@ -7,37 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Process base64 in chunks to prevent memory issues
-function processBase64Chunks(base64String: string, chunkSize = 32768) {
-  const base64Data = base64String.split(',')[1]; // Remove data URL prefix
-  const chunks: Uint8Array[] = [];
-  let position = 0;
-  
-  while (position < base64Data.length) {
-    const chunk = base64Data.slice(position, position + chunkSize);
-    const binaryChunk = atob(chunk);
-    const bytes = new Uint8Array(binaryChunk.length);
-    
-    for (let i = 0; i < binaryChunk.length; i++) {
-      bytes[i] = binaryChunk.charCodeAt(i);
-    }
-    
-    chunks.push(bytes);
-    position += chunkSize;
-  }
-
-  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.length;
-  }
-
-  return result;
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -50,18 +19,16 @@ serve(async (req) => {
       throw new Error('No audio data provided')
     }
 
-    console.log('Received audio data length:', audioData.length);
+    // Remove the data URL prefix if present
+    const base64Data = audioData.includes('base64,') 
+      ? audioData.split('base64,')[1] 
+      : audioData
 
-    // Process audio in chunks
-    const audioBlob = processBase64Chunks(audioData);
-    console.log('Processed audio blob size:', audioBlob.length);
-    
     // Prepare form data for Whisper API
     const formData = new FormData()
-    formData.append('file', new Blob([audioBlob], { type: 'audio/webm' }), 'audio.webm')
+    const audioBlob = new Blob([Uint8Array.from(atob(base64Data), c => c.charCodeAt(0))], { type: 'audio/webm' })
+    formData.append('file', audioBlob, 'audio.webm')
     formData.append('model', 'whisper-1')
-
-    console.log('Sending request to Whisper API...');
 
     // Send to Whisper API for transcription
     const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {

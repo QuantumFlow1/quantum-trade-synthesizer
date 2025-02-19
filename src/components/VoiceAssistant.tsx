@@ -89,7 +89,10 @@ export const VoiceAssistant = () => {
     setIsProcessing(true)
     try {
       const { data, error } = await supabase.functions.invoke('process-voice', {
-        body: { audioData }
+        body: { audioData },
+        headers: {
+          Authorization: `Bearer ${supabase.auth.getSession()}`
+        }
       })
 
       if (error) throw error
