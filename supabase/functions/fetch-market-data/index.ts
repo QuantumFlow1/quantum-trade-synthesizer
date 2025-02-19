@@ -1,82 +1,68 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface MarketData {
-  symbol: string
-  price: number
-  volume: number
-  change24h: number
-  high24h: number
-  low24h: number
-  timestamp: number
+function generateMockMarketData() {
+  const pairs = ['BTC/USD', 'ETH/USD', 'XRP/USD'];
+  const data = pairs.map(symbol => {
+    const basePrice = symbol.startsWith('BTC') ? 45000 : symbol.startsWith('ETH') ? 2500 : 1.5;
+    const randomFactor = 0.95 + Math.random() * 0.1; // +/- 5%
+    const price = basePrice * randomFactor;
+    const volume = Math.floor(1000000 + Math.random() * 9000000);
+    
+    return {
+      symbol,
+      price: parseFloat(price.toFixed(2)),
+      volume,
+      change24h: parseFloat((randomFactor - 1) * 100).toFixed(2),
+      high24h: parseFloat((price * 1.02).toFixed(2)),
+      low24h: parseFloat((price * 0.98).toFixed(2)),
+      timestamp: Date.now()
+    };
+  });
+
+  return data;
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
   }
 
   try {
     console.log('Generating mock market data...');
-    
-    // Mock market data for demo purposes
-    const mockMarketData: MarketData[] = [
-      {
-        symbol: 'BTC/USD',
-        price: 45000 + Math.random() * 1000,
-        volume: 1000000 + Math.random() * 500000,
-        change24h: 2.5 + Math.random(),
-        high24h: 46000,
-        low24h: 44000,
-        timestamp: Date.now()
-      },
-      {
-        symbol: 'ETH/USD',
-        price: 2800 + Math.random() * 100,
-        volume: 500000 + Math.random() * 100000,
-        change24h: 1.8 + Math.random(),
-        high24h: 2900,
-        low24h: 2700,
-        timestamp: Date.now()
-      },
-      {
-        symbol: 'XRP/USD',
-        price: 0.50 + Math.random() * 0.05,
-        volume: 200000 + Math.random() * 50000,
-        change24h: -0.5 + Math.random(),
-        high24h: 0.55,
-        low24h: 0.48,
-        timestamp: Date.now()
-      }
-    ];
-
-    console.log('Returning market data:', mockMarketData);
+    const mockData = generateMockMarketData();
+    console.log('Mock data generated:', mockData);
 
     return new Response(
-      JSON.stringify(mockMarketData),
+      JSON.stringify(mockData),
       { 
         headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        status: 200,
+        status: 200 
       },
     )
   } catch (error) {
     console.error('Error in fetch-market-data:', error);
-    
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+        status: 500 
+      },
     )
   }
 })
