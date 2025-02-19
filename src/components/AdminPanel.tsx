@@ -1,3 +1,4 @@
+
 import { Shield, Plus, LogOut, Users, Database, Activity, AlertTriangle, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +14,7 @@ interface Agent {
   id: string;
   name: string;
   status: "active" | "paused" | "terminated";
-  type: "trading" | "analysis" | "risk";
+  type: "trading" | "analysis" | "risk" | "finance" | "compliance" | "security" | "legal";
   performance: string;
   lastActive: string;
   department: string;
@@ -64,6 +65,26 @@ const AdminPanel = () => {
       lastActive: "1 uur geleden",
       department: "Finance",
       expertise: ["Financial Analysis", "Reporting", "Budgeting"]
+    },
+    {
+      id: "5",
+      name: "Security Guardian",
+      status: "active",
+      type: "security",
+      performance: "99.9% uptime",
+      lastActive: "Nu",
+      department: "Security",
+      expertise: ["Threat Detection", "Access Control", "Security Monitoring"]
+    },
+    {
+      id: "6",
+      name: "Legal Advisor",
+      status: "active",
+      type: "legal",
+      performance: "100% compliance",
+      lastActive: "10 min geleden",
+      department: "Legal",
+      expertise: ["Regulatory Compliance", "Contract Analysis", "Legal Risk Assessment"]
     }
   ]);
 

@@ -6,7 +6,7 @@ interface Agent {
   id: string;
   name: string;
   status: "active" | "paused" | "terminated";
-  type: "trading" | "analysis" | "risk" | "finance" | "compliance";
+  type: "trading" | "analysis" | "risk" | "finance" | "compliance" | "security" | "legal";
   performance: string;
   lastActive: string;
   department: string;
