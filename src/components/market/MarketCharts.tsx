@@ -48,13 +48,22 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
     );
   }
 
+  const handleMarketClick = (market: string) => {
+    const element = document.querySelector(`[data-market="${market}"]`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   const MarketMetrics = () => (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6 animate-in fade-in duration-700">
       {data.map((item, index) => (
         <Card 
           key={item.name} 
-          className="p-4 backdrop-blur-xl bg-secondary/30 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300 hover:translate-y-[-2px] animate-in fade-in duration-700"
+          className="p-4 backdrop-blur-xl bg-secondary/30 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300 hover:translate-y-[-2px] animate-in fade-in duration-700 cursor-pointer"
           style={{ animationDelay: `${index * 100}ms` }}
+          onClick={() => handleMarketClick(item.name)}
+          data-market={item.name}
         >
           <div className="flex flex-col relative overflow-hidden">
             {/* Glow effect for positive/negative changes */}
