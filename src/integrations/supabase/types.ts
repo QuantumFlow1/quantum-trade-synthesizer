@@ -175,9 +175,12 @@ export type Database = {
           created_at: string | null
           executed_at: string | null
           id: string
+          limit_price: number | null
+          order_type: Database["public"]["Enums"]["order_type"] | null
           pair_id: string
           price: number
           status: Database["public"]["Enums"]["trade_status"] | null
+          stop_price: number | null
           type: Database["public"]["Enums"]["trade_type"]
           updated_at: string | null
           user_id: string
@@ -189,9 +192,12 @@ export type Database = {
           created_at?: string | null
           executed_at?: string | null
           id?: string
+          limit_price?: number | null
+          order_type?: Database["public"]["Enums"]["order_type"] | null
           pair_id: string
           price: number
           status?: Database["public"]["Enums"]["trade_status"] | null
+          stop_price?: number | null
           type: Database["public"]["Enums"]["trade_type"]
           updated_at?: string | null
           user_id: string
@@ -203,9 +209,12 @@ export type Database = {
           created_at?: string | null
           executed_at?: string | null
           id?: string
+          limit_price?: number | null
+          order_type?: Database["public"]["Enums"]["order_type"] | null
           pair_id?: string
           price?: number
           status?: Database["public"]["Enums"]["trade_status"] | null
+          stop_price?: number | null
           type?: Database["public"]["Enums"]["trade_type"]
           updated_at?: string | null
           user_id?: string
@@ -296,6 +305,7 @@ export type Database = {
     }
     Enums: {
       app_role: "viewer" | "trader" | "admin" | "super_admin"
+      order_type: "market" | "limit" | "stop" | "stop_limit"
       subscription_tier: "free" | "basic" | "premium" | "enterprise"
       trade_status: "pending" | "executed" | "cancelled" | "failed"
       trade_type: "buy" | "sell" | "short" | "long"

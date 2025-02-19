@@ -5,8 +5,11 @@ import { TradeOrder } from "@/components/trading/types";
 export const submitTrade = async (
   userId: string,
   orderType: "buy" | "sell",
+  orderExecutionType: "market" | "limit" | "stop" | "stop_limit",
   amount: number,
-  currentPrice: number
+  currentPrice: number,
+  limitPrice?: number,
+  stopPrice?: number
 ) => {
   console.log("Starting trade submission process");
 
@@ -28,8 +31,11 @@ export const submitTrade = async (
       user_id: userId,
       pair_id: pairs.id,
       type: orderType,
+      order_type: orderExecutionType,
       amount: amount,
       price: currentPrice,
+      limit_price: limitPrice,
+      stop_price: stopPrice,
       status: "pending",
     })
     .select()
