@@ -26,31 +26,35 @@ const AdminContent = ({ onDashboardClick }: AdminContentProps) => {
   };
 
   return (
-    <div className="p-6">
-      <AdminHeader 
-        onDashboardClick={onDashboardClick}
-        onAddAgent={handleAddAgent}
-        onSignOut={signOut}
-      />
-
-      <StatisticsPanel />
-
-      {userProfile?.role === 'super_admin' && (
-        <SuperAdminMonitor 
-          userCount={1234}
-          systemLoad={67}
-          errorRate={0.5}
+    <div className="p-2 sm:p-4 md:p-6">
+      <div className="max-w-7xl mx-auto">
+        <AdminHeader 
+          onDashboardClick={onDashboardClick}
+          onAddAgent={handleAddAgent}
+          onSignOut={signOut}
         />
-      )}
 
-      <AIAgentsList 
-        agents={agents}
-        onAction={handleAgentAction}
-      />
+        <div className="space-y-4 sm:space-y-6">
+          <StatisticsPanel />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <QuickActions onVerify={handleVerify} />
-        <SystemAlerts />
+          {userProfile?.role === 'super_admin' && (
+            <SuperAdminMonitor 
+              userCount={1234}
+              systemLoad={67}
+              errorRate={0.5}
+            />
+          )}
+
+          <AIAgentsList 
+            agents={agents}
+            onAction={handleAgentAction}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <QuickActions onVerify={handleVerify} />
+            <SystemAlerts />
+          </div>
+        </div>
       </div>
     </div>
   );
