@@ -53,6 +53,39 @@ export type Database = {
           },
         ]
       }
+      positions: {
+        Row: {
+          amount: number
+          average_entry_price: number
+          created_at: string | null
+          id: string
+          pair_id: string
+          unrealized_pnl: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          average_entry_price: number
+          created_at?: string | null
+          id?: string
+          pair_id: string
+          unrealized_pnl?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          average_entry_price?: number
+          created_at?: string | null
+          id?: string
+          pair_id?: string
+          unrealized_pnl?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -95,6 +128,42 @@ export type Database = {
             | Database["public"]["Enums"]["subscription_tier"]
             | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      risk_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          max_daily_loss: number
+          max_leverage: number | null
+          max_position_size: number
+          stop_loss_percentage: number | null
+          take_profit_percentage: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          max_daily_loss: number
+          max_leverage?: number | null
+          max_position_size: number
+          stop_loss_percentage?: number | null
+          take_profit_percentage?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          max_daily_loss?: number
+          max_leverage?: number | null
+          max_position_size?: number
+          stop_loss_percentage?: number | null
+          take_profit_percentage?: number | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
