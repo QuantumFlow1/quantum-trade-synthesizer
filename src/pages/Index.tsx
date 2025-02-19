@@ -3,6 +3,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
 import AdminPanel from "@/components/AdminPanel";
 import UserDashboard from "@/components/UserDashboard";
+import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { motion, AnimatePresence } from "framer-motion";
 import { useZoomControls } from "@/hooks/use-zoom-controls";
 import { useOAuthRedirect } from "@/hooks/use-oauth-redirect";
@@ -49,6 +50,7 @@ const Index = () => {
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.5 }}
           >
+            <VoiceAssistant />
             <UserDashboard />
           </motion.div>
         </AnimatePresence>
