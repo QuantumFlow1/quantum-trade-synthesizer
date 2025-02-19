@@ -8,6 +8,8 @@ import { AlertCircle } from "lucide-react";
 const MarketOverview = () => {
   const { data: marketData, isLoading, error } = useMarketData();
 
+  console.log('MarketOverview received data:', marketData);
+
   const chartData = marketData?.map(item => ({
     name: item.symbol,
     volume: item.volume,

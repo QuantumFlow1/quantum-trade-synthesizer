@@ -27,10 +27,20 @@ const tooltipStyle = {
 export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
   if (isLoading) return <LoadingChart />;
 
+  console.log('Rendering MarketCharts with data:', data);
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-full w-full flex items-center justify-center bg-secondary/20 rounded-lg">
+        <p className="text-sm text-muted-foreground">Geen marktdata beschikbaar</p>
+      </div>
+    );
+  }
+
   switch (type) {
     case 'overview':
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={400}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
             <XAxis dataKey="name" stroke="#888888" />
@@ -45,7 +55,7 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
 
     case 'volume':
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={400}>
           <AreaChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
             <XAxis dataKey="name" stroke="#888888" />
@@ -59,7 +69,7 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
 
     case 'price':
       return (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height={400}>
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
             <XAxis dataKey="name" stroke="#888888" />
