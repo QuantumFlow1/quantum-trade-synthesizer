@@ -24,8 +24,8 @@ export const VoiceAssistant = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
 
-  const handleStopRecording = () => {
-    const audioUrl = stopRecording()
+  const handleStopRecording = async () => {
+    const audioUrl = await stopRecording()
     if (audioUrl) {
       setPreviewAudioUrl(audioUrl)
     }

@@ -11,7 +11,9 @@ export const useAudioRecorder = () => {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      mediaRecorder.current = new MediaRecorder(stream)
+      mediaRecorder.current = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      })
       audioChunks.current = []
 
       mediaRecorder.current.ondataavailable = (event) => {
@@ -37,14 +39,19 @@ export const useAudioRecorder = () => {
 
   const stopRecording = () => {
     if (mediaRecorder.current && isRecording) {
-      mediaRecorder.current.stop()
-      mediaRecorder.current.stream.getTracks().forEach(track => track.stop())
-      setIsRecording(false)
-      
-      const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' })
-      return URL.createObjectURL(audioBlob)
+      return new Promise<string>((resolve) => {
+        mediaRecorder.current!.onstop = () => {
+          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm;codecs=opus' })
+          const audioUrl = URL.createObjectURL(audioBlob)
+          resolve(audioUrl)
+        }
+        
+        mediaRecorder.current!.stop()
+        mediaRecorder.current!.stream.getTracks().forEach(track => track.stop())
+        setIsRecording(false)
+      })
     }
-    return null
+    return Promise.resolve(null)
   }
 
   return {
