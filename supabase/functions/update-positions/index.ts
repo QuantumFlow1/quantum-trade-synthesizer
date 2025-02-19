@@ -20,23 +20,40 @@ serve(async (req) => {
 
     // Parse the trade data from the request
     const { trade } = await req.json();
+    console.log("Received trade data:", trade);
+    
     const { user_id, pair_id, amount, price, type } = trade;
 
+    // Log the extracted values
+    console.log("Processing trade:", {
+      user_id,
+      pair_id,
+      amount,
+      price,
+      type
+    });
+
     // Fetch existing position
-    const { data: existingPosition } = await supabaseClient
+    const { data: existingPosition, error: positionError } = await supabaseClient
       .from('positions')
       .select('*')
       .eq('user_id', user_id)
       .eq('pair_id', pair_id)
       .single();
 
+    if (positionError) {
+      console.log("No existing position found:", positionError.message);
+    } else {
+      console.log("Found existing position:", existingPosition);
+    }
+
     if (type === 'buy') {
       if (existingPosition) {
-        // Update existing position
+        console.log("Updating existing position");
         const newAmount = existingPosition.amount + amount;
         const newAvgPrice = ((existingPosition.amount * existingPosition.average_entry_price) + (amount * price)) / newAmount;
         
-        await supabaseClient
+        const { error: updateError } = await supabaseClient
           .from('positions')
           .update({
             amount: newAmount,
@@ -44,9 +61,16 @@ serve(async (req) => {
             updated_at: new Date().toISOString()
           })
           .eq('id', existingPosition.id);
+
+        if (updateError) {
+          console.error("Error updating position:", updateError);
+          throw updateError;
+        }
+        
+        console.log("Position updated successfully");
       } else {
-        // Create new position
-        await supabaseClient
+        console.log("Creating new position");
+        const { error: insertError } = await supabaseClient
           .from('positions')
           .insert({
             user_id,
@@ -54,27 +78,51 @@ serve(async (req) => {
             amount,
             average_entry_price: price
           });
+
+        if (insertError) {
+          console.error("Error creating position:", insertError);
+          throw insertError;
+        }
+        
+        console.log("New position created successfully");
       }
     } else if (type === 'sell') {
       if (existingPosition) {
+        console.log("Processing sell order for existing position");
         const newAmount = existingPosition.amount - amount;
         
         if (newAmount <= 0) {
-          // Close position
-          await supabaseClient
+          console.log("Closing position completely");
+          const { error: deleteError } = await supabaseClient
             .from('positions')
             .delete()
             .eq('id', existingPosition.id);
+
+          if (deleteError) {
+            console.error("Error deleting position:", deleteError);
+            throw deleteError;
+          }
+          
+          console.log("Position closed successfully");
         } else {
-          // Update position
-          await supabaseClient
+          console.log("Reducing position size");
+          const { error: updateError } = await supabaseClient
             .from('positions')
             .update({
               amount: newAmount,
               updated_at: new Date().toISOString()
             })
             .eq('id', existingPosition.id);
+
+          if (updateError) {
+            console.error("Error updating position:", updateError);
+            throw updateError;
+          }
+          
+          console.log("Position size reduced successfully");
         }
+      } else {
+        console.log("Attempted to sell non-existent position");
       }
     }
 
@@ -88,7 +136,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error processing trade:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

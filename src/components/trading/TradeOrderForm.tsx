@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -53,9 +53,10 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     }
 
     setIsSubmitting(true);
+    console.log("Starting trade submission process");
 
     try {
-      // Haal eerst het trading pair op
+      console.log("Fetching trading pair");
       const { data: pairs, error: pairError } = await supabase
         .from("trading_pairs")
         .select("id")
@@ -63,8 +64,10 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
         .single();
 
       if (pairError || !pairs) {
+        console.error("Trading pair error:", pairError);
         throw new Error("Trading pair not found");
       }
+      console.log("Found trading pair:", pairs);
 
       const order: TradeOrder = {
         type: orderType,
@@ -80,7 +83,7 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
         order.takeProfit = Number(takeProfit);
       }
 
-      // Sla de trade op in de database
+      console.log("Creating trade record");
       const { data: trade, error } = await supabase
         .from("trades")
         .insert({
@@ -94,14 +97,22 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Trade creation error:", error);
+        throw error;
+      }
+      console.log("Trade created successfully:", trade);
 
-      // Update positions via edge function
+      console.log("Calling update-positions function");
       const { error: updateError } = await supabase.functions.invoke('update-positions', {
         body: { trade }
       });
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Position update error:", updateError);
+        throw updateError;
+      }
+      console.log("Position update completed");
 
       onSubmitOrder(order);
       toast({
