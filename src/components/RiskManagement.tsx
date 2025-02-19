@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { AlertTriangle, ShieldAlert, Settings2, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertTriangle, ShieldAlert, Settings2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./auth/AuthProvider";
@@ -27,6 +26,17 @@ interface RiskSettings {
   max_daily_loss: number;
   max_leverage: number;
 }
+
+const defaultRiskSettings: Partial<RiskSettings> = {
+  position_size_calculation: 'fixed',
+  risk_reward_target: 2,
+  portfolio_allocation_limit: 20,
+  daily_loss_notification: true,
+  risk_level: 'moderate',
+  max_position_size: 1000,
+  max_daily_loss: 100,
+  max_leverage: 2
+};
 
 const RiskManagement = () => {
   const { user } = useAuth();
@@ -63,15 +73,37 @@ const RiskManagement = () => {
   }, [user]);
 
   const loadRiskSettings = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('risk_settings')
         .select('*')
-        .eq('user_id', user?.id)
-        .single();
+        .eq('user_id', user.id)
+        .maybeSingle();
 
       if (error) throw error;
-      setSettings(data);
+
+      if (!data) {
+        const { data: newSettings, error: createError } = await supabase
+          .from('risk_settings')
+          .insert([{ 
+            user_id: user.id,
+            ...defaultRiskSettings
+          }])
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        setSettings(newSettings);
+        
+        toast({
+          title: "Risk Settings Created",
+          description: "Default risk settings have been created for your account",
+        });
+      } else {
+        setSettings(data);
+      }
     } catch (error) {
       console.error('Error loading risk settings:', error);
       toast({
@@ -111,6 +143,10 @@ const RiskManagement = () => {
       });
     }
   };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center p-8">Loading risk settings...</div>;
+  }
 
   return (
     <div className="space-y-6">
