@@ -1,8 +1,8 @@
-
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Legend } from 'recharts';
 import { LoadingChart } from './LoadingChart';
 import { Card } from '@/components/ui/card';
-import { ArrowUpIcon, ArrowDownIcon, TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
+import { ArrowUpIcon, ArrowDownIcon } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 interface ChartData {
   name: string;
@@ -38,6 +38,8 @@ const formatNumber = (num: number) => {
 };
 
 export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
+  const { toast } = useToast();
+
   if (isLoading) return <LoadingChart />;
 
   if (!data || data.length === 0) {
@@ -49,9 +51,25 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
   }
 
   const handleMarketClick = (market: string) => {
-    const element = document.querySelector(`[data-market="${market}"]`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const tabTrigger = document.querySelector(`[role="tab"][data-state="active"]`);
+    if (tabTrigger) {
+      const tabPanelId = tabTrigger.getAttribute('aria-controls');
+      const tabPanel = document.getElementById(tabPanelId || '');
+      
+      if (tabPanel) {
+        const marketElement = tabPanel.querySelector(`[data-market="${market}"]`);
+        if (marketElement) {
+          marketElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center'
+          });
+          
+          toast({
+            title: "Navigatie",
+            description: `Navigeren naar ${market}...`,
+          });
+        }
+      }
     }
   };
 
@@ -64,9 +82,11 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
           style={{ animationDelay: `${index * 100}ms` }}
           onClick={() => handleMarketClick(item.name)}
           data-market={item.name}
+          role="button"
+          tabIndex={0}
+          aria-label={`Bekijk details voor ${item.name}`}
         >
           <div className="flex flex-col relative overflow-hidden">
-            {/* Glow effect for positive/negative changes */}
             <div className={`absolute inset-0 opacity-20 blur-xl ${
               Number(item.change) >= 0 ? 'bg-green-500' : 'bg-red-500'
             }`} />
