@@ -20,7 +20,12 @@ export const usePositions = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user found, skipping positions fetch");
+      return;
+    }
+
+    console.log("Fetching positions for user:", user.id);
 
     const fetchPositions = async () => {
       try {
@@ -29,7 +34,12 @@ export const usePositions = () => {
           .select("*")
           .eq("user_id", user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Database error fetching positions:", error);
+          throw error;
+        }
+
+        console.log("Positions fetched:", data);
         setPositions(data || []);
       } catch (error) {
         console.error("Error fetching positions:", error);
@@ -46,6 +56,7 @@ export const usePositions = () => {
     fetchPositions();
 
     // Subscribe to position updates
+    console.log("Setting up realtime subscription for positions");
     const subscription = supabase
       .channel("positions_channel")
       .on(
@@ -57,6 +68,7 @@ export const usePositions = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
+          console.log("Received position update:", payload);
           if (payload.eventType === "INSERT") {
             setPositions((current) => [...current, payload.new as Position]);
           } else if (payload.eventType === "UPDATE") {
@@ -75,6 +87,7 @@ export const usePositions = () => {
       .subscribe();
 
     return () => {
+      console.log("Cleaning up positions subscription");
       subscription.unsubscribe();
     };
   }, [user]);

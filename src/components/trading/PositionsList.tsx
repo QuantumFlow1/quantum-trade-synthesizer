@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, BellRing } from "lucide-react";
 
 interface PositionsListProps {
   positions: Position[];
@@ -15,6 +15,9 @@ interface PositionsListProps {
 const PositionsList = ({ positions, isLoading }: PositionsListProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+
+  console.log("PositionsList render - positions:", positions);
+  console.log("PositionsList render - isLoading:", isLoading);
 
   const handleClosePosition = async (positionId: string) => {
     if (!user) return;
@@ -46,13 +49,25 @@ const PositionsList = ({ positions, isLoading }: PositionsListProps) => {
   };
 
   if (isLoading) {
-    return <div>Loading positions...</div>;
+    return (
+      <Card className="p-6">
+        <div className="flex items-center justify-center space-x-2">
+          <BellRing className="w-4 h-4 animate-pulse" />
+          <span>Loading positions...</span>
+        </div>
+      </Card>
+    );
   }
 
   if (positions.length === 0) {
     return (
-      <Card className="p-6 text-center text-muted-foreground">
-        No open positions
+      <Card className="p-6">
+        <div className="text-center space-y-2">
+          <p className="text-muted-foreground">No open positions</p>
+          <p className="text-sm text-muted-foreground">
+            Your positions will appear here once you start trading
+          </p>
+        </div>
       </Card>
     );
   }
