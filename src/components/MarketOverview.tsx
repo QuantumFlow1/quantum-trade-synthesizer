@@ -32,39 +32,41 @@ const MarketOverview = () => {
   }
 
   return (
-    <div className="w-full p-4 rounded-lg border bg-card">
+    <div className="w-full p-4 rounded-lg border bg-card overflow-hidden">
       <h2 className="text-xl font-semibold mb-4">Markt Overzicht</h2>
       
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs defaultValue="overview" className="w-full h-full">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overzicht</TabsTrigger>
           <TabsTrigger value="volume">Volume Analyse</TabsTrigger>
           <TabsTrigger value="price">Prijstrends</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="h-[400px]">
-          <MarketCharts 
-            data={chartData} 
-            isLoading={isLoading} 
-            type="overview" 
-          />
-        </TabsContent>
+        <div className="overflow-auto max-h-[calc(100vh-16rem)]">
+          <TabsContent value="overview" className="min-h-[400px]">
+            <MarketCharts 
+              data={chartData} 
+              isLoading={isLoading} 
+              type="overview" 
+            />
+          </TabsContent>
 
-        <TabsContent value="volume" className="h-[400px]">
-          <MarketCharts 
-            data={chartData} 
-            isLoading={isLoading} 
-            type="volume" 
-          />
-        </TabsContent>
+          <TabsContent value="volume" className="min-h-[400px]">
+            <MarketCharts 
+              data={chartData} 
+              isLoading={isLoading} 
+              type="volume" 
+            />
+          </TabsContent>
 
-        <TabsContent value="price" className="h-[400px]">
-          <MarketCharts 
-            data={chartData} 
-            isLoading={isLoading} 
-            type="price" 
-          />
-        </TabsContent>
+          <TabsContent value="price" className="min-h-[400px]">
+            <MarketCharts 
+              data={chartData} 
+              isLoading={isLoading} 
+              type="price" 
+            />
+          </TabsContent>
+        </div>
       </Tabs>
     </div>
   );

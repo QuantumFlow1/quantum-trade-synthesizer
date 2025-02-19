@@ -27,19 +27,15 @@ export const useMarketData = () => {
         return data as MarketData[];
       } catch (error) {
         console.error('Market data error:', error);
-        throw error;
-      }
-    },
-    refetchInterval: 5000,
-    retry: 3,
-    meta: {
-      onError: () => {
         toast({
           title: "Error",
           description: "Fout bij het laden van marktdata. Probeer het later opnieuw.",
           variant: "destructive",
         });
+        throw error;
       }
-    }
+    },
+    refetchInterval: 5000,
+    retry: 3
   });
 };
