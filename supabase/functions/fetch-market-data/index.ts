@@ -1,6 +1,5 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -18,13 +17,15 @@ interface MarketData {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    console.log('Generating mock market data...');
+    
     // Mock market data for demo purposes
-    // In production, this would fetch from a real API
     const mockMarketData: MarketData[] = [
       {
         symbol: 'BTC/USD',
@@ -43,20 +44,39 @@ serve(async (req) => {
         high24h: 2900,
         low24h: 2700,
         timestamp: Date.now()
+      },
+      {
+        symbol: 'XRP/USD',
+        price: 0.50 + Math.random() * 0.05,
+        volume: 200000 + Math.random() * 50000,
+        change24h: -0.5 + Math.random(),
+        high24h: 0.55,
+        low24h: 0.48,
+        timestamp: Date.now()
       }
-    ]
+    ];
+
+    console.log('Returning market data:', mockMarketData);
 
     return new Response(
       JSON.stringify(mockMarketData),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        },
         status: 200,
       },
     )
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+    console.error('Error in fetch-market-data:', error);
+    
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    )
   }
 })
