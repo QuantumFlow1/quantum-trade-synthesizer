@@ -9,24 +9,34 @@ export const useMarketData = () => {
   return useQuery({
     queryKey: ['marketData'],
     queryFn: async () => {
-      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/fetch-market-data`, {
-        headers: {
-          Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch market data');
+      try {
+        console.log('Fetching market data...');
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/fetch-market-data`, {
+          headers: {
+            Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+          },
+        });
+        
+        if (!response.ok) {
+          console.error('Market data fetch failed:', response.status);
+          throw new Error('Failed to fetch market data');
+        }
+        
+        const data = await response.json();
+        console.log('Market data received:', data);
+        return data as MarketData[];
+      } catch (error) {
+        console.error('Market data error:', error);
+        throw error;
       }
-      
-      return response.json() as Promise<MarketData[]>;
     },
     refetchInterval: 5000,
+    retry: 3,
     meta: {
       onError: () => {
         toast({
           title: "Error",
-          description: "Fout bij het laden van marktdata",
+          description: "Fout bij het laden van marktdata. Probeer het later opnieuw.",
           variant: "destructive",
         });
       }
