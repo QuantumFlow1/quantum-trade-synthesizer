@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 interface TradeOrderFormProps {
   currentPrice: number;
@@ -22,13 +24,24 @@ interface TradeOrder {
 
 export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy");
   const [amount, setAmount] = useState<string>("");
   const [stopLoss, setStopLoss] = useState<string>("");
   const [takeProfit, setTakeProfit] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to place trades",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!amount || isNaN(Number(amount))) {
       toast({
@@ -39,25 +52,66 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
       return;
     }
 
-    const order: TradeOrder = {
-      type: orderType,
-      amount: Number(amount),
-      price: currentPrice,
-    };
+    setIsSubmitting(true);
 
-    if (stopLoss && !isNaN(Number(stopLoss))) {
-      order.stopLoss = Number(stopLoss);
+    try {
+      // Haal eerst het trading pair op (hier gebruiken we BTC/USD als voorbeeld)
+      const { data: pairs, error: pairError } = await supabase
+        .from("trading_pairs")
+        .select("id")
+        .eq("symbol", "BTC/USD")
+        .single();
+
+      if (pairError || !pairs) {
+        throw new Error("Trading pair not found");
+      }
+
+      const order: TradeOrder = {
+        type: orderType,
+        amount: Number(amount),
+        price: currentPrice,
+      };
+
+      if (stopLoss && !isNaN(Number(stopLoss))) {
+        order.stopLoss = Number(stopLoss);
+      }
+
+      if (takeProfit && !isNaN(Number(takeProfit))) {
+        order.takeProfit = Number(takeProfit);
+      }
+
+      // Sla de trade op in de database
+      const { error } = await supabase.from("trades").insert({
+        user_id: user.id,
+        pair_id: pairs.id,
+        type: orderType,
+        amount: Number(amount),
+        price: currentPrice,
+        status: "pending",
+      });
+
+      if (error) throw error;
+
+      onSubmitOrder(order);
+      toast({
+        title: "Order Submitted",
+        description: `${orderType.toUpperCase()} order placed for ${amount} units at ${currentPrice}`,
+      });
+
+      // Reset form
+      setAmount("");
+      setStopLoss("");
+      setTakeProfit("");
+    } catch (error) {
+      console.error("Error submitting order:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    if (takeProfit && !isNaN(Number(takeProfit))) {
-      order.takeProfit = Number(takeProfit);
-    }
-
-    onSubmitOrder(order);
-    toast({
-      title: "Order Submitted",
-      description: `${orderType.toUpperCase()} order placed for ${amount} units at ${currentPrice}`,
-    });
   };
 
   return (
@@ -132,8 +186,9 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
             ? "bg-green-500 hover:bg-green-600" 
             : "bg-red-500 hover:bg-red-600"
         }`}
+        disabled={isSubmitting}
       >
-        Place {orderType.toUpperCase()} Order
+        {isSubmitting ? "Processing..." : `Place ${orderType.toUpperCase()} Order`}
       </Button>
     </form>
   );

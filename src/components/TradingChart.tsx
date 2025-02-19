@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Activity, CandlestickChart, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,6 +7,7 @@ import { PriceCards } from "./trading/PriceCards";
 import { ChartViews } from "./trading/ChartViews";
 import { IndicatorSelector } from "./trading/IndicatorSelector";
 import { TradeOrderForm } from "./trading/TradeOrderForm";
+import TransactionList from "./TransactionList";
 
 const TradingChart = () => {
   const [data, setData] = useState<TradingDataPoint[]>(generateTradingData());
@@ -58,7 +60,6 @@ const TradingChart = () => {
 
   const handleSubmitOrder = (order: any) => {
     console.log("Order submitted:", order);
-    // In de volgende fase implementeren we de order verwerking
   };
 
   return (
@@ -110,11 +111,12 @@ const TradingChart = () => {
           </Tabs>
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <TradeOrderForm 
             currentPrice={data[data.length - 1].close}
             onSubmitOrder={handleSubmitOrder}
           />
+          <TransactionList />
         </div>
       </div>
     </div>
