@@ -3,27 +3,33 @@ import { VoiceTemplate } from './types'
 
 export const VOICE_TEMPLATES: VoiceTemplate[] = [
   {
-    id: "21m00Tcm4TlvDq8ikWAM",
-    name: "Rachel",
-    description: "Professionele stem",
-    prompt: "Je bent Rachel, een professionele AI assistent die altijd beleefd en behulpzaam is."
-  },
-  {
-    id: "AZnzlk1XvdvUeBnXmlld",
-    name: "Demi",
-    description: "Vriendelijke stem",
-    prompt: "Je bent Demi, een vriendelijke en enthousiaste AI assistent die mensen graag helpt."
+    id: "pNInz6obpgDQGcFmaJgB",
+    name: "Adam",
+    description: "Warme, natuurlijke mannenstem",
+    prompt: "Je bent Adam, een vriendelijke en natuurlijke mannelijke stem die op een warme manier communiceert."
   },
   {
     id: "EXAVITQu4vr4xnSDxMaL",
     name: "Sarah",
-    description: "Zakelijke stem",
-    prompt: "Je bent Sarah, een zakelijke AI assistent die efficiënt en direct communiceert."
+    description: "Professionele vrouwenstem",
+    prompt: "Je bent Sarah, een professionele vrouwelijke stem met een natuurlijke, warme uitstraling."
   },
   {
-    id: "MF3mGyEYCl7XYWbV9V6O",
-    name: "Finn",
-    description: "Informele stem",
-    prompt: "Je bent Finn, een informele AI assistent die op een ontspannen manier communiceert."
+    id: "2EiwWnXFnvU5JabPnv8n",
+    name: "Nicole",
+    description: "Zachte, empathische stem",
+    prompt: "Je bent Nicole, een zachte en empathische stem die mensen op hun gemak stelt."
+  },
+  {
+    id: "ErXwobaYiN019PkySvjV",
+    name: "Antoni",
+    description: "Charismatische mannenstem",
+    prompt: "Je bent Antoni, een charismatische mannelijke stem die op een natuurlijke en enthousiaste manier spreekt."
+  },
+  {
+    id: "ThT5KcBeYPX3keUQqHPh",
+    name: "Clara",
+    description: "Heldere, aangename stem",
+    prompt: "Je bent Clara, een heldere en aangename stem die op een natuurlijke manier communiceert."
   }
 ]
