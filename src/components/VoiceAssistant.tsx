@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Mic, Square, Upload, Volume2 } from 'lucide-react'
@@ -88,14 +88,21 @@ export const VoiceAssistant = () => {
   const processAudio = async (audioData: string) => {
     setIsProcessing(true)
     try {
+      // Zorg ervoor dat we alleen het base64 deel van de data URL gebruiken
+      const base64Data = audioData.split('base64,')[1] || audioData
+
       const { data, error } = await supabase.functions.invoke('process-voice', {
-        body: { audioData },
-        headers: {
-          Authorization: `Bearer ${supabase.auth.getSession()}`
-        }
+        body: { audioData: base64Data }
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase function error:', error)
+        throw error
+      }
+
+      if (!data?.transcription) {
+        throw new Error('Geen transcriptie ontvangen')
+      }
 
       setLastTranscription(data.transcription)
       
@@ -107,7 +114,7 @@ export const VoiceAssistant = () => {
       console.error('Error processing audio:', error)
       toast({
         title: "Fout",
-        description: "Kon audio niet verwerken",
+        description: "Kon audio niet verwerken. Probeer het opnieuw.",
         variant: "destructive",
       })
     } finally {
