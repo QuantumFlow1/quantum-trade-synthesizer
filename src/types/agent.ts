@@ -1,5 +1,5 @@
 
-export type AgentType = "trading" | "analysis" | "risk" | "finance" | "compliance" | "security" | "legal";
+export type AgentType = "trading" | "analysis" | "risk" | "finance" | "compliance" | "security" | "legal" | "market_analysis" | "portfolio_risk";
 
 export interface Agent {
   id: string;
@@ -10,4 +10,6 @@ export interface Agent {
   lastActive: string;
   department: string;
   expertise: string[];
+  capabilities?: string[];
+  riskLevel?: "low" | "medium" | "high";
 }

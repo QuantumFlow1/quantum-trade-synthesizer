@@ -1,5 +1,5 @@
 
-import { Play, Pause, X, Brain } from "lucide-react";
+import { Play, Pause, X, Brain, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Agent } from "@/types/agent";
 
@@ -15,6 +15,15 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
         <div className="font-medium flex items-center gap-2">
           <Brain className="w-4 h-4" />
           {agent.name}
+          {agent.riskLevel && (
+            <span className={`text-xs px-2 py-1 rounded-full ${
+              agent.riskLevel === 'high' ? 'bg-red-500/20 text-red-400' :
+              agent.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+              'bg-green-500/20 text-green-400'
+            }`}>
+              {agent.riskLevel.charAt(0).toUpperCase() + agent.riskLevel.slice(1)} Risk
+            </span>
+          )}
         </div>
         <div className="text-sm text-muted-foreground">
           Afdeling: {agent.department} • Expertise: {agent.expertise.join(", ")}
@@ -22,6 +31,12 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
         <div className="text-sm text-muted-foreground">
           Performance: {agent.performance} • Laatst actief: {agent.lastActive}
         </div>
+        {agent.capabilities && (
+          <div className="text-sm text-muted-foreground flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            Capabilities: {agent.capabilities.join(", ")}
+          </div>
+        )}
         <div className={`text-sm ${
           agent.status === "active" ? "text-green-400" : 
           agent.status === "paused" ? "text-yellow-400" : 
