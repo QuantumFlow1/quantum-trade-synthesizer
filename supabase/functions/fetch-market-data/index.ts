@@ -8,18 +8,35 @@ const corsHeaders = {
 
 function generateMockMarketData() {
   const markets = [
-    // Crypto pairs
-    { market: 'Crypto', symbol: 'BTC/USD', basePrice: 45000 },
-    { market: 'Crypto', symbol: 'ETH/USD', basePrice: 2500 },
-    { market: 'Crypto', symbol: 'XRP/USD', basePrice: 1.5 },
-    // NASDAQ stocks
+    // US Markets
+    { market: 'NYSE', symbol: 'JPM', basePrice: 175 },
+    { market: 'NYSE', symbol: 'BAC', basePrice: 35 },
+    { market: 'NYSE', symbol: 'WMT', basePrice: 160 },
     { market: 'NASDAQ', symbol: 'AAPL', basePrice: 175 },
     { market: 'NASDAQ', symbol: 'MSFT', basePrice: 380 },
     { market: 'NASDAQ', symbol: 'GOOGL', basePrice: 140 },
-    // European stocks
-    { market: 'EU', symbol: 'AEX', basePrice: 850 },
-    { market: 'EU', symbol: 'DAX', basePrice: 17000 },
-    { market: 'EU', symbol: 'CAC40', basePrice: 7900 }
+    
+    // European Markets
+    { market: 'AEX', symbol: 'ASML', basePrice: 850 },
+    { market: 'AEX', symbol: 'RDSA', basePrice: 30 },
+    { market: 'DAX', symbol: 'BMW', basePrice: 105 },
+    { market: 'DAX', symbol: 'SAP', basePrice: 175 },
+    { market: 'CAC40', symbol: 'LVMH', basePrice: 800 },
+    { market: 'CAC40', symbol: 'TOTF', basePrice: 63 },
+    
+    // Asian Markets
+    { market: 'NIKKEI', symbol: 'TYO:7203', basePrice: 2800 }, // Toyota
+    { market: 'NIKKEI', symbol: 'TYO:6758', basePrice: 12500 }, // Sony
+    { market: 'HSI', symbol: 'HKG:0700', basePrice: 290 }, // Tencent
+    { market: 'HSI', symbol: 'HKG:9988', basePrice: 85 }, // Alibaba
+    { market: 'SSE', symbol: 'SHA:601398', basePrice: 5 }, // ICBC
+    { market: 'SSE', symbol: 'SHA:600519', basePrice: 1700 }, // Kweichow Moutai
+    
+    // Crypto Markets
+    { market: 'Crypto', symbol: 'BTC/USD', basePrice: 45000 },
+    { market: 'Crypto', symbol: 'ETH/USD', basePrice: 2500 },
+    { market: 'Crypto', symbol: 'XRP/USD', basePrice: 1.5 },
+    { market: 'Crypto', symbol: 'SOL/USD', basePrice: 110 }
   ];
 
   const data = markets.map(({ market, symbol, basePrice }) => {
@@ -43,7 +60,6 @@ function generateMockMarketData() {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -52,9 +68,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Generating mock market data...');
+    console.log('Generating global market data...');
     const mockData = generateMockMarketData();
-    console.log('Mock data generated:', mockData);
+    console.log('Market data generated:', mockData);
 
     return new Response(
       JSON.stringify(mockData),

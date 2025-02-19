@@ -38,47 +38,40 @@ const MarketOverview = () => {
     );
   }
 
+  const marketOrder = ['NYSE', 'NASDAQ', 'AEX', 'DAX', 'CAC40', 'NIKKEI', 'HSI', 'SSE', 'Crypto'];
+
   return (
     <div className="w-full bg-secondary/30 backdrop-blur-lg border border-secondary/50 rounded-lg shadow-lg will-change-transform hover:shadow-xl transition-all duration-300 ease-out">
       <div className="p-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-primary/5 pointer-events-none" />
         
         <h2 className="relative text-2xl font-semibold mb-6 bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
-          Markt Overzicht
+          Wereldwijde Markten
         </h2>
         
-        <Tabs defaultValue="Crypto" className="w-full">
-          <TabsList className="mb-6 bg-background/50 backdrop-blur-md relative">
+        <Tabs defaultValue={marketOrder[0]} className="w-full">
+          <TabsList className="mb-6 bg-background/50 backdrop-blur-md relative flex flex-wrap gap-1">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
-            <TabsTrigger 
-              value="Crypto" 
-              className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
-            >
-              Crypto
-            </TabsTrigger>
-            <TabsTrigger 
-              value="NASDAQ" 
-              className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
-            >
-              NASDAQ
-            </TabsTrigger>
-            <TabsTrigger 
-              value="EU" 
-              className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
-            >
-              Europese Markten
-            </TabsTrigger>
+            {marketOrder.map((market) => (
+              <TabsTrigger 
+                key={market}
+                value={market} 
+                className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
+              >
+                {market}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           <div className="h-[500px] transition-transform will-change-transform duration-500 ease-out">
-            {Object.entries(groupedData).map(([market, data]) => (
+            {marketOrder.map((market) => (
               <TabsContent 
                 key={market}
                 value={market} 
                 className="mt-0 h-full animate-in fade-in-50 duration-500 ease-out"
               >
                 <MarketCharts 
-                  data={data} 
+                  data={groupedData[market] || []} 
                   isLoading={isLoading} 
                   type="overview" 
                 />

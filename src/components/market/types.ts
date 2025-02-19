@@ -1,6 +1,7 @@
 
 export interface MarketData {
   symbol: string;
+  market: string;
   price: number;
   volume: number;
   change24h: number;
