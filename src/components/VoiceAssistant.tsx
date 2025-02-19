@@ -1,8 +1,8 @@
-
 import { useState, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { VoiceSelector } from './voice-assistant/VoiceSelector'
@@ -16,6 +16,7 @@ export const VoiceAssistant = () => {
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
   const [isProcessing, setIsProcessing] = useState(false)
   const [lastTranscription, setLastTranscription] = useState<string>('')
+  const [directText, setDirectText] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
   const [selectedVoice, setSelectedVoice] = useState<VoiceTemplate>(VOICE_TEMPLATES[0])
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null)
@@ -120,14 +121,15 @@ export const VoiceAssistant = () => {
     }
   }
 
-  const playTranscription = async () => {
-    if (!lastTranscription || isPlaying) return
+  const playTranscription = async (text?: string) => {
+    const textToSpeak = text || lastTranscription
+    if (!textToSpeak || isPlaying) return
     
     setIsPlaying(true)
     try {
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: { 
-          text: lastTranscription,
+          text: textToSpeak,
           voiceId: selectedVoice.id
         }
       })
@@ -177,6 +179,12 @@ export const VoiceAssistant = () => {
     fileInputRef.current?.click()
   }
 
+  const handleDirectTextSubmit = () => {
+    if (directText.trim()) {
+      playTranscription(directText)
+    }
+  }
+
   return (
     <Card className="w-full max-w-md mx-auto mt-8">
       <CardHeader>
@@ -187,6 +195,24 @@ export const VoiceAssistant = () => {
           selectedVoiceId={selectedVoice.id}
           onVoiceChange={handleVoiceChange}
         />
+
+        <div className="flex flex-col space-y-2">
+          <Input
+            placeholder="Voer tekst in om voor te lezen..."
+            value={directText}
+            onChange={(e) => setDirectText(e.target.value)}
+          />
+          <Button 
+            onClick={handleDirectTextSubmit}
+            disabled={!directText.trim() || isPlaying}
+          >
+            Lees Tekst Voor
+          </Button>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 w-full h-0.5 bg-border -top-2" />
+        </div>
 
         <AudioControls
           isRecording={isRecording}
@@ -221,7 +247,7 @@ export const VoiceAssistant = () => {
           lastTranscription={lastTranscription}
           voiceName={selectedVoice.name}
           isPlaying={isPlaying}
-          onPlay={playTranscription}
+          onPlay={() => playTranscription()}
           isRecording={isRecording}
         />
       </CardContent>
