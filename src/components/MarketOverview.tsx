@@ -33,12 +33,14 @@ const MarketOverview = () => {
       return response.json() as Promise<MarketData[]>;
     },
     refetchInterval: 5000, // Refresh every 5 seconds
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to load market data",
-        variant: "destructive",
-      });
+    meta: {
+      onError: () => {
+        toast({
+          title: "Error",
+          description: "Failed to load market data",
+          variant: "destructive",
+        });
+      }
     }
   });
 
