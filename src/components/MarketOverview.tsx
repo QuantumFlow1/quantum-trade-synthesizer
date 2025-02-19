@@ -19,7 +19,6 @@ const MarketOverview = () => {
     low: item.low24h
   })) || [];
 
-  // Als er een error is, toon een error message
   if (error) {
     return (
       <Alert variant="destructive">
@@ -34,18 +33,18 @@ const MarketOverview = () => {
   }
 
   return (
-    <div className="w-full p-4 rounded-lg border bg-card overflow-hidden">
+    <div className="w-full h-[600px] p-4 rounded-lg border bg-card">
       <h2 className="text-xl font-semibold mb-4">Markt Overzicht</h2>
       
-      <Tabs defaultValue="overview" className="w-full h-full">
+      <Tabs defaultValue="overview" className="w-full h-[calc(100%-2rem)]">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overzicht</TabsTrigger>
           <TabsTrigger value="volume">Volume Analyse</TabsTrigger>
           <TabsTrigger value="price">Prijstrends</TabsTrigger>
         </TabsList>
 
-        <div className="overflow-auto max-h-[calc(100vh-16rem)]">
-          <TabsContent value="overview" className="min-h-[400px]">
+        <div className="h-[calc(100%-3rem)] overflow-hidden">
+          <TabsContent value="overview" className="h-full mt-0">
             <MarketCharts 
               data={chartData} 
               isLoading={isLoading} 
@@ -53,7 +52,7 @@ const MarketOverview = () => {
             />
           </TabsContent>
 
-          <TabsContent value="volume" className="min-h-[400px]">
+          <TabsContent value="volume" className="h-full mt-0">
             <MarketCharts 
               data={chartData} 
               isLoading={isLoading} 
@@ -61,7 +60,7 @@ const MarketOverview = () => {
             />
           </TabsContent>
 
-          <TabsContent value="price" className="min-h-[400px]">
+          <TabsContent value="price" className="h-full mt-0">
             <MarketCharts 
               data={chartData} 
               isLoading={isLoading} 
