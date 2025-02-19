@@ -1,6 +1,6 @@
 
 import { TradingDataPoint } from "@/utils/tradingData";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine, Bar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine, Bar, ComposedChart } from "recharts";
 
 interface ChartViewsProps {
   data: TradingDataPoint[];
@@ -82,52 +82,87 @@ export const ChartViews = ({ data, view, indicator }: ChartViewsProps) => {
     );
   }
 
-  if (indicator === "bollinger") {
-    return (
-      <ResponsiveContainer {...baseChartProps}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-          <XAxis dataKey="name" stroke="#888888" />
-          <YAxis stroke="#888888" />
-          <Tooltip {...baseTooltipStyle} />
-          <Line type="monotone" dataKey="close" stroke="#4ade80" strokeWidth={2} />
-          <Line type="monotone" dataKey="bollingerUpper" stroke="#8b5cf6" strokeWidth={1} strokeDasharray="3 3" />
-          <Line type="monotone" dataKey="bollingerLower" stroke="#8b5cf6" strokeWidth={1} strokeDasharray="3 3" />
-        </LineChart>
-      </ResponsiveContainer>
-    );
+  if (view === "indicators") {
+    switch (indicator) {
+      case "bollinger":
+        return (
+          <ResponsiveContainer {...baseChartProps}>
+            <ComposedChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" stroke="#888888" />
+              <YAxis stroke="#888888" />
+              <Tooltip {...baseTooltipStyle} />
+              <Line type="monotone" dataKey="close" stroke="#4ade80" strokeWidth={2} />
+              <Line type="monotone" dataKey="bollingerUpper" stroke="#8b5cf6" strokeWidth={1} strokeDasharray="3 3" />
+              <Line type="monotone" dataKey="bollingerLower" stroke="#8b5cf6" strokeWidth={1} strokeDasharray="3 3" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        );
+
+      case "macd":
+        return (
+          <ResponsiveContainer {...baseChartProps}>
+            <ComposedChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" stroke="#888888" />
+              <YAxis stroke="#888888" />
+              <Tooltip {...baseTooltipStyle} />
+              <Line type="monotone" dataKey="macd" stroke="#4ade80" strokeWidth={2} />
+              <Line type="monotone" dataKey="macdSignal" stroke="#8b5cf6" strokeWidth={2} />
+              <Bar dataKey="macdHistogram" fill={data.map(d => d.macdHistogram >= 0 ? "#4ade80" : "#ef4444")} />
+            </ComposedChart>
+          </ResponsiveContainer>
+        );
+
+      case "rsi":
+        return (
+          <ResponsiveContainer {...baseChartProps}>
+            <ComposedChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" stroke="#888888" />
+              <YAxis domain={[0, 100]} stroke="#888888" />
+              <Tooltip {...baseTooltipStyle} />
+              <Line type="monotone" dataKey="rsi" stroke="#8b5cf6" strokeWidth={2} />
+              <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" />
+              <ReferenceLine y={30} stroke="#4ade80" strokeDasharray="3 3" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        );
+
+      case "stochastic":
+        return (
+          <ResponsiveContainer {...baseChartProps}>
+            <ComposedChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" stroke="#888888" />
+              <YAxis domain={[0, 100]} stroke="#888888" />
+              <Tooltip {...baseTooltipStyle} />
+              <Line type="monotone" dataKey="stochastic" stroke="#8b5cf6" strokeWidth={2} />
+              <ReferenceLine y={80} stroke="#ef4444" strokeDasharray="3 3" />
+              <ReferenceLine y={20} stroke="#4ade80" strokeDasharray="3 3" />
+            </ComposedChart>
+          </ResponsiveContainer>
+        );
+
+      default:
+        return (
+          <ResponsiveContainer {...baseChartProps}>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" stroke="#888888" />
+              <YAxis stroke="#888888" />
+              <Tooltip {...baseTooltipStyle} />
+              <Line
+                type="monotone"
+                dataKey={indicator}
+                stroke="#8b5cf6"
+                strokeWidth={2}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        );
+    }
   }
 
-  if (indicator === "macd") {
-    return (
-      <ResponsiveContainer {...baseChartProps}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-          <XAxis dataKey="name" stroke="#888888" />
-          <YAxis stroke="#888888" />
-          <Tooltip {...baseTooltipStyle} />
-          <Line type="monotone" dataKey="macd" stroke="#4ade80" strokeWidth={2} />
-          <Line type="monotone" dataKey="macdSignal" stroke="#8b5cf6" strokeWidth={2} />
-          <Bar dataKey="macdHistogram" fill="#6366f1" />
-        </LineChart>
-      </ResponsiveContainer>
-    );
-  }
-
-  return (
-    <ResponsiveContainer {...baseChartProps}>
-      <LineChart data={data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-        <XAxis dataKey="name" stroke="#888888" />
-        <YAxis stroke="#888888" />
-        <Tooltip {...baseTooltipStyle} />
-        <Line
-          type="monotone"
-          dataKey={indicator}
-          stroke="#8b5cf6"
-          strokeWidth={2}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  );
+  return null;
 };
