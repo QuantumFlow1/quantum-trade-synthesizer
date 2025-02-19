@@ -11,9 +11,9 @@ export const useMarketData = () => {
     queryFn: async () => {
       try {
         console.log('Fetching market data...');
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/fetch-market-data`, {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fetch-market-data`, {
           headers: {
-            Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY}`,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
         });
         
