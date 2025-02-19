@@ -1,6 +1,6 @@
 
 import { TradingDataPoint } from "@/utils/tradingData";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine, Bar, ComposedChart } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine, Bar, ComposedChart, Cell } from "recharts";
 
 interface ChartViewsProps {
   data: TradingDataPoint[];
@@ -109,11 +109,14 @@ export const ChartViews = ({ data, view, indicator }: ChartViewsProps) => {
               <Tooltip {...baseTooltipStyle} />
               <Line type="monotone" dataKey="macd" stroke="#4ade80" strokeWidth={2} />
               <Line type="monotone" dataKey="macdSignal" stroke="#8b5cf6" strokeWidth={2} />
-              <Bar 
-                dataKey="macdHistogram" 
-                fill={({payload}) => (payload.macdHistogram >= 0 ? "#4ade80" : "#ef4444")}
-                stroke={({payload}) => (payload.macdHistogram >= 0 ? "#4ade80" : "#ef4444")}
-              />
+              <Bar dataKey="macdHistogram">
+                {data.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`}
+                    fill={entry.macdHistogram >= 0 ? "#4ade80" : "#ef4444"}
+                  />
+                ))}
+              </Bar>
             </ComposedChart>
           </ResponsiveContainer>
         );
