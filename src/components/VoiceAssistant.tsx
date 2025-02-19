@@ -1,8 +1,7 @@
-
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Mic, Square, Upload, Volume2, User, Bot, Loader2 } from 'lucide-react'
+import { Mic, Square, Upload, Volume2, User, Bot, Loader2, PlayCircle, StopCircle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase'
 import { Input } from '@/components/ui/input'
@@ -42,10 +41,13 @@ export const VoiceAssistant = () => {
   const [lastTranscription, setLastTranscription] = useState<string>('')
   const [isPlaying, setIsPlaying] = useState(false)
   const [selectedVoice, setSelectedVoice] = useState(VOICE_TEMPLATES[0])
+  const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null)
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const audioChunks = useRef<Blob[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const startRecording = async () => {
     try {
@@ -59,13 +61,8 @@ export const VoiceAssistant = () => {
 
       mediaRecorder.current.onstop = async () => {
         const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' })
-        const reader = new FileReader()
-        
-        reader.onloadend = async () => {
-          await processAudio(reader.result as string)
-        }
-        
-        reader.readAsDataURL(audioBlob)
+        const audioUrl = URL.createObjectURL(audioBlob)
+        setPreviewAudioUrl(audioUrl)
       }
 
       mediaRecorder.current.start()
@@ -90,6 +87,10 @@ export const VoiceAssistant = () => {
       mediaRecorder.current.stop()
       mediaRecorder.current.stream.getTracks().forEach(track => track.stop())
       setIsRecording(false)
+
+      const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' })
+      const audioUrl = URL.createObjectURL(audioBlob)
+      setPreviewAudioUrl(audioUrl)
     }
   }
 
@@ -106,40 +107,70 @@ export const VoiceAssistant = () => {
       return
     }
 
-    setIsProcessing(true)
-    const reader = new FileReader()
-    
-    reader.onloadend = async () => {
-      await processAudio(reader.result as string)
-    }
-    
-    reader.readAsDataURL(file)
+    const audioUrl = URL.createObjectURL(file)
+    setPreviewAudioUrl(audioUrl)
   }
 
-  const processAudio = async (audioData: string) => {
+  const playPreview = async () => {
+    if (!previewAudioUrl || isPreviewPlaying) return
+
+    if (previewAudioRef.current) {
+      try {
+        setIsPreviewPlaying(true)
+        await previewAudioRef.current.play()
+      } catch (error) {
+        console.error('Error playing preview:', error)
+        toast({
+          title: "Fout",
+          description: "Kon de audio preview niet afspelen",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
+  const stopPreview = () => {
+    if (previewAudioRef.current) {
+      previewAudioRef.current.pause()
+      previewAudioRef.current.currentTime = 0
+      setIsPreviewPlaying(false)
+    }
+  }
+
+  const processAudio = async () => {
+    if (!previewAudioUrl) return
+
     setIsProcessing(true)
     try {
-      const base64Data = audioData.split('base64,')[1] || audioData
-
-      const { data, error } = await supabase.functions.invoke('process-voice', {
-        body: { 
-          audioData: base64Data,
-          voiceTemplate: selectedVoice.prompt
-        }
-      })
-
-      if (error) throw error
-
-      if (!data?.transcription) {
-        throw new Error('Geen transcriptie ontvangen')
-      }
-
-      setLastTranscription(data.transcription)
+      const response = await fetch(previewAudioUrl)
+      const blob = await response.blob()
+      const reader = new FileReader()
       
-      toast({
-        title: "Verwerkt",
-        description: data.transcription,
-      })
+      reader.onloadend = async () => {
+        const base64Data = (reader.result as string).split('base64,')[1]
+        
+        const { data, error } = await supabase.functions.invoke('process-voice', {
+          body: { 
+            audioData: base64Data,
+            voiceTemplate: selectedVoice.prompt
+          }
+        })
+
+        if (error) throw error
+
+        if (!data?.transcription) {
+          throw new Error('Geen transcriptie ontvangen')
+        }
+
+        setLastTranscription(data.transcription)
+        
+        toast({
+          title: "Verwerkt",
+          description: data.transcription,
+        })
+      }
+      
+      reader.readAsDataURL(blob)
     } catch (error) {
       console.error('Error processing audio:', error)
       toast({
@@ -261,6 +292,36 @@ export const VoiceAssistant = () => {
             Upload Audio
           </Button>
 
+          {previewAudioUrl && !isPreviewPlaying && (
+            <Button
+              onClick={playPreview}
+              variant="outline"
+            >
+              <PlayCircle className="w-6 h-6 mr-2" />
+              Preview
+            </Button>
+          )}
+
+          {previewAudioUrl && isPreviewPlaying && (
+            <Button
+              onClick={stopPreview}
+              variant="outline"
+            >
+              <StopCircle className="w-6 h-6 mr-2" />
+              Stop
+            </Button>
+          )}
+
+          {previewAudioUrl && (
+            <Button
+              onClick={processAudio}
+              disabled={isProcessing}
+              variant="secondary"
+            >
+              Verwerk Audio
+            </Button>
+          )}
+
           {lastTranscription && (
             <Button
               onClick={playTranscription}
@@ -283,6 +344,13 @@ export const VoiceAssistant = () => {
           className="hidden"
           accept="audio/*"
           onChange={handleFileUpload}
+        />
+
+        <audio 
+          ref={previewAudioRef}
+          src={previewAudioUrl || undefined}
+          onEnded={() => setIsPreviewPlaying(false)}
+          className="hidden"
         />
         
         {isProcessing && (
