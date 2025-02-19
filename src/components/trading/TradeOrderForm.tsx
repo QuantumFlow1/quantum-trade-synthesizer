@@ -55,7 +55,7 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     setIsSubmitting(true);
 
     try {
-      // Haal eerst het trading pair op (hier gebruiken we BTC/USD als voorbeeld)
+      // Haal eerst het trading pair op
       const { data: pairs, error: pairError } = await supabase
         .from("trading_pairs")
         .select("id")
@@ -81,16 +81,27 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
       }
 
       // Sla de trade op in de database
-      const { error } = await supabase.from("trades").insert({
-        user_id: user.id,
-        pair_id: pairs.id,
-        type: orderType,
-        amount: Number(amount),
-        price: currentPrice,
-        status: "pending",
-      });
+      const { data: trade, error } = await supabase
+        .from("trades")
+        .insert({
+          user_id: user.id,
+          pair_id: pairs.id,
+          type: orderType,
+          amount: Number(amount),
+          price: currentPrice,
+          status: "pending",
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Update positions via edge function
+      const { error: updateError } = await supabase.functions.invoke('update-positions', {
+        body: { trade }
+      });
+
+      if (updateError) throw updateError;
 
       onSubmitOrder(order);
       toast({

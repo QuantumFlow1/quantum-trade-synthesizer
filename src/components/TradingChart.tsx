@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Activity, CandlestickChart, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,11 +7,15 @@ import { ChartViews } from "./trading/ChartViews";
 import { IndicatorSelector } from "./trading/IndicatorSelector";
 import { TradeOrderForm } from "./trading/TradeOrderForm";
 import TransactionList from "./TransactionList";
+import { usePositions } from "@/hooks/use-positions";
+import PositionsList from "./trading/PositionsList";
 
 const TradingChart = () => {
   const [data, setData] = useState<TradingDataPoint[]>(generateTradingData());
   const [view, setView] = useState<"price" | "volume" | "indicators">("price");
   const [indicator, setIndicator] = useState<"sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx">("sma");
+
+  const { positions, isLoading: positionsLoading } = usePositions();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -116,6 +119,10 @@ const TradingChart = () => {
             currentPrice={data[data.length - 1].close}
             onSubmitOrder={handleSubmitOrder}
           />
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold">Open Positions</h3>
+            <PositionsList positions={positions} isLoading={positionsLoading} />
+          </div>
           <TransactionList />
         </div>
       </div>
