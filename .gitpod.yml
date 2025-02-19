@@ -1,0 +1,31 @@
+
+# Image met Node.js voorgeïnstalleerd
+image:
+  file: .gitpod.Dockerfile
+
+# Ports die worden geopend
+ports:
+  - port: 8080
+    onOpen: open-preview
+    visibility: public
+  - port: 54321
+    onOpen: notify
+    visibility: public
+
+# Taken die worden uitgevoerd bij het starten
+tasks:
+  - name: Install Dependencies & Start Dev Server
+    init: |
+      npm install
+    command: |
+      npm run dev
+
+# VS Code extensies die automatisch worden geïnstalleerd
+vscode:
+  extensions:
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
+    - bradlc.vscode-tailwindcss
+    - csstools.postcss
+    - ms-vscode.vscode-typescript-next
+
