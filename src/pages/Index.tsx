@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
 import { useToast } from "@/hooks/use-toast";
@@ -8,10 +8,71 @@ import MarketOverview from '@/components/MarketOverview';
 import TradeControls from '@/components/TradeControls';
 import RiskManagement from '@/components/RiskManagement';
 import AutoTrading from '@/components/AutoTrading';
+import { motion, AnimatePresence } from "framer-motion";
+import { ZoomIn, ZoomOut, Minimize2, Maximize2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
   const { toast } = useToast();
+  const [scale, setScale] = useState(1);
+  const [isPinching, setIsPinching] = useState(false);
+  const [startTouchDistance, setStartTouchDistance] = useState(0);
+
+  // Gesture controls
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const distance = Math.hypot(
+          touch2.clientX - touch1.clientX,
+          touch2.clientY - touch1.clientY
+        );
+        setStartTouchDistance(distance);
+        setIsPinching(true);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isPinching && e.touches.length === 2) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const distance = Math.hypot(
+          touch2.clientX - touch1.clientX,
+          touch2.clientY - touch1.clientY
+        );
+        
+        const scaleDiff = distance / startTouchDistance;
+        const newScale = Math.min(Math.max(0.5, scale * scaleDiff), 2);
+        setScale(newScale);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setIsPinching(false);
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        const newScale = Math.min(Math.max(0.5, scale - e.deltaY * 0.001), 2);
+        setScale(newScale);
+      }
+    };
+
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('wheel', handleWheel);
+    };
+  }, [scale, isPinching, startTouchDistance]);
 
   // Handle hash fragment for OAuth redirects
   useEffect(() => {
@@ -37,7 +98,6 @@ const Index = () => {
             });
           }
         }
-        // Remove the hash and search params without triggering a reload
         if (isSubscribed) {
           window.history.replaceState(null, '', window.location.pathname);
         }
@@ -55,18 +115,20 @@ const Index = () => {
       }
     });
 
-    // Cleanup function
     return () => {
       isSubscribed = false;
     };
   }, []); 
 
-  // Als er geen gebruiker is ingelogd, toon login scherm
+  // Controls for zoom
+  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2));
+  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
+  const handleResetZoom = () => setScale(1);
+
   if (!user) {
     return <LoginComponent />;
   }
 
-  // Als er een gebruiker is maar nog geen profiel, toon laadscherm
   if (!userProfile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -80,22 +142,83 @@ const Index = () => {
     );
   }
 
-  // Voor admin gebruikers, toon AdminPanel
   if (userProfile.role === 'admin' || userProfile.role === 'super_admin') {
     return <AdminPanel />;
   }
 
-  // Voor normale gebruikers, toon trading interface
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div className="grid grid-cols-1 gap-6">
-        <MarketOverview />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <TradeControls />
-          <RiskManagement />
-        </div>
-        <AutoTrading />
+    <div className="relative min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90">
+      {/* Zoom Controls */}
+      <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleZoomIn}
+          className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
+        >
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleZoomOut}
+          className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
+        >
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={handleResetZoom}
+          className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
+        >
+          {scale !== 1 ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </Button>
       </div>
+
+      {/* Main Content with Scale Transform */}
+      <motion.div
+        className="container mx-auto p-4 space-y-6"
+        style={{ 
+          scale,
+          transition: "scale 0.2s ease-out"
+        }}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className="grid grid-cols-1 gap-6"
+          >
+            <MarketOverview />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <TradeControls />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <RiskManagement />
+              </motion.div>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <AutoTrading />
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 };
