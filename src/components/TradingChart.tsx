@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, ReferenceLine, Bar } from "recharts";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Activity, TrendingUp, TrendingDown, CandlestickChart, BarChart2 } from "lucide-react";
@@ -19,10 +18,17 @@ const generateData = () => {
     const close = (open + high + low) / 3;
     const volume = Math.random() * 100 + 50;
     
-    // Technische indicatoren
+    // Uitgebreide technische indicatoren
     const sma = (open + close) / 2;
+    const ema = sma * 0.8 + (Math.random() * 100 - 50);
     const rsi = Math.random() * 100;
     const macd = Math.random() * 20 - 10;
+    const macdSignal = macd + (Math.random() * 4 - 2);
+    const macdHistogram = macd - macdSignal;
+    const bollingerUpper = high + (Math.random() * 300);
+    const bollingerLower = low - (Math.random() * 300);
+    const stochastic = Math.random() * 100;
+    const adx = Math.random() * 100;
     
     return {
       name: hour,
@@ -32,8 +38,15 @@ const generateData = () => {
       close,
       volume,
       sma,
+      ema,
       rsi,
       macd,
+      macdSignal,
+      macdHistogram,
+      bollingerUpper,
+      bollingerLower,
+      stochastic,
+      adx,
       trend: close > open ? "up" : "down"
     };
   });
@@ -42,7 +55,7 @@ const generateData = () => {
 const TradingChart = () => {
   const [data, setData] = useState(generateData());
   const [view, setView] = useState<"price" | "volume" | "indicators">("price");
-  const [indicator, setIndicator] = useState<"sma" | "rsi" | "macd">("sma");
+  const [indicator, setIndicator] = useState<"sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx">("sma");
 
   // Simuleer real-time updates
   useEffect(() => {
@@ -62,8 +75,15 @@ const TradingChart = () => {
           close: newClose,
           volume: Math.random() * 100 + 50,
           sma: (lastValue + newClose) / 2,
+          ema: (lastValue + newClose) / 2,
           rsi: Math.random() * 100,
           macd: Math.random() * 20 - 10,
+          macdSignal:  Math.random() * 20 - 10,
+          macdHistogram:  Math.random() * 20 - 10,
+          bollingerUpper:  Math.max(lastValue, newClose) + Math.random() * 200,
+          bollingerLower:  Math.min(lastValue, newClose) - Math.random() * 200,
+          stochastic:  Math.random() * 20 - 10,
+          adx:  Math.random() * 20 - 10,
           trend: newClose > lastValue ? "up" : "down"
         });
         
@@ -210,13 +230,20 @@ const TradingChart = () => {
 
         <TabsContent value="indicators">
           <div className="space-y-4">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={indicator === "sma" ? "default" : "outline"}
                 onClick={() => setIndicator("sma")}
                 className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
               >
                 SMA
+              </Button>
+              <Button
+                variant={indicator === "ema" ? "default" : "outline"}
+                onClick={() => setIndicator("ema")}
+                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
+              >
+                EMA
               </Button>
               <Button
                 variant={indicator === "rsi" ? "default" : "outline"}
@@ -232,30 +259,89 @@ const TradingChart = () => {
               >
                 MACD
               </Button>
+              <Button
+                variant={indicator === "bollinger" ? "default" : "outline"}
+                onClick={() => setIndicator("bollinger")}
+                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
+              >
+                Bollinger
+              </Button>
+              <Button
+                variant={indicator === "stochastic" ? "default" : "outline"}
+                onClick={() => setIndicator("stochastic")}
+                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
+              >
+                Stochastic
+              </Button>
+              <Button
+                variant={indicator === "adx" ? "default" : "outline"}
+                onClick={() => setIndicator("adx")}
+                className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
+              >
+                ADX
+              </Button>
             </div>
             
             <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="name" stroke="#888888" />
-                  <YAxis stroke="#888888" />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(0,0,0,0.8)",
-                      border: "none",
-                      borderRadius: "8px",
-                      color: "white",
-                      backdropFilter: "blur(16px)"
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey={indicator}
-                    stroke="#8b5cf6"
-                    strokeWidth={2}
-                  />
-                </LineChart>
+                {indicator === "bollinger" ? (
+                  <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="name" stroke="#888888" />
+                    <YAxis stroke="#888888" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(0,0,0,0.8)",
+                        border: "none",
+                        borderRadius: "8px",
+                        color: "white",
+                        backdropFilter: "blur(16px)"
+                      }}
+                    />
+                    <Line type="monotone" dataKey="close" stroke="#4ade80" strokeWidth={2} />
+                    <Line type="monotone" dataKey="bollingerUpper" stroke="#8b5cf6" strokeWidth={1} strokeDasharray="3 3" />
+                    <Line type="monotone" dataKey="bollingerLower" stroke="#8b5cf6" strokeWidth={1} strokeDasharray="3 3" />
+                  </LineChart>
+                ) : indicator === "macd" ? (
+                  <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="name" stroke="#888888" />
+                    <YAxis stroke="#888888" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(0,0,0,0.8)",
+                        border: "none",
+                        borderRadius: "8px",
+                        color: "white",
+                        backdropFilter: "blur(16px)"
+                      }}
+                    />
+                    <Line type="monotone" dataKey="macd" stroke="#4ade80" strokeWidth={2} />
+                    <Line type="monotone" dataKey="macdSignal" stroke="#8b5cf6" strokeWidth={2} />
+                    <Bar dataKey="macdHistogram" fill="#6366f1" />
+                  </LineChart>
+                ) : (
+                  <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="name" stroke="#888888" />
+                    <YAxis stroke="#888888" />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "rgba(0,0,0,0.8)",
+                        border: "none",
+                        borderRadius: "8px",
+                        color: "white",
+                        backdropFilter: "blur(16px)"
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey={indicator}
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                )}
               </ResponsiveContainer>
             </div>
           </div>
