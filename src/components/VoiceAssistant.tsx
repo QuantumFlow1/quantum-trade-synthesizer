@@ -11,9 +11,9 @@ export const VoiceAssistant = () => {
   const { toast } = useToast()
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [lastTranscription, setLastTranscription] = useState<string>('')
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const audioChunks = useRef<Blob[]>([])
-  const audioPlayer = useRef<HTMLAudioElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const startRecording = async () => {
@@ -97,12 +97,8 @@ export const VoiceAssistant = () => {
 
       if (error) throw error
 
-      // Play the response
-      if (data.audioResponse) {
-        audioPlayer.current = new Audio(data.audioResponse)
-        await audioPlayer.current.play()
-      }
-
+      setLastTranscription(data.transcription)
+      
       toast({
         title: "Verwerkt",
         description: data.transcription,
@@ -117,6 +113,19 @@ export const VoiceAssistant = () => {
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const playTranscription = () => {
+    if (!lastTranscription) return
+    
+    const utterance = new SpeechSynthesisUtterance(lastTranscription)
+    utterance.lang = 'nl-NL' // Nederlandse stem
+    speechSynthesis.speak(utterance)
+    
+    toast({
+      title: "Afspelen",
+      description: "De tekst wordt voorgelezen...",
+    })
   }
 
   const triggerFileUpload = () => {
@@ -157,6 +166,17 @@ export const VoiceAssistant = () => {
             <Upload className="w-6 h-6 mr-2" />
             Upload Audio
           </Button>
+
+          {lastTranscription && (
+            <Button
+              onClick={playTranscription}
+              disabled={isProcessing || isRecording}
+              variant="outline"
+            >
+              <Volume2 className="w-6 h-6 mr-2" />
+              Afspelen
+            </Button>
+          )}
         </div>
         
         <Input
@@ -170,6 +190,12 @@ export const VoiceAssistant = () => {
         {isProcessing && (
           <p className="text-center text-sm text-muted-foreground">
             Audio wordt verwerkt...
+          </p>
+        )}
+
+        {lastTranscription && (
+          <p className="text-center text-sm">
+            {lastTranscription}
           </p>
         )}
       </CardContent>
