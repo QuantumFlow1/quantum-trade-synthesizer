@@ -10,12 +10,31 @@ import { useOAuthRedirect } from "@/hooks/use-oauth-redirect";
 import { ZoomControls } from "@/components/ZoomControls";
 import { LoadingProfile } from "@/components/LoadingProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Suspense } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { checkSupabaseConnection } from "@/lib/supabase";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   useOAuthRedirect();
+
+  // Check Supabase connection when component mounts
+  React.useEffect(() => {
+    const checkConnection = async () => {
+      const isConnected = await checkSupabaseConnection();
+      if (!isConnected) {
+        toast({
+          title: "Connectie probleem",
+          description: "Er is een probleem met de verbinding. Probeer de pagina te verversen.",
+          variant: "destructive"
+        });
+      }
+    };
+    checkConnection();
+  }, [toast]);
 
   if (!user) {
     return <LoginComponent />;
@@ -51,12 +70,14 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="space-y-4 sm:space-y-6"
           >
-            <VoiceAssistant />
-            {userProfile.role === 'admin' || userProfile.role === 'super_admin' ? (
-              <AdminPanel />
-            ) : (
-              <UserDashboard />
-            )}
+            <Suspense fallback={<div>Loading...</div>}>
+              <VoiceAssistant />
+              {userProfile.role === 'admin' || userProfile.role === 'super_admin' ? (
+                <AdminPanel />
+              ) : (
+                <UserDashboard />
+              )}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </motion.div>
