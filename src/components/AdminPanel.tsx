@@ -1,17 +1,16 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "./auth/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import { Agent } from "@/types/agent";
-import AdminHeader from "./admin/AdminHeader";
-import SuperAdminMonitor from "./admin/SuperAdminMonitor";
-import AIAgentsList from "./admin/AIAgentsList";
-import StatisticsPanel from "./admin/StatisticsPanel";
-import QuickActions from "./admin/QuickActions";
-import SystemAlerts from "./admin/SystemAlerts";
-import UserDashboard from "./UserDashboard";
+import AdminHeader from "@/components/admin/AdminHeader";
+import SuperAdminMonitor from "@/components/admin/SuperAdminMonitor";
+import AIAgentsList from "@/components/admin/AIAgentsList";
+import StatisticsPanel from "@/components/admin/StatisticsPanel";
+import QuickActions from "@/components/admin/QuickActions";
+import SystemAlerts from "@/components/admin/SystemAlerts";
+import UserDashboard from "@/components/UserDashboard";
 
 const AdminPanel = () => {
   const { toast } = useToast();
