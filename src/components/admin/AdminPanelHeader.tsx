@@ -1,7 +1,5 @@
 
 import { Button } from "@/components/ui/button";
-import { Shield } from "lucide-react";
-import AdminHeader from "./AdminHeader";
 import { Agent } from "@/types/agent";
 
 interface AdminPanelHeaderProps {
@@ -11,7 +9,7 @@ interface AdminPanelHeaderProps {
   onSignOut: () => void;
   setShowUserDashboard: (show: boolean) => void;
   setShowAccountManagement: (show: boolean) => void;
-  setAgents: React.Dispatch<React.SetStateAction<Agent[]>>;
+  setAgents: (agents: Agent[]) => void;
 }
 
 const AdminPanelHeader = ({
@@ -24,13 +22,13 @@ const AdminPanelHeader = ({
   setAgents
 }: AdminPanelHeaderProps) => {
   return (
-    <div className="w-full px-4 sm:px-0">
-      <AdminHeader
-        onDashboardClick={onDashboardClick}
-        onAccountManagement={onAccountManagement}
-        onAddAgent={onAddAgent}
-        onSignOut={onSignOut}
-      />
+    <div className="flex justify-between items-center">
+      <div className="space-x-2">
+        <Button onClick={onDashboardClick}>Dashboard</Button>
+        <Button onClick={onAccountManagement}>Account Beheer</Button>
+        <Button onClick={onAddAgent}>Nieuwe AI Agent</Button>
+      </div>
+      <Button variant="destructive" onClick={onSignOut}>Uitloggen</Button>
     </div>
   );
 };

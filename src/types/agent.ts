@@ -1,43 +1,14 @@
-export type AgentType = "trading" | "analysis" | "risk" | "finance" | "compliance" | "security" | "legal" | "market_analysis" | "portfolio_risk" | "account_management";
-
-export interface TradeSignal {
-  pair: string;
-  direction: "long" | "short";
-  entryPrice: number;
-  stopLoss: number;
-  takeProfit: number;
-  confidence: number;
-  timestamp: string;
-}
-
-export interface AgentMetrics {
-  winRate: number;
-  profitFactor: number;
-  sharpeRatio: number;
-  maxDrawdown: number;
-  totalTrades: number;
-  successfulTrades: number;
-}
 
 export interface Agent {
   id: string;
   name: string;
   status: "active" | "paused" | "terminated";
-  type: AgentType;
-  performance: string;
+  type: "advisor" | "trader" | "analyst";
+  description: string;
+  createdAt: string;
   lastActive: string;
-  department: string;
-  expertise: string[];
-  capabilities?: string[];
-  riskLevel?: "low" | "medium" | "high";
-  collaborators?: string[]; // IDs van samenwerkende agents
-  primaryRole?: string;
-  secondaryRoles?: string[];
-  tradeHistory?: TradeSignal[];
-  metrics?: AgentMetrics;
-  allowedPairs?: string[];
-  maxPositionSize?: number;
-  currentPositions?: number;
-  tradingStrategy?: string;
-  technicalIndicators?: string[];
+  performance?: {
+    successRate: number;
+    tasksCompleted: number;
+  };
 }
