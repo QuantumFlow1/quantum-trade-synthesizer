@@ -1,2 +1,8 @@
 
 project_id = "tfmlretexydslgowlkid"
+
+[functions.market-data-collector]
+verify_jwt = true
+
+[functions.social-monitor]
+verify_jwt = true
