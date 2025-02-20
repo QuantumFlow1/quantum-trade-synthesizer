@@ -1,8 +1,16 @@
 
 project_id = "tfmlretexydslgowlkid"
 
-[functions.market-data-collector]
-verify_jwt = true
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
 
-[functions.social-monitor]
+[db]
+port = 54322
+
+[realtime]
+enabled = true
+
+[functions.trading-analysis]
 verify_jwt = true
