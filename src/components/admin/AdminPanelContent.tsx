@@ -6,6 +6,7 @@ import DashboardView from "./DashboardView";
 import ModelManagement from "./ModelManagement";
 import AIAgentsList from "./AIAgentsList";
 import { Agent } from "@/types/agent";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminPanelContentProps {
   userRole: string;
@@ -24,7 +25,28 @@ const AdminPanelContent = ({
   systemLoad,
   errorRate,
 }: AdminPanelContentProps) => {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
+
+  const handleAgentAction = (agentId: string, action: "terminate" | "activate" | "pause") => {
+    // Update de agent status in de lijst
+    const updatedAgents = agents.map(agent => {
+      if (agent.id === agentId) {
+        const newStatus = action === "terminate" ? "terminated" : 
+                         action === "pause" ? "paused" : "active";
+        return { ...agent, status: newStatus };
+      }
+      return agent;
+    });
+    
+    setAgents(updatedAgents);
+    
+    toast({
+      title: "Agent Status Bijgewerkt",
+      description: `Agent ${agentId} is nu ${action === "terminate" ? "beëindigd" : 
+                                           action === "pause" ? "gepauzeerd" : "geactiveerd"}`,
+    });
+  };
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -48,7 +70,11 @@ const AdminPanelContent = ({
       </TabsContent>
 
       <TabsContent value="agents">
-        <AIAgentsList agents={agents} setAgents={setAgents} />
+        <AIAgentsList 
+          agents={agents} 
+          setAgents={setAgents} 
+          onAction={handleAgentAction}
+        />
       </TabsContent>
 
       <TabsContent value="models">
