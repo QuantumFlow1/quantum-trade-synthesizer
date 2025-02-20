@@ -6,4 +6,3 @@ verify_jwt = true
 
 [functions.social-monitor]
 verify_jwt = true
-

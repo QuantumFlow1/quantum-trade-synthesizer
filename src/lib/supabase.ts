@@ -35,4 +35,3 @@ export const checkSupabaseConnection = async () => {
     return false
   }
 }
-
