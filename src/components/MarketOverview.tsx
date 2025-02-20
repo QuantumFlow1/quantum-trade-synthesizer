@@ -3,13 +3,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarketCharts } from "./market/MarketCharts";
 import { useMarketWebSocket } from "@/hooks/use-market-websocket";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCcw } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const MarketOverview = () => {
-  const { marketData } = useMarketWebSocket();
+  const { marketData, reconnect } = useMarketWebSocket();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const { toast } = useToast();
 
   useEffect(() => {
     // Set initial loading state
@@ -23,17 +27,54 @@ const MarketOverview = () => {
   useEffect(() => {
     // Handle data validation
     try {
-      if (marketData && !Array.isArray(marketData)) {
-        console.error('Market data is not an array:', marketData);
+      if (!marketData) {
+        console.log('No market data received');
+        setErrorMessage("Geen marktdata ontvangen");
         setHasError(true);
-      } else {
-        setHasError(false);
+        return;
       }
+
+      if (!Array.isArray(marketData)) {
+        console.error('Market data is not an array:', marketData);
+        setErrorMessage("Ongeldig dataformaat ontvangen");
+        setHasError(true);
+        return;
+      }
+
+      // Extra validatie voor de data structuur
+      const isValidData = marketData.every(item => 
+        item && 
+        typeof item.market === 'string' &&
+        typeof item.symbol === 'string' &&
+        typeof item.price === 'number' &&
+        typeof item.volume === 'number'
+      );
+
+      if (!isValidData) {
+        console.error('Invalid data structure in market data');
+        setErrorMessage("Ongeldige datastructuur");
+        setHasError(true);
+        return;
+      }
+
+      setHasError(false);
+      setErrorMessage("");
     } catch (error) {
       console.error('Error processing market data:', error);
+      setErrorMessage(error instanceof Error ? error.message : "Onbekende fout");
       setHasError(true);
     }
   }, [marketData]);
+
+  const handleRetry = () => {
+    setHasError(false);
+    setIsInitialLoading(true);
+    reconnect();
+    toast({
+      title: "Herverbinden...",
+      description: "Bezig met het herstellen van de marktdata verbinding",
+    });
+  };
 
   // Early return for initial loading state
   if (isInitialLoading) {
@@ -47,14 +88,23 @@ const MarketOverview = () => {
     );
   }
 
-  // Error state
+  // Error state with retry button
   if (hasError) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Er is een probleem opgetreden</AlertTitle>
-        <AlertDescription>
-          De marktdata kon niet correct worden verwerkt. Probeer de pagina te verversen.
+        <AlertDescription className="flex flex-col gap-2">
+          <p>De marktdata kon niet correct worden verwerkt: {errorMessage}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRetry}
+            className="w-fit"
+          >
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Opnieuw proberen
+          </Button>
         </AlertDescription>
       </Alert>
     );
@@ -69,8 +119,17 @@ const MarketOverview = () => {
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Geen marktdata beschikbaar</AlertTitle>
-        <AlertDescription>
-          Er is momenteel geen marktdata beschikbaar. Dit kan komen door onderhoud of een tijdelijke storing.
+        <AlertDescription className="flex flex-col gap-2">
+          <p>Er is momenteel geen marktdata beschikbaar. Dit kan komen door onderhoud of een tijdelijke storing.</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRetry}
+            className="w-fit"
+          >
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Vernieuwen
+          </Button>
         </AlertDescription>
       </Alert>
     );
