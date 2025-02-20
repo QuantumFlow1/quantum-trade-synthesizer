@@ -8,7 +8,12 @@ import { AlertCircle } from "lucide-react";
 const MarketOverview = () => {
   const { marketData } = useMarketWebSocket();
 
-  const groupedData = marketData?.reduce((acc, item) => {
+  console.log('Raw market data:', marketData); // Debug log
+
+  // Zorg ervoor dat marketData een array is voordat we reduce gebruiken
+  const marketDataArray = Array.isArray(marketData) ? marketData : [];
+
+  const groupedData = marketDataArray.reduce((acc, item) => {
     if (!acc[item.market]) {
       acc[item.market] = [];
     }
@@ -21,9 +26,9 @@ const MarketOverview = () => {
       low: item.low24h
     });
     return acc;
-  }, {} as Record<string, any[]>) || {};
+  }, {} as Record<string, any[]>);
 
-  if (!marketData || marketData.length === 0) {
+  if (!marketDataArray.length) {
     return (
       <Alert>
         <AlertCircle className="h-4 w-4" />
@@ -69,7 +74,7 @@ const MarketOverview = () => {
               >
                 <MarketCharts 
                   data={groupedData[market] || []} 
-                  isLoading={!marketData} 
+                  isLoading={!marketDataArray.length} 
                   type="overview" 
                 />
               </TabsContent>
