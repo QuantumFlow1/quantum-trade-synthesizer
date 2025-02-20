@@ -1,16 +1,16 @@
 
-import { Agent } from "@/types/agent";
-import SuperAdminMonitor from "./SuperAdminMonitor";
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AccountManagementPanel from "./AccountManagementPanel";
+import DashboardView from "./DashboardView";
+import ModelManagement from "./ModelManagement";
 import AIAgentsList from "./AIAgentsList";
-import StatisticsPanel from "./StatisticsPanel";
-import QuickActions from "./QuickActions";
-import SystemAlerts from "./SystemAlerts";
-import { useToast } from "@/hooks/use-toast";
+import { Agent } from "@/types/agent";
 
 interface AdminPanelContentProps {
-  userRole?: string;
+  userRole: string;
   agents: Agent[];
-  setAgents: React.Dispatch<React.SetStateAction<Agent[]>>;
+  setAgents: (agents: Agent[]) => void;
   userCount: number;
   systemLoad: number;
   errorRate: number;
@@ -22,57 +22,39 @@ const AdminPanelContent = ({
   setAgents,
   userCount,
   systemLoad,
-  errorRate
+  errorRate,
 }: AdminPanelContentProps) => {
-  const { toast } = useToast();
-
-  const handleVerify = () => {
-    toast({
-      title: "Verificatie Uitgevoerd",
-      description: "Alle transacties zijn geverifieerd",
-    });
-  };
-
-  const handleAgentAction = (agentId: string, action: "terminate" | "activate" | "pause") => {
-    setAgents(currentAgents => 
-      currentAgents.map(agent => {
-        if (agent.id === agentId) {
-          const newStatus = action === "terminate" ? "terminated" : 
-                          action === "activate" ? "active" : "paused";
-          return { ...agent, status: newStatus };
-        }
-        return agent;
-      })
-    );
-
-    toast({
-      title: `Agent ${action === "terminate" ? "Beëindigd" : action === "activate" ? "Geactiveerd" : "Gepauzeerd"}`,
-      description: `Agent status succesvol bijgewerkt`,
-    });
-  };
+  const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 md:p-8">
-      <StatisticsPanel />
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+        <TabsTrigger value="accounts">Accounts</TabsTrigger>
+        <TabsTrigger value="agents">AI Agents</TabsTrigger>
+        <TabsTrigger value="models">Advies Modellen</TabsTrigger>
+      </TabsList>
 
-      {userRole === 'super_admin' && (
-        <SuperAdminMonitor 
+      <TabsContent value="dashboard">
+        <DashboardView
           userCount={userCount}
           systemLoad={systemLoad}
           errorRate={errorRate}
         />
-      )}
+      </TabsContent>
 
-      <AIAgentsList 
-        agents={agents}
-        onAction={handleAgentAction}
-      />
+      <TabsContent value="accounts">
+        <AccountManagementPanel />
+      </TabsContent>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        <QuickActions onVerify={handleVerify} />
-        <SystemAlerts />
-      </div>
-    </div>
+      <TabsContent value="agents">
+        <AIAgentsList agents={agents} setAgents={setAgents} />
+      </TabsContent>
+
+      <TabsContent value="models">
+        <ModelManagement />
+      </TabsContent>
+    </Tabs>
   );
 };
 

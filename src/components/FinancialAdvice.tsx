@@ -1,4 +1,3 @@
-
 import { TrendingUp, AlertCircle, Book, BarChart2, Sparkles, Brain, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
@@ -12,9 +11,20 @@ const FinancialAdvice = () => {
   const [aiAdvice, setAiAdvice] = useState("");
   const [isOnline, setIsOnline] = useState(true);
 
-  const generateLocalAdvice = () => {
-    // Basis lokaal advies gebaseerd op vaste regels
-    const localAdvice = `Lokaal Gegenereerd Advies:
+  const generateLocalAdvice = async () => {
+    try {
+      // Haal het actieve model op uit de database
+      const { data: models, error } = await supabase
+        .from('advice_models')
+        .select('*')
+        .eq('is_active', true)
+        .limit(1);
+
+      if (error) throw error;
+
+      const localAdvice = models && models.length > 0 
+        ? models[0].content 
+        : `Lokaal Gegenereerd Advies:
 
 1. Trading Strategie:
 - Spreid je investeringen over verschillende assets
@@ -32,11 +42,19 @@ const FinancialAdvice = () => {
 - 20% groeiende markten
 - 10% cash reserve`;
 
-    setAiAdvice(localAdvice);
-    toast({
-      title: "Lokaal Advies Gegenereerd",
-      description: "Basis advies regels toegepast",
-    });
+      setAiAdvice(localAdvice);
+      toast({
+        title: "Lokaal Advies Gegenereerd",
+        description: "Basis advies regels toegepast",
+      });
+    } catch (error) {
+      console.error('Error fetching local model:', error);
+      toast({
+        title: "Error",
+        description: "Kon lokaal model niet laden",
+        variant: "destructive",
+      });
+    }
   };
 
   const generateAIAdvice = async () => {
