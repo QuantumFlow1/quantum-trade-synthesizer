@@ -1,39 +1,42 @@
+
 import { TrendingUp, AlertCircle, Book, BarChart2, Sparkles, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 const FinancialAdvice = () => {
   const { toast } = useToast();
   const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [aiAdvice, setAiAdvice] = useState("");
 
   const generateAIAdvice = async () => {
     setIsLoadingAI(true);
     try {
-      const response = await fetch('https://YOUR_PROJECT_REF.supabase.co/functions/v1/generate-advice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          marketData: {
-            btcPrice: 45234.12,
-            ethPrice: 2845.67,
-            marketSentiment: "bullish",
-            volatilityIndex: "high"
-          }
-        })
+      const { data, error } = await supabase.functions.invoke('generate-ai-response', {
+        body: {
+          prompt: `Analyseer de huidige marktcondities en geef advies:
+            - BTC/USD: $45,234
+            - ETH/USD: $2,845
+            - Markt Sentiment: Bullish
+            - Volatiliteit: Hoog
+            
+            Geef specifiek advies over:
+            1. Trading strategie
+            2. Risico management
+            3. Portfolio allocatie`
+        }
       });
 
-      if (!response.ok) throw new Error('AI analyse generatie mislukt');
+      if (error) throw error;
 
-      const data = await response.json();
+      setAiAdvice(data.generatedText);
       toast({
         title: "AI Analyse Gereed",
         description: "Nieuwe inzichten beschikbaar",
       });
     } catch (error) {
+      console.error('Error:', error);
       toast({
         title: "Error",
         description: "Kon geen AI analyse genereren",
@@ -69,24 +72,19 @@ const FinancialAdvice = () => {
           <span className="text-blue-400">AI Trading Inzichten</span>
         </h3>
         <div className="space-y-3">
-          <div className="p-3 rounded bg-blue-500/5">
-            <div className="text-sm font-medium mb-1">Trend Analyse</div>
-            <div className="text-sm text-muted-foreground">
-              BTC toont bullish divergentie op 4H timeframe. Overweeg long positie met tight stop-loss.
+          {aiAdvice ? (
+            <div className="p-3 rounded bg-blue-500/5">
+              <div className="text-sm text-muted-foreground whitespace-pre-line">
+                {aiAdvice}
+              </div>
             </div>
-          </div>
-          <div className="p-3 rounded bg-blue-500/5">
-            <div className="text-sm font-medium mb-1">Sentiment Analyse</div>
-            <div className="text-sm text-muted-foreground">
-              Social sentiment indicators tonen toenemend optimisme. Volume ondersteunt de trend.
+          ) : (
+            <div className="p-3 rounded bg-blue-500/5">
+              <div className="text-sm text-muted-foreground">
+                Klik op "Genereer AI Analyse" voor gepersonaliseerd advies.
+              </div>
             </div>
-          </div>
-          <div className="p-3 rounded bg-blue-500/5">
-            <div className="text-sm font-medium mb-1">Risk Assessment</div>
-            <div className="text-sm text-muted-foreground">
-              Huidige markt volatiliteit suggereert kleinere posities en wijdere stops.
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -150,25 +148,6 @@ const FinancialAdvice = () => {
           <li>• Spreid aandelen positie over meerdere sectoren</li>
           <li>• Implementeer stop-loss orders voor risicovolle posities</li>
         </ul>
-        <Button variant="outline" size="sm" className="mt-4">
-          Bekijk Gedetailleerd Advies
-        </Button>
-      </div>
-
-      {/* Market Condities */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 rounded-lg bg-green-500/10">
-          <div className="text-sm text-muted-foreground mb-1">Markt Sentiment</div>
-          <div className="text-lg font-medium text-green-400">Bullish</div>
-        </div>
-        <div className="p-4 rounded-lg bg-yellow-500/10">
-          <div className="text-sm text-muted-foreground mb-1">Volatiliteit Index</div>
-          <div className="text-lg font-medium text-yellow-400">Verhoogd</div>
-        </div>
-        <div className="p-4 rounded-lg bg-blue-500/10">
-          <div className="text-sm text-muted-foreground mb-1">Economische Cyclus</div>
-          <div className="text-lg font-medium text-blue-400">Expansie</div>
-        </div>
       </div>
     </div>
   );
