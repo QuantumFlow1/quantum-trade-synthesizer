@@ -9,12 +9,12 @@ import { useZoomControls } from "@/hooks/use-zoom-controls";
 import { useOAuthRedirect } from "@/hooks/use-oauth-redirect";
 import { ZoomControls } from "@/components/ZoomControls";
 import { LoadingProfile } from "@/components/LoadingProfile";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   useOAuthRedirect();
 
   if (!user) {
