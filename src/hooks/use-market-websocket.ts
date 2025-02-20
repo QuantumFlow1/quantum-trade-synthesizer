@@ -8,11 +8,14 @@ export const useMarketWebSocket = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
   const { toast } = useToast();
 
-  const analyzeTradingData = async (symbol: string, data: MarketData[]) => {
+  const analyzeTradingData = async (symbol: string, data: MarketData) => {
     try {
       console.log('Sending data for analysis:', { symbol, data });
       const { data: analysisResult, error } = await supabase.functions.invoke('trading-analysis', {
-        body: { symbol, marketData: data }
+        body: { 
+          symbol, 
+          marketData: data 
+        }
       });
 
       if (error) {
@@ -64,7 +67,7 @@ export const useMarketWebSocket = () => {
           
           // Voor elk symbool een analyse uitvoeren
           for (const data of newMarketData) {
-            await analyzeTradingData(data.symbol, [data]);
+            await analyzeTradingData(data.symbol, data);
           }
         }
       })
@@ -103,7 +106,7 @@ export const useMarketWebSocket = () => {
         
         // Analyze initial data
         for (const marketItem of data as MarketData[]) {
-          await analyzeTradingData(marketItem.symbol, [marketItem]);
+          await analyzeTradingData(marketItem.symbol, marketItem);
         }
       }
     } catch (error) {

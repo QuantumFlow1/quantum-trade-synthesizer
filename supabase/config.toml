@@ -12,5 +12,7 @@ port = 54322
 [realtime]
 enabled = true
 
+[functions]
 [functions.trading-analysis]
-verify_jwt = true
+verify_jwt = false
+
