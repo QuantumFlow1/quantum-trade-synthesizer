@@ -52,7 +52,7 @@ const AdminPanelContent = ({
   };
 
   return (
-    <>
+    <div className="space-y-6 p-4 sm:p-6 md:p-8">
       <StatisticsPanel />
 
       {userRole === 'super_admin' && (
@@ -68,11 +68,11 @@ const AdminPanelContent = ({
         onAction={handleAgentAction}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <QuickActions onVerify={handleVerify} />
         <SystemAlerts />
       </div>
-    </>
+    </div>
   );
 };
 

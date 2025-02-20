@@ -24,12 +24,14 @@ const AdminPanelHeader = ({
   setAgents
 }: AdminPanelHeaderProps) => {
   return (
-    <AdminHeader
-      onDashboardClick={onDashboardClick}
-      onAccountManagement={onAccountManagement}
-      onAddAgent={onAddAgent}
-      onSignOut={onSignOut}
-    />
+    <div className="w-full px-4 sm:px-0">
+      <AdminHeader
+        onDashboardClick={onDashboardClick}
+        onAccountManagement={onAccountManagement}
+        onAddAgent={onAddAgent}
+        onSignOut={onSignOut}
+      />
+    </div>
   );
 };
 
