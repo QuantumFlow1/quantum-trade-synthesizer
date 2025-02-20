@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { MarketData } from "@/components/market/types";
@@ -7,24 +8,34 @@ export const useMarketWebSocket = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
   const { toast } = useToast();
 
-  const analyzeTradingData = async (symbol: string, data: MarketData) => {
-    try {
-      const { data: analysisResult, error } = await supabase.functions.invoke('trading-analysis', {
-        body: { symbol }
-      });
-
-      if (error) throw error;
-      
-      console.log('Analysis result:', analysisResult);
-      return analysisResult;
-    } catch (error) {
-      console.error('Trading analysis error:', error);
-      toast({
-        title: "Analyse Fout",
-        description: "Kon geen trading analyse uitvoeren.",
-        variant: "destructive",
-      });
+  // Lokale analyse functie
+  const analyzeMarketData = (data: MarketData) => {
+    // Basis analyse regels
+    if (data.change24h > 3) {
+      return {
+        recommendation: "KOOP",
+        confidence: 0.8,
+        reason: "Sterke positieve trend"
+      };
+    } else if (data.change24h < -3) {
+      return {
+        recommendation: "VERKOOP",
+        confidence: 0.8,
+        reason: "Sterke negatieve trend"
+      };
+    } else if (data.volume > 1000000) {
+      return {
+        recommendation: "OBSERVEER",
+        confidence: 0.6,
+        reason: "Hoog handelsvolume"
+      };
     }
+    
+    return {
+      recommendation: "HOUDEN",
+      confidence: 0.7,
+      reason: "Stabiele markt"
+    };
   };
 
   const reconnect = async () => {
@@ -49,15 +60,16 @@ export const useMarketWebSocket = () => {
 
     const channel = supabase
       .channel('market-updates')
-      .on('broadcast', { event: 'market-data' }, async (payload) => {
+      .on('broadcast', { event: 'market-data' }, (payload) => {
         console.log('Received market data:', payload);
         if (payload.payload) {
           const newMarketData = payload.payload as MarketData[];
           setMarketData(newMarketData);
           
-          // Analyse per symbool
+          // Analyse voor elk marktsymbool
           for (const data of newMarketData) {
-            await analyzeTradingData(data.symbol, data);
+            const analysis = analyzeMarketData(data);
+            console.log(`Analyse voor ${data.symbol}:`, analysis);
           }
         }
       })
@@ -84,8 +96,10 @@ export const useMarketWebSocket = () => {
 
       if (data) {
         setMarketData(data as MarketData[]);
+        // Initiële analyse
         for (const item of data as MarketData[]) {
-          await analyzeTradingData(item.symbol, item);
+          const analysis = analyzeMarketData(item);
+          console.log(`Initiële analyse voor ${item.symbol}:`, analysis);
         }
       }
     } catch (error) {
@@ -98,5 +112,9 @@ export const useMarketWebSocket = () => {
     }
   };
 
-  return { marketData, reconnect };
+  return { 
+    marketData, 
+    reconnect,
+    analyzeMarket: analyzeMarketData // Export de analyse functie voor gebruik in andere componenten
+  };
 };
