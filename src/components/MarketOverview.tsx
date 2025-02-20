@@ -3,15 +3,78 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarketCharts } from "./market/MarketCharts";
 import { useMarketWebSocket } from "@/hooks/use-market-websocket";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const MarketOverview = () => {
   const { marketData } = useMarketWebSocket();
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
-  console.log('Raw market data:', marketData); // Debug log
+  useEffect(() => {
+    // Set initial loading state
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 2000);
 
-  // Zorg ervoor dat marketData een array is voordat we reduce gebruiken
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Handle data validation
+    try {
+      if (marketData && !Array.isArray(marketData)) {
+        console.error('Market data is not an array:', marketData);
+        setHasError(true);
+      } else {
+        setHasError(false);
+      }
+    } catch (error) {
+      console.error('Error processing market data:', error);
+      setHasError(true);
+    }
+  }, [marketData]);
+
+  // Early return for initial loading state
+  if (isInitialLoading) {
+    return (
+      <div className="w-full h-[200px] flex items-center justify-center bg-secondary/30 backdrop-blur-lg border border-secondary/50 rounded-lg">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Marktdata wordt geladen...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (hasError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Er is een probleem opgetreden</AlertTitle>
+        <AlertDescription>
+          De marktdata kon niet correct worden verwerkt. Probeer de pagina te verversen.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // Ensure marketData is an array and handle empty state
   const marketDataArray = Array.isArray(marketData) ? marketData : [];
+
+  // If no data after initial loading, show message
+  if (!marketDataArray.length && !isInitialLoading) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Geen marktdata beschikbaar</AlertTitle>
+        <AlertDescription>
+          Er is momenteel geen marktdata beschikbaar. Dit kan komen door onderhoud of een tijdelijke storing.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   const groupedData = marketDataArray.reduce((acc, item) => {
     if (!acc[item.market]) {
@@ -27,18 +90,6 @@ const MarketOverview = () => {
     });
     return acc;
   }, {} as Record<string, any[]>);
-
-  if (!marketDataArray.length) {
-    return (
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Wachten op market data...</AlertTitle>
-        <AlertDescription>
-          De verbinding met de markt wordt tot stand gebracht.
-        </AlertDescription>
-      </Alert>
-    );
-  }
 
   const marketOrder = ['NYSE', 'NASDAQ', 'AEX', 'DAX', 'CAC40', 'NIKKEI', 'HSI', 'SSE', 'Crypto'];
 
