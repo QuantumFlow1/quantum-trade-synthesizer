@@ -16,7 +16,6 @@ interface MarketData {
   change24h: number;
   high24h: number;
   low24h: number;
-  timestamp: number;
 }
 
 serve(async (req) => {
@@ -30,62 +29,51 @@ serve(async (req) => {
 
   try {
     console.log('Parsing request body');
-    const { symbol, marketData } = await req.json() as { 
+    const body = await req.json();
+    console.log('Received request body:', body);
+    
+    const { symbol, marketData } = body as { 
       symbol: string;
       marketData: MarketData[];
     };
 
-    console.log(`Processing trading data for ${symbol}`, { 
-      dataPoints: marketData?.length,
-      firstPoint: marketData?.[0],
-      lastPoint: marketData?.[marketData.length - 1] 
-    });
-
-    if (!marketData || marketData.length < 2) {
-      console.error('Invalid market data received:', { symbol, marketData });
-      throw new Error('Insufficient market data provided');
+    if (!symbol || !marketData || !Array.isArray(marketData) || marketData.length === 0) {
+      console.error('Invalid input data:', { symbol, marketDataLength: marketData?.length });
+      throw new Error('Invalid input data');
     }
 
-    // Basis analyse logica
-    const latestData = marketData[marketData.length - 1];
-    const previousData = marketData[marketData.length - 2];
-    
-    console.log('Calculating metrics', {
-      latest: latestData,
-      previous: previousData
-    });
+    const latestData = marketData[0]; // We krijgen nu maar 1 data punt
+    console.log('Processing data for symbol:', symbol, 'Latest data:', latestData);
 
-    const priceChange = ((latestData.price - previousData.price) / previousData.price) * 100;
-    const volumeChange = ((latestData.volume - previousData.volume) / previousData.volume) * 100;
-    
-    // Verbeterde trading signaal logica
+    // Vereenvoudigde analyse voor één datapunt
     let recommendation = "";
     let confidence = 0;
     let riskScore = 0;
 
-    // Analyse op basis van prijs, volume en 24-uurs verandering
-    if (priceChange > 0 && volumeChange > 10 && latestData.change24h > 0) {
+    // Analyse op basis van 24-uurs verandering en huidige prijs
+    if (latestData.change24h > 0 && latestData.price > latestData.low24h * 1.02) {
       recommendation = "BUY";
-      confidence = 0.75 + (Math.min(volumeChange, 50) / 200); // Max bonus van 0.25
-      riskScore = 0.4 + (Math.abs(priceChange) / 100); // Hoger risico bij grotere prijsverandering
-    } else if (priceChange < 0 && volumeChange > 10 && latestData.change24h < 0) {
+      confidence = 0.75;
+      riskScore = 0.4;
+    } else if (latestData.change24h < 0 && latestData.price < latestData.high24h * 0.98) {
       recommendation = "SELL";
-      confidence = 0.65 + (Math.min(volumeChange, 50) / 200);
-      riskScore = 0.6 + (Math.abs(priceChange) / 100);
+      confidence = 0.65;
+      riskScore = 0.6;
     } else {
       recommendation = "HOLD";
       confidence = 0.85;
       riskScore = 0.2;
     }
 
-    console.log('Analysis results', {
+    console.log('Analysis results:', {
       recommendation,
       confidence,
       riskScore,
       metrics: {
-        priceChange,
-        volumeChange,
-        change24h: latestData.change24h
+        change24h: latestData.change24h,
+        currentPrice: latestData.price,
+        high24h: latestData.high24h,
+        low24h: latestData.low24h
       }
     });
 
@@ -113,12 +101,13 @@ serve(async (req) => {
           recommendation,
           risk_score: riskScore,
           market_data: {
+            symbol: latestData.symbol,
+            market: latestData.market,
             latest_price: latestData.price,
-            price_change: priceChange,
-            volume_change: volumeChange,
             change_24h: latestData.change24h,
             high_24h: latestData.high24h,
-            low_24h: latestData.low24h
+            low_24h: latestData.low24h,
+            volume: latestData.volume
           }
         },
         confidence,
@@ -134,13 +123,13 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
+        symbol,
         recommendation,
         confidence,
         riskScore,
         metrics: {
-          priceChange,
-          volumeChange,
-          change24h: latestData.change24h
+          change24h: latestData.change24h,
+          currentPrice: latestData.price
         },
         timestamp: new Date().toISOString()
       }),

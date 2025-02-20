@@ -8,6 +8,30 @@ export const useMarketWebSocket = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
   const { toast } = useToast();
 
+  const analyzeTradingData = async (symbol: string, data: MarketData[]) => {
+    try {
+      console.log('Sending data for analysis:', { symbol, data });
+      const { data: analysisResult, error } = await supabase.functions.invoke('trading-analysis', {
+        body: { symbol, marketData: data }
+      });
+
+      if (error) {
+        console.error('Trading analysis error:', error);
+        throw error;
+      }
+
+      console.log('Analysis result:', analysisResult);
+      return analysisResult;
+    } catch (error) {
+      console.error('Error in trading analysis:', error);
+      toast({
+        title: "Analyse Fout",
+        description: "Kon geen trading analyse uitvoeren.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const reconnect = async () => {
     try {
       await fetchInitialData();
@@ -32,10 +56,16 @@ export const useMarketWebSocket = () => {
     // Real-time channel setup
     const channel = supabase
       .channel('market-updates')
-      .on('broadcast', { event: 'market-data' }, (payload) => {
+      .on('broadcast', { event: 'market-data' }, async (payload) => {
         console.log('Received real-time market data:', payload);
         if (payload.payload) {
-          setMarketData(payload.payload as MarketData[]);
+          const newMarketData = payload.payload as MarketData[];
+          setMarketData(newMarketData);
+          
+          // Voor elk symbool een analyse uitvoeren
+          for (const data of newMarketData) {
+            await analyzeTradingData(data.symbol, [data]);
+          }
         }
       })
       .subscribe((status) => {
@@ -70,6 +100,11 @@ export const useMarketWebSocket = () => {
 
       if (data) {
         setMarketData(data as MarketData[]);
+        
+        // Analyze initial data
+        for (const marketItem of data as MarketData[]) {
+          await analyzeTradingData(marketItem.symbol, [marketItem]);
+        }
       }
     } catch (error) {
       console.error('Market data fetch error:', error);
