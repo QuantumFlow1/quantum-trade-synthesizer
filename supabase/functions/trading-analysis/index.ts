@@ -10,64 +10,99 @@ const corsHeaders = {
 
 interface MarketData {
   symbol: string;
+  market: string;
   price: number;
   volume: number;
-  timestamp: string;
+  change24h: number;
+  high24h: number;
+  low24h: number;
+  timestamp: number;
 }
 
 serve(async (req) => {
+  console.log('Trading analysis function started');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Parsing request body');
     const { symbol, marketData } = await req.json() as { 
       symbol: string;
       marketData: MarketData[];
     };
 
-    console.log('Analyzing trading data for:', symbol);
+    console.log(`Processing trading data for ${symbol}`, { 
+      dataPoints: marketData?.length,
+      firstPoint: marketData?.[0],
+      lastPoint: marketData?.[marketData.length - 1] 
+    });
 
     if (!marketData || marketData.length < 2) {
+      console.error('Invalid market data received:', { symbol, marketData });
       throw new Error('Insufficient market data provided');
     }
 
     // Basis analyse logica
-    const latestPrice = marketData[marketData.length - 1].price;
-    const averagePrice = marketData.reduce((sum, data) => sum + data.price, 0) / marketData.length;
-    const volumeIncrease = marketData[marketData.length - 1].volume > marketData[marketData.length - 2].volume;
+    const latestData = marketData[marketData.length - 1];
+    const previousData = marketData[marketData.length - 2];
+    
+    console.log('Calculating metrics', {
+      latest: latestData,
+      previous: previousData
+    });
 
-    // Trading signaal genereren
+    const priceChange = ((latestData.price - previousData.price) / previousData.price) * 100;
+    const volumeChange = ((latestData.volume - previousData.volume) / previousData.volume) * 100;
+    
+    // Verbeterde trading signaal logica
     let recommendation = "";
     let confidence = 0;
     let riskScore = 0;
 
-    if (latestPrice > averagePrice && volumeIncrease) {
+    // Analyse op basis van prijs, volume en 24-uurs verandering
+    if (priceChange > 0 && volumeChange > 10 && latestData.change24h > 0) {
       recommendation = "BUY";
-      confidence = 0.75;
-      riskScore = 0.4;
-    } else if (latestPrice < averagePrice && volumeIncrease) {
+      confidence = 0.75 + (Math.min(volumeChange, 50) / 200); // Max bonus van 0.25
+      riskScore = 0.4 + (Math.abs(priceChange) / 100); // Hoger risico bij grotere prijsverandering
+    } else if (priceChange < 0 && volumeChange > 10 && latestData.change24h < 0) {
       recommendation = "SELL";
-      confidence = 0.65;
-      riskScore = 0.6;
+      confidence = 0.65 + (Math.min(volumeChange, 50) / 200);
+      riskScore = 0.6 + (Math.abs(priceChange) / 100);
     } else {
       recommendation = "HOLD";
       confidence = 0.85;
       riskScore = 0.2;
     }
 
-    // Supabase client aanmaken
+    console.log('Analysis results', {
+      recommendation,
+      confidence,
+      riskScore,
+      metrics: {
+        priceChange,
+        volumeChange,
+        change24h: latestData.change24h
+      }
+    });
+
+    // Supabase client setup
+    console.log('Setting up Supabase client');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase credentials');
       throw new Error('Missing Supabase credentials');
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    // Aanbeveling opslaan in de database
+    // Store recommendation
+    console.log('Storing recommendation in database');
     const { error: insertError } = await supabaseClient
       .from('agent_collected_data')
       .insert({
@@ -78,9 +113,12 @@ serve(async (req) => {
           recommendation,
           risk_score: riskScore,
           market_data: {
-            latest_price: latestPrice,
-            average_price: averagePrice,
-            volume_increase: volumeIncrease
+            latest_price: latestData.price,
+            price_change: priceChange,
+            volume_change: volumeChange,
+            change_24h: latestData.change24h,
+            high_24h: latestData.high24h,
+            low_24h: latestData.low24h
           }
         },
         confidence,
@@ -92,12 +130,18 @@ serve(async (req) => {
       throw new Error('Failed to save recommendation');
     }
 
-    // Response terugsturen
+    console.log('Successfully processed and stored trading analysis');
+
     return new Response(
       JSON.stringify({
         recommendation,
         confidence,
         riskScore,
+        metrics: {
+          priceChange,
+          volumeChange,
+          change24h: latestData.change24h
+        },
         timestamp: new Date().toISOString()
       }),
       { 
