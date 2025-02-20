@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -76,6 +77,30 @@ const AdminPanel = () => {
       lastActive: "10 min geleden",
       department: "Legal",
       expertise: ["Regulatory Compliance", "Contract Analysis", "Legal Risk Assessment"]
+    },
+    {
+      id: "7",
+      name: "Account Management Specialist",
+      status: "active",
+      type: "account_management",
+      performance: "99.8% accuracy",
+      lastActive: "Nu",
+      department: "Account Management",
+      expertise: [
+        "Portfolio Oversight",
+        "Account Security",
+        "Multi-Signature Wallets",
+        "Cold Storage Management",
+        "Regulatory Compliance"
+      ],
+      capabilities: [
+        "Hardware Wallet Integration",
+        "Multi-Factor Authentication",
+        "Quantum-Resistant Encryption",
+        "Real-time Monitoring"
+      ],
+      riskLevel: "low",
+      primaryRole: "Account Security"
     }
   ]);
 

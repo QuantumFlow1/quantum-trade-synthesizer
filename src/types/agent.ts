@@ -1,5 +1,4 @@
-
-export type AgentType = "trading" | "analysis" | "risk" | "finance" | "compliance" | "security" | "legal" | "market_analysis" | "portfolio_risk";
+export type AgentType = "trading" | "analysis" | "risk" | "finance" | "compliance" | "security" | "legal" | "market_analysis" | "portfolio_risk" | "account_management";
 
 export interface TradeSignal {
   pair: string;
