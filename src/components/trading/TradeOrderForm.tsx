@@ -9,6 +9,8 @@ import { submitTrade } from "@/services/tradeService";
 import { TradeOrder } from "./types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Brain, Users, TrendingUp, AlertTriangle } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 interface TradeOrderFormProps {
   currentPrice: number;
@@ -27,13 +29,24 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
   const [takeProfit, setTakeProfit] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Gesimuleerde AI agent analyse
+  const aiAnalysis = {
+    confidence: 85,
+    riskLevel: "medium",
+    recommendation: "long",
+    expectedProfit: "2.3%",
+    stopLossRecommendation: currentPrice * 0.98,
+    takeProfitRecommendation: currentPrice * 1.035,
+    collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to place trades",
+        title: "Authenticatie Vereist",
+        description: "Log in om te kunnen handelen",
         variant: "destructive",
       });
       return;
@@ -41,17 +54,8 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
 
     if (!amount || isNaN(Number(amount))) {
       toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid trading amount",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (orderExecutionType !== "market" && !limitPrice && !stopPrice) {
-      toast({
-        title: "Price Required",
-        description: `Please enter a ${orderExecutionType} price`,
+        title: "Ongeldig Bedrag",
+        description: "Voer een geldig handelsvolume in",
         variant: "destructive",
       });
       return;
@@ -77,23 +81,17 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
         price: currentPrice,
         limitPrice: limitPrice ? Number(limitPrice) : undefined,
         stopPrice: stopPrice ? Number(stopPrice) : undefined,
+        stopLoss: Number(aiAnalysis.stopLossRecommendation),
+        takeProfit: Number(aiAnalysis.takeProfitRecommendation)
       };
-
-      if (stopLoss && !isNaN(Number(stopLoss))) {
-        order.stopLoss = Number(stopLoss);
-      }
-
-      if (takeProfit && !isNaN(Number(takeProfit))) {
-        order.takeProfit = Number(takeProfit);
-      }
 
       onSubmitOrder(order);
       toast({
-        title: "Order Submitted",
-        description: `${orderType.toUpperCase()} ${orderExecutionType} order placed for ${amount} units`,
+        title: "Order Geplaatst",
+        description: `${orderType.toUpperCase()} ${orderExecutionType} order geplaatst voor ${amount} eenheden`,
       });
 
-      // Reset form
+      // Reset formulier
       setAmount("");
       setLimitPrice("");
       setStopPrice("");
@@ -102,8 +100,8 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     } catch (error) {
       console.error("Error submitting order:", error);
       toast({
-        title: "Error",
-        description: "Failed to submit order. Please try again.",
+        title: "Fout",
+        description: "Kon order niet plaatsen. Probeer het opnieuw.",
         variant: "destructive",
       });
     } finally {
@@ -112,55 +110,86 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
-      <OrderTypeSelector 
-        value={orderType}
-        onValueChange={setOrderType}
-      />
+    <div className="space-y-6">
+      <Card className="p-4 bg-secondary/10 backdrop-blur-xl border border-white/10">
+        <div className="flex items-center gap-2 mb-4">
+          <Brain className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-medium">AI Trading Analyse</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-green-400" />
+              <span>Vertrouwen: {aiAnalysis.confidence}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-yellow-400" />
+              <span>Risico: {aiAnalysis.riskLevel}</span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div>Verwachte winst: {aiAnalysis.expectedProfit}</div>
+            <div>Aanbeveling: {aiAnalysis.recommendation}</div>
+          </div>
+        </div>
 
-      <div className="space-y-2">
-        <Label>Order Execution Type</Label>
-        <Select 
-          value={orderExecutionType}
-          onValueChange={(value: "market" | "limit" | "stop" | "stop_limit") => setOrderExecutionType(value)}
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Users className="w-4 h-4" />
+          <span>Samenwerkende AI Agents: {aiAnalysis.collaboratingAgents.join(", ")}</span>
+        </div>
+      </Card>
+
+      <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
+        <OrderTypeSelector 
+          value={orderType}
+          onValueChange={setOrderType}
+        />
+
+        <div className="space-y-2">
+          <Label>Order Uitvoering Type</Label>
+          <Select 
+            value={orderExecutionType}
+            onValueChange={(value: "market" | "limit" | "stop" | "stop_limit") => setOrderExecutionType(value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecteer order type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="market">Market Order</SelectItem>
+              <SelectItem value="limit">Limit Order</SelectItem>
+              <SelectItem value="stop">Stop Order</SelectItem>
+              <SelectItem value="stop_limit">Stop Limit Order</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <OrderParameters
+          amount={amount}
+          orderExecutionType={orderExecutionType}
+          limitPrice={limitPrice}
+          stopPrice={stopPrice}
+          stopLoss={stopLoss}
+          takeProfit={takeProfit}
+          onAmountChange={setAmount}
+          onLimitPriceChange={setLimitPrice}
+          onStopPriceChange={setStopPrice}
+          onStopLossChange={setStopLoss}
+          onTakeProfitChange={setTakeProfit}
+        />
+
+        <Button 
+          type="submit" 
+          className={`w-full ${
+            orderType === "buy" 
+              ? "bg-green-500 hover:bg-green-600" 
+              : "bg-red-500 hover:bg-red-600"
+          }`}
+          disabled={isSubmitting}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Select order type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="market">Market Order</SelectItem>
-            <SelectItem value="limit">Limit Order</SelectItem>
-            <SelectItem value="stop">Stop Order</SelectItem>
-            <SelectItem value="stop_limit">Stop Limit Order</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      <OrderParameters
-        amount={amount}
-        orderExecutionType={orderExecutionType}
-        limitPrice={limitPrice}
-        stopPrice={stopPrice}
-        stopLoss={stopLoss}
-        takeProfit={takeProfit}
-        onAmountChange={setAmount}
-        onLimitPriceChange={setLimitPrice}
-        onStopPriceChange={setStopPrice}
-        onStopLossChange={setStopLoss}
-        onTakeProfitChange={setTakeProfit}
-      />
-
-      <Button 
-        type="submit" 
-        className={`w-full ${
-          orderType === "buy" 
-            ? "bg-green-500 hover:bg-green-600" 
-            : "bg-red-500 hover:bg-red-600"
-        }`}
-        disabled={isSubmitting}
-      >
-        {isSubmitting ? "Processing..." : `Place ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
-      </Button>
-    </form>
+          {isSubmitting ? "Verwerken..." : `Plaats ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
+        </Button>
+      </form>
+    </div>
   );
 };
