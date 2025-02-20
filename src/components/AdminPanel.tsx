@@ -5,14 +5,10 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Shield } from "lucide-react";
 import { Agent } from "@/types/agent";
-import AdminHeader from "@/components/admin/AdminHeader";
-import SuperAdminMonitor from "@/components/admin/SuperAdminMonitor";
-import AIAgentsList from "@/components/admin/AIAgentsList";
-import StatisticsPanel from "@/components/admin/StatisticsPanel";
-import QuickActions from "@/components/admin/QuickActions";
-import SystemAlerts from "@/components/admin/SystemAlerts";
 import UserDashboard from "@/components/UserDashboard";
 import AccountManagementPanel from "@/components/admin/AccountManagementPanel";
+import AdminPanelHeader from "@/components/admin/AdminPanelHeader";
+import AdminPanelContent from "@/components/admin/AdminPanelContent";
 
 const AdminPanel = () => {
   const { toast } = useToast();
@@ -79,36 +75,32 @@ const AdminPanel = () => {
       lastActive: "10 min geleden",
       department: "Legal",
       expertise: ["Regulatory Compliance", "Contract Analysis", "Legal Risk Assessment"]
-    },
-    {
-      id: "7",
-      name: "Account Management Specialist",
-      status: "active",
-      type: "account_management",
-      performance: "99.8% accuracy",
-      lastActive: "Nu",
-      department: "Account Management",
-      expertise: [
-        "Portfolio Oversight",
-        "Account Security",
-        "Multi-Signature Wallets",
-        "Cold Storage Management",
-        "Regulatory Compliance"
-      ],
-      capabilities: [
-        "Hardware Wallet Integration",
-        "Multi-Factor Authentication",
-        "Quantum-Resistant Encryption",
-        "Real-time Monitoring"
-      ],
-      riskLevel: "low",
-      primaryRole: "Account Security"
     }
   ]);
 
   const [userCount, setUserCount] = useState(1234);
   const [systemLoad, setSystemLoad] = useState(67);
   const [errorRate, setErrorRate] = useState(0.5);
+
+  const handleAddAgent = () => {
+    const newAgent: Agent = {
+      id: `${agents.length + 1}`,
+      name: "Nieuwe AI Agent",
+      status: "paused",
+      type: "analysis",
+      performance: "N/A",
+      lastActive: "Nooit",
+      department: "N/A",
+      expertise: []
+    };
+
+    setAgents(current => [...current, newAgent]);
+    
+    toast({
+      title: "Nieuwe Agent Toegevoegd",
+      description: "AI Agent is klaar voor configuratie",
+    });
+  };
 
   if (showUserDashboard) {
     return (
@@ -148,79 +140,26 @@ const AdminPanel = () => {
     );
   }
 
-  const handleVerify = () => {
-    toast({
-      title: "Verificatie Uitgevoerd",
-      description: "Alle transacties zijn geverifieerd",
-    });
-  };
-
-  const handleAgentAction = (agentId: string, action: "terminate" | "activate" | "pause") => {
-    setAgents(currentAgents => 
-      currentAgents.map(agent => {
-        if (agent.id === agentId) {
-          const newStatus = action === "terminate" ? "terminated" : 
-                          action === "activate" ? "active" : "paused";
-          return { ...agent, status: newStatus };
-        }
-        return agent;
-      })
-    );
-
-    toast({
-      title: `Agent ${action === "terminate" ? "Beëindigd" : action === "activate" ? "Geactiveerd" : "Gepauzeerd"}`,
-      description: `Agent status succesvol bijgewerkt`,
-    });
-  };
-
-  const handleAddAgent = () => {
-    const newAgent: Agent = {
-      id: `${agents.length + 1}`,
-      name: "Nieuwe AI Agent",
-      status: "paused",
-      type: "analysis",
-      performance: "N/A",
-      lastActive: "Nooit",
-      department: "N/A",
-      expertise: []
-    };
-
-    setAgents(current => [...current, newAgent]);
-    
-    toast({
-      title: "Nieuwe Agent Toegevoegd",
-      description: "AI Agent is klaar voor configuratie",
-    });
-  };
-
   return (
     <div className="p-6">
-      <AdminHeader 
+      <AdminPanelHeader 
         onDashboardClick={() => setShowUserDashboard(true)}
         onAccountManagement={() => setShowAccountManagement(true)}
         onAddAgent={handleAddAgent}
         onSignOut={signOut}
+        setShowUserDashboard={setShowUserDashboard}
+        setShowAccountManagement={setShowAccountManagement}
+        setAgents={setAgents}
       />
 
-      <StatisticsPanel />
-
-      {userProfile?.role === 'super_admin' && (
-        <SuperAdminMonitor 
-          userCount={userCount}
-          systemLoad={systemLoad}
-          errorRate={errorRate}
-        />
-      )}
-
-      <AIAgentsList 
+      <AdminPanelContent
+        userRole={userProfile?.role}
         agents={agents}
-        onAction={handleAgentAction}
+        setAgents={setAgents}
+        userCount={userCount}
+        systemLoad={systemLoad}
+        errorRate={errorRate}
       />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <QuickActions onVerify={handleVerify} />
-        <SystemAlerts />
-      </div>
     </div>
   );
 };
