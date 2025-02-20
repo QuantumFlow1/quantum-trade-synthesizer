@@ -29,11 +29,10 @@ const AdminPanelContent = ({
   const [activeTab, setActiveTab] = useState("dashboard");
 
   const handleAgentAction = (agentId: string, action: "terminate" | "activate" | "pause") => {
-    // Update de agent status in de lijst
     const updatedAgents = agents.map(agent => {
       if (agent.id === agentId) {
-        const newStatus = action === "terminate" ? "terminated" : 
-                         action === "pause" ? "paused" : "active";
+        const newStatus = action === "terminate" ? "terminated" as const : 
+                         action === "pause" ? "paused" as const : "active" as const;
         return { ...agent, status: newStatus };
       }
       return agent;
@@ -71,8 +70,7 @@ const AdminPanelContent = ({
 
       <TabsContent value="agents">
         <AIAgentsList 
-          agents={agents} 
-          setAgents={setAgents} 
+          agents={agents}
           onAction={handleAgentAction}
         />
       </TabsContent>
