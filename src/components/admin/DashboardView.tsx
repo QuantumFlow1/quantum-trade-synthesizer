@@ -1,26 +1,23 @@
 
-import { Shield } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import UserDashboard from "@/components/UserDashboard";
-
 interface DashboardViewProps {
-  onBack: () => void;
+  userCount: number;
+  systemLoad: number;
+  errorRate: number;
 }
 
-const DashboardView = ({ onBack }: DashboardViewProps) => {
+const DashboardView = ({
+  userCount,
+  systemLoad,
+  errorRate
+}: DashboardViewProps) => {
   return (
     <div>
-      <div className="p-4 bg-background border-b">
-        <Button 
-          variant="outline" 
-          onClick={onBack}
-          className="mb-4"
-        >
-          <Shield className="w-4 h-4 mr-2" />
-          Terug naar Admin Paneel
-        </Button>
+      <h2>Dashboard Overview</h2>
+      <div>
+        <p>Total Users: {userCount}</p>
+        <p>System Load: {systemLoad}%</p>
+        <p>Error Rate: {errorRate}%</p>
       </div>
-      <UserDashboard />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import AIAgentCard from "./AIAgentCard";
 
 interface AIAgentsListProps {
   agents: Agent[];
+  setAgents: (agents: Agent[]) => void;
   onAction: (agentId: string, action: "terminate" | "activate" | "pause") => void;
 }
 
