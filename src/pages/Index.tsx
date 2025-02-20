@@ -1,4 +1,5 @@
 
+import React, { Suspense } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
 import AdminPanel from "@/components/AdminPanel";
@@ -10,7 +11,6 @@ import { useOAuthRedirect } from "@/hooks/use-oauth-redirect";
 import { ZoomControls } from "@/components/ZoomControls";
 import { LoadingProfile } from "@/components/LoadingProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Suspense } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 
