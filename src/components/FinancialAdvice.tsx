@@ -1,18 +1,57 @@
 
-import { TrendingUp, AlertCircle, Book, BarChart2, Sparkles, Brain } from "lucide-react";
+import { TrendingUp, AlertCircle, Book, BarChart2, Sparkles, Brain, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { checkSupabaseConnection } from "@/lib/supabase";
 
 const FinancialAdvice = () => {
   const { toast } = useToast();
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiAdvice, setAiAdvice] = useState("");
+  const [isOnline, setIsOnline] = useState(true);
+
+  const generateLocalAdvice = () => {
+    // Basis lokaal advies gebaseerd op vaste regels
+    const localAdvice = `Lokaal Gegenereerd Advies:
+
+1. Trading Strategie:
+- Spreid je investeringen over verschillende assets
+- Gebruik stop-loss orders voor risicobeheer
+- Handel niet meer dan 2% van je portfolio per trade
+
+2. Risico Management:
+- Hou altijd een emergency fund aan
+- Diversifieer over verschillende sectoren
+- Vermijd overmatige leverage
+
+3. Portfolio Allocatie:
+- 40% grote bedrijven (blue chips)
+- 30% obligaties voor stabiliteit
+- 20% groeiende markten
+- 10% cash reserve`;
+
+    setAiAdvice(localAdvice);
+    toast({
+      title: "Lokaal Advies Gegenereerd",
+      description: "Basis advies regels toegepast",
+    });
+  };
 
   const generateAIAdvice = async () => {
     setIsLoadingAI(true);
     try {
+      // Check connection first
+      const isConnected = await checkSupabaseConnection();
+      setIsOnline(isConnected);
+
+      if (!isConnected) {
+        generateLocalAdvice();
+        setIsLoadingAI(false);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-ai-response', {
         body: {
           prompt: `Analyseer de huidige marktcondities en geef advies:
@@ -38,10 +77,11 @@ const FinancialAdvice = () => {
     } catch (error) {
       console.error('Error:', error);
       toast({
-        title: "Error",
-        description: "Kon geen AI analyse genereren",
+        title: "Offline Modus",
+        description: "Schakel over naar lokaal advies",
         variant: "destructive",
       });
+      generateLocalAdvice();
     } finally {
       setIsLoadingAI(false);
     }
@@ -54,22 +94,29 @@ const FinancialAdvice = () => {
           <Book className="w-5 h-5" />
           <h2 className="text-xl font-semibold">Financieel Advies Dashboard</h2>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={generateAIAdvice}
-          disabled={isLoadingAI}
-        >
-          <Brain className="w-4 h-4 mr-2" />
-          {isLoadingAI ? "AI Analyseert..." : "Genereer AI Analyse"}
-        </Button>
+        <div className="flex items-center gap-2">
+          {isOnline ? (
+            <Wifi className="w-4 h-4 text-green-500" />
+          ) : (
+            <WifiOff className="w-4 h-4 text-yellow-500" />
+          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={generateAIAdvice}
+            disabled={isLoadingAI}
+          >
+            <Brain className="w-4 h-4 mr-2" />
+            {isLoadingAI ? "AI Analyseert..." : isOnline ? "Genereer AI Analyse" : "Genereer Lokaal Advies"}
+          </Button>
+        </div>
       </div>
 
-      {/* AI Inzichten */}
+      {/* AI/Lokale Inzichten */}
       <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
         <h3 className="font-medium mb-3 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-blue-400" />
-          <span className="text-blue-400">AI Trading Inzichten</span>
+          <span className="text-blue-400">{isOnline ? "AI Trading Inzichten" : "Lokale Trading Inzichten"}</span>
         </h3>
         <div className="space-y-3">
           {aiAdvice ? (
@@ -81,7 +128,7 @@ const FinancialAdvice = () => {
           ) : (
             <div className="p-3 rounded bg-blue-500/5">
               <div className="text-sm text-muted-foreground">
-                Klik op "Genereer AI Analyse" voor gepersonaliseerd advies.
+                Klik op "{isOnline ? 'Genereer AI Analyse' : 'Genereer Lokaal Advies'}" voor {isOnline ? 'gepersonaliseerd' : 'basis'} advies.
               </div>
             </div>
           )}
