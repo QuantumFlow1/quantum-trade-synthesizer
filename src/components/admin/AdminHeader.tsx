@@ -1,14 +1,15 @@
 
-import { Shield, Plus, LogOut, LayoutDashboard } from "lucide-react";
+import { Shield, Plus, LogOut, LayoutDashboard, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AdminHeaderProps {
   onDashboardClick: () => void;
+  onAccountManagement: () => void;
   onAddAgent: () => void;
   onSignOut: () => void;
 }
 
-const AdminHeader = ({ onDashboardClick, onAddAgent, onSignOut }: AdminHeaderProps) => {
+const AdminHeader = ({ onDashboardClick, onAccountManagement, onAddAgent, onSignOut }: AdminHeaderProps) => {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
       <div className="flex items-center gap-2">
@@ -23,6 +24,14 @@ const AdminHeader = ({ onDashboardClick, onAddAgent, onSignOut }: AdminHeaderPro
         >
           <LayoutDashboard className="w-4 h-4 mr-2" />
           Dashboard
+        </Button>
+        <Button 
+          variant="outline"
+          onClick={onAccountManagement}
+          size="sm"
+        >
+          <Users className="w-4 h-4 mr-2" />
+          Rekeningen
         </Button>
         <Button 
           onClick={onAddAgent}

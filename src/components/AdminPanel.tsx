@@ -12,11 +12,13 @@ import StatisticsPanel from "@/components/admin/StatisticsPanel";
 import QuickActions from "@/components/admin/QuickActions";
 import SystemAlerts from "@/components/admin/SystemAlerts";
 import UserDashboard from "@/components/UserDashboard";
+import AccountManagementPanel from "@/components/admin/AccountManagementPanel";
 
 const AdminPanel = () => {
   const { toast } = useToast();
   const { signOut, userProfile } = useAuth();
   const [showUserDashboard, setShowUserDashboard] = useState(false);
+  const [showAccountManagement, setShowAccountManagement] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([
     {
       id: "1",
@@ -126,6 +128,26 @@ const AdminPanel = () => {
     );
   }
 
+  if (showAccountManagement) {
+    return (
+      <div>
+        <div className="p-4 bg-background border-b">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowAccountManagement(false)}
+            className="mb-4"
+          >
+            <Shield className="w-4 h-4 mr-2" />
+            Terug naar Admin Paneel
+          </Button>
+        </div>
+        <div className="p-6">
+          <AccountManagementPanel />
+        </div>
+      </div>
+    );
+  }
+
   const handleVerify = () => {
     toast({
       title: "Verificatie Uitgevoerd",
@@ -175,6 +197,7 @@ const AdminPanel = () => {
     <div className="p-6">
       <AdminHeader 
         onDashboardClick={() => setShowUserDashboard(true)}
+        onAccountManagement={() => setShowAccountManagement(true)}
         onAddAgent={handleAddAgent}
         onSignOut={signOut}
       />
