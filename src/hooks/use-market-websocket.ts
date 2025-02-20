@@ -8,6 +8,23 @@ export const useMarketWebSocket = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
   const { toast } = useToast();
 
+  const reconnect = async () => {
+    try {
+      await fetchInitialData();
+      toast({
+        title: "Verbinding hersteld",
+        description: "De marktdata wordt nu opnieuw opgehaald.",
+      });
+    } catch (error) {
+      console.error('Reconnection error:', error);
+      toast({
+        title: "Verbinding mislukt",
+        description: "Kon geen nieuwe verbinding maken met de marktdata service.",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     // Initiële data laden
     fetchInitialData();
@@ -64,5 +81,5 @@ export const useMarketWebSocket = () => {
     }
   };
 
-  return { marketData };
+  return { marketData, reconnect };
 };
