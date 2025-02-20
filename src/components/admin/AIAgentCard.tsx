@@ -1,5 +1,5 @@
 
-import { Play, Pause, X, Brain, AlertTriangle, TrendingUp, BarChart2, Activity } from "lucide-react";
+import { Play, Pause, X, Brain, AlertTriangle, TrendingUp, BarChart2, Activity, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Agent } from "@/types/agent";
 import {
@@ -95,6 +95,12 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
         </div>
         <CardDescription>
           Afdeling: {agent.department} • Type: {agent.type}
+          {agent.collaborators && agent.collaborators.length > 0 && (
+            <div className="flex items-center gap-1 mt-1">
+              <Users className="w-4 h-4" />
+              <span className="text-sm">Samenwerking met {agent.collaborators.length} andere agents</span>
+            </div>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -113,6 +119,14 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
             <div className="flex items-center gap-2">
               <BarChart2 className="w-4 h-4" />
               <span className="text-sm">Indicators: {agent.technicalIndicators.join(", ")}</span>
+            </div>
+          )}
+          {agent.primaryRole && (
+            <div className="text-sm text-muted-foreground">
+              Primaire rol: {agent.primaryRole}
+              {agent.secondaryRoles && agent.secondaryRoles.length > 0 && (
+                <span> • Secundaire rollen: {agent.secondaryRoles.join(", ")}</span>
+              )}
             </div>
           )}
           <div className={`text-sm ${

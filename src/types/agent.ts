@@ -31,7 +31,9 @@ export interface Agent {
   expertise: string[];
   capabilities?: string[];
   riskLevel?: "low" | "medium" | "high";
-  // Nieuwe trading-specifieke velden
+  collaborators?: string[]; // IDs van samenwerkende agents
+  primaryRole?: string;
+  secondaryRoles?: string[];
   tradeHistory?: TradeSignal[];
   metrics?: AgentMetrics;
   allowedPairs?: string[];
