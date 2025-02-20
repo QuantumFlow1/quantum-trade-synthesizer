@@ -19,7 +19,12 @@ const DashboardView = ({
   const { data: marketData, isLoading: marketLoading } = useQuery({
     queryKey: ['marketData'],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('market-data-collector');
+      const { data, error } = await supabase
+        .from('agent_collected_data')
+        .select('*')
+        .eq('data_type', 'market_data')
+        .order('collected_at', { ascending: false })
+        .limit(24);
       
       if (error) throw error;
       return data;
@@ -29,12 +34,21 @@ const DashboardView = ({
   const { data: sentimentData, isLoading: sentimentLoading } = useQuery({
     queryKey: ['sentimentData'],
     queryFn: async () => {
-      const { data, error } = await supabase.functions.invoke('social-monitor');
+      const { data, error } = await supabase
+        .from('agent_collected_data')
+        .select('*')
+        .eq('data_type', 'social_sentiment')
+        .order('collected_at', { ascending: false })
+        .limit(24);
       
       if (error) throw error;
       return data;
     }
   });
+
+  // Add console logs for debugging
+  console.log('Market Data:', marketData);
+  console.log('Sentiment Data:', sentimentData);
 
   return (
     <div className="space-y-6">
@@ -82,7 +96,7 @@ const DashboardView = ({
               <div className="h-[300px] flex items-center justify-center">
                 <p>Loading market data...</p>
               </div>
-            ) : (
+            ) : marketData && marketData.length > 0 ? (
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={marketData}>
@@ -103,18 +117,22 @@ const DashboardView = ({
                     />
                     <Line 
                       type="monotone" 
-                      dataKey={(data) => data.content.price} 
+                      dataKey="content.price" 
                       stroke="#8884d8" 
                       name="Price"
                     />
                     <Line 
                       type="monotone" 
-                      dataKey={(data) => data.content.volume} 
+                      dataKey="content.volume" 
                       stroke="#82ca9d" 
                       name="Volume"
                     />
                   </LineChart>
                 </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center">
+                <p>Geen marktdata beschikbaar</p>
               </div>
             )}
           </CardContent>
@@ -130,7 +148,7 @@ const DashboardView = ({
               <div className="h-[300px] flex items-center justify-center">
                 <p>Loading sentiment data...</p>
               </div>
-            ) : (
+            ) : sentimentData && sentimentData.length > 0 ? (
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={sentimentData}>
@@ -161,6 +179,10 @@ const DashboardView = ({
                     />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center">
+                <p>Geen sentiment data beschikbaar</p>
               </div>
             )}
           </CardContent>
