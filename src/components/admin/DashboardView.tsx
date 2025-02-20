@@ -19,12 +19,7 @@ const DashboardView = ({
   const { data: marketData, isLoading: marketLoading } = useQuery({
     queryKey: ['marketData'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('agent_collected_data')
-        .select('*')
-        .eq('data_type', 'market_data')
-        .order('collected_at', { ascending: false })
-        .limit(24);
+      const { data, error } = await supabase.functions.invoke('market-data-collector');
       
       if (error) throw error;
       return data;
@@ -34,12 +29,7 @@ const DashboardView = ({
   const { data: sentimentData, isLoading: sentimentLoading } = useQuery({
     queryKey: ['sentimentData'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('agent_collected_data')
-        .select('*')
-        .eq('data_type', 'social_sentiment')
-        .order('collected_at', { ascending: false })
-        .limit(24);
+      const { data, error } = await supabase.functions.invoke('social-monitor');
       
       if (error) throw error;
       return data;
