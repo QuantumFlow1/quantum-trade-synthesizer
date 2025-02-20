@@ -3,6 +3,8 @@ import { useState } from "react";
 import AdminPanelHeader from "@/components/admin/AdminPanelHeader";
 import AdminPanelContent from "@/components/admin/AdminPanelContent";
 import { Agent } from "@/types/agent";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 const AdminPanel = () => {
   const [showUserDashboard, setShowUserDashboard] = useState(false);
@@ -27,8 +29,23 @@ const AdminPanel = () => {
     console.log("Sign out clicked");
   };
 
+  const handleBackToAdmin = () => {
+    setShowUserDashboard(false);
+    setShowAccountManagement(false);
+  };
+
   return (
     <div className="space-y-6">
+      {(showUserDashboard || showAccountManagement) && (
+        <Button
+          variant="outline"
+          onClick={handleBackToAdmin}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Terug naar Admin
+        </Button>
+      )}
       <AdminPanelHeader
         onDashboardClick={handleDashboardClick}
         onAccountManagement={handleAccountManagement}
