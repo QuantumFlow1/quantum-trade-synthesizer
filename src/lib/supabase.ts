@@ -21,7 +21,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Add connection check function
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.functions.invoke('fetch-market-data')
+    const { data, error } = await supabase.functions.invoke('market-data-collector')
     
     if (error) {
       console.error('Supabase connection error:', error)
