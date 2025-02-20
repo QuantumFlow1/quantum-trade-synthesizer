@@ -39,7 +39,7 @@ export const useMarketWebSocket = () => {
 
   const fetchInitialData = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-market-data');
+      const { data, error } = await supabase.functions.invoke('market-data-collector');
       
       if (error) {
         console.error('Error fetching initial market data:', error);
