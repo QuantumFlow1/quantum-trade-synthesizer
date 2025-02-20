@@ -39,6 +39,45 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_collected_data: {
+        Row: {
+          agent_id: string
+          collected_at: string | null
+          confidence: number | null
+          content: Json
+          created_at: string | null
+          data_type: string
+          id: string
+          sentiment: number | null
+          source: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          collected_at?: string | null
+          confidence?: number | null
+          content: Json
+          created_at?: string | null
+          data_type: string
+          id?: string
+          sentiment?: number | null
+          source: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          collected_at?: string | null
+          confidence?: number | null
+          content?: Json
+          created_at?: string | null
+          data_type?: string
+          id?: string
+          sentiment?: number | null
+          source?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
