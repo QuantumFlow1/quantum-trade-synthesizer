@@ -2,6 +2,7 @@
 import { useState } from "react";
 import AdminPanelHeader from "@/components/admin/AdminPanelHeader";
 import AdminPanelContent from "@/components/admin/AdminPanelContent";
+import UserDashboard from "@/components/UserDashboard";
 import { Agent } from "@/types/agent";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -34,9 +35,27 @@ const AdminPanel = () => {
     setShowAccountManagement(false);
   };
 
+  // Als showUserDashboard true is, toon dan de UserDashboard component
+  if (showUserDashboard) {
+    return (
+      <div>
+        <Button
+          variant="outline"
+          onClick={handleBackToAdmin}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Terug naar Admin
+        </Button>
+        <UserDashboard />
+      </div>
+    );
+  }
+
+  // Anders, toon de admin panel content
   return (
     <div className="space-y-6">
-      {(showUserDashboard || showAccountManagement) && (
+      {showAccountManagement && (
         <Button
           variant="outline"
           onClick={handleBackToAdmin}
