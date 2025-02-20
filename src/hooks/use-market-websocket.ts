@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { MarketData } from "@/components/market/types";
@@ -10,23 +9,16 @@ export const useMarketWebSocket = () => {
 
   const analyzeTradingData = async (symbol: string, data: MarketData) => {
     try {
-      console.log('Sending data for analysis:', { symbol, data });
       const { data: analysisResult, error } = await supabase.functions.invoke('trading-analysis', {
-        body: { 
-          symbol, 
-          marketData: data 
-        }
+        body: { symbol }
       });
 
-      if (error) {
-        console.error('Trading analysis error:', error);
-        throw error;
-      }
-
+      if (error) throw error;
+      
       console.log('Analysis result:', analysisResult);
       return analysisResult;
     } catch (error) {
-      console.error('Error in trading analysis:', error);
+      console.error('Trading analysis error:', error);
       toast({
         title: "Analyse Fout",
         description: "Kon geen trading analyse uitvoeren.",
@@ -53,30 +45,27 @@ export const useMarketWebSocket = () => {
   };
 
   useEffect(() => {
-    // Initiële data laden
     fetchInitialData();
 
-    // Real-time channel setup
     const channel = supabase
       .channel('market-updates')
       .on('broadcast', { event: 'market-data' }, async (payload) => {
-        console.log('Received real-time market data:', payload);
+        console.log('Received market data:', payload);
         if (payload.payload) {
           const newMarketData = payload.payload as MarketData[];
           setMarketData(newMarketData);
           
-          // Voor elk symbool een analyse uitvoeren
+          // Analyse per symbool
           for (const data of newMarketData) {
             await analyzeTradingData(data.symbol, data);
           }
         }
       })
       .subscribe((status) => {
-        console.log('Real-time connection status:', status);
-        
+        console.log('Connection status:', status);
         if (status === 'SUBSCRIBED') {
           toast({
-            title: "Real-time Verbinding Actief",
+            title: "Verbinding Actief",
             description: "Je ontvangt nu live market updates.",
           });
         }
@@ -91,29 +80,19 @@ export const useMarketWebSocket = () => {
     try {
       const { data, error } = await supabase.functions.invoke('market-data-collector');
       
-      if (error) {
-        console.error('Error fetching initial market data:', error);
-        toast({
-          title: "Data Error",
-          description: "Kon geen verbinding maken met de markt data.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (error) throw error;
 
       if (data) {
         setMarketData(data as MarketData[]);
-        
-        // Analyze initial data
-        for (const marketItem of data as MarketData[]) {
-          await analyzeTradingData(marketItem.symbol, marketItem);
+        for (const item of data as MarketData[]) {
+          await analyzeTradingData(item.symbol, item);
         }
       }
     } catch (error) {
-      console.error('Market data fetch error:', error);
+      console.error('Market data error:', error);
       toast({
-        title: "Connectie Error",
-        description: "Er is een probleem met de market data verbinding.",
+        title: "Data Error",
+        description: "Kon geen markt data ophalen.",
         variant: "destructive",
       });
     }
