@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AccountManagementPanel from "./AccountManagementPanel";
 import DashboardView from "./DashboardView";
@@ -28,8 +28,8 @@ const AdminPanelContent = ({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Voeg een nieuwe receptioniste AI agent toe als deze nog niet bestaat
-  useState(() => {
+  // Changed from useState to useEffect
+  useEffect(() => {
     const receptionistExists = agents.some(agent => agent.type === "receptionist");
     if (!receptionistExists) {
       const receptionistAgent: Agent = {
@@ -59,7 +59,7 @@ const AdminPanelContent = ({
       };
       setAgents([...agents, receptionistAgent]);
     }
-  }, []);
+  }, [agents, setAgents]);
 
   const handleAgentAction = (agentId: string, action: "terminate" | "activate" | "pause") => {
     const updatedAgents = agents.map(agent => {
@@ -116,4 +116,3 @@ const AdminPanelContent = ({
 };
 
 export default AdminPanelContent;
-
