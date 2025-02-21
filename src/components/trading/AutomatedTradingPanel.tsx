@@ -28,12 +28,16 @@ export const AutomatedTradingPanel = ({ simulationMode = true }: AutomatedTradin
   const [lastAnalysis, setLastAnalysis] = useState<TradeAnalysis | null>(null);
   const [tradeCount, setTradeCount] = useState(0);
   const [totalProfit, setTotalProfit] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isActive) {
       console.log('Starting automated trading with risk level:', riskLevel);
-      const interval = setInterval(async () => {
+      let timeoutId: NodeJS.Timeout;
+
+      const performTradeAnalysis = async () => {
         try {
+          setError(null);
           console.log('Fetching market analysis...');
           const { data: analysis, error: analysisError } = await supabase.functions.invoke('trading-analysis', {
             body: { 
@@ -45,14 +49,24 @@ export const AutomatedTradingPanel = ({ simulationMode = true }: AutomatedTradin
 
           if (analysisError) {
             console.error('Analysis error:', analysisError);
-            throw analysisError;
+            setError(analysisError.message);
+            toast({
+              title: "Analysis Error",
+              description: analysisError.message,
+              variant: "destructive",
+            });
+            return;
+          }
+
+          if (!analysis) {
+            throw new Error('No analysis data received');
           }
 
           console.log('Received market analysis:', analysis);
           setLastAnalysis(analysis);
 
           if (analysis.shouldTrade) {
-            console.log('Trade conditions met, executing rapid trade...');
+            console.log('Trade conditions met, executing trade...');
             const { data: tradeData, error: tradeError } = await supabase.functions.invoke('execute-simulated-trade', {
               body: {
                 type: analysis.recommendedAction,
@@ -65,7 +79,17 @@ export const AutomatedTradingPanel = ({ simulationMode = true }: AutomatedTradin
 
             if (tradeError) {
               console.error('Trade execution error:', tradeError);
-              throw tradeError;
+              setError(tradeError.message);
+              toast({
+                title: "Trade Execution Error",
+                description: tradeError.message,
+                variant: "destructive",
+              });
+              return;
+            }
+
+            if (!tradeData) {
+              throw new Error('No trade data received');
             }
 
             console.log('Trade executed successfully:', tradeData);
@@ -83,18 +107,31 @@ export const AutomatedTradingPanel = ({ simulationMode = true }: AutomatedTradin
             console.log('Trade conditions not met, waiting for next opportunity...');
           }
         } catch (error) {
-          console.error('Automated trading error:', error);
+          const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+          console.error('Automated trading error:', errorMessage);
+          setError(errorMessage);
           toast({
             title: "Trading Error",
-            description: "An error occurred during automated trading",
+            description: errorMessage,
             variant: "destructive",
           });
         }
-      }, isRapidMode ? 5000 : 30000); // Run every 5 seconds in rapid mode, otherwise every 30 seconds
 
-      return () => clearInterval(interval);
+        // Schedule next analysis
+        timeoutId = setTimeout(performTradeAnalysis, isRapidMode ? 5000 : 30000);
+      };
+
+      // Start the first analysis
+      performTradeAnalysis();
+
+      // Cleanup function
+      return () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
     }
-  }, [isActive, riskLevel, isRapidMode, simulationMode]);
+  }, [isActive, riskLevel, isRapidMode, simulationMode, toast]);
 
   return (
     <Card className="p-6 space-y-6 bg-secondary/10 backdrop-blur-xl border border-white/10">
@@ -140,6 +177,15 @@ export const AutomatedTradingPanel = ({ simulationMode = true }: AutomatedTradin
             </div>
           </div>
         </div>
+
+        {error && (
+          <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-4 h-4" />
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {lastAnalysis && (
