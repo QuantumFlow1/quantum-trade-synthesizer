@@ -86,74 +86,71 @@ const AdminPanelContent = ({
   };
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-        <TabsTrigger value="accounts">Accounts</TabsTrigger>
-        <TabsTrigger value="agents">AI Agents</TabsTrigger>
-        <TabsTrigger value="models">Advies Modellen</TabsTrigger>
-      </TabsList>
+    <div className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="accounts">Accounts</TabsTrigger>
+          <TabsTrigger value="agents">AI Agents</TabsTrigger>
+          <TabsTrigger value="models">Advies Modellen</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="dashboard">
-        <Accordion type="single" collapsible className="w-full space-y-4">
-          <AccordionItem value="overview">
-            <AccordionTrigger className="text-lg font-semibold">
-              Platform Overzicht
-            </AccordionTrigger>
-            <AccordionContent>
-              <DashboardView
-                userCount={userCount}
-                systemLoad={systemLoad}
-                errorRate={errorRate}
-              />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </TabsContent>
+        <div className="mt-4">
+          <TabsContent value="dashboard">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="overview">
+                <AccordionTrigger>Platform Overzicht</AccordionTrigger>
+                <AccordionContent>
+                  <DashboardView
+                    userCount={userCount}
+                    systemLoad={systemLoad}
+                    errorRate={errorRate}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
 
-      <TabsContent value="accounts">
-        <Accordion type="single" collapsible className="w-full space-y-4">
-          <AccordionItem value="management">
-            <AccordionTrigger className="text-lg font-semibold">
-              Account Beheer
-            </AccordionTrigger>
-            <AccordionContent>
-              <AccountManagementPanel />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </TabsContent>
+          <TabsContent value="accounts">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="management">
+                <AccordionTrigger>Account Beheer</AccordionTrigger>
+                <AccordionContent>
+                  <AccountManagementPanel />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
 
-      <TabsContent value="agents">
-        <Accordion type="single" collapsible className="w-full space-y-4">
-          <AccordionItem value="ai-agents">
-            <AccordionTrigger className="text-lg font-semibold">
-              AI Assistenten
-            </AccordionTrigger>
-            <AccordionContent>
-              <AIAgentsList 
-                agents={agents}
-                onAction={handleAgentAction}
-              />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </TabsContent>
+          <TabsContent value="agents">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="ai-agents">
+                <AccordionTrigger>AI Assistenten</AccordionTrigger>
+                <AccordionContent>
+                  <AIAgentsList 
+                    agents={agents}
+                    onAction={handleAgentAction}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
 
-      <TabsContent value="models">
-        <Accordion type="single" collapsible className="w-full space-y-4">
-          <AccordionItem value="advice-models">
-            <AccordionTrigger className="text-lg font-semibold">
-              Adviesmodellen
-            </AccordionTrigger>
-            <AccordionContent>
-              <ModelManagement />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </TabsContent>
-    </Tabs>
+          <TabsContent value="models">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="advice-models">
+                <AccordionTrigger>Adviesmodellen</AccordionTrigger>
+                <AccordionContent>
+                  <ModelManagement />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
+        </div>
+      </Tabs>
+    </div>
   );
 };
 
 export default AdminPanelContent;
+
