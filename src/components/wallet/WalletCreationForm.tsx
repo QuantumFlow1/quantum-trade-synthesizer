@@ -1,69 +1,86 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { WalletType } from "@/types/wallet";
+import { supabase } from "@/lib/supabase";
 
 interface WalletCreationFormProps {
-  onCreateWallet: (name: string, type: "spot" | "margin" | "futures") => Promise<void>;
-  onCancel: () => void;
+  onSuccess?: (wallet: any) => void;
 }
 
-export const WalletCreationForm = ({ onCreateWallet, onCancel }: WalletCreationFormProps) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    type: "spot" as const,
-  });
+export const WalletCreationForm = ({ onSuccess }: WalletCreationFormProps) => {
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [walletName, setWalletName] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<WalletType>("spot");
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onCreateWallet(formData.name, formData.type);
-    setFormData({ name: "", type: "spot" });
-  };
+  e.preventDefault();
+  
+  try {
+    const { data: wallet, error } = await supabase
+      .from('wallets')
+      .insert({
+        user_id: user?.id,
+        name: walletName,
+        type: selectedType as "spot", // Force type as "spot" for now
+        balance: 0,
+        available_balance: 0,
+        locked_balance: 0
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    toast({
+      title: "Wallet Created",
+      description: `Successfully created ${walletName} wallet`,
+    });
+
+    onSuccess?.(wallet);
+    setWalletName('');
+  } catch (error) {
+    console.error('Error creating wallet:', error);
+    toast({
+      title: "Error",
+      description: "Failed to create wallet. Please try again.",
+      variant: "destructive",
+    });
+  }
+};
 
   return (
-    <Card className="p-4">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label>Wallet Name</Label>
-          <Input
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="Enter wallet name"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Wallet Type</Label>
-          <Select
-            value={formData.type}
-            onValueChange={(value: "spot" | "margin" | "futures") => 
-              setFormData({ ...formData, type: value })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select wallet type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="spot">Spot</SelectItem>
-              <SelectItem value="margin">Margin</SelectItem>
-              <SelectItem value="futures">Futures</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Wallet
-          </Button>
-        </div>
-      </form>
-    </Card>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="walletName">Wallet Name</Label>
+        <Input
+          id="walletName"
+          placeholder="My Trading Wallet"
+          value={walletName}
+          onChange={(e) => setWalletName(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Wallet Type</Label>
+        <Select onValueChange={(value) => setSelectedType(value as WalletType)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select wallet type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="spot">Spot</SelectItem>
+            <SelectItem value="margin">Margin</SelectItem>
+            <SelectItem value="futures">Futures</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Button type="submit">Create Wallet</Button>
+    </form>
   );
 };
