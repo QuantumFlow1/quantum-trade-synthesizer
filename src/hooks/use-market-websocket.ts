@@ -47,14 +47,31 @@ export const useMarketWebSocket = () => {
           
           // Server-side analyse aanroepen
           try {
-            const { data: analysisData, error } = await supabase.functions.invoke('market-analysis', {
+            const { data: analysisData, error: analysisError } = await supabase.functions.invoke('market-analysis', {
               body: { marketData: newMarketData }
             });
             
-            if (error) throw error;
+            if (analysisError) throw analysisError;
             
             if (analysisData?.analyses) {
               console.log('Market analyses:', analysisData.analyses);
+              
+              // Social sentiment analyse toevoegen
+              const socialData = newMarketData.map(data => ({
+                text: `${data.symbol} koers ${data.change24h > 0 ? 'stijgt' : 'daalt'} met ${Math.abs(data.change24h)}%`,
+                source: "market-data",
+                timestamp: new Date().toISOString()
+              }));
+
+              const { data: sentimentData, error: sentimentError } = await supabase.functions.invoke('social-monitor', {
+                body: { socialData }
+              });
+
+              if (sentimentError) throw sentimentError;
+
+              if (sentimentData?.analyses) {
+                console.log('Social sentiment analyses:', sentimentData.analyses);
+              }
             }
           } catch (error) {
             console.error('Analysis error:', error);
