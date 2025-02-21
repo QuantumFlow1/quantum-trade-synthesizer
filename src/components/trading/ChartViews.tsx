@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   ResponsiveContainer,
@@ -15,15 +16,13 @@ import {
 } from "recharts";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { LoadingChart } from "../market/LoadingChart";
+import { AutomatedTradingPanel } from './AutomatedTradingPanel';
 
 interface ChartViewsProps {
   data: TradingDataPoint[];
   view: "price" | "volume" | "indicators";
   indicator: "sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx";
 }
-
-// Update the imports to include AutomatedTradingPanel
-import { AutomatedTradingPanel } from './AutomatedTradingPanel';
 
 const tooltipStyle = {
   backgroundColor: "rgba(0,0,0,0.8)",
@@ -136,10 +135,12 @@ export const ChartViews = ({ data, view, indicator }: ChartViewsProps) => {
 
   return (
     <div className="space-y-6">
+      <div className="h-[400px]">
+        {view === "price" && renderPriceChart()}
+        {view === "volume" && renderVolumeChart()}
+        {view === "indicators" && renderIndicatorChart()}
+      </div>
       <AutomatedTradingPanel simulationMode={true} />
-      {view === "price" && renderPriceChart()}
-      {view === "volume" && renderVolumeChart()}
-      {view === "indicators" && renderIndicatorChart()}
     </div>
   );
 };
