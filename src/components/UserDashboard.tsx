@@ -1,4 +1,3 @@
-
 import { LogOut, Activity, LineChart, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./auth/AuthProvider";
@@ -14,6 +13,7 @@ import Alerts from "./Alerts";
 import FinancialAdvice from "./FinancialAdvice";
 import { DashboardSettings } from "./DashboardSettings";
 import { useState } from "react";
+import WalletManagement from "./WalletManagement";
 
 const UserDashboard = () => {
   const { signOut, userProfile } = useAuth();
@@ -26,7 +26,8 @@ const UserDashboard = () => {
     riskManagement: true,
     transactions: true,
     alerts: true,
-    advice: true
+    advice: true,
+    wallets: true
   });
 
   const handleAction = (action: string) => {
@@ -77,11 +78,18 @@ const UserDashboard = () => {
 
       {/* Trading Interface */}
       {visibleWidgets.trading && (
-        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6">
           <div className="space-y-6">
             <TradingChart />
             <TradeControls />
           </div>
+        </div>
+      )}
+
+      {/* Wallet Management */}
+      {visibleWidgets.wallets && (
+        <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6">
+          <WalletManagement />
         </div>
       )}
 

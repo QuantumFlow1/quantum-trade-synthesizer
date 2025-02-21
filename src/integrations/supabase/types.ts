@@ -431,6 +431,86 @@ export type Database = {
         }
         Relationships: []
       }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          status: string
+          type: string
+          updated_at: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          type: string
+          updated_at?: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          available_balance: number
+          balance: number
+          created_at: string
+          id: string
+          locked_balance: number
+          name: string
+          status: Database["public"]["Enums"]["wallet_status"]
+          type: Database["public"]["Enums"]["wallet_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          balance?: number
+          created_at?: string
+          id?: string
+          locked_balance?: number
+          name: string
+          status?: Database["public"]["Enums"]["wallet_status"]
+          type?: Database["public"]["Enums"]["wallet_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          balance?: number
+          created_at?: string
+          id?: string
+          locked_balance?: number
+          name?: string
+          status?: Database["public"]["Enums"]["wallet_status"]
+          type?: Database["public"]["Enums"]["wallet_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -453,6 +533,8 @@ export type Database = {
       trade_type: "buy" | "sell" | "short" | "long"
       user_role: "admin" | "trader" | "analyst"
       user_status: "active" | "suspended" | "pending"
+      wallet_status: "active" | "suspended" | "closed"
+      wallet_type: "spot" | "margin" | "futures"
     }
     CompositeTypes: {
       [_ in never]: never
