@@ -45,7 +45,6 @@ export const useMarketWebSocket = () => {
           const newMarketData = payload.payload as MarketData[];
           setMarketData(newMarketData);
           
-          // Server-side analyse aanroepen
           try {
             const { data: analysisData, error: analysisError } = await supabase.functions.invoke('market-analysis', {
               body: { marketData: newMarketData }
@@ -56,11 +55,15 @@ export const useMarketWebSocket = () => {
             if (analysisData?.analyses) {
               console.log('Market analyses:', analysisData.analyses);
               
-              // Social sentiment analyse toevoegen
+              // Verbeterde sociale data met regionale en taalcontext
               const socialData = newMarketData.map(data => ({
-                text: `${data.symbol} koers ${data.change24h > 0 ? 'stijgt' : 'daalt'} met ${Math.abs(data.change24h)}%`,
+                text: `${data.symbol} ${data.change24h > 0 ? 'shows positive movement' : 'shows negative movement'} of ${Math.abs(data.change24h)}%`,
                 source: "market-data",
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                language: "en", // Default to English for global context
+                region: data.symbol.includes('EUR') ? 'EU' : 
+                       data.symbol.includes('USD') ? 'US' : 
+                       data.symbol.includes('JPY') ? 'ASIA' : 'global'
               }));
 
               const { data: sentimentData, error: sentimentError } = await supabase.functions.invoke('social-monitor', {
@@ -70,7 +73,7 @@ export const useMarketWebSocket = () => {
               if (sentimentError) throw sentimentError;
 
               if (sentimentData?.analyses) {
-                console.log('Social sentiment analyses:', sentimentData.analyses);
+                console.log('Global social sentiment analyses:', sentimentData.analyses);
               }
             }
           } catch (error) {
@@ -105,7 +108,6 @@ export const useMarketWebSocket = () => {
       if (data && Array.isArray(data)) {
         setMarketData(data as MarketData[]);
         
-        // Initiële server-side analyse
         try {
           const { data: analysisData, error: analysisError } = await supabase.functions.invoke('market-analysis', {
             body: { marketData: data }
