@@ -116,26 +116,26 @@ const AdminPanelContent = ({
   ];
 
   return (
-    <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+    <div className="space-y-6 animate-in">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="w-full justify-start">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="agents">AI Agents</TabsTrigger>
           <TabsTrigger value="models">Advies Modellen</TabsTrigger>
         </TabsList>
 
-        <div className="mt-4">
-          <TabsContent value="dashboard">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-6">
+          <TabsContent value="dashboard" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {dashboardChapters.map((chapter) => (
                 <Button
                   key={chapter.path}
                   variant="outline"
-                  className={`h-auto p-4 flex flex-col items-start space-y-2 bg-gradient-to-br ${chapter.gradient} backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg`}
+                  className={`h-auto p-6 flex flex-col items-start space-y-3 w-full bg-gradient-to-br ${chapter.gradient} backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg`}
                   onClick={() => navigate(chapter.path)}
                 >
-                  <span className="text-lg font-semibold">{chapter.title}</span>
+                  <span className="text-xl font-semibold">{chapter.title}</span>
                   <span className="text-sm text-muted-foreground">{chapter.description}</span>
                 </Button>
               ))}
