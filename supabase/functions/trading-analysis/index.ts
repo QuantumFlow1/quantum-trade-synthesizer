@@ -1,83 +1,69 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+interface TradingAnalysis {
+  shouldTrade: boolean;
+  recommendedAction: 'buy' | 'sell';
+  recommendedAmount: number;
+  confidence: number;
+  currentPrice: number;
 }
 
+console.log("Trading analysis function started");
+
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
   try {
-    console.log('Trading analysis function invoked')
-    const { riskLevel, simulationMode } = await req.json()
-    console.log('Analyzing market with parameters:', { riskLevel, simulationMode })
+    const { riskLevel, simulationMode, rapidMode } = await req.json();
+    console.log(`Analyzing market with settings:`, { riskLevel, simulationMode, rapidMode });
 
-    // Simulate market data fetching
-    const currentPrice = 45000 + (Math.random() * 1000)
-    console.log('Current market price:', currentPrice)
+    // Simulated market analysis
+    const currentPrice = 45000 + (Math.random() * 1000 - 500);
+    const volatility = rapidMode ? 0.015 : 0.008; // Higher volatility in rapid mode
+    const priceChange = currentPrice * (Math.random() * volatility - volatility/2);
+    
+    console.log(`Current price: ${currentPrice}, Price change: ${priceChange}`);
 
-    // Risk-based analysis
-    let confidence = 0
-    let recommendedAction = 'hold'
-    let recommendedAmount = 0
+    // Rapid mode has more aggressive trading conditions
+    const shouldTrade = rapidMode 
+      ? Math.random() > 0.4  // 60% chance to trade in rapid mode
+      : Math.random() > 0.7; // 30% chance to trade in normal mode
 
-    switch(riskLevel) {
-      case 'low':
-        confidence = Math.floor(Math.random() * 20) + 60 // 60-80%
-        recommendedAmount = 0.001 // Small position size
-        break
-      case 'medium':
-        confidence = Math.floor(Math.random() * 20) + 70 // 70-90%
-        recommendedAmount = 0.005 // Medium position size
-        break
-      case 'high':
-        confidence = Math.floor(Math.random() * 20) + 80 // 80-100%
-        recommendedAmount = 0.01 // Larger position size
-        break
-      default:
-        confidence = 60
-        recommendedAmount = 0.001
-    }
+    const recommendedAction = priceChange > 0 ? 'buy' : 'sell';
+    
+    // Calculate confidence based on various factors
+    const trendStrength = Math.abs(priceChange) / (currentPrice * volatility);
+    const baseConfidence = trendStrength * 100;
+    const confidence = Math.min(Math.max(baseConfidence, 50), 95);
 
-    // Determine action based on simple price momentum
-    const priceChange = Math.random() - 0.5 // Random price movement
-    recommendedAction = priceChange > 0 ? 'buy' : 'sell'
+    // Adjust trading amount based on risk level and mode
+    const baseAmount = 0.1;
+    const riskMultiplier = {
+      low: 1,
+      medium: 2,
+      high: 3
+    }[riskLevel];
+    
+    const recommendedAmount = baseAmount * riskMultiplier * (rapidMode ? 0.5 : 1);
 
-    const analysis = {
-      timestamp: new Date().toISOString(),
-      currentPrice,
-      confidence,
+    const analysis: TradingAnalysis = {
+      shouldTrade,
       recommendedAction,
       recommendedAmount,
-      shouldTrade: confidence > 75, // Only trade if confidence is high enough
-      riskScore: Math.floor(Math.random() * 100),
-      marketCondition: confidence > 80 ? 'favorable' : 'volatile',
-      trends: {
-        shortTerm: recommendedAction === 'buy' ? 'bullish' : 'bearish',
-        mediumTerm: confidence > 70 ? 'neutral' : 'bearish',
-        longTerm: confidence > 80 ? 'bullish' : 'neutral'
-      }
-    }
+      confidence,
+      currentPrice
+    };
 
-    console.log('Analysis complete:', analysis)
+    console.log('Analysis complete:', analysis);
 
     return new Response(
       JSON.stringify(analysis),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { "Content-Type": "application/json" } },
     )
   } catch (error) {
-    console.error('Error in trading analysis:', error)
+    console.error('Error in trading analysis:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     )
   }
 })
