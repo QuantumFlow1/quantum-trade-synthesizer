@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { MarketData } from "@/components/market/types";
 import { useToast } from "./use-toast";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 export const useMarketWebSocket = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
@@ -34,9 +35,10 @@ export const useMarketWebSocket = () => {
     let retryCount = 0;
     const maxRetries = 3;
     const retryDelay = 5000; // 5 seconds
+    let currentChannel: RealtimeChannel | null = null;
 
     const setupWebSocket = async () => {
-      if (!isSubscribed) return;
+      if (!isSubscribed) return null;
       
       try {
         await fetchInitialData();
@@ -129,15 +131,22 @@ export const useMarketWebSocket = () => {
           description: "Er was een probleem bij het opzetten van de marktdata verbinding.",
           variant: "destructive",
         });
+        return null;
       }
     };
 
-    const channel = setupWebSocket();
+    // Initialize WebSocket connection
+    setupWebSocket().then(channel => {
+      if (channel) {
+        currentChannel = channel;
+      }
+    });
 
+    // Cleanup function
     return () => {
       isSubscribed = false;
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (currentChannel) {
+        supabase.removeChannel(currentChannel);
       }
     };
   }, [toast, reconnect]);
