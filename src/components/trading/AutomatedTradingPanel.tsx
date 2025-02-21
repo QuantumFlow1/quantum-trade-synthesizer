@@ -21,16 +21,53 @@ export const AutomatedTradingPanel = ({ simulationMode = true }: AutomatedTradin
 
   useEffect(() => {
     if (isActive) {
+      console.log('Starting automated trading with risk level:', riskLevel);
       const interval = setInterval(async () => {
         try {
+          console.log('Fetching market analysis...');
           // Fetch market data and perform analysis
-          const analysis = await analyzeMarket();
+          const { data: analysis, error: analysisError } = await supabase.functions.invoke('trading-analysis', {
+            body: { 
+              riskLevel, 
+              simulationMode 
+            }
+          });
+
+          if (analysisError) {
+            console.error('Analysis error:', analysisError);
+            throw analysisError;
+          }
+
+          console.log('Received market analysis:', analysis);
           setLastAnalysis(analysis);
 
           // Execute trade if conditions are met
           if (analysis.shouldTrade) {
-            await executeTrade(analysis);
+            console.log('Trade conditions met, executing trade...');
+            const { data: tradeData, error: tradeError } = await supabase.functions.invoke('execute-simulated-trade', {
+              body: {
+                type: analysis.recommendedAction,
+                amount: analysis.recommendedAmount,
+                price: analysis.currentPrice,
+                strategy: "QuantumFlow AI",
+                confidence: analysis.confidence
+              }
+            });
+
+            if (tradeError) {
+              console.error('Trade execution error:', tradeError);
+              throw tradeError;
+            }
+
+            console.log('Trade executed successfully:', tradeData);
             setTradeCount(prev => prev + 1);
+            
+            toast({
+              title: "Trade Executed",
+              description: `${analysis.recommendedAction.toUpperCase()} ${analysis.recommendedAmount} @ $${analysis.currentPrice}`,
+            });
+          } else {
+            console.log('Trade conditions not met, skipping trade');
           }
         } catch (error) {
           console.error('Automated trading error:', error);
@@ -45,36 +82,6 @@ export const AutomatedTradingPanel = ({ simulationMode = true }: AutomatedTradin
       return () => clearInterval(interval);
     }
   }, [isActive, riskLevel]);
-
-  const analyzeMarket = async () => {
-    const { data: marketData, error } = await supabase.functions.invoke('trading-analysis', {
-      body: { riskLevel, simulationMode }
-    });
-
-    if (error) throw error;
-    return marketData;
-  };
-
-  const executeTrade = async (analysis: any) => {
-    const { data, error } = await supabase.functions.invoke('execute-simulated-trade', {
-      body: {
-        type: analysis.recommendedAction,
-        amount: analysis.recommendedAmount,
-        price: analysis.currentPrice,
-        strategy: "QuantumFlow AI",
-        confidence: analysis.confidence
-      }
-    });
-
-    if (error) throw error;
-
-    toast({
-      title: "Trade Executed",
-      description: `${analysis.recommendedAction.toUpperCase()} ${analysis.recommendedAmount} @ $${analysis.currentPrice}`,
-    });
-
-    return data;
-  };
 
   return (
     <Card className="p-6 space-y-6 bg-secondary/10 backdrop-blur-xl border border-white/10">
