@@ -8,6 +8,7 @@ import { AuthProvider } from "./components/auth/AuthProvider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Overview from "./pages/admin/dashboard/Overview";
+import AdminPanel from "./components/AdminPanel";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/dashboard/overview" element={<Overview />} />
             {/* Redirect all auth callback URLs to the main page */}
             <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
