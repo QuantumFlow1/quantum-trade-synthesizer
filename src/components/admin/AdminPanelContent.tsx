@@ -1,6 +1,12 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import AccountManagementPanel from "./AccountManagementPanel";
 import DashboardView from "./DashboardView";
 import ModelManagement from "./ModelManagement";
@@ -28,7 +34,6 @@ const AdminPanelContent = ({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Changed from useState to useEffect
   useEffect(() => {
     const receptionistExists = agents.some(agent => agent.type === "receptionist");
     if (!receptionistExists) {
@@ -90,26 +95,62 @@ const AdminPanelContent = ({
       </TabsList>
 
       <TabsContent value="dashboard">
-        <DashboardView
-          userCount={userCount}
-          systemLoad={systemLoad}
-          errorRate={errorRate}
-        />
+        <Accordion type="single" collapsible className="w-full space-y-4">
+          <AccordionItem value="overview">
+            <AccordionTrigger className="text-lg font-semibold">
+              Platform Overzicht
+            </AccordionTrigger>
+            <AccordionContent>
+              <DashboardView
+                userCount={userCount}
+                systemLoad={systemLoad}
+                errorRate={errorRate}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </TabsContent>
 
       <TabsContent value="accounts">
-        <AccountManagementPanel />
+        <Accordion type="single" collapsible className="w-full space-y-4">
+          <AccordionItem value="management">
+            <AccordionTrigger className="text-lg font-semibold">
+              Account Beheer
+            </AccordionTrigger>
+            <AccordionContent>
+              <AccountManagementPanel />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </TabsContent>
 
       <TabsContent value="agents">
-        <AIAgentsList 
-          agents={agents}
-          onAction={handleAgentAction}
-        />
+        <Accordion type="single" collapsible className="w-full space-y-4">
+          <AccordionItem value="ai-agents">
+            <AccordionTrigger className="text-lg font-semibold">
+              AI Assistenten
+            </AccordionTrigger>
+            <AccordionContent>
+              <AIAgentsList 
+                agents={agents}
+                onAction={handleAgentAction}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </TabsContent>
 
       <TabsContent value="models">
-        <ModelManagement />
+        <Accordion type="single" collapsible className="w-full space-y-4">
+          <AccordionItem value="advice-models">
+            <AccordionTrigger className="text-lg font-semibold">
+              Adviesmodellen
+            </AccordionTrigger>
+            <AccordionContent>
+              <ModelManagement />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </TabsContent>
     </Tabs>
   );
