@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Brain, Users, TrendingUp, AlertTriangle } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 
 interface TradeOrderFormProps {
   currentPrice: number;
@@ -27,6 +28,7 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
   const [stopPrice, setStopPrice] = useState<string>("");
   const [stopLoss, setStopLoss] = useState<string>("");
   const [takeProfit, setTakeProfit] = useState<string>("");
+  const [isSimulated, setIsSimulated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Gesimuleerde AI agent analyse
@@ -71,7 +73,8 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
         Number(amount), 
         currentPrice,
         limitPrice ? Number(limitPrice) : undefined,
-        stopPrice ? Number(stopPrice) : undefined
+        stopPrice ? Number(stopPrice) : undefined,
+        isSimulated
       );
 
       const order: TradeOrder = {
@@ -87,7 +90,7 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
 
       onSubmitOrder(order);
       toast({
-        title: "Order Geplaatst",
+        title: `${isSimulated ? "Simulated" : ""} Order Geplaatst`,
         description: `${orderType.toUpperCase()} ${orderExecutionType} order geplaatst voor ${amount} eenheden`,
       });
 
@@ -141,6 +144,15 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
       </Card>
 
       <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
+        <div className="flex items-center justify-between mb-4">
+          <Label htmlFor="simulation-mode">Simulation Mode</Label>
+          <Switch
+            id="simulation-mode"
+            checked={isSimulated}
+            onCheckedChange={setIsSimulated}
+          />
+        </div>
+
         <OrderTypeSelector 
           value={orderType}
           onValueChange={setOrderType}
@@ -187,7 +199,7 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
           }`}
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Verwerken..." : `Plaats ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
+          {isSubmitting ? "Verwerken..." : `Plaats ${isSimulated ? "Simulated" : ""} ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
         </Button>
       </form>
     </div>

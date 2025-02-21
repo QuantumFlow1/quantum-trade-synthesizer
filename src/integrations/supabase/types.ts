@@ -251,6 +251,63 @@ export type Database = {
         }
         Relationships: []
       }
+      simulated_trades: {
+        Row: {
+          ai_analysis: Json | null
+          ai_confidence: number | null
+          amount: number
+          closed_at: string | null
+          created_at: string | null
+          entry_price: number
+          exit_price: number | null
+          id: string
+          pair_id: string
+          pnl: number | null
+          simulation_type: string | null
+          status: Database["public"]["Enums"]["trade_status"] | null
+          strategy: string | null
+          trade_duration: unknown | null
+          type: Database["public"]["Enums"]["trade_type"]
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_confidence?: number | null
+          amount: number
+          closed_at?: string | null
+          created_at?: string | null
+          entry_price: number
+          exit_price?: number | null
+          id?: string
+          pair_id: string
+          pnl?: number | null
+          simulation_type?: string | null
+          status?: Database["public"]["Enums"]["trade_status"] | null
+          strategy?: string | null
+          trade_duration?: unknown | null
+          type: Database["public"]["Enums"]["trade_type"]
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_confidence?: number | null
+          amount?: number
+          closed_at?: string | null
+          created_at?: string | null
+          entry_price?: number
+          exit_price?: number | null
+          id?: string
+          pair_id?: string
+          pnl?: number | null
+          simulation_type?: string | null
+          status?: Database["public"]["Enums"]["trade_status"] | null
+          strategy?: string | null
+          trade_duration?: unknown | null
+          type?: Database["public"]["Enums"]["trade_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       trades: {
         Row: {
           ai_analysis: Json | null
