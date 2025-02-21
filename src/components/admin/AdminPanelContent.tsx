@@ -28,6 +28,39 @@ const AdminPanelContent = ({
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
 
+  // Voeg een nieuwe receptioniste AI agent toe als deze nog niet bestaat
+  useState(() => {
+    const receptionistExists = agents.some(agent => agent.type === "receptionist");
+    if (!receptionistExists) {
+      const receptionistAgent: Agent = {
+        id: "receptionist-001",
+        name: "QuantumFlow Receptionist",
+        status: "active",
+        type: "receptionist",
+        description: "Geautomatiseerde receptioniste voor het QuantumFlow platform",
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        tasks: [
+          "Verwelkom nieuwe gebruikers en geef platformintroductie",
+          "Beantwoord algemene vragen over QuantumFlow functionaliteiten",
+          "Help bij navigatie door de verschillende modules",
+          "Verzamel initiële gebruikersvoorkeuren en behoeften",
+          "Assisteer bij het instellen van basisconfiguraties",
+          "Verbind gebruikers met gespecialiseerde AI agents indien nodig",
+          "Monitor gebruikerservaring en verzamel feedback",
+          "Bied proactieve ondersteuning bij veelvoorkomende problemen",
+          "Beheer gebruikersnotificaties en herinneringen",
+          "Faciliteer de onboarding van nieuwe handelaren"
+        ],
+        performance: {
+          successRate: 95,
+          tasksCompleted: 0
+        }
+      };
+      setAgents([...agents, receptionistAgent]);
+    }
+  }, []);
+
   const handleAgentAction = (agentId: string, action: "terminate" | "activate" | "pause") => {
     const updatedAgents = agents.map(agent => {
       if (agent.id === agentId) {
@@ -83,3 +116,4 @@ const AdminPanelContent = ({
 };
 
 export default AdminPanelContent;
+
