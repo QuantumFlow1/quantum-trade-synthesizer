@@ -92,22 +92,26 @@ const AdminPanelContent = ({
     {
       title: "Platform Overzicht",
       path: "/admin/dashboard/overview",
-      description: "Bekijk platform statistieken en prestaties"
+      description: "Bekijk platform statistieken en prestaties",
+      gradient: "from-purple-500/10 to-blue-500/10"
     },
     {
       title: "Gebruikers Analytics",
       path: "/admin/dashboard/users",
-      description: "Analyse van gebruikersgedrag en activiteit"
+      description: "Analyse van gebruikersgedrag en activiteit",
+      gradient: "from-blue-500/10 to-cyan-500/10"
     },
     {
       title: "Systeem Status",
       path: "/admin/dashboard/system",
-      description: "Monitor systeemprestaties en resources"
+      description: "Monitor systeemprestaties en resources",
+      gradient: "from-cyan-500/10 to-emerald-500/10"
     },
     {
       title: "Financiële Rapportage",
       path: "/admin/dashboard/finance",
-      description: "Overzicht van financiële metrics en transacties"
+      description: "Overzicht van financiële metrics en transacties",
+      gradient: "from-emerald-500/10 to-teal-500/10"
     }
   ];
 
@@ -128,7 +132,7 @@ const AdminPanelContent = ({
                 <Button
                   key={chapter.path}
                   variant="outline"
-                  className="h-auto p-4 flex flex-col items-start space-y-2"
+                  className={`h-auto p-4 flex flex-col items-start space-y-2 bg-gradient-to-br ${chapter.gradient} backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg`}
                   onClick={() => navigate(chapter.path)}
                 >
                   <span className="text-lg font-semibold">{chapter.title}</span>

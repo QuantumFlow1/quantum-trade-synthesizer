@@ -50,6 +50,36 @@ const System = () => {
             <p className="text-sm text-muted-foreground">Inkomend verkeer</p>
           </CardContent>
         </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg">
+          <CardHeader>
+            <CardTitle>Server Response</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">128ms</p>
+            <p className="text-sm text-muted-foreground">Gemiddelde latentie</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-teal-500/10 to-indigo-500/10 backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg">
+          <CardHeader>
+            <CardTitle>Disk Gebruik</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">42%</p>
+            <p className="text-sm text-muted-foreground">Van totale capaciteit</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg">
+          <CardHeader>
+            <CardTitle>Systeem Uptime</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">99.9%</p>
+            <p className="text-sm text-muted-foreground">Laatste 30 dagen</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

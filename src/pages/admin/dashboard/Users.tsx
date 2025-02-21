@@ -50,6 +50,36 @@ const Users = () => {
             <p className="text-sm text-muted-foreground">Per gebruiker</p>
           </CardContent>
         </Card>
+
+        <Card className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg">
+          <CardHeader>
+            <CardTitle>Gebruikers Groei</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">+15%</p>
+            <p className="text-sm text-muted-foreground">Vergeleken met vorige maand</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-teal-500/10 to-indigo-500/10 backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg">
+          <CardHeader>
+            <CardTitle>Retentiegraad</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">82%</p>
+            <p className="text-sm text-muted-foreground">30-dagen retentie</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 backdrop-blur-md border border-white/10 hover:border-white/20 transition-all duration-300 hover:translate-y-[-2px] hover:shadow-lg">
+          <CardHeader>
+            <CardTitle>Gebruikerstevredenheid</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">4.8/5</p>
+            <p className="text-sm text-muted-foreground">Gemiddelde beoordeling</p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
