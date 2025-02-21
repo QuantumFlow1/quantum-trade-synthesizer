@@ -8,6 +8,9 @@ import { AuthProvider } from "./components/auth/AuthProvider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Overview from "./pages/admin/dashboard/Overview";
+import Users from "./pages/admin/dashboard/Users";
+import System from "./pages/admin/dashboard/System";
+import Finance from "./pages/admin/dashboard/Finance";
 import AdminPanel from "./components/AdminPanel";
 
 const queryClient = new QueryClient();
@@ -23,6 +26,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/dashboard/overview" element={<Overview />} />
+            <Route path="/admin/dashboard/users" element={<Users />} />
+            <Route path="/admin/dashboard/system" element={<System />} />
+            <Route path="/admin/dashboard/finance" element={<Finance />} />
             {/* Redirect all auth callback URLs to the main page */}
             <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
