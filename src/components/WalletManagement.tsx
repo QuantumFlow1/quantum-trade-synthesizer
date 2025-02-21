@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -123,6 +122,11 @@ export const WalletManagement = () => {
     }
   };
 
+  const handleWalletCreation = async (wallet: any) => {
+    setIsCreatingWallet(false);
+    loadWallets();
+  };
+
   if (isLoading) {
     return <div className="flex items-center justify-center p-8"><RefreshCw className="animate-spin" /></div>;
   }
@@ -139,7 +143,7 @@ export const WalletManagement = () => {
 
       {isCreatingWallet && (
         <WalletCreationForm
-          onCreateWallet={handleCreateWallet}
+          onSuccess={handleWalletCreation}
           onCancel={() => setIsCreatingWallet(false)}
         />
       )}
@@ -166,4 +170,3 @@ export const WalletManagement = () => {
 };
 
 export default WalletManagement;
-

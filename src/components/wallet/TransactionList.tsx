@@ -14,7 +14,7 @@ interface Transaction {
   description?: string;
 }
 
-interface TransactionListProps {
+export interface TransactionListProps {
   transactions: Transaction[];
   onCreateTransaction: (type: "deposit" | "withdrawal", amount: string) => Promise<void>;
 }
@@ -22,7 +22,7 @@ interface TransactionListProps {
 export const TransactionList = ({ transactions, onCreateTransaction }: TransactionListProps) => {
   const [formData, setFormData] = useState({
     amount: "",
-    transactionType: "deposit" as const,
+    transactionType: "deposit" as "deposit" | "withdrawal",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
