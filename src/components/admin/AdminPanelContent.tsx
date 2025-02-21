@@ -7,6 +7,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import AccountManagementPanel from "./AccountManagementPanel";
 import DashboardView from "./DashboardView";
 import ModelManagement from "./ModelManagement";
@@ -33,6 +35,7 @@ const AdminPanelContent = ({
 }: AdminPanelContentProps) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const receptionistExists = agents.some(agent => agent.type === "receptionist");
@@ -85,6 +88,29 @@ const AdminPanelContent = ({
     });
   };
 
+  const dashboardChapters = [
+    {
+      title: "Platform Overzicht",
+      path: "/admin/dashboard/overview",
+      description: "Bekijk platform statistieken en prestaties"
+    },
+    {
+      title: "Gebruikers Analytics",
+      path: "/admin/dashboard/users",
+      description: "Analyse van gebruikersgedrag en activiteit"
+    },
+    {
+      title: "Systeem Status",
+      path: "/admin/dashboard/system",
+      description: "Monitor systeemprestaties en resources"
+    },
+    {
+      title: "Financiële Rapportage",
+      path: "/admin/dashboard/finance",
+      description: "Overzicht van financiële metrics en transacties"
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -97,18 +123,19 @@ const AdminPanelContent = ({
 
         <div className="mt-4">
           <TabsContent value="dashboard">
-            <Accordion type="single" collapsible>
-              <AccordionItem value="overview">
-                <AccordionTrigger>Platform Overzicht</AccordionTrigger>
-                <AccordionContent>
-                  <DashboardView
-                    userCount={userCount}
-                    systemLoad={systemLoad}
-                    errorRate={errorRate}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {dashboardChapters.map((chapter) => (
+                <Button
+                  key={chapter.path}
+                  variant="outline"
+                  className="h-auto p-4 flex flex-col items-start space-y-2"
+                  onClick={() => navigate(chapter.path)}
+                >
+                  <span className="text-lg font-semibold">{chapter.title}</span>
+                  <span className="text-sm text-muted-foreground">{chapter.description}</span>
+                </Button>
+              ))}
+            </div>
           </TabsContent>
 
           <TabsContent value="accounts">
@@ -153,4 +180,3 @@ const AdminPanelContent = ({
 };
 
 export default AdminPanelContent;
-
