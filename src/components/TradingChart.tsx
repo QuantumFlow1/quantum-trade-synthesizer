@@ -70,8 +70,8 @@ const TradingChart = () => {
     <div className="space-y-6">
       <PriceCards data={data} />
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6">
+        <div className="space-y-6">
           <Tabs defaultValue="price" className="w-full">
             <TabsList className="mb-4 bg-background/50 backdrop-blur-md">
               <TabsTrigger value="price" className="gap-2">
@@ -115,16 +115,20 @@ const TradingChart = () => {
           </Tabs>
         </div>
 
-        <div className="lg:col-span-1 space-y-6">
-          <TradeOrderForm 
-            currentPrice={data[data.length - 1].close}
-            onSubmitOrder={handleSubmitOrder}
-          />
-          <div className="mt-8 space-y-4">
-            <h3 className="text-xl font-semibold">Open Positions</h3>
-            <PositionsList positions={positions} isLoading={positionsLoading} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            <TradeOrderForm 
+              currentPrice={data[data.length - 1].close}
+              onSubmitOrder={handleSubmitOrder}
+            />
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold">Open Positions</h3>
+              <PositionsList positions={positions} isLoading={positionsLoading} />
+            </div>
           </div>
-          <TransactionList />
+          <div>
+            <TransactionList />
+          </div>
         </div>
       </div>
     </div>
