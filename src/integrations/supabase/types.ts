@@ -163,6 +163,7 @@ export type Database = {
           id: string
           last_login_at: string | null
           last_name: string | null
+          preferred_language: string
           role: Database["public"]["Enums"]["user_role"] | null
           status: Database["public"]["Enums"]["user_status"] | null
           subscription_tier:
@@ -177,6 +178,7 @@ export type Database = {
           id: string
           last_login_at?: string | null
           last_name?: string | null
+          preferred_language?: string
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
           subscription_tier?:
@@ -191,6 +193,7 @@ export type Database = {
           id?: string
           last_login_at?: string | null
           last_name?: string | null
+          preferred_language?: string
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
           subscription_tier?:
