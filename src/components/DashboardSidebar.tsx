@@ -1,5 +1,6 @@
 
 import { PanelLeft, Home, LineChart, Wallet, Bot, Shield, Bell, HelpCircle, Settings } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -12,14 +13,14 @@ import {
 } from "@/components/ui/sidebar";
 
 const menuItems = [
-  { title: "Dashboard", icon: Home, url: "/" },
-  { title: "Trading", icon: LineChart, url: "/trading" },
-  { title: "Wallets", icon: Wallet, url: "/wallets" },
-  { title: "Auto Trading", icon: Bot, url: "/auto-trading" },
-  { title: "Risk Management", icon: Shield, url: "/risk" },
-  { title: "Alerts", icon: Bell, url: "/alerts" },
-  { title: "Help", icon: HelpCircle, url: "/help" },
-  { title: "Settings", icon: Settings, url: "/settings" }
+  { title: "Dashboard", icon: Home, url: "/admin/dashboard/overview" },
+  { title: "Trading", icon: LineChart, url: "/admin/dashboard/finance" },
+  { title: "Wallets", icon: Wallet, url: "/admin/dashboard/wallets" },
+  { title: "Auto Trading", icon: Bot, url: "/admin/dashboard/system" },
+  { title: "Risk Management", icon: Shield, url: "/admin/dashboard/users" },
+  { title: "Alerts", icon: Bell, url: "/admin/dashboard/alerts" },
+  { title: "Help", icon: HelpCircle, url: "/admin/dashboard/help" },
+  { title: "Settings", icon: Settings, url: "/admin/dashboard/settings" }
 ];
 
 export function DashboardSidebar() {
@@ -33,10 +34,10 @@ export function DashboardSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2">
+                    <Link to={item.url} className="flex items-center gap-2">
                       <item.icon className="w-4 h-4" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

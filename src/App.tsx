@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/auth/AuthProvider";
+import { LanguageSelector } from "./components/auth/LanguageSelector";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Overview from "./pages/admin/dashboard/Overview";
@@ -46,29 +47,44 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const AppRoutes = () => (
-  <Routes>
-    <Route path="/" element={<Index />} />
-    <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
-    <Route path="/admin/dashboard/overview" element={<AdminRoute><Overview /></AdminRoute>} />
-    <Route path="/admin/dashboard/users" element={<AdminRoute><Users /></AdminRoute>} />
-    <Route path="/admin/dashboard/system" element={<AdminRoute><System /></AdminRoute>} />
-    <Route path="/admin/dashboard/finance" element={<AdminRoute><Finance /></AdminRoute>} />
-    {/* Redirect all auth callback URLs to the main page */}
-    <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
-    <Route path="*" element={<NotFound />} />
-  </Routes>
-);
+const AppRoutes = () => {
+  const { userProfile } = useAuth();
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+      <Route path="/admin/dashboard/overview" element={<AdminRoute><Overview /></AdminRoute>} />
+      <Route path="/admin/dashboard/users" element={<AdminRoute><Users /></AdminRoute>} />
+      <Route path="/admin/dashboard/system" element={<AdminRoute><System /></AdminRoute>} />
+      <Route path="/admin/dashboard/finance" element={<AdminRoute><Finance /></AdminRoute>} />
+      {/* Voeg taalkeuzebalk toe aan elke pagina */}
+      <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <div className="min-h-screen flex w-full">
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <div className="fixed top-4 right-4 z-50">
+              <LanguageSelector 
+                value={localStorage.getItem('preferred_language') as any || 'nl'} 
+                onValueChange={(lang) => {
+                  localStorage.setItem('preferred_language', lang);
+                  window.location.reload();
+                }}
+              />
+            </div>
+            <AppRoutes />
+          </BrowserRouter>
+        </div>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
