@@ -8,6 +8,7 @@ import { TradingStatus } from './automated/TradingStatus';
 import { ErrorDisplay } from './automated/ErrorDisplay';
 import { AnalysisDisplay } from './automated/AnalysisDisplay';
 import { TradingMetrics } from './automated/TradingMetrics';
+import { TradingErrorBoundary } from './automated/TradingErrorBoundary';
 
 interface TradeAnalysis {
   shouldTrade: boolean;
@@ -133,27 +134,37 @@ export const AutomatedTradingPanel = ({ simulationMode = true }: AutomatedTradin
 
   return (
     <Card className="p-6 space-y-6 bg-secondary/10 backdrop-blur-xl border border-white/10">
-      <TradingControls
-        isActive={isActive}
-        setIsActive={setIsActive}
-        isRapidMode={isRapidMode}
-        setIsRapidMode={setIsRapidMode}
-        simulationMode={simulationMode}
-      />
+      <TradingErrorBoundary componentName="Trading Controls">
+        <TradingControls
+          isActive={isActive}
+          setIsActive={setIsActive}
+          isRapidMode={isRapidMode}
+          setIsRapidMode={setIsRapidMode}
+          simulationMode={simulationMode}
+        />
+      </TradingErrorBoundary>
 
-      <TradingStatus
-        isActive={isActive}
-        totalProfit={totalProfit}
-      />
+      <TradingErrorBoundary componentName="Trading Status">
+        <TradingStatus
+          isActive={isActive}
+          totalProfit={totalProfit}
+        />
+      </TradingErrorBoundary>
 
-      <ErrorDisplay error={error} />
+      <TradingErrorBoundary componentName="Error Display">
+        <ErrorDisplay error={error} />
+      </TradingErrorBoundary>
 
-      <AnalysisDisplay analysis={lastAnalysis} />
+      <TradingErrorBoundary componentName="Analysis Display">
+        <AnalysisDisplay analysis={lastAnalysis} />
+      </TradingErrorBoundary>
 
-      <TradingMetrics
-        tradeCount={tradeCount}
-        isRapidMode={isRapidMode}
-      />
+      <TradingErrorBoundary componentName="Trading Metrics">
+        <TradingMetrics
+          tradeCount={tradeCount}
+          isRapidMode={isRapidMode}
+        />
+      </TradingErrorBoundary>
     </Card>
   );
 };
