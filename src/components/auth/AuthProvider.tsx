@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
 import { UserProfile, UserRole } from '@/types/auth'
+import { useToast } from '@/hooks/use-toast'
 
 type AuthContextType = {
   session: Session | null
@@ -26,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
 
   useEffect(() => {
     // Haal de huidige sessie op bij het laden
@@ -38,10 +40,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Luister naar auth status veranderingen
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log("Auth state changed:", _event, session)
       setSession(session)
       setUser(session?.user ?? null)
+
+      // Als de gebruiker uitlogt, wis dan het profiel
+      if (_event === 'SIGNED_OUT') {
+        setUserProfile(null)
+      }
     })
 
     return () => {
@@ -57,19 +64,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return
       }
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
-      if (!error && data) {
-        setUserProfile(data as UserProfile)
+        if (error) {
+          console.error('Error fetching user profile:', error)
+          toast({
+            title: "Fout bij ophalen profiel",
+            description: "Er is een fout opgetreden bij het ophalen van uw profiel.",
+            variant: "destructive"
+          })
+          return
+        }
+
+        if (data) {
+          setUserProfile(data as UserProfile)
+        }
+      } catch (error) {
+        console.error('Error in fetchUserProfile:', error)
       }
     }
 
     fetchUserProfile()
-  }, [user])
+  }, [user, toast])
 
   const isAdmin = userProfile?.role === 'admin'
   const isTrader = userProfile?.role === 'trader'
@@ -115,7 +136,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('Uitlog error:', error)
+        toast({
+          title: "Uitlog fout",
+          description: "Er is een fout opgetreden tijdens het uitloggen.",
+          variant: "destructive"
+        })
+        return
+      }
       
       // Reset state na succesvolle uitlog
       setUser(null)
@@ -129,12 +160,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.removeItem(key)
         }
       })
+
+      // Toon succes bericht
+      toast({
+        title: "Succesvol uitgelogd",
+        description: "U bent succesvol uitgelogd.",
+      })
     } catch (error) {
       console.error('Uitlog error:', error)
-      // Bij een error alsnog state resetten voor een clean slate
-      setUser(null)
-      setSession(null)
-      setUserProfile(null)
+      toast({
+        title: "Uitlog fout",
+        description: "Er is een fout opgetreden tijdens het uitloggen.",
+        variant: "destructive"
+      })
     }
   }
 
