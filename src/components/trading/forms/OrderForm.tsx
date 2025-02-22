@@ -1,16 +1,15 @@
 
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { OrderTypeSelector } from "../OrderTypeSelector";
 import { OrderParameters } from "../OrderParameters";
-import { submitTrade } from "@/services/tradeService";
 import { TradeOrder } from "../types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { SimulationToggle } from "../SimulationToggle";
-import { Button } from "@/components/ui/button";
 import { useTradeAnalysis } from "@/hooks/use-trade-analysis";
 import { useTradeFormState } from "../TradeFormState";
+import { OrderSubmitButton } from "./OrderSubmitButton";
+import { useOrderSubmit } from "./OrderFormSubmit";
 
 interface OrderFormProps {
   currentPrice: number;
@@ -25,7 +24,6 @@ export const OrderForm = ({
   isSimulated,
   setIsSimulated
 }: OrderFormProps) => {
-  const { toast } = useToast();
   const { user } = useAuth();
   const { aiAnalysis, isAnalyzing, performTradeAnalysis } = useTradeAnalysis({
     isActive: true,
@@ -53,78 +51,27 @@ export const OrderForm = ({
     setIsSubmitting
   } = useTradeFormState();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Form submission started");
-
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to trade",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!amount || isNaN(Number(amount))) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid trading amount",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      console.log("Starting trade analysis before submission");
-      const analysisSuccessful = await performTradeAnalysis(isSimulated);
-      
-      if (!analysisSuccessful) {
-        console.log("Trade analysis failed, aborting submission");
-        return;
-      }
-
-      console.log("Submitting trade with analysis results");
-      await submitTrade(
-        user.id, 
-        orderType, 
-        orderExecutionType,
-        Number(amount), 
-        currentPrice,
-        limitPrice ? Number(limitPrice) : undefined,
-        stopPrice ? Number(stopPrice) : undefined,
-        isSimulated
-      );
-
-      const order: TradeOrder = {
-        type: orderType,
-        orderType: orderExecutionType,
-        amount: Number(amount),
-        price: currentPrice,
-        limitPrice: limitPrice ? Number(limitPrice) : undefined,
-        stopPrice: stopPrice ? Number(stopPrice) : undefined,
-        stopLoss: Number(aiAnalysis.stopLossRecommendation),
-        takeProfit: Number(aiAnalysis.takeProfitRecommendation)
-      };
-
-      onSubmitOrder(order);
-      toast({
-        title: `${isSimulated ? "Simulated" : ""} Order Placed`,
-        description: `${orderType.toUpperCase()} ${orderExecutionType} order placed for ${amount} units`,
-      });
-
-      // Reset form
+  const { handleSubmit } = useOrderSubmit({
+    user,
+    orderType,
+    orderExecutionType,
+    amount,
+    currentPrice,
+    limitPrice,
+    stopPrice,
+    isSimulated,
+    aiAnalysis,
+    onSubmitOrder,
+    onSubmitSuccess: () => {
       setAmount("");
       setLimitPrice("");
       setStopPrice("");
       setStopLoss("");
       setTakeProfit("");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    onSubmitStart: () => setIsSubmitting(true),
+    onSubmitEnd: () => setIsSubmitting(false)
+  });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
@@ -170,17 +117,13 @@ export const OrderForm = ({
         onTakeProfitChange={setTakeProfit}
       />
 
-      <Button 
-        type="submit" 
-        className={`w-full ${
-          orderType === "buy" 
-            ? "bg-green-500 hover:bg-green-600" 
-            : "bg-red-500 hover:bg-red-600"
-        }`}
-        disabled={isSubmitting || isAnalyzing}
-      >
-        {isSubmitting ? "Processing..." : isAnalyzing ? "Analyzing..." : `Place ${isSimulated ? "Simulated" : ""} ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
-      </Button>
+      <OrderSubmitButton
+        orderType={orderType}
+        isSimulated={isSimulated}
+        orderExecutionType={orderExecutionType}
+        isSubmitting={isSubmitting}
+        isAnalyzing={isAnalyzing}
+      />
     </form>
   );
 };
