@@ -10,47 +10,88 @@ export const useAudioProcessing = () => {
   const [lastTranscription, setLastTranscription] = useState<string>('')
 
   const processAudio = async (previewAudioUrl: string, selectedVoice: VoiceTemplate) => {
-    if (!previewAudioUrl) return
+    if (!previewAudioUrl) {
+      console.error('Geen audio URL opgegeven')
+      return
+    }
 
     setIsProcessing(true)
+    console.log('Start audio verwerking:', new Date().toISOString())
+    
     try {
       const response = await fetch(previewAudioUrl)
       const blob = await response.blob()
+      
+      // Log bestandsgrootte voor debugging
+      console.log(`Audio bestandsgrootte: ${(blob.size / 1024 / 1024).toFixed(2)}MB`)
+      
+      if (blob.size > 25 * 1024 * 1024) {
+        throw new Error('Audiobestand is te groot (max 25MB)')
+      }
+
+      // Chunk processing voor grote bestanden
+      const chunkSize = 1024 * 1024 // 1MB chunks
       const reader = new FileReader()
       
-      reader.onloadend = async () => {
-        const base64Data = (reader.result as string).split('base64,')[1]
-        
-        const { data, error } = await supabase.functions.invoke('process-voice', {
-          body: { 
-            audioData: base64Data,
-            voiceTemplate: selectedVoice.prompt
-          }
-        })
-
-        if (error) throw error
-
-        if (!data?.transcription) {
-          throw new Error('Geen transcriptie ontvangen')
-        }
-
-        setLastTranscription(data.transcription)
-        
-        toast({
-          title: "Verwerkt",
-          description: data.transcription,
+      const processChunk = (start: number) => {
+        return new Promise((resolve, reject) => {
+          const chunk = blob.slice(start, start + chunkSize)
+          reader.onloadend = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(chunk)
         })
       }
+
+      // Process in chunks
+      const chunks: string[] = []
+      for (let start = 0; start < blob.size; start += chunkSize) {
+        const chunk = await processChunk(start) as string
+        chunks.push(chunk.split('base64,')[1])
+        console.log(`Chunk ${chunks.length} verwerkt (${start + chunkSize}/${blob.size} bytes)`)
+      }
+
+      const base64Data = chunks.join('')
+      console.log('Audio data voorbereid voor verwerking')
+
+      const { data, error } = await supabase.functions.invoke('process-voice', {
+        body: { 
+          audioData: base64Data,
+          voiceTemplate: selectedVoice.prompt
+        }
+      })
+
+      if (error) {
+        console.error('Supabase functie error:', error)
+        throw error
+      }
+
+      if (!data?.transcription) {
+        console.error('Geen transcriptie ontvangen van de server')
+        throw new Error('Geen transcriptie ontvangen')
+      }
+
+      console.log('Transcriptie succesvol ontvangen:', data.transcription.length, 'karakters')
+      setLastTranscription(data.transcription)
       
-      reader.readAsDataURL(blob)
+      toast({
+        title: "Verwerkt",
+        description: data.transcription,
+      })
     } catch (error) {
-      console.error('Error processing audio:', error)
+      console.error('Error tijdens audio verwerking:', error)
+      let errorMessage = 'Kon audio niet verwerken. Probeer het opnieuw.'
+      
+      if (error instanceof Error) {
+        errorMessage = error.message
+      }
+      
       toast({
         title: "Fout",
-        description: "Kon audio niet verwerken. Probeer het opnieuw.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
+      console.log('Audio verwerking afgerond:', new Date().toISOString())
       setIsProcessing(false)
     }
   }
@@ -62,4 +103,3 @@ export const useAudioProcessing = () => {
     setLastTranscription
   }
 }
-
