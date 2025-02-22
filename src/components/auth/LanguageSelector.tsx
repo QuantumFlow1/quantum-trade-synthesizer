@@ -12,9 +12,10 @@ import { PreferredLanguage } from "@/types/auth"
 interface LanguageSelectorProps {
   value: PreferredLanguage
   onValueChange: (value: PreferredLanguage) => void
+  label?: string
 }
 
-export const LanguageSelector = ({ value, onValueChange }: LanguageSelectorProps) => {
+export const LanguageSelector = ({ value, onValueChange, label = "Taal / Language" }: LanguageSelectorProps) => {
   const getLanguageLabel = (code: string) => {
     const labels: Record<string, string> = {
       nl: 'Nederlands',
@@ -25,18 +26,37 @@ export const LanguageSelector = ({ value, onValueChange }: LanguageSelectorProps
     return labels[code] || code
   }
 
+  const translations: Record<PreferredLanguage, Record<string, string>> = {
+    nl: {
+      selectLanguage: "Selecteer een taal",
+    },
+    en: {
+      selectLanguage: "Select a language",
+    },
+    ru: {
+      selectLanguage: "Выберите язык",
+    },
+    hy: {
+      selectLanguage: "Ընտրեք լեզուն",
+    }
+  };
+
+  const getText = (key: string) => {
+    return translations[value]?.[key] || translations.en[key];
+  };
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-foreground/70 flex items-center gap-2">
         <Globe className="h-4 w-4" />
-        Taal / Language
+        {label}
       </label>
       <Select
         value={value}
         onValueChange={onValueChange}
       >
         <SelectTrigger className="w-full bg-background">
-          <SelectValue placeholder="Selecteer een taal" />
+          <SelectValue placeholder={getText('selectLanguage')} />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="nl" className="cursor-pointer">

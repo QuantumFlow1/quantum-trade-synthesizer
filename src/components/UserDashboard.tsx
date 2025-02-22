@@ -12,8 +12,36 @@ import { DashboardSettings } from "./DashboardSettings";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 
+const translations = {
+  nl: {
+    welcome: "Welkom Commander",
+    interface: "Quantum Trading Interface",
+    signOut: "Uitloggen"
+  },
+  en: {
+    welcome: "Welcome Commander",
+    interface: "Quantum Trading Interface",
+    signOut: "Sign Out"
+  },
+  ru: {
+    welcome: "Добро пожаловать, Командир",
+    interface: "Квантовый Торговый Интерфейс",
+    signOut: "Выйти"
+  },
+  hy: {
+    welcome: "Բարի գալուստ Հրամանատար",
+    interface: "Քվանտային Առևտրային Ինտերֆեյս",
+    signOut: "Դուրս գալ"
+  }
+};
+
 const UserDashboard = () => {
   const { signOut, userProfile } = useAuth();
+  const currentLanguage = localStorage.getItem('preferred_language') as keyof typeof translations || 'nl';
+
+  const getText = (key: keyof (typeof translations)['nl']) => {
+    return translations[currentLanguage]?.[key] || translations.en[key];
+  };
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -26,9 +54,9 @@ const UserDashboard = () => {
             <div className="relative flex items-center justify-between">
               <div className="space-y-1">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-white/90 to-white/80 bg-clip-text text-transparent">
-                  Welcome Commander, {userProfile?.email}
+                  {getText('welcome')}, {userProfile?.email}
                 </h1>
-                <p className="text-muted-foreground">Quantum Trading Interface</p>
+                <p className="text-muted-foreground">{getText('interface')}</p>
               </div>
               <Button 
                 variant="outline" 
@@ -36,7 +64,7 @@ const UserDashboard = () => {
                 className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Sign Out
+                {getText('signOut')}
               </Button>
             </div>
           </div>
