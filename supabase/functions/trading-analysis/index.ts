@@ -14,6 +14,8 @@ interface TradingAnalysisRequest {
 }
 
 serve(async (req) => {
+  console.log('Trading analysis function started');
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Handling CORS preflight request');
@@ -21,11 +23,10 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting trading analysis function');
-    
     // Parse request body
+    console.log('Attempting to parse request body');
     const requestData: TradingAnalysisRequest = await req.json();
-    console.log('Received request data:', requestData);
+    console.log('Request data:', requestData);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -36,10 +37,10 @@ serve(async (req) => {
       throw new Error('Missing Supabase credentials');
     }
 
+    console.log('Initializing Supabase client');
     const supabase = createClient(supabaseUrl, supabaseKey);
-    console.log('Supabase client initialized');
 
-    // Fetch latest market data
+    // Fetch latest market data with no filters initially
     console.log('Fetching latest market data');
     const { data: marketData, error: marketError } = await supabase
       .from('market_data')
@@ -54,13 +55,6 @@ serve(async (req) => {
 
     console.log(`Retrieved ${marketData?.length || 0} market data points`);
 
-    // Perform analysis based on risk level and mode
-    console.log('Performing analysis with parameters:', {
-      riskLevel: requestData.riskLevel,
-      simulationMode: requestData.simulationMode,
-      rapidMode: requestData.rapidMode
-    });
-
     // Generate analysis result
     const analysis = {
       shouldTrade: Math.random() > 0.5,
@@ -70,7 +64,7 @@ serve(async (req) => {
       currentPrice: marketData?.[0]?.price || 0
     };
 
-    console.log('Analysis completed:', analysis);
+    console.log('Analysis result:', analysis);
 
     // Store analysis result
     console.log('Storing analysis result');
@@ -96,7 +90,7 @@ serve(async (req) => {
 
     console.log('Analysis result stored successfully');
 
-    // Return response
+    // Return successful response
     return new Response(
       JSON.stringify(analysis),
       {
@@ -122,4 +116,3 @@ serve(async (req) => {
     )
   }
 })
-
