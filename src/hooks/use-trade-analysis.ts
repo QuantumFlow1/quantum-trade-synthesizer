@@ -13,51 +13,54 @@ interface AIAnalysis {
   collaboratingAgents: string[];
 }
 
-export const useTradeAnalysis = (currentPrice: number) => {
+interface TradeAnalysisParams {
+  isActive: boolean;
+  riskLevel: "low" | "medium" | "high";
+  isRapidMode: boolean;
+  simulationMode: boolean;
+}
+
+export const useTradeAnalysis = (params: TradeAnalysisParams) => {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [tradeCount, setTradeCount] = useState(0);
+  const [totalProfit, setTotalProfit] = useState(0);
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis>({
     confidence: 85,
     riskLevel: "medium",
     recommendation: "long",
     expectedProfit: "2.3%",
-    stopLossRecommendation: currentPrice * 0.98,
-    takeProfitRecommendation: currentPrice * 1.035,
+    stopLossRecommendation: 0,
+    takeProfitRecommendation: 0,
     collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
   });
 
   const performTradeAnalysis = async (isSimulated: boolean) => {
     setIsAnalyzing(true);
+    setError(null);
     console.log("Starting trade analysis...");
 
     try {
-      const { data, error } = await supabase.functions.invoke('trading-analysis', {
+      const { data, error: apiError } = await supabase.functions.invoke('trading-analysis', {
         body: {
-          riskLevel: "medium",
+          riskLevel: params.riskLevel,
           simulationMode: isSimulated,
-          rapidMode: false
+          rapidMode: params.isRapidMode
         }
       });
 
-      console.log("Trade analysis response received:", { data, error });
+      console.log("Trade analysis response received:", { data, apiError });
 
-      if (error) {
-        console.error("Trade analysis error:", error);
-        toast({
-          title: "Analysis Error",
-          description: error.message || "Failed to perform trade analysis",
-          variant: "destructive",
-        });
+      if (apiError) {
+        console.error("Trade analysis error:", apiError);
+        setError(apiError.message || "Failed to perform trade analysis");
         return false;
       }
 
       if (!data) {
         console.error("No data received from analysis");
-        toast({
-          title: "Analysis Error",
-          description: "No analysis data received",
-          variant: "destructive",
-        });
+        setError("No analysis data received");
         return false;
       }
 
@@ -70,14 +73,14 @@ export const useTradeAnalysis = (currentPrice: number) => {
         collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
       });
 
+      // Update trade metrics
+      setTradeCount(prev => prev + 1);
+      setTotalProfit(prev => prev + (data.expectedProfit || 0));
+
       return true;
-    } catch (error) {
-      console.error("Error in performTradeAnalysis:", error);
-      toast({
-        title: "Analysis Error",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
-      });
+    } catch (err) {
+      console.error("Error in performTradeAnalysis:", err);
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
       return false;
     } finally {
       setIsAnalyzing(false);
@@ -87,6 +90,10 @@ export const useTradeAnalysis = (currentPrice: number) => {
   return {
     aiAnalysis,
     isAnalyzing,
-    performTradeAnalysis
+    performTradeAnalysis,
+    error,
+    tradeCount,
+    totalProfit,
+    lastAnalysis: aiAnalysis // Add this to match the expected interface
   };
 };

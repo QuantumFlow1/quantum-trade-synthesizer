@@ -66,4 +66,3 @@ export const AutomatedTradingPanel = ({ simulationMode = true }: AutomatedTradin
     </Card>
   );
 };
-
