@@ -46,8 +46,8 @@ const AutoTrading = () => {
   };
 
   return (
-    <div className="flex flex-col space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="w-full max-w-7xl mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold">Automatische Handelsstrategieën</h2>
         <Button variant="outline" size="sm">
           <Settings className="w-4 h-4 mr-2" />
@@ -55,9 +55,9 @@ const AutoTrading = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <div className="flex flex-col space-y-4 min-h-[400px]">
-          <div className="flex items-center justify-between">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div className="bg-background rounded-lg border p-4">
+          <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium">AI Handelsanalyse</h3>
             <Button variant="ghost" size="sm" onClick={toggleExpand}>
               {isExpanded ? (
@@ -67,19 +67,20 @@ const AutoTrading = () => {
               )}
             </Button>
           </div>
-          <div className={`p-6 rounded-lg bg-secondary/50 transition-all duration-300 ${
-            isExpanded ? "h-auto" : "h-[200px] overflow-hidden"
-          }`}>
+          
+          <div className={`transition-all duration-300 ${
+            isExpanded ? "max-h-[800px]" : "max-h-[200px]"
+          } overflow-hidden`}>
             <div className="space-y-4">
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <div className="flex justify-between items-center border-b border-border pb-3">
                 <span className="text-muted-foreground">Betrouwbaarheid:</span>
                 <span className="text-primary font-medium">85%</span>
               </div>
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <div className="flex justify-between items-center border-b border-border pb-3">
                 <span className="text-muted-foreground">Aanbeveling:</span>
                 <span className="text-green-400 font-medium">LONG</span>
               </div>
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <div className="flex justify-between items-center border-b border-border pb-3">
                 <span className="text-muted-foreground">Verwachte Winst:</span>
                 <span className="text-green-400 font-medium">2.3%</span>
               </div>
@@ -93,8 +94,8 @@ const AutoTrading = () => {
           </div>
         </div>
 
-        <div className="flex flex-col space-y-4 min-h-[400px]">
-          <h3 className="text-lg font-medium">Actieve Strategieën</h3>
+        <div className="bg-background rounded-lg border p-4">
+          <h3 className="text-lg font-medium mb-4">Actieve Strategieën</h3>
           <div className="space-y-3">
             {strategies.map((strategy) => (
               <div
@@ -107,20 +108,18 @@ const AutoTrading = () => {
                     {strategy.trades} trades • Winst: {strategy.profit}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleStrategyToggle(strategy.id, strategy.status)}
-                  >
-                    {strategy.status === "active" ? (
-                      <PauseCircle className="w-4 h-4 mr-1" />
-                    ) : (
-                      <PlayCircle className="w-4 h-4 mr-1" />
-                    )}
-                    {strategy.status === "active" ? "Pauzeren" : "Starten"}
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleStrategyToggle(strategy.id, strategy.status)}
+                >
+                  {strategy.status === "active" ? (
+                    <PauseCircle className="w-4 h-4 mr-1" />
+                  ) : (
+                    <PlayCircle className="w-4 h-4 mr-1" />
+                  )}
+                  {strategy.status === "active" ? "Pauzeren" : "Starten"}
+                </Button>
               </div>
             ))}
           </div>
@@ -131,4 +130,3 @@ const AutoTrading = () => {
 };
 
 export default AutoTrading;
-
