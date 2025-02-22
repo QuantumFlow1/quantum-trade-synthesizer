@@ -51,7 +51,7 @@ const AutoTrading = () => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         <div className="flex flex-col space-y-4">
           <h3 className="text-lg font-medium">AI Trading Analysis</h3>
-          <div className="p-6 rounded-lg bg-secondary/50 h-full">
+          <div className="p-6 rounded-lg bg-secondary/50">
             <div className="space-y-4">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <span className="text-muted-foreground">Confidence:</span>
@@ -113,4 +113,3 @@ const AutoTrading = () => {
 };
 
 export default AutoTrading;
-
