@@ -9,7 +9,7 @@ const NotFound = () => {
 
   useEffect(() => {
     console.error(
-      "404 Error: User attempted to access non-existent route:",
+      "404 Fout: Gebruiker probeerde niet-bestaande route te openen:",
       location.pathname
     );
   }, [location.pathname]);
@@ -31,11 +31,11 @@ const NotFound = () => {
         
         <Button
           variant="outline"
-          onClick={() => window.location.href = '/'}
+          onClick={() => window.history.back()}
           className="bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-accent/50 transition-all duration-300 ease-in-out hover:scale-105"
         >
           <Home className="w-4 h-4 mr-2" />
-          Terug naar Home
+          Terug naar vorige pagina
         </Button>
       </div>
     </div>
