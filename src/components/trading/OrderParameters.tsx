@@ -1,6 +1,7 @@
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { AmountInput } from "./inputs/AmountInput";
+import { PriceInputs } from "./inputs/PriceInputs";
+import { ProfitLossInputs } from "./inputs/ProfitLossInputs";
 
 interface OrderParametersProps {
   amount: string;
@@ -31,71 +32,26 @@ export const OrderParameters = ({
 }: OrderParametersProps) => {
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="amount">Amount</Label>
-        <Input
-          id="amount"
-          type="number"
-          value={amount}
-          onChange={(e) => onAmountChange(e.target.value)}
-          className="bg-background/50"
-          placeholder="Enter amount..."
-        />
-      </div>
+      <AmountInput 
+        amount={amount}
+        onAmountChange={onAmountChange}
+      />
 
-      {(orderExecutionType === "limit" || orderExecutionType === "stop_limit") && (
-        <div className="space-y-2">
-          <Label htmlFor="limitPrice">Limit Price</Label>
-          <Input
-            id="limitPrice"
-            type="number"
-            value={limitPrice}
-            onChange={(e) => onLimitPriceChange(e.target.value)}
-            className="bg-background/50"
-            placeholder="Enter limit price..."
-          />
-        </div>
-      )}
+      <PriceInputs
+        orderExecutionType={orderExecutionType}
+        limitPrice={limitPrice}
+        stopPrice={stopPrice}
+        onLimitPriceChange={onLimitPriceChange}
+        onStopPriceChange={onStopPriceChange}
+      />
 
-      {(orderExecutionType === "stop" || orderExecutionType === "stop_limit") && (
-        <div className="space-y-2">
-          <Label htmlFor="stopPrice">Stop Price</Label>
-          <Input
-            id="stopPrice"
-            type="number"
-            value={stopPrice}
-            onChange={(e) => onStopPriceChange(e.target.value)}
-            className="bg-background/50"
-            placeholder="Enter stop price..."
-          />
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="stopLoss">Stop Loss</Label>
-          <Input
-            id="stopLoss"
-            type="number"
-            value={stopLoss}
-            onChange={(e) => onStopLossChange(e.target.value)}
-            className="bg-background/50"
-            placeholder="Optional..."
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="takeProfit">Take Profit</Label>
-          <Input
-            id="takeProfit"
-            type="number"
-            value={takeProfit}
-            onChange={(e) => onTakeProfitChange(e.target.value)}
-            className="bg-background/50"
-            placeholder="Optional..."
-          />
-        </div>
-      </div>
+      <ProfitLossInputs
+        stopLoss={stopLoss}
+        takeProfit={takeProfit}
+        onStopLossChange={onStopLossChange}
+        onTakeProfitChange={onTakeProfitChange}
+      />
     </>
   );
 };
+
