@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Activity, CandlestickChart, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,53 +66,53 @@ const TradingChart = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <PriceCards data={data} />
+    <div className="max-w-[1400px] mx-auto space-y-6">
+      <div className="w-full mb-8">
+        <PriceCards data={data} />
+      </div>
       
-      <div className="grid grid-cols-1 gap-6">
-        <div className="space-y-6">
-          <Tabs defaultValue="price" className="w-full">
-            <TabsList className="mb-4 bg-background/50 backdrop-blur-md">
-              <TabsTrigger value="price" className="gap-2">
-                <CandlestickChart className="w-4 h-4" />
-                Price
-              </TabsTrigger>
-              <TabsTrigger value="volume" className="gap-2">
-                <BarChart2 className="w-4 h-4" />
-                Volume
-              </TabsTrigger>
-              <TabsTrigger value="indicators" className="gap-2">
-                <Activity className="w-4 h-4" />
-                Indicators
-              </TabsTrigger>
-            </TabsList>
+      <div className="w-full space-y-6">
+        <Tabs defaultValue="price" className="w-full">
+          <TabsList className="mb-4 bg-background/50 backdrop-blur-md">
+            <TabsTrigger value="price" className="gap-2">
+              <CandlestickChart className="w-4 h-4" />
+              Price
+            </TabsTrigger>
+            <TabsTrigger value="volume" className="gap-2">
+              <BarChart2 className="w-4 h-4" />
+              Volume
+            </TabsTrigger>
+            <TabsTrigger value="indicators" className="gap-2">
+              <Activity className="w-4 h-4" />
+              Indicators
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="price">
+          <TabsContent value="price">
+            <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+              <ChartViews data={data} view="price" indicator={indicator} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="volume">
+            <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
+              <ChartViews data={data} view="volume" indicator={indicator} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="indicators">
+            <div className="space-y-4">
+              <IndicatorSelector 
+                currentIndicator={indicator}
+                onIndicatorChange={setIndicator}
+              />
+              
               <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-                <ChartViews data={data} view="price" indicator={indicator} />
+                <ChartViews data={data} view="indicators" indicator={indicator} />
               </div>
-            </TabsContent>
-
-            <TabsContent value="volume">
-              <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-                <ChartViews data={data} view="volume" indicator={indicator} />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="indicators">
-              <div className="space-y-4">
-                <IndicatorSelector 
-                  currentIndicator={indicator}
-                  onIndicatorChange={setIndicator}
-                />
-                
-                <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-                  <ChartViews data={data} view="indicators" indicator={indicator} />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
@@ -136,4 +135,3 @@ const TradingChart = () => {
 };
 
 export default TradingChart;
-
