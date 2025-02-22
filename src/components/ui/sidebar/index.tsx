@@ -1,7 +1,11 @@
 
 import * as React from "react"
-import { SidebarProvider } from "./context"
+import { cn } from "@/lib/utils"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { SidebarProvider, useSidebar } from "./context"
+import { SIDEBAR_WIDTH_MOBILE } from "./constants"
 export { useSidebar } from "./context"
+export { SidebarProvider } from "./context"
 export * from "./components"
 export * from "./types"
 
