@@ -1,19 +1,11 @@
 
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Mail, Shield, ShieldAlert } from "lucide-react"
 import { useAuth } from './AuthProvider'
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from '@/lib/supabase'
 import { PreferredLanguage, UserRole } from '@/types/auth'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { AuthForm } from './AuthForm'
 
 export const LoginComponent = () => {
   const [email, setEmail] = useState('')
@@ -24,16 +16,6 @@ export const LoginComponent = () => {
   const [language, setLanguage] = useState<PreferredLanguage>('nl')
   const { signIn } = useAuth()
   const { toast } = useToast()
-
-  const getLanguageLabel = (code: string) => {
-    const labels: Record<string, string> = {
-      nl: 'Nederlands',
-      en: 'English',
-      ru: 'Русский',
-      hy: 'Հայերեն'
-    }
-    return labels[code] || code
-  }
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,7 +50,6 @@ export const LoginComponent = () => {
       if (authError) throw authError
 
       if (authData.user) {
-        // Update het profiel met de geselecteerde taal
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ preferred_language: language })
@@ -76,7 +57,6 @@ export const LoginComponent = () => {
 
         if (updateError) throw updateError
 
-        // Voeg de gebruikersrol toe
         const { error: roleError } = await supabase
           .from('user_roles')
           .insert({
@@ -114,83 +94,19 @@ export const LoginComponent = () => {
           </p>
         </div>
         
-        <form onSubmit={isRegistering ? handleSignUp : handleEmailLogin} className="space-y-4">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Wachtwoord"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          
-          {isRegistering && (
-            <>
-              <Select
-                value={selectedRole}
-                onValueChange={(value: UserRole) => setSelectedRole(value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecteer een rol" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="viewer">
-                    <div className="flex items-center">
-                      <Mail className="mr-2 h-4 w-4" />
-                      Viewer
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="trader">
-                    <div className="flex items-center">
-                      <Mail className="mr-2 h-4 w-4" />
-                      Trader
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="admin">
-                    <div className="flex items-center">
-                      <Shield className="mr-2 h-4 w-4" />
-                      Admin
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="super_admin">
-                    <div className="flex items-center">
-                      <ShieldAlert className="mr-2 h-4 w-4" />
-                      Super Admin
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={language}
-                onValueChange={(value: PreferredLanguage) => setLanguage(value)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecteer een taal" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nl">{getLanguageLabel('nl')}</SelectItem>
-                  <SelectItem value="en">{getLanguageLabel('en')}</SelectItem>
-                  <SelectItem value="ru">{getLanguageLabel('ru')}</SelectItem>
-                  <SelectItem value="hy">{getLanguageLabel('hy')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </>
-          )}
-
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            <Mail className="mr-2 h-4 w-4" />
-            {isLoading 
-              ? "Even geduld..." 
-              : (isRegistering ? "Registreren" : "Login")}
-          </Button>
-        </form>
+        <AuthForm
+          isRegistering={isRegistering}
+          isLoading={isLoading}
+          onSubmit={isRegistering ? handleSignUp : handleEmailLogin}
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+          selectedRole={selectedRole}
+          setSelectedRole={setSelectedRole}
+          language={language}
+          setLanguage={setLanguage}
+        />
 
         <Button
           variant="ghost"
@@ -203,5 +119,5 @@ export const LoginComponent = () => {
         </Button>
       </div>
     </div>
-  );
+  )
 }
