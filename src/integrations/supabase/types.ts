@@ -386,32 +386,97 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          last_price: number | null
           min_trade_amount: number
+          price_change_24h: number | null
+          price_precision: number | null
+          quantity_precision: number | null
           quote_asset: string
           symbol: string
           updated_at: string | null
+          volume_24h: number | null
         }
         Insert: {
           base_asset: string
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_price?: number | null
           min_trade_amount: number
+          price_change_24h?: number | null
+          price_precision?: number | null
+          quantity_precision?: number | null
           quote_asset: string
           symbol: string
           updated_at?: string | null
+          volume_24h?: number | null
         }
         Update: {
           base_asset?: string
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_price?: number | null
           min_trade_amount?: number
+          price_change_24h?: number | null
+          price_precision?: number | null
+          quantity_precision?: number | null
           quote_asset?: string
           symbol?: string
           updated_at?: string | null
+          volume_24h?: number | null
         }
         Relationships: []
+      }
+      trading_signals: {
+        Row: {
+          confidence: number
+          created_at: string | null
+          executed_at: string | null
+          id: string
+          metadata: Json | null
+          pair_id: string | null
+          price: number
+          signal_type: string
+          status: string | null
+          strategy: string
+          volume: number | null
+        }
+        Insert: {
+          confidence: number
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pair_id?: string | null
+          price: number
+          signal_type: string
+          status?: string | null
+          strategy: string
+          volume?: number | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pair_id?: string | null
+          price?: number
+          signal_type?: string
+          status?: string | null
+          strategy?: string
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trading_signals_pair_id_fkey"
+            columns: ["pair_id"]
+            isOneToOne: false
+            referencedRelation: "trading_pairs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
