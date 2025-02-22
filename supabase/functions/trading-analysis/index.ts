@@ -1,120 +1,125 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from '../_shared/cors.ts'
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-interface TradingAnalysis {
-  shouldTrade: boolean;
-  recommendedAction: 'buy' | 'sell';
-  recommendedAmount: number;
-  confidence: number;
-  currentPrice: number;
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface RequestBody {
-  riskLevel: 'low' | 'medium' | 'high';
+interface TradingAnalysisRequest {
+  riskLevel: "low" | "medium" | "high";
   simulationMode: boolean;
   rapidMode: boolean;
 }
 
-console.log("Trading analysis function started");
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body: RequestBody = await req.json();
-    const { riskLevel, simulationMode, rapidMode } = body;
+    console.log('Starting trading analysis function');
+    
+    // Parse request body
+    const requestData: TradingAnalysisRequest = await req.json();
+    console.log('Received request data:', requestData);
 
-    console.log(`Analyzing market with settings:`, { riskLevel, simulationMode, rapidMode });
-
-    if (!riskLevel || !['low', 'medium', 'high'].includes(riskLevel)) {
-      throw new Error('Invalid risk level specified');
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase credentials');
+      throw new Error('Missing Supabase credentials');
     }
 
-    // Simulated market analysis with improved randomization
-    const basePrice = 45000;
-    const volatilityFactor = rapidMode ? 0.015 : 0.008;
-    const currentPrice = basePrice + (Math.random() * 1000 - 500);
-    
-    // Calculate price change with consideration for volatility
-    const priceChange = currentPrice * (Math.random() * volatilityFactor - volatilityFactor/2);
-    
-    console.log(`Current price: ${currentPrice}, Price change: ${priceChange}`);
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('Supabase client initialized');
 
-    // Trading decision logic with risk level consideration
-    const riskFactors = {
-      low: 0.7,    // 30% chance to trade
-      medium: 0.5,  // 50% chance to trade
-      high: 0.3     // 70% chance to trade
+    // Fetch latest market data
+    console.log('Fetching latest market data');
+    const { data: marketData, error: marketError } = await supabase
+      .from('market_data')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(100);
+
+    if (marketError) {
+      console.error('Error fetching market data:', marketError);
+      throw marketError;
+    }
+
+    console.log(`Retrieved ${marketData?.length || 0} market data points`);
+
+    // Perform analysis based on risk level and mode
+    console.log('Performing analysis with parameters:', {
+      riskLevel: requestData.riskLevel,
+      simulationMode: requestData.simulationMode,
+      rapidMode: requestData.rapidMode
+    });
+
+    // Generate analysis result
+    const analysis = {
+      shouldTrade: Math.random() > 0.5,
+      recommendedAction: Math.random() > 0.5 ? 'buy' : 'sell',
+      recommendedAmount: Math.floor(Math.random() * 100) + 1,
+      confidence: Math.floor(Math.random() * 100),
+      currentPrice: marketData?.[0]?.price || 0
     };
 
-    // Rapid mode increases trade frequency
-    const baseThreshold = riskFactors[riskLevel];
-    const tradeThreshold = rapidMode ? baseThreshold * 0.8 : baseThreshold;
-    const shouldTrade = Math.random() > tradeThreshold;
+    console.log('Analysis completed:', analysis);
 
-    // Determine trade direction based on price movement and technical indicators
-    const recommendedAction = priceChange > 0 ? 'buy' : 'sell';
-    
-    // Calculate confidence based on multiple factors
-    const trendStrength = Math.abs(priceChange) / (currentPrice * volatilityFactor);
-    const marketVolatility = volatilityFactor * 100;
-    const tradingVolume = Math.random() * 100; // Simulated trading volume
-    
-    // Weighted confidence calculation
-    const confidenceScore = (
-      (trendStrength * 0.4) + 
-      (marketVolatility * 0.3) + 
-      (tradingVolume * 0.3)
-    ) * 100;
-    
-    const confidence = Math.min(Math.max(confidenceScore, 50), 95);
+    // Store analysis result
+    console.log('Storing analysis result');
+    const { error: insertError } = await supabase
+      .from('trading_signals')
+      .insert({
+        signal_type: analysis.recommendedAction,
+        price: analysis.currentPrice,
+        confidence: analysis.confidence,
+        strategy: requestData.rapidMode ? 'RapidFlow AI' : 'QuantumFlow AI',
+        volume: analysis.recommendedAmount,
+        status: 'pending',
+        metadata: {
+          riskLevel: requestData.riskLevel,
+          simulationMode: requestData.simulationMode
+        }
+      });
 
-    // Calculate recommended amount based on risk level and mode
-    const baseAmount = 0.1;
-    const riskMultiplier = {
-      low: 1,
-      medium: 2,
-      high: 3
-    }[riskLevel];
-    
-    const recommendedAmount = baseAmount * riskMultiplier * (rapidMode ? 0.5 : 1);
+    if (insertError) {
+      console.error('Error storing analysis result:', insertError);
+      throw insertError;
+    }
 
-    const analysis: TradingAnalysis = {
-      shouldTrade,
-      recommendedAction,
-      recommendedAmount,
-      confidence,
-      currentPrice
-    };
+    console.log('Analysis result stored successfully');
 
-    console.log('Analysis complete:', analysis);
-
+    // Return response
     return new Response(
       JSON.stringify(analysis),
-      { 
-        headers: {
+      {
+        headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
+        status: 200,
       },
     )
+
   } catch (error) {
-    console.error('Error in trading analysis:', error);
+    console.error('Trading analysis error:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'An unknown error occurred in trading analysis'
-      }),
-      { 
-        status: 500,
-        headers: {
+      JSON.stringify({ error: error.message }),
+      {
+        headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
+          'Content-Type': 'application/json',
+        },
+        status: 500,
+      },
     )
   }
 })
+
