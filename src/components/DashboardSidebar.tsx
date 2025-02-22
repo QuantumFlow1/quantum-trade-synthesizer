@@ -27,12 +27,14 @@ const menuItems = [
 export function DashboardSidebar() {
   return (
     <>
-      <Sidebar>
+      <Sidebar className="border-r border-white/10 bg-[#221F26]/95 backdrop-blur-xl">
         <SidebarContent>
           <SidebarGroup>
-            <div className="flex items-center justify-between px-4 py-2">
-              <SidebarGroupLabel>QuantumFlow</SidebarGroupLabel>
-              <SidebarTrigger className="h-7 w-7" />
+            <div className="flex items-center justify-between px-4 py-4">
+              <SidebarGroupLabel className="text-lg font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+                QuantumFlow
+              </SidebarGroupLabel>
+              <SidebarTrigger className="h-7 w-7 hover:bg-white/10 transition-colors" />
             </div>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -41,10 +43,11 @@ export function DashboardSidebar() {
                     <SidebarMenuButton 
                       asChild
                       tooltip={item.title}
+                      className="transition-colors hover:bg-white/10"
                     >
-                      <Link to={item.url} className="flex items-center gap-2">
+                      <Link to={item.url} className="flex items-center gap-3 px-4">
                         <item.icon className="w-4 h-4" />
-                        <span>{item.title}</span>
+                        <span className="font-medium">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

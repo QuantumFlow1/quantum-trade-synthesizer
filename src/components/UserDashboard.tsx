@@ -16,16 +16,18 @@ const UserDashboard = () => {
   const { signOut, userProfile } = useAuth();
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen flex w-full">
+    <SidebarProvider defaultOpen={true}>
+      <div className="min-h-screen flex w-full bg-[#1A1F2C]">
         <DashboardSidebar />
         
-        <main className="flex-1 p-6 space-y-6 bg-gradient-to-br from-background via-background/95 to-background/90">
-          <div className="relative backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 rounded-lg" />
+        <main className="flex-1 p-6 space-y-6 bg-gradient-to-br from-[#1A1F2C] via-[#221F26]/95 to-[#1A1F2C]/90">
+          <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-secondary/5 to-purple-500/10 rounded-lg" />
             <div className="relative flex items-center justify-between">
               <div className="space-y-1">
-                <h1 className="text-2xl font-bold text-gradient">Welcome Commander, {userProfile?.email}</h1>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-white/90 to-white/80 bg-clip-text text-transparent">
+                  Welcome Commander, {userProfile?.email}
+                </h1>
                 <p className="text-muted-foreground">Quantum Trading Interface</p>
               </div>
               <Button 
@@ -34,34 +36,34 @@ const UserDashboard = () => {
                 className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
               >
                 <LogOut className="w-4 h-4 mr-2" />
-                Uitloggen
+                Sign Out
               </Button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6">
+            <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
               <MarketOverview />
             </div>
-            <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6">
+            <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
               <TradingChart />
             </div>
           </div>
 
-          <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6">
+          <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
             <WalletManagement />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6">
+            <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
               <AutoTrading />
             </div>
-            <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6">
+            <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
               <RiskManagement />
             </div>
           </div>
 
-          <div className="glass-panel backdrop-blur-xl bg-secondary/10 border border-white/10 rounded-lg p-6">
+          <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
             <Alerts />
           </div>
         </main>
