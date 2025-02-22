@@ -39,26 +39,32 @@ export const useAuthMethods = (isSigningOut: boolean, setIsSigningOut: (value: b
   }
 
   const signOut = async () => {
-    if (isSigningOut) return
+    if (isSigningOut) {
+      console.log('Already signing out, ignoring duplicate request')
+      return
+    }
     
+    console.log('Starting sign out process')
     setIsSigningOut(true)
     try {
       const { error } = await supabase.auth.signOut()
       
       if (error) {
-        console.error('Uitlog error:', error)
+        console.error('Sign out error:', error)
         toast({
           title: "Uitlog fout",
-          description: "Er is een fout opgetreden tijdens het uitloggen.",
+          description: "Er is een fout opgetreden tijdens het uitloggen. Probeer het opnieuw.",
           variant: "destructive"
         })
         return
       }
+
+      console.log('Sign out successful')
     } catch (error) {
-      console.error('Uitlog error:', error)
+      console.error('Sign out error:', error)
       toast({
         title: "Uitlog fout",
-        description: "Er is een fout opgetreden tijdens het uitloggen.",
+        description: "Er is een fout opgetreden tijdens het uitloggen. Probeer het opnieuw.",
         variant: "destructive"
       })
     } finally {
@@ -68,4 +74,3 @@ export const useAuthMethods = (isSigningOut: boolean, setIsSigningOut: (value: b
 
   return { signIn, signOut }
 }
-

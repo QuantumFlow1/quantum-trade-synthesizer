@@ -13,13 +13,14 @@ export const useAuthState = () => {
   const { toast } = useToast()
 
   const clearAuthState = useCallback(() => {
+    console.log('Clearing auth state')
     setUser(null)
     setSession(null)
     clearLocalStorageAuth()
   }, [])
 
   const handleAuthStateChange = useCallback(async (_event: string, session: Session | null) => {
-    console.log("Auth state changed:", _event, session)
+    console.log("Auth state changed:", _event, session?.user?.id)
     
     if (_event === 'SIGNED_OUT') {
       clearAuthState()
@@ -34,7 +35,9 @@ export const useAuthState = () => {
   }, [clearAuthState, toast])
 
   useEffect(() => {
+    console.log('Setting up auth state')
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.id)
       setSession(session)
       setUser(session?.user ?? null)
       setIsLoading(false)
@@ -45,6 +48,7 @@ export const useAuthState = () => {
     } = supabase.auth.onAuthStateChange(handleAuthStateChange)
 
     return () => {
+      console.log('Cleaning up auth state subscription')
       subscription.unsubscribe()
     }
   }, [handleAuthStateChange])
@@ -57,4 +61,3 @@ export const useAuthState = () => {
     setIsSigningOut
   }
 }
-
