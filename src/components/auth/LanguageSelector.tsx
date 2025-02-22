@@ -15,31 +15,41 @@ interface LanguageSelectorProps {
   label?: string
 }
 
-export const LanguageSelector = ({ value, onValueChange, label = "Taal / Language" }: LanguageSelectorProps) => {
-  const getLanguageLabel = (code: string) => {
-    const labels: Record<string, string> = {
-      nl: 'Nederlands',
-      en: 'English',
-      ru: 'Русский',
-      hy: 'Հայերեն'
-    }
-    return labels[code] || code
-  }
-
+export const LanguageSelector = ({ value, onValueChange, label }: LanguageSelectorProps) => {
   const translations: Record<PreferredLanguage, Record<string, string>> = {
     nl: {
       selectLanguage: "Selecteer een taal",
+      languageLabel: "Taal",
+      dutch: "Nederlands",
+      english: "Engels",
+      russian: "Russisch",
+      armenian: "Armeens"
     },
     en: {
       selectLanguage: "Select a language",
+      languageLabel: "Language",
+      dutch: "Dutch",
+      english: "English",
+      russian: "Russian",
+      armenian: "Armenian"
     },
     ru: {
       selectLanguage: "Выберите язык",
+      languageLabel: "Язык",
+      dutch: "Нидерландский",
+      english: "Английский",
+      russian: "Русский",
+      armenian: "Армянский"
     },
     hy: {
       selectLanguage: "Ընտրեք լեզուն",
+      languageLabel: "Լեզու",
+      dutch: "Հոլանդերեն",
+      english: "Անգլերեն",
+      russian: "Ռուսերեն",
+      armenian: "Հայերեն"
     }
-  };
+  }
 
   const getText = (key: string) => {
     return translations[value]?.[key] || translations.en[key];
@@ -49,7 +59,7 @@ export const LanguageSelector = ({ value, onValueChange, label = "Taal / Languag
     <div className="space-y-2">
       <label className="text-sm font-medium text-foreground/70 flex items-center gap-2">
         <Globe className="h-4 w-4" />
-        {label}
+        {label || getText('languageLabel')}
       </label>
       <Select
         value={value}
@@ -62,25 +72,25 @@ export const LanguageSelector = ({ value, onValueChange, label = "Taal / Languag
           <SelectItem value="nl" className="cursor-pointer">
             <div className="flex items-center gap-2">
               <span className="text-lg">🇳🇱</span>
-              {getLanguageLabel('nl')}
+              {getText('dutch')}
             </div>
           </SelectItem>
           <SelectItem value="en" className="cursor-pointer">
             <div className="flex items-center gap-2">
               <span className="text-lg">🇬🇧</span>
-              {getLanguageLabel('en')}
+              {getText('english')}
             </div>
           </SelectItem>
           <SelectItem value="ru" className="cursor-pointer">
             <div className="flex items-center gap-2">
               <span className="text-lg">🇷🇺</span>
-              {getLanguageLabel('ru')}
+              {getText('russian')}
             </div>
           </SelectItem>
           <SelectItem value="hy" className="cursor-pointer">
             <div className="flex items-center gap-2">
               <span className="text-lg">🇦🇲</span>
-              {getLanguageLabel('hy')}
+              {getText('armenian')}
             </div>
           </SelectItem>
         </SelectContent>

@@ -40,7 +40,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
     return <div>Loading...</div>;
   }
   
-  if (!user || userProfile?.role !== 'admin') {
+  if (!user || (userProfile?.role !== 'admin' && userProfile?.role !== 'super_admin')) {
     return <Navigate to="/" />;
   }
   
@@ -49,6 +49,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppRoutes = () => {
   const { userProfile } = useAuth();
+  const currentLanguage = localStorage.getItem('preferred_language') as any || 'nl';
 
   return (
     <Routes>
@@ -58,7 +59,6 @@ const AppRoutes = () => {
       <Route path="/admin/dashboard/users" element={<AdminRoute><Users /></AdminRoute>} />
       <Route path="/admin/dashboard/system" element={<AdminRoute><System /></AdminRoute>} />
       <Route path="/admin/dashboard/finance" element={<AdminRoute><Finance /></AdminRoute>} />
-      {/* Voeg taalkeuzebalk toe aan elke pagina */}
       <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
