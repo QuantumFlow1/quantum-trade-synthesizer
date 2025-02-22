@@ -6,8 +6,21 @@ import { SidebarProvider, useSidebar } from "./context"
 import { SIDEBAR_WIDTH_MOBILE } from "./constants"
 export { useSidebar } from "./context"
 export { SidebarProvider } from "./context"
+
+// Export all component types
 export * from "./components"
 export * from "./types"
+
+// Export individual components that DashboardSidebar needs
+export {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarContent,
+} from "./components"
 
 export const Sidebar = React.forwardRef<
   HTMLDivElement,
