@@ -1,16 +1,16 @@
 
 import { AlertTriangle, TrendingUp } from 'lucide-react';
 
-interface TradeAnalysis {
-  shouldTrade: boolean;
-  recommendedAction: 'buy' | 'sell';
-  recommendedAmount: number;
+interface AIAnalysis {
   confidence: number;
-  currentPrice: number;
+  recommendation: string;
+  expectedProfit: string;
+  riskLevel: string;
+  collaboratingAgents: string[];
 }
 
 interface AnalysisDisplayProps {
-  analysis: TradeAnalysis | null;
+  analysis: AIAnalysis | null;
 }
 
 export const AnalysisDisplay = ({ analysis }: AnalysisDisplayProps) => {
@@ -26,9 +26,10 @@ export const AnalysisDisplay = ({ analysis }: AnalysisDisplayProps) => {
         </div>
         <div className="flex items-center gap-2">
           <TrendingUp className="w-4 h-4 text-primary" />
-          <span>Recommendation: {analysis.recommendedAction}</span>
+          <span>Recommendation: {analysis.recommendation}</span>
         </div>
       </div>
     </div>
   );
 };
+

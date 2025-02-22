@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { OrderTypeSelector } from "./OrderTypeSelector";
@@ -21,7 +20,13 @@ interface TradeOrderFormProps {
 export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { aiAnalysis, isAnalyzing, performTradeAnalysis } = useTradeAnalysis(currentPrice);
+  const { aiAnalysis, isAnalyzing, performTradeAnalysis } = useTradeAnalysis({
+    isActive: true,
+    riskLevel: "medium",
+    isRapidMode: false,
+    simulationMode: false
+  });
+
   const {
     orderType,
     setOrderType,
