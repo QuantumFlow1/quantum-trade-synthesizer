@@ -10,4 +10,5 @@ export interface UserProfile {
   trading_enabled: boolean
   max_trade_amount?: number
   last_login?: string
+  preferred_language: 'nl' | 'en' | 'ru' | 'hy'
 }
