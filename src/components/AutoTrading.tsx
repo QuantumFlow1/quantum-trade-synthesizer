@@ -78,17 +78,21 @@ const AutoTrading = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="bg-background rounded-lg border p-4 hover:border-primary/50 transition-colors cursor-pointer" onClick={handleAnalysisClick}>
+      <div className="flex flex-col xl:flex-row gap-6">
+        <div className="flex-1 bg-background rounded-lg border p-6 hover:border-primary/50 transition-colors cursor-pointer" onClick={handleAnalysisClick}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Brain className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-medium">AI Handelsanalyse</h3>
             </div>
-            <Button variant="ghost" size="sm" onClick={(e) => {
-              e.stopPropagation();
-              toggleExpand();
-            }}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleExpand();
+              }}
+            >
               {isExpanded ? (
                 <ChevronUp className="h-4 w-4" />
               ) : (
@@ -97,33 +101,35 @@ const AutoTrading = () => {
             </Button>
           </div>
           
-          <div className={`transition-all duration-300 ${
-            isExpanded ? "max-h-[800px]" : "max-h-[200px]"
-          } overflow-hidden`}>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center border-b border-border pb-3">
-                <span className="text-muted-foreground">Betrouwbaarheid:</span>
-                <span className="text-primary font-medium">{aiAnalysis.confidence}%</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-border pb-3">
-                <span className="text-muted-foreground">Aanbeveling:</span>
-                <span className="text-green-400 font-medium">{aiAnalysis.recommendation.toUpperCase()}</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-border pb-3">
-                <span className="text-muted-foreground">Verwachte Winst:</span>
-                <span className="text-green-400 font-medium">{aiAnalysis.expectedProfit}</span>
-              </div>
-              <div className="pt-2">
-                <span className="text-muted-foreground block mb-2">Samenwerkende AI Agents:</span>
-                <div className="text-sm bg-secondary/30 p-3 rounded-md">
-                  {aiAnalysis.collaboratingAgents.join(", ")}
-                </div>
+          <div className={`space-y-4 ${isExpanded ? 'block' : 'hidden'}`}>
+            <div className="flex justify-between items-center border-b border-border pb-3">
+              <span className="text-muted-foreground">Betrouwbaarheid:</span>
+              <span className="text-primary font-medium">{aiAnalysis.confidence}%</span>
+            </div>
+            <div className="flex justify-between items-center border-b border-border pb-3">
+              <span className="text-muted-foreground">Aanbeveling:</span>
+              <span className="text-green-400 font-medium">{aiAnalysis.recommendation.toUpperCase()}</span>
+            </div>
+            <div className="flex justify-between items-center border-b border-border pb-3">
+              <span className="text-muted-foreground">Verwachte Winst:</span>
+              <span className="text-green-400 font-medium">{aiAnalysis.expectedProfit}</span>
+            </div>
+            <div className="pt-2">
+              <span className="text-muted-foreground block mb-2">Samenwerkende AI Agents:</span>
+              <div className="text-sm bg-secondary/30 p-3 rounded-md">
+                {aiAnalysis.collaboratingAgents.join(", ")}
               </div>
             </div>
           </div>
+          
+          {!isExpanded && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              Klik om de volledige analyse te bekijken
+            </div>
+          )}
         </div>
 
-        <div className="bg-background rounded-lg border p-4">
+        <div className="flex-1 bg-background rounded-lg border p-6">
           <h3 className="text-lg font-medium mb-4">Actieve Strategieën</h3>
           <div className="space-y-3">
             {strategies.map((strategy) => (
