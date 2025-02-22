@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Activity, CandlestickChart, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -119,7 +120,7 @@ const TradingChart = () => {
             currentPrice={data[data.length - 1].close}
             onSubmitOrder={handleSubmitOrder}
           />
-          <div className="space-y-4">
+          <div className="mt-8 space-y-4">
             <h3 className="text-xl font-semibold">Open Positions</h3>
             <PositionsList positions={positions} isLoading={positionsLoading} />
           </div>
@@ -131,3 +132,4 @@ const TradingChart = () => {
 };
 
 export default TradingChart;
+
