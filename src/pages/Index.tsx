@@ -47,9 +47,10 @@ const Index = () => {
     return <LoadingProfile />;
   }
 
-  // Alleen admin gebruikers kunnen het admin panel zien
-  const isAdmin = userProfile.role === 'admin' || userProfile.role === 'super_admin';
-  const Dashboard = isAdmin ? AdminPanel : UserDashboard;
+  // Bepaal welke dashboard te tonen op basis van gebruikersrol
+  const DashboardComponent = userProfile.role === 'admin' || userProfile.role === 'super_admin' 
+    ? AdminPanel 
+    : UserDashboard;
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90">
@@ -79,7 +80,7 @@ const Index = () => {
           >
             <Suspense fallback={<div>Loading...</div>}>
               <VoiceAssistant />
-              <Dashboard />
+              <DashboardComponent />
             </Suspense>
           </motion.div>
         </AnimatePresence>
