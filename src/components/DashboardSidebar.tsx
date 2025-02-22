@@ -48,3 +48,4 @@ export function DashboardSidebar() {
     </Sidebar>
   );
 }
+
