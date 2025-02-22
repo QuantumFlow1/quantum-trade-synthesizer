@@ -12,6 +12,7 @@ type AuthContextType = {
   userProfile: UserProfile | null
   isAdmin: boolean
   isTrader: boolean
+  isLoading: boolean  // Add this line
   signIn: {
     email: (email: string, password: string) => Promise<void>
     google: () => Promise<void>
@@ -48,6 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       userProfile,
       isAdmin,
       isTrader,
+      isLoading,  // Add this line
       signIn, 
       signOut,
       checkPermission 
@@ -64,4 +66,3 @@ export const useAuth = () => {
   }
   return context
 }
-
