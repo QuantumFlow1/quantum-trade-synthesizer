@@ -55,7 +55,7 @@ const AutoTrading = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <div className="flex flex-col space-y-4">
+        <div className="flex flex-col space-y-4 min-h-[400px]">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-medium">AI Trading Analysis</h3>
             <Button variant="ghost" size="sm" onClick={toggleExpand}>
@@ -66,7 +66,9 @@ const AutoTrading = () => {
               )}
             </Button>
           </div>
-          <div className="p-6 rounded-lg bg-secondary/50 transition-all duration-300">
+          <div className={`p-6 rounded-lg bg-secondary/50 transition-all duration-300 ${
+            isExpanded ? "h-auto" : "h-[200px] overflow-hidden"
+          }`}>
             <div className="space-y-4">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <span className="text-muted-foreground">Confidence:</span>
@@ -90,7 +92,7 @@ const AutoTrading = () => {
           </div>
         </div>
 
-        <div className="flex flex-col space-y-4">
+        <div className="flex flex-col space-y-4 min-h-[400px]">
           <h3 className="text-lg font-medium">Active Strategies</h3>
           <div className="space-y-3">
             {strategies.map((strategy) => (
