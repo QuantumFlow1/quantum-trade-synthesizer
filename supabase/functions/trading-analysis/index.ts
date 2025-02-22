@@ -14,8 +14,6 @@ interface TradingAnalysisRequest {
 }
 
 serve(async (req) => {
-  console.log('Trading analysis function started');
-
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Handling CORS preflight request');
@@ -23,76 +21,24 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Trading analysis function starting...');
+
     // Parse request body
-    console.log('Attempting to parse request body');
     const requestData: TradingAnalysisRequest = await req.json();
-    console.log('Request data:', requestData);
+    console.log('Request data received:', requestData);
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Missing Supabase credentials');
-      throw new Error('Missing Supabase credentials');
-    }
-
-    console.log('Initializing Supabase client');
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Fetch latest market data with no filters initially
-    console.log('Fetching latest market data');
-    const { data: marketData, error: marketError } = await supabase
-      .from('market_data')
-      .select('*')
-      .order('timestamp', { ascending: false })
-      .limit(100);
-
-    if (marketError) {
-      console.error('Error fetching market data:', marketError);
-      throw marketError;
-    }
-
-    console.log(`Retrieved ${marketData?.length || 0} market data points`);
-
-    // Generate analysis result
-    const analysis = {
-      shouldTrade: Math.random() > 0.5,
+    // Generate mock analysis for testing
+    const mockAnalysis = {
+      shouldTrade: true,
       recommendedAction: Math.random() > 0.5 ? 'buy' : 'sell',
-      recommendedAmount: Math.floor(Math.random() * 100) + 1,
-      confidence: Math.floor(Math.random() * 100),
-      currentPrice: marketData?.[0]?.price || 0
+      confidence: Math.floor(Math.random() * (95 - 70) + 70),
+      currentPrice: 45000 + (Math.random() * 1000)
     };
 
-    console.log('Analysis result:', analysis);
+    console.log('Generated analysis:', mockAnalysis);
 
-    // Store analysis result
-    console.log('Storing analysis result');
-    const { error: insertError } = await supabase
-      .from('trading_signals')
-      .insert({
-        signal_type: analysis.recommendedAction,
-        price: analysis.currentPrice,
-        confidence: analysis.confidence,
-        strategy: requestData.rapidMode ? 'RapidFlow AI' : 'QuantumFlow AI',
-        volume: analysis.recommendedAmount,
-        status: 'pending',
-        metadata: {
-          riskLevel: requestData.riskLevel,
-          simulationMode: requestData.simulationMode
-        }
-      });
-
-    if (insertError) {
-      console.error('Error storing analysis result:', insertError);
-      throw insertError;
-    }
-
-    console.log('Analysis result stored successfully');
-
-    // Return successful response
     return new Response(
-      JSON.stringify(analysis),
+      JSON.stringify(mockAnalysis),
       {
         headers: { 
           ...corsHeaders,
@@ -100,10 +46,11 @@ serve(async (req) => {
         },
         status: 200,
       },
-    )
+    );
 
   } catch (error) {
-    console.error('Trading analysis error:', error);
+    console.error('Error in trading analysis:', error);
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       {
@@ -113,6 +60,6 @@ serve(async (req) => {
         },
         status: 500,
       },
-    )
+    );
   }
 })

@@ -30,6 +30,7 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
   const [takeProfit, setTakeProfit] = useState<string>("");
   const [isSimulated, setIsSimulated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState({
     confidence: 85,
     riskLevel: "medium",
@@ -41,7 +42,9 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
   });
 
   const performTradeAnalysis = async () => {
-    console.log("Requesting trade analysis...");
+    setIsAnalyzing(true);
+    console.log("Starting trade analysis...");
+
     try {
       const { data, error } = await supabase.functions.invoke('trading-analysis', {
         body: {
@@ -51,39 +54,59 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
         }
       });
 
+      console.log("Trade analysis response received:", { data, error });
+
       if (error) {
         console.error("Trade analysis error:", error);
-        throw error;
+        toast({
+          title: "Analysis Error",
+          description: error.message || "Failed to perform trade analysis",
+          variant: "destructive",
+        });
+        return false;
       }
 
-      console.log("Trade analysis response:", data);
-      
-      if (data) {
-        setAiAnalysis({
-          ...aiAnalysis,
-          confidence: data.confidence,
-          recommendation: data.recommendedAction === 'buy' ? 'long' : 'short',
-          expectedProfit: `${(data.confidence * 0.1).toFixed(1)}%`,
-          collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
+      if (!data) {
+        console.error("No data received from analysis");
+        toast({
+          title: "Analysis Error",
+          description: "No analysis data received",
+          variant: "destructive",
         });
+        return false;
       }
+
+      console.log("Updating AI analysis with:", data);
+      setAiAnalysis({
+        ...aiAnalysis,
+        confidence: data.confidence || 85,
+        recommendation: data.recommendedAction === 'buy' ? 'long' : 'short',
+        expectedProfit: `${((data.confidence || 85) * 0.1).toFixed(1)}%`,
+        collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
+      });
+
+      return true;
     } catch (error) {
-      console.error("Error performing trade analysis:", error);
+      console.error("Error in performTradeAnalysis:", error);
       toast({
         title: "Analysis Error",
-        description: "Failed to perform trade analysis. Please try again.",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       });
+      return false;
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Form submission started");
 
     if (!user) {
       toast({
-        title: "Authenticatie Vereist",
-        description: "Log in om te kunnen handelen",
+        title: "Authentication Required",
+        description: "Please log in to trade",
         variant: "destructive",
       });
       return;
@@ -91,8 +114,8 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
 
     if (!amount || isNaN(Number(amount))) {
       toast({
-        title: "Ongeldig Bedrag",
-        description: "Voer een geldig handelsvolume in",
+        title: "Invalid Amount",
+        description: "Please enter a valid trading amount",
         variant: "destructive",
       });
       return;
@@ -101,9 +124,15 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     setIsSubmitting(true);
 
     try {
-      // First perform AI analysis
-      await performTradeAnalysis();
+      console.log("Starting trade analysis before submission");
+      const analysisSuccessful = await performTradeAnalysis();
+      
+      if (!analysisSuccessful) {
+        console.log("Trade analysis failed, aborting submission");
+        return;
+      }
 
+      console.log("Submitting trade with analysis results");
       await submitTrade(
         user.id, 
         orderType, 
@@ -128,11 +157,11 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
 
       onSubmitOrder(order);
       toast({
-        title: `${isSimulated ? "Simulated" : ""} Order Geplaatst`,
-        description: `${orderType.toUpperCase()} ${orderExecutionType} order geplaatst voor ${amount} eenheden`,
+        title: `${isSimulated ? "Simulated" : ""} Order Placed`,
+        description: `${orderType.toUpperCase()} ${orderExecutionType} order placed for ${amount} units`,
       });
 
-      // Reset formulier
+      // Reset form
       setAmount("");
       setLimitPrice("");
       setStopPrice("");
@@ -141,8 +170,8 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     } catch (error) {
       console.error("Error submitting order:", error);
       toast({
-        title: "Fout",
-        description: "Kon order niet plaatsen. Probeer het opnieuw.",
+        title: "Error",
+        description: "Could not place order. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -166,13 +195,13 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
         />
 
         <div className="space-y-2">
-          <Label>Order Uitvoering Type</Label>
+          <Label>Order Execution Type</Label>
           <Select 
             value={orderExecutionType}
             onValueChange={(value: "market" | "limit" | "stop" | "stop_limit") => setOrderExecutionType(value)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecteer order type" />
+              <SelectValue placeholder="Select order type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="market">Market Order</SelectItem>
@@ -204,12 +233,11 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
               ? "bg-green-500 hover:bg-green-600" 
               : "bg-red-500 hover:bg-red-600"
           }`}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isAnalyzing}
         >
-          {isSubmitting ? "Verwerken..." : `Plaats ${isSimulated ? "Simulated" : ""} ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
+          {isSubmitting ? "Processing..." : isAnalyzing ? "Analyzing..." : `Place ${isSimulated ? "Simulated" : ""} ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
         </Button>
       </form>
     </div>
   );
 };
-
