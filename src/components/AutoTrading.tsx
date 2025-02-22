@@ -66,9 +66,7 @@ const AutoTrading = () => {
               )}
             </Button>
           </div>
-          <div className={`p-6 rounded-lg bg-secondary/50 transition-all duration-300 ${
-            isExpanded ? "" : "max-h-[100px] overflow-hidden"
-          }`}>
+          <div className="p-6 rounded-lg bg-secondary/50 transition-all duration-300">
             <div className="space-y-4">
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <span className="text-muted-foreground">Confidence:</span>
