@@ -1,6 +1,4 @@
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { OrderTypeSelector } from "./OrderTypeSelector";
@@ -11,7 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { AIAnalysisCard } from "./AIAnalysisCard";
 import { SimulationToggle } from "./SimulationToggle";
-import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { useTradeAnalysis } from "@/hooks/use-trade-analysis";
+import { useTradeFormState } from "./TradeFormState";
 
 interface TradeOrderFormProps {
   currentPrice: number;
@@ -21,83 +21,27 @@ interface TradeOrderFormProps {
 export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [orderType, setOrderType] = useState<"buy" | "sell">("buy");
-  const [orderExecutionType, setOrderExecutionType] = useState<"market" | "limit" | "stop" | "stop_limit">("market");
-  const [amount, setAmount] = useState<string>("");
-  const [limitPrice, setLimitPrice] = useState<string>("");
-  const [stopPrice, setStopPrice] = useState<string>("");
-  const [stopLoss, setStopLoss] = useState<string>("");
-  const [takeProfit, setTakeProfit] = useState<string>("");
-  const [isSimulated, setIsSimulated] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState({
-    confidence: 85,
-    riskLevel: "medium",
-    recommendation: "long",
-    expectedProfit: "2.3%",
-    stopLossRecommendation: currentPrice * 0.98,
-    takeProfitRecommendation: currentPrice * 1.035,
-    collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
-  });
-
-  const performTradeAnalysis = async () => {
-    setIsAnalyzing(true);
-    console.log("Starting trade analysis...");
-
-    try {
-      const { data, error } = await supabase.functions.invoke('trading-analysis', {
-        body: {
-          riskLevel: "medium",
-          simulationMode: isSimulated,
-          rapidMode: false
-        }
-      });
-
-      console.log("Trade analysis response received:", { data, error });
-
-      if (error) {
-        console.error("Trade analysis error:", error);
-        toast({
-          title: "Analysis Error",
-          description: error.message || "Failed to perform trade analysis",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (!data) {
-        console.error("No data received from analysis");
-        toast({
-          title: "Analysis Error",
-          description: "No analysis data received",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      console.log("Updating AI analysis with:", data);
-      setAiAnalysis({
-        ...aiAnalysis,
-        confidence: data.confidence || 85,
-        recommendation: data.recommendedAction === 'buy' ? 'long' : 'short',
-        expectedProfit: `${((data.confidence || 85) * 0.1).toFixed(1)}%`,
-        collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
-      });
-
-      return true;
-    } catch (error) {
-      console.error("Error in performTradeAnalysis:", error);
-      toast({
-        title: "Analysis Error",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
+  const { aiAnalysis, isAnalyzing, performTradeAnalysis } = useTradeAnalysis(currentPrice);
+  const {
+    orderType,
+    setOrderType,
+    orderExecutionType,
+    setOrderExecutionType,
+    amount,
+    setAmount,
+    limitPrice,
+    setLimitPrice,
+    stopPrice,
+    setStopPrice,
+    stopLoss,
+    setStopLoss,
+    takeProfit,
+    setTakeProfit,
+    isSimulated,
+    setIsSimulated,
+    isSubmitting,
+    setIsSubmitting
+  } = useTradeFormState();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +69,7 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
 
     try {
       console.log("Starting trade analysis before submission");
-      const analysisSuccessful = await performTradeAnalysis();
+      const analysisSuccessful = await performTradeAnalysis(isSimulated);
       
       if (!analysisSuccessful) {
         console.log("Trade analysis failed, aborting submission");
@@ -167,13 +111,6 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
       setStopPrice("");
       setStopLoss("");
       setTakeProfit("");
-    } catch (error) {
-      console.error("Error submitting order:", error);
-      toast({
-        title: "Error",
-        description: "Could not place order. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setIsSubmitting(false);
     }

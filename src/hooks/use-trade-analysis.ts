@@ -1,135 +1,92 @@
 
-import { useState, useEffect } from 'react';
-import { supabase } from "@/lib/supabase";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
-export interface TradeAnalysis {
-  shouldTrade: boolean;
-  recommendedAction: 'buy' | 'sell';
-  recommendedAmount: number;
+interface AIAnalysis {
   confidence: number;
-  currentPrice: number;
+  riskLevel: string;
+  recommendation: string;
+  expectedProfit: string;
+  stopLossRecommendation: number;
+  takeProfitRecommendation: number;
+  collaboratingAgents: string[];
 }
 
-interface UseTradeAnalysisProps {
-  isActive: boolean;
-  riskLevel: "low" | "medium" | "high";
-  isRapidMode: boolean;
-  simulationMode: boolean;
-}
-
-export const useTradeAnalysis = ({ isActive, riskLevel, isRapidMode, simulationMode }: UseTradeAnalysisProps) => {
+export const useTradeAnalysis = (currentPrice: number) => {
   const { toast } = useToast();
-  const [lastAnalysis, setLastAnalysis] = useState<TradeAnalysis | null>(null);
-  const [tradeCount, setTradeCount] = useState(0);
-  const [totalProfit, setTotalProfit] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis>({
+    confidence: 85,
+    riskLevel: "medium",
+    recommendation: "long",
+    expectedProfit: "2.3%",
+    stopLossRecommendation: currentPrice * 0.98,
+    takeProfitRecommendation: currentPrice * 1.035,
+    collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
+  });
 
-  useEffect(() => {
-    if (isActive) {
-      console.log('Starting automated trading with risk level:', riskLevel);
-      let timeoutId: NodeJS.Timeout;
+  const performTradeAnalysis = async (isSimulated: boolean) => {
+    setIsAnalyzing(true);
+    console.log("Starting trade analysis...");
 
-      const performTradeAnalysis = async () => {
-        try {
-          setError(null);
-          console.log('Fetching market analysis...');
-          const { data: analysis, error: analysisError } = await supabase.functions.invoke('trading-analysis', {
-            body: { 
-              riskLevel, 
-              simulationMode,
-              rapidMode: isRapidMode
-            }
-          });
-
-          if (analysisError) {
-            console.error('Analysis error:', analysisError);
-            setError(analysisError.message);
-            toast({
-              title: "Analysis Error",
-              description: analysisError.message,
-              variant: "destructive",
-            });
-            return;
-          }
-
-          if (!analysis) {
-            throw new Error('No analysis data received');
-          }
-
-          console.log('Received market analysis:', analysis);
-          setLastAnalysis(analysis);
-
-          if (analysis.shouldTrade) {
-            console.log('Trade conditions met, executing trade...');
-            const { data: tradeData, error: tradeError } = await supabase.functions.invoke('execute-simulated-trade', {
-              body: {
-                type: analysis.recommendedAction,
-                amount: analysis.recommendedAmount,
-                price: analysis.currentPrice,
-                strategy: isRapidMode ? "RapidFlow AI" : "QuantumFlow AI",
-                confidence: analysis.confidence
-              }
-            });
-
-            if (tradeError) {
-              console.error('Trade execution error:', tradeError);
-              setError(tradeError.message);
-              toast({
-                title: "Trade Execution Error",
-                description: tradeError.message,
-                variant: "destructive",
-              });
-              return;
-            }
-
-            if (!tradeData) {
-              throw new Error('No trade data received');
-            }
-
-            console.log('Trade executed successfully:', tradeData);
-            setTradeCount(prev => prev + 1);
-            
-            if (tradeData.profit) {
-              setTotalProfit(prev => prev + tradeData.profit);
-            }
-            
-            toast({
-              title: "Trade Executed",
-              description: `${analysis.recommendedAction.toUpperCase()} ${analysis.recommendedAmount} @ $${analysis.currentPrice}`,
-            });
-          } else {
-            console.log('Trade conditions not met, waiting for next opportunity...');
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-          console.error('Automated trading error:', errorMessage);
-          setError(errorMessage);
-          toast({
-            title: "Trading Error",
-            description: errorMessage,
-            variant: "destructive",
-          });
+    try {
+      const { data, error } = await supabase.functions.invoke('trading-analysis', {
+        body: {
+          riskLevel: "medium",
+          simulationMode: isSimulated,
+          rapidMode: false
         }
+      });
 
-        timeoutId = setTimeout(performTradeAnalysis, isRapidMode ? 5000 : 30000);
-      };
+      console.log("Trade analysis response received:", { data, error });
 
-      performTradeAnalysis();
+      if (error) {
+        console.error("Trade analysis error:", error);
+        toast({
+          title: "Analysis Error",
+          description: error.message || "Failed to perform trade analysis",
+          variant: "destructive",
+        });
+        return false;
+      }
 
-      return () => {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-        }
-      };
+      if (!data) {
+        console.error("No data received from analysis");
+        toast({
+          title: "Analysis Error",
+          description: "No analysis data received",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      console.log("Updating AI analysis with:", data);
+      setAiAnalysis({
+        ...aiAnalysis,
+        confidence: data.confidence || 85,
+        recommendation: data.recommendedAction === 'buy' ? 'long' : 'short',
+        expectedProfit: `${((data.confidence || 85) * 0.1).toFixed(1)}%`,
+        collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error in performTradeAnalysis:", error);
+      toast({
+        title: "Analysis Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setIsAnalyzing(false);
     }
-  }, [isActive, riskLevel, isRapidMode, simulationMode, toast]);
+  };
 
   return {
-    lastAnalysis,
-    tradeCount,
-    totalProfit,
-    error
+    aiAnalysis,
+    isAnalyzing,
+    performTradeAnalysis
   };
 };
-
