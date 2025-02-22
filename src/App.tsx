@@ -12,8 +12,53 @@ import Users from "./pages/admin/dashboard/Users";
 import System from "./pages/admin/dashboard/System";
 import Finance from "./pages/admin/dashboard/Finance";
 import AdminPanel from "./components/AdminPanel";
+import { useAuth } from "./components/auth/AuthProvider";
 
 const queryClient = new QueryClient();
+
+// Protected Route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/" />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Admin Route component
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, userProfile, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!user || userProfile?.role !== 'admin') {
+    return <Navigate to="/" />;
+  }
+  
+  return <>{children}</>;
+};
+
+const AppRoutes = () => (
+  <Routes>
+    <Route path="/" element={<Index />} />
+    <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+    <Route path="/admin/dashboard/overview" element={<AdminRoute><Overview /></AdminRoute>} />
+    <Route path="/admin/dashboard/users" element={<AdminRoute><Users /></AdminRoute>} />
+    <Route path="/admin/dashboard/system" element={<AdminRoute><System /></AdminRoute>} />
+    <Route path="/admin/dashboard/finance" element={<AdminRoute><Finance /></AdminRoute>} />
+    {/* Redirect all auth callback URLs to the main page */}
+    <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -22,17 +67,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/admin/dashboard/overview" element={<Overview />} />
-            <Route path="/admin/dashboard/users" element={<Users />} />
-            <Route path="/admin/dashboard/system" element={<System />} />
-            <Route path="/admin/dashboard/finance" element={<Finance />} />
-            {/* Redirect all auth callback URLs to the main page */}
-            <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppRoutes />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

@@ -19,6 +19,19 @@ export const useAuthState = () => {
     clearLocalStorageAuth()
   }, [])
 
+  // Luister naar storage events voor cross-tab synchronisatie
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.startsWith('sb-')) {
+        console.log('Auth storage changed, refreshing session')
+        window.location.reload()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
   const handleAuthStateChange = useCallback(async (_event: string, session: Session | null) => {
     console.log("Auth state changed:", _event, session?.user?.id)
     
