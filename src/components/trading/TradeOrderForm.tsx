@@ -14,6 +14,7 @@ import { useTradeAnalysis } from "@/hooks/use-trade-analysis";
 import { useTradeFormState } from "./TradeFormState";
 import { BulkOrderModal } from "./BulkOrderModal";
 import { useState } from "react";
+import { AutomatedTradingPanel } from "./AutomatedTradingPanel";
 
 interface TradeOrderFormProps {
   currentPrice: number;
@@ -126,16 +127,20 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <AIAnalysisCard analysis={aiAnalysis} />
-        <Button 
-          variant="outline" 
-          onClick={() => setIsBulkModalOpen(true)}
-          className="ml-4"
-        >
-          Bulk Order
-        </Button>
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          <AIAnalysisCard analysis={aiAnalysis} />
+          <Button 
+            variant="outline" 
+            onClick={() => setIsBulkModalOpen(true)}
+          >
+            Bulk Order
+          </Button>
+        </div>
+        <div>
+          <AutomatedTradingPanel simulationMode={isSimulated} />
+        </div>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
@@ -201,3 +206,4 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     </div>
   );
 };
+
