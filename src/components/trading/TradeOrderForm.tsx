@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { OrderTypeSelector } from "./OrderTypeSelector";
@@ -11,6 +12,8 @@ import { SimulationToggle } from "./SimulationToggle";
 import { Button } from "@/components/ui/button";
 import { useTradeAnalysis } from "@/hooks/use-trade-analysis";
 import { useTradeFormState } from "./TradeFormState";
+import { BulkOrderModal } from "./BulkOrderModal";
+import { useState } from "react";
 
 interface TradeOrderFormProps {
   currentPrice: number;
@@ -20,6 +23,7 @@ interface TradeOrderFormProps {
 export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const { aiAnalysis, isAnalyzing, performTradeAnalysis } = useTradeAnalysis({
     isActive: true,
     riskLevel: "medium",
@@ -123,7 +127,16 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
 
   return (
     <div className="space-y-6">
-      <AIAnalysisCard analysis={aiAnalysis} />
+      <div className="flex justify-between items-center">
+        <AIAnalysisCard analysis={aiAnalysis} />
+        <Button 
+          variant="outline" 
+          onClick={() => setIsBulkModalOpen(true)}
+          className="ml-4"
+        >
+          Bulk Order
+        </Button>
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
         <SimulationToggle 
@@ -180,6 +193,11 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
           {isSubmitting ? "Processing..." : isAnalyzing ? "Analyzing..." : `Place ${isSimulated ? "Simulated" : ""} ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
         </Button>
       </form>
+
+      <BulkOrderModal 
+        isOpen={isBulkModalOpen}
+        onOpenChange={setIsBulkModalOpen}
+      />
     </div>
   );
 };
