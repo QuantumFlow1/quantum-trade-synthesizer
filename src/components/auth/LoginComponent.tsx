@@ -6,6 +6,7 @@ import { Mail, Shield, ShieldAlert } from "lucide-react"
 import { useAuth } from './AuthProvider'
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from '@/lib/supabase'
+import { PreferredLanguage, UserRole } from '@/types/auth'
 import {
   Select,
   SelectContent,
@@ -19,8 +20,8 @@ export const LoginComponent = () => {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<'viewer' | 'trader' | 'admin' | 'super_admin'>('viewer')
-  const [language, setLanguage] = useState<'nl' | 'en' | 'ru' | 'hy'>('nl')
+  const [selectedRole, setSelectedRole] = useState<UserRole>('viewer')
+  const [language, setLanguage] = useState<PreferredLanguage>('nl')
   const { signIn } = useAuth()
   const { toast } = useToast()
 
@@ -133,7 +134,7 @@ export const LoginComponent = () => {
             <>
               <Select
                 value={selectedRole}
-                onValueChange={(value: 'viewer' | 'trader' | 'admin' | 'super_admin') => setSelectedRole(value)}
+                onValueChange={(value: UserRole) => setSelectedRole(value)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecteer een rol" />
@@ -168,7 +169,7 @@ export const LoginComponent = () => {
 
               <Select
                 value={language}
-                onValueChange={(value: 'nl' | 'en' | 'ru' | 'hy') => setLanguage(value)}
+                onValueChange={(value: PreferredLanguage) => setLanguage(value)}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Selecteer een taal" />
@@ -202,5 +203,5 @@ export const LoginComponent = () => {
         </Button>
       </div>
     </div>
-  )
+  );
 }
