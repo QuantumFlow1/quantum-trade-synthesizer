@@ -39,8 +39,8 @@ const AutoTrading = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center mb-4">
+    <div className="flex flex-col space-y-6">
+      <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Automatische Trading Strategieën</h2>
         <Button variant="outline" size="sm">
           <Settings className="w-4 h-4 mr-2" />
@@ -48,26 +48,26 @@ const AutoTrading = () => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="flex flex-col space-y-4">
           <h3 className="text-lg font-medium">AI Trading Analysis</h3>
-          <div className="p-4 rounded-lg bg-secondary/50">
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span>Confidence:</span>
-                <span className="text-primary">85%</span>
+          <div className="p-6 rounded-lg bg-secondary/50 h-full">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <span className="text-muted-foreground">Confidence:</span>
+                <span className="text-primary font-medium">85%</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span>Recommendation:</span>
-                <span className="text-green-400">LONG</span>
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <span className="text-muted-foreground">Recommendation:</span>
+                <span className="text-green-400 font-medium">LONG</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span>Expected Profit:</span>
-                <span className="text-green-400">2.3%</span>
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <span className="text-muted-foreground">Expected Profit:</span>
+                <span className="text-green-400 font-medium">2.3%</span>
               </div>
-              <div className="space-y-2">
-                <div>Collaborating AI Agents:</div>
-                <div className="text-sm text-muted-foreground">
+              <div className="pt-2">
+                <span className="text-muted-foreground block mb-2">Collaborating AI Agents:</span>
+                <div className="text-sm bg-secondary/30 p-3 rounded-md">
                   Trading AI, Risk Manager, Market Analyzer
                 </div>
               </div>
@@ -75,9 +75,9 @@ const AutoTrading = () => {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="flex flex-col space-y-4">
           <h3 className="text-lg font-medium">Active Strategies</h3>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {strategies.map((strategy) => (
               <div
                 key={strategy.id}
@@ -113,3 +113,4 @@ const AutoTrading = () => {
 };
 
 export default AutoTrading;
+
