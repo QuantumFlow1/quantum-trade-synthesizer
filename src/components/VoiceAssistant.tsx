@@ -2,6 +2,7 @@
 import { useState, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useToast } from '@/hooks/use-toast'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useAudioProcessing } from '@/hooks/use-audio-processing'
@@ -14,6 +15,7 @@ import { VOICE_TEMPLATES } from '@/lib/voice-templates'
 import { VoiceTemplate } from '@/lib/types'
 
 export const VoiceAssistant = () => {
+  const { toast } = useToast()
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
   const { isPlaying, playAudio } = useAudioPlayback()
   const { isProcessing, lastTranscription, processAudio } = useAudioProcessing()
@@ -141,4 +143,3 @@ export const VoiceAssistant = () => {
     </Card>
   )
 }
-
