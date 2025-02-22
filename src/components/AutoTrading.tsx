@@ -39,7 +39,7 @@ const AutoTrading = () => {
   };
 
   return (
-    <div>
+    <div className="space-y-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Automatische Trading Strategieën</h2>
         <Button variant="outline" size="sm">
@@ -47,34 +47,66 @@ const AutoTrading = () => {
           Configureer
         </Button>
       </div>
-      <div className="space-y-4">
-        {strategies.map((strategy) => (
-          <div
-            key={strategy.id}
-            className="flex items-center justify-between p-4 rounded-lg bg-secondary/50"
-          >
-            <div className="space-y-1">
-              <div className="font-medium">{strategy.name}</div>
-              <div className="text-sm text-muted-foreground">
-                {strategy.trades} trades • Winst: {strategy.profit}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">AI Trading Analysis</h3>
+          <div className="p-4 rounded-lg bg-secondary/50">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span>Confidence:</span>
+                <span className="text-primary">85%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Recommendation:</span>
+                <span className="text-green-400">LONG</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Expected Profit:</span>
+                <span className="text-green-400">2.3%</span>
+              </div>
+              <div className="space-y-2">
+                <div>Collaborating AI Agents:</div>
+                <div className="text-sm text-muted-foreground">
+                  Trading AI, Risk Manager, Market Analyzer
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleStrategyToggle(strategy.id, strategy.status)}
-              >
-                {strategy.status === "active" ? (
-                  <PauseCircle className="w-4 h-4 mr-1" />
-                ) : (
-                  <PlayCircle className="w-4 h-4 mr-1" />
-                )}
-                {strategy.status === "active" ? "Pause" : "Start"}
-              </Button>
-            </div>
           </div>
-        ))}
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Active Strategies</h3>
+          <div className="space-y-4">
+            {strategies.map((strategy) => (
+              <div
+                key={strategy.id}
+                className="flex items-center justify-between p-4 rounded-lg bg-secondary/50"
+              >
+                <div className="space-y-1">
+                  <div className="font-medium">{strategy.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {strategy.trades} trades • Winst: {strategy.profit}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleStrategyToggle(strategy.id, strategy.status)}
+                  >
+                    {strategy.status === "active" ? (
+                      <PauseCircle className="w-4 h-4 mr-1" />
+                    ) : (
+                      <PlayCircle className="w-4 h-4 mr-1" />
+                    )}
+                    {strategy.status === "active" ? "Pause" : "Start"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
