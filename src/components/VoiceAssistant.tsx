@@ -7,8 +7,9 @@ import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { VoiceSelector } from './voice-assistant/VoiceSelector'
 import { AudioControls } from './voice-assistant/AudioControls'
-import { TranscriptionDisplay } from './voice-assistant/TranscriptionDisplay'
 import { DirectTextInput } from './voice-assistant/DirectTextInput'
+import { ProcessingControls } from './voice-assistant/ProcessingControls'
+import { PreviewPlayer } from './voice-assistant/PreviewPlayer'
 import { VOICE_TEMPLATES } from '@/lib/voice-templates'
 import { VoiceTemplate } from '@/lib/types'
 import { supabase } from '@/lib/supabase'
@@ -24,7 +25,6 @@ export const VoiceAssistant = () => {
   const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null)
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
 
   const handleStopRecording = async () => {
     const audioUrl = await stopRecording()
@@ -52,28 +52,11 @@ export const VoiceAssistant = () => {
 
   const playPreview = async () => {
     if (!previewAudioUrl || isPreviewPlaying) return
-
-    if (previewAudioRef.current) {
-      try {
-        setIsPreviewPlaying(true)
-        await previewAudioRef.current.play()
-      } catch (error) {
-        console.error('Error playing preview:', error)
-        toast({
-          title: "Fout",
-          description: "Kon de audio preview niet afspelen",
-          variant: "destructive",
-        })
-      }
-    }
+    setIsPreviewPlaying(true)
   }
 
   const stopPreview = () => {
-    if (previewAudioRef.current) {
-      previewAudioRef.current.pause()
-      previewAudioRef.current.currentTime = 0
-      setIsPreviewPlaying(false)
-    }
+    setIsPreviewPlaying(false)
   }
 
   const processAudio = async () => {
@@ -127,10 +110,6 @@ export const VoiceAssistant = () => {
     if (voice) setSelectedVoice(voice)
   }
 
-  const triggerFileUpload = () => {
-    fileInputRef.current?.click()
-  }
-
   const handleDirectTextSubmit = () => {
     if (directText.trim()) {
       playAudio(directText, selectedVoice.id, selectedVoice.name)
@@ -172,7 +151,7 @@ export const VoiceAssistant = () => {
           isPreviewPlaying={isPreviewPlaying}
           onStartRecording={startRecording}
           onStopRecording={handleStopRecording}
-          onTriggerFileUpload={triggerFileUpload}
+          onTriggerFileUpload={() => fileInputRef.current?.click()}
           onPlayPreview={playPreview}
           onStopPreview={stopPreview}
           onProcessAudio={processAudio}
@@ -186,22 +165,23 @@ export const VoiceAssistant = () => {
           onChange={handleFileUpload}
         />
 
-        <audio 
-          ref={previewAudioRef}
-          src={previewAudioUrl || undefined}
+        <PreviewPlayer
+          audioUrl={previewAudioUrl}
           onEnded={() => setIsPreviewPlaying(false)}
-          className="hidden"
         />
         
-        <TranscriptionDisplay
+        <ProcessingControls
           isProcessing={isProcessing}
+          previewAudioUrl={previewAudioUrl}
           lastTranscription={lastTranscription}
-          voiceName={selectedVoice.name}
+          selectedVoiceName={selectedVoice.name}
           isPlaying={isPlaying}
-          onPlay={playTranscription}
           isRecording={isRecording}
+          onProcess={processAudio}
+          onPlayTranscription={playTranscription}
         />
       </CardContent>
     </Card>
   )
 }
+
