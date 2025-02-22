@@ -2,10 +2,12 @@
 import React from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface Props {
   children: React.ReactNode;
   componentName?: string;
+  fallbackComponent?: React.ReactNode;
 }
 
 interface State {
@@ -24,27 +26,27 @@ export class TradingErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Trading component error:', error, errorInfo);
+    console.error('Trading component fout:', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
+      if (this.props.fallbackComponent) {
+        return this.props.fallbackComponent;
+      }
+
       return (
-        <Card className="p-4 bg-destructive/10 border-destructive/20">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="w-4 h-4" />
-            <div className="space-y-1">
-              <p className="font-medium">
-                {this.props.componentName 
-                  ? `${this.props.componentName} encountered an error`
-                  : 'Something went wrong'}
-              </p>
-              <p className="text-sm text-destructive/80">
-                {this.state.error?.message || 'Please try refreshing the page'}
-              </p>
-            </div>
-          </div>
-        </Card>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>
+            {this.props.componentName 
+              ? `${this.props.componentName} ondervond een fout`
+              : 'Er is iets misgegaan'}
+          </AlertTitle>
+          <AlertDescription>
+            {this.state.error?.message || 'Probeer de pagina te vernieuwen'}
+          </AlertDescription>
+        </Alert>
       );
     }
 

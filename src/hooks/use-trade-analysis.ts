@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 
@@ -20,6 +20,11 @@ interface TradeAnalysisParams {
   simulationMode: boolean;
 }
 
+interface AnalysisError extends Error {
+  code?: string;
+  details?: string;
+}
+
 export const useTradeAnalysis = (params: TradeAnalysisParams) => {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -36,10 +41,28 @@ export const useTradeAnalysis = (params: TradeAnalysisParams) => {
     collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
   });
 
+  const handleAnalysisError = useCallback((error: AnalysisError) => {
+    console.error("Analyse fout:", error);
+    let errorMessage = "Er is een fout opgetreden tijdens de analyse";
+    
+    if (error.code === "TIMEOUT") {
+      errorMessage = "De analyse duurde te lang. Probeer het opnieuw.";
+    } else if (error.code === "INSUFFICIENT_DATA") {
+      errorMessage = "Onvoldoende marktgegevens beschikbaar voor analyse";
+    }
+    
+    setError(errorMessage);
+    toast({
+      title: "Analyse Fout",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  }, [toast]);
+
   const performTradeAnalysis = async (isSimulated: boolean) => {
     setIsAnalyzing(true);
     setError(null);
-    console.log("Starting trade analysis...");
+    console.log("Start handelsanalyse...");
 
     try {
       const { data, error: apiError } = await supabase.functions.invoke('trading-analysis', {
@@ -50,21 +73,17 @@ export const useTradeAnalysis = (params: TradeAnalysisParams) => {
         }
       });
 
-      console.log("Trade analysis response received:", { data, apiError });
+      console.log("Handelsanalyse antwoord ontvangen:", { data, apiError });
 
       if (apiError) {
-        console.error("Trade analysis error:", apiError);
-        setError(apiError.message || "Failed to perform trade analysis");
-        return false;
+        throw { ...apiError, code: apiError.code || "UNKNOWN_ERROR" };
       }
 
       if (!data) {
-        console.error("No data received from analysis");
-        setError("No analysis data received");
-        return false;
+        throw new Error("Geen analysegegevens ontvangen");
       }
 
-      console.log("Updating AI analysis with:", data);
+      console.log("AI analyse bijwerken met:", data);
       setAiAnalysis({
         ...aiAnalysis,
         confidence: data.confidence || 85,
@@ -73,14 +92,12 @@ export const useTradeAnalysis = (params: TradeAnalysisParams) => {
         collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
       });
 
-      // Update trade metrics
       setTradeCount(prev => prev + 1);
       setTotalProfit(prev => prev + (data.expectedProfit || 0));
 
       return true;
     } catch (err) {
-      console.error("Error in performTradeAnalysis:", err);
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      handleAnalysisError(err as AnalysisError);
       return false;
     } finally {
       setIsAnalyzing(false);
@@ -94,6 +111,6 @@ export const useTradeAnalysis = (params: TradeAnalysisParams) => {
     error,
     tradeCount,
     totalProfit,
-    lastAnalysis: aiAnalysis // Add this to match the expected interface
+    lastAnalysis: aiAnalysis
   };
 };

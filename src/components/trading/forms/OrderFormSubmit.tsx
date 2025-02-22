@@ -20,6 +20,32 @@ interface OrderFormSubmitProps {
   onSubmitEnd: () => void;
 }
 
+const validateTradeParameters = (
+  amount: string,
+  orderExecutionType: string,
+  limitPrice: string,
+  stopPrice: string
+): string | null => {
+  if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+    return "Voer een geldig handelsvolume in";
+  }
+
+  if (orderExecutionType === "limit" && (!limitPrice || isNaN(Number(limitPrice)))) {
+    return "Voer een geldige limietprijs in";
+  }
+
+  if (orderExecutionType === "stop" && (!stopPrice || isNaN(Number(stopPrice)))) {
+    return "Voer een geldige stopprijs in";
+  }
+
+  if (orderExecutionType === "stop_limit" && 
+      (!stopPrice || isNaN(Number(stopPrice)) || !limitPrice || isNaN(Number(limitPrice)))) {
+    return "Voer zowel een geldige stop- als limietprijs in";
+  }
+
+  return null;
+};
+
 export const useOrderSubmit = ({
   user,
   orderType,
@@ -39,21 +65,22 @@ export const useOrderSubmit = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submission started");
+    console.log("Formulier indiening gestart");
 
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to trade",
+        title: "Authenticatie vereist",
+        description: "Log in om te handelen",
         variant: "destructive",
       });
       return;
     }
 
-    if (!amount || isNaN(Number(amount))) {
+    const validationError = validateTradeParameters(amount, orderExecutionType, limitPrice, stopPrice);
+    if (validationError) {
       toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid trading amount",
+        title: "Validatie fout",
+        description: validationError,
         variant: "destructive",
       });
       return;
@@ -62,6 +89,8 @@ export const useOrderSubmit = ({
     onSubmitStart();
 
     try {
+      console.log("Order parameters validatie succesvol, bezig met indienen...");
+      
       await submitTrade(
         user.id, 
         orderType, 
@@ -86,11 +115,18 @@ export const useOrderSubmit = ({
 
       onSubmitOrder(order);
       toast({
-        title: `${isSimulated ? "Simulated" : ""} Order Placed`,
-        description: `${orderType.toUpperCase()} ${orderExecutionType} order placed for ${amount} units`,
+        title: `${isSimulated ? "Gesimuleerde" : ""} Order Geplaatst`,
+        description: `${orderType.toUpperCase()} ${orderExecutionType} order geplaatst voor ${amount} eenheden`,
       });
 
       onSubmitSuccess();
+    } catch (error) {
+      console.error("Fout bij het indienen van order:", error);
+      toast({
+        title: "Order Fout",
+        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het plaatsen van de order",
+        variant: "destructive",
+      });
     } finally {
       onSubmitEnd();
     }
