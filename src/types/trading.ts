@@ -47,3 +47,22 @@ export interface Strategy {
   train?(historicalData: MarketData[]): Promise<void>;
 }
 
+export interface Position {
+  id: string;
+  type: 'long' | 'short';
+  entry: number;
+  size: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  timestamp: number;
+  status: 'open' | 'closed';
+  pnl?: number;
+  exitPrice?: number;
+}
+
+export interface TradingConfig {
+  maxPositions: number;
+  maxRiskPerTrade: number;
+  maxDrawdown: number;
+  trailingStopDistance?: number;
+}

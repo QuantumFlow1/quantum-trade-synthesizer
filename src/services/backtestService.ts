@@ -1,149 +1,111 @@
 
-import { 
-  MarketData, 
-  Strategy, 
-  BacktestConfig, 
-  BacktestResults, 
-  TradeResult, 
-  TradeSetup 
-} from '@/types/trading';
+import { BacktestConfig, MarketData, TradeResult, TradeSetup, Strategy } from '@/types/trading';
 
 export class BacktestEngine {
-  private strategies: Strategy[];
-  private historicalData: MarketData[];
-  private results: TradeResult[];
+  private config: BacktestConfig;
+  private strategy: Strategy;
+  private capital: number;
+  private trades: TradeResult[];
+  private currentPrice: number = 0;
 
-  constructor(strategies: Strategy[]) {
-    this.strategies = strategies;
-    this.historicalData = [];
-    this.results = [];
+  constructor(strategy: Strategy, config: BacktestConfig) {
+    this.strategy = strategy;
+    this.config = config;
+    this.capital = config.initialCapital;
+    this.trades = [];
   }
 
-  setHistoricalData(data: MarketData[]) {
-    this.historicalData = data;
+  private calculatePosition(setup: TradeSetup): number {
+    const riskAmount = this.capital * this.config.riskPerTrade;
+    const stopDistance = Math.abs(setup.entry - setup.stopLoss);
+    return riskAmount / stopDistance;
   }
 
-  private calculateMaxDrawdown(equityCurve: number[]): number {
+  private updateCapital(trade: TradeResult) {
+    this.capital += trade.pnl;
+  }
+
+  private calculateMetrics(): { winRate: number; profitFactor: number; maxDrawdown: number; sharpeRatio: number } {
+    const wins = this.trades.filter(t => t.pnl > 0).length;
+    const winRate = (wins / this.trades.length) * 100;
+
+    const profits = this.trades.filter(t => t.pnl > 0).reduce((sum, t) => sum + t.pnl, 0);
+    const losses = Math.abs(this.trades.filter(t => t.pnl < 0).reduce((sum, t) => sum + t.pnl, 0));
+    const profitFactor = profits / (losses || 1);
+
     let maxDrawdown = 0;
-    let peak = equityCurve[0];
-    
-    for (const value of equityCurve) {
-      if (value > peak) peak = value;
-      const drawdown = (peak - value) / peak;
-      if (drawdown > maxDrawdown) maxDrawdown = drawdown;
-    }
-    
-    return maxDrawdown;
-  }
+    let peak = this.config.initialCapital;
+    let runningCapital = this.config.initialCapital;
 
-  private calculateSharpeRatio(returns: number[]): number {
-    const meanReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
-    const stdDev = Math.sqrt(
-      returns.reduce((sum, ret) => sum + Math.pow(ret - meanReturn, 2), 0) / returns.length
-    );
-    return stdDev === 0 ? 0 : (meanReturn / stdDev) * Math.sqrt(252); // Annualized
-  }
-
-  private simulateTrade(setup: TradeSetup, dataIndex: number): TradeResult {
-    const entryPrice = this.historicalData[dataIndex].close;
-    let exitPrice = entryPrice;
-    let exitIndex = dataIndex;
-
-    // Simulate trade execution
-    for (let i = dataIndex + 1; i < this.historicalData.length; i++) {
-      const currentPrice = this.historicalData[i];
-      
-      if (setup.type === 'long') {
-        if (currentPrice.low <= setup.stopLoss) {
-          exitPrice = setup.stopLoss;
-          exitIndex = i;
-          break;
-        }
-        if (currentPrice.high >= setup.takeProfit) {
-          exitPrice = setup.takeProfit;
-          exitIndex = i;
-          break;
-        }
-      } else {
-        if (currentPrice.high >= setup.stopLoss) {
-          exitPrice = setup.stopLoss;
-          exitIndex = i;
-          break;
-        }
-        if (currentPrice.low <= setup.takeProfit) {
-          exitPrice = setup.takeProfit;
-          exitIndex = i;
-          break;
-        }
+    for (const trade of this.trades) {
+      runningCapital += trade.pnl;
+      if (runningCapital > peak) {
+        peak = runningCapital;
       }
+      const drawdown = (peak - runningCapital) / peak * 100;
+      maxDrawdown = Math.max(maxDrawdown, drawdown);
     }
 
-    const pnl = setup.type === 'long' 
-      ? exitPrice - entryPrice 
-      : entryPrice - exitPrice;
+    // Calculate Sharpe Ratio (simplified)
+    const returns = this.trades.map(t => t.pnl / this.config.initialCapital);
+    const meanReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+    const stdDev = Math.sqrt(returns.reduce((sum, r) => sum + Math.pow(r - meanReturn, 2), 0) / returns.length);
+    const sharpeRatio = meanReturn / stdDev;
 
-    return {
-      entry: entryPrice,
-      exit: exitPrice,
-      pnl,
-      type: setup.type,
-      timestamp: this.historicalData[exitIndex].timestamp,
-      strategy: setup.strategy
+    return { winRate, profitFactor, maxDrawdown, sharpeRatio };
+  }
+
+  async run(data: MarketData[]): Promise<{
+    trades: TradeResult[];
+    finalCapital: number;
+    metrics: {
+      winRate: number;
+      profitFactor: number;
+      maxDrawdown: number;
+      sharpeRatio: number;
     };
-  }
+  }> {
+    const warmupData = data.slice(0, this.config.warmup);
+    const testData = data.slice(this.config.warmup);
 
-  private rankSetups(setups: TradeSetup[]): TradeSetup | null {
-    if (setups.length === 0) return null;
-    
-    return setups.reduce((best, current) => 
-      current.confidence > best.confidence ? current : best
-    );
-  }
+    // Train strategy if supported
+    if (this.strategy.train) {
+      await this.strategy.train(warmupData);
+    }
 
-  async runBacktest(config: BacktestConfig): Promise<BacktestResults> {
-    console.log('Starting backtest with config:', config);
-    const results: TradeResult[] = [];
-    let equity = config.initialCapital;
-    const equityCurve: number[] = [equity];
-    
-    for (let i = config.warmup; i < this.historicalData.length; i++) {
-      const windowData = this.historicalData.slice(i - config.warmup, i);
+    for (let i = 0; i < testData.length; i++) {
+      const currentBar = testData[i];
+      this.currentPrice = currentBar.close;
+
+      const setup = await this.strategy.analyze(testData.slice(0, i + 1));
       
-      try {
-        // Parallel strategy analysis
-        const setupPromises = this.strategies.map(strategy => 
-          strategy.analyze(windowData)
-        );
-        
-        const allSetups = await Promise.all(setupPromises);
-        const bestSetup = this.rankSetups(allSetups.flat());
+      if (setup.length > 0) {
+        for (const s of setup) {
+          const position = this.calculatePosition(s);
+          const exit = s.type === 'long' ? s.stopLoss : s.takeProfit;
+          const pnl = (exit - s.entry) * position * (s.type === 'long' ? 1 : -1);
 
-        if (bestSetup) {
-          const tradeResult = this.simulateTrade(bestSetup, i);
-          results.push(tradeResult);
-          equity += tradeResult.pnl * config.initialCapital * config.riskPerTrade;
-          equityCurve.push(equity);
+          const trade: TradeResult = {
+            entry: s.entry,
+            exit,
+            pnl,
+            type: s.type,
+            timestamp: currentBar.timestamp,
+            strategy: s.strategy
+          };
+
+          this.trades.push(trade);
+          this.updateCapital(trade);
         }
-      } catch (error) {
-        console.error('Error during backtest at index', i, error);
       }
     }
 
-    const returns = equityCurve.map((eq, i) => 
-      i === 0 ? 0 : (eq - equityCurve[i-1]) / equityCurve[i-1]
-    );
+    const metrics = this.calculateMetrics();
 
     return {
-      totalTrades: results.length,
-      winRate: results.filter(r => r.pnl > 0).length / results.length || 0,
-      profitFactor: Math.abs(
-        results.reduce((sum, r) => r.pnl > 0 ? sum + r.pnl : sum, 0) /
-        results.reduce((sum, r) => r.pnl < 0 ? sum + Math.abs(r.pnl) : sum, 0) || 1
-      ),
-      maxDrawdown: this.calculateMaxDrawdown(equityCurve),
-      sharpeRatio: this.calculateSharpeRatio(returns),
-      trades: results
+      trades: this.trades,
+      finalCapital: this.capital,
+      metrics
     };
   }
 }
-
