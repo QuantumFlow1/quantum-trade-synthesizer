@@ -16,22 +16,46 @@ const translations = {
   nl: {
     welcome: "Welkom Commander",
     interface: "Quantum Trading Interface",
-    signOut: "Uitloggen"
+    signOut: "Uitloggen",
+    marketOverview: "Marktoverzicht",
+    tradingChart: "Handelsgrafieken",
+    walletManagement: "Portefeuillebeheer",
+    autoTrading: "Automatisch Handelen",
+    riskManagement: "Risicobeheer",
+    alerts: "Meldingen"
   },
   en: {
     welcome: "Welcome Commander",
     interface: "Quantum Trading Interface",
-    signOut: "Sign Out"
+    signOut: "Sign Out",
+    marketOverview: "Market Overview",
+    tradingChart: "Trading Charts",
+    walletManagement: "Wallet Management",
+    autoTrading: "Auto Trading",
+    riskManagement: "Risk Management",
+    alerts: "Alerts"
   },
   ru: {
     welcome: "Добро пожаловать, Командир",
     interface: "Квантовый Торговый Интерфейс",
-    signOut: "Выйти"
+    signOut: "Выйти",
+    marketOverview: "Обзор Рынка",
+    tradingChart: "Торговые Графики",
+    walletManagement: "Управление Кошельком",
+    autoTrading: "Автоматическая Торговля",
+    riskManagement: "Управление Рисками",
+    alerts: "Оповещения"
   },
   hy: {
     welcome: "Բարի գալուստ Հրամանատար",
     interface: "Քվանտային Առևտրային Ինտերֆեյս",
-    signOut: "Դուրս գալ"
+    signOut: "Դուրս գալ",
+    marketOverview: "Շուկայի ակնարկ",
+    tradingChart: "Առևտրային գրաֆիկներ",
+    walletManagement: "Դրամապանակի կառավարում",
+    autoTrading: "Ավտոմատ առևտուր",
+    riskManagement: "Ռիսկերի կառավարում",
+    alerts: "Ծանուցումներ"
   }
 };
 
@@ -71,27 +95,33 @@ const UserDashboard = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">{getText('marketOverview')}</h2>
               <MarketOverview />
             </div>
             <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">{getText('tradingChart')}</h2>
               <TradingChart />
             </div>
           </div>
 
           <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">{getText('walletManagement')}</h2>
             <WalletManagement />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">{getText('autoTrading')}</h2>
               <AutoTrading />
             </div>
             <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">{getText('riskManagement')}</h2>
               <RiskManagement />
             </div>
           </div>
 
           <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">{getText('alerts')}</h2>
             <Alerts />
           </div>
         </main>
