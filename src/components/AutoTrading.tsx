@@ -1,8 +1,9 @@
 
-import { PlayCircle, PauseCircle, Settings, ChevronDown, ChevronUp } from "lucide-react";
+import { PlayCircle, PauseCircle, Settings, ChevronDown, ChevronUp, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { useTradeAnalysis } from "@/hooks/use-trade-analysis";
 
 const strategies = [
   {
@@ -31,6 +32,12 @@ const strategies = [
 const AutoTrading = () => {
   const { toast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
+  const { aiAnalysis, performTradeAnalysis, isAnalyzing } = useTradeAnalysis({
+    isActive: true,
+    riskLevel: "medium",
+    isRapidMode: false,
+    simulationMode: true
+  });
 
   const handleStrategyToggle = (id: number, currentStatus: string) => {
     const newStatus = currentStatus === "active" ? "paused" : "active";
@@ -45,6 +52,22 @@ const AutoTrading = () => {
     setIsExpanded(!isExpanded);
   };
 
+  const handleAnalysisClick = async () => {
+    try {
+      await performTradeAnalysis(true);
+      toast({
+        title: "AI Analyse Uitgevoerd",
+        description: "De analyse is succesvol bijgewerkt",
+      });
+    } catch (error) {
+      toast({
+        title: "Fout bij Analyse",
+        description: "Er is een fout opgetreden bij het uitvoeren van de analyse",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
@@ -56,10 +79,16 @@ const AutoTrading = () => {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <div className="bg-background rounded-lg border p-4">
+        <div className="bg-background rounded-lg border p-4 hover:border-primary/50 transition-colors cursor-pointer" onClick={handleAnalysisClick}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium">AI Handelsanalyse</h3>
-            <Button variant="ghost" size="sm" onClick={toggleExpand}>
+            <div className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-medium">AI Handelsanalyse</h3>
+            </div>
+            <Button variant="ghost" size="sm" onClick={(e) => {
+              e.stopPropagation();
+              toggleExpand();
+            }}>
               {isExpanded ? (
                 <ChevronUp className="h-4 w-4" />
               ) : (
@@ -74,20 +103,20 @@ const AutoTrading = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center border-b border-border pb-3">
                 <span className="text-muted-foreground">Betrouwbaarheid:</span>
-                <span className="text-primary font-medium">85%</span>
+                <span className="text-primary font-medium">{aiAnalysis.confidence}%</span>
               </div>
               <div className="flex justify-between items-center border-b border-border pb-3">
                 <span className="text-muted-foreground">Aanbeveling:</span>
-                <span className="text-green-400 font-medium">LONG</span>
+                <span className="text-green-400 font-medium">{aiAnalysis.recommendation.toUpperCase()}</span>
               </div>
               <div className="flex justify-between items-center border-b border-border pb-3">
                 <span className="text-muted-foreground">Verwachte Winst:</span>
-                <span className="text-green-400 font-medium">2.3%</span>
+                <span className="text-green-400 font-medium">{aiAnalysis.expectedProfit}</span>
               </div>
               <div className="pt-2">
                 <span className="text-muted-foreground block mb-2">Samenwerkende AI Agents:</span>
                 <div className="text-sm bg-secondary/30 p-3 rounded-md">
-                  Handels AI, Risicomanager, Marktanalyst
+                  {aiAnalysis.collaboratingAgents.join(", ")}
                 </div>
               </div>
             </div>
@@ -130,3 +159,4 @@ const AutoTrading = () => {
 };
 
 export default AutoTrading;
+
