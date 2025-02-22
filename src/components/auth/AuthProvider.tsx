@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
 import { UserProfile, UserRole } from '@/types/auth'
 import { useToast } from '@/hooks/use-toast'
+import { useCallback } from 'react'
 
 type AuthContextType = {
   session: Session | null
@@ -27,7 +28,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const { toast } = useToast()
+
+  const clearAuthState = useCallback(() => {
+    setUser(null)
+    setSession(null)
+    setUserProfile(null)
+    
+    // Verwijder alle Supabase gerelateerde items uit localStorage
+    const items = { ...localStorage }
+    Object.keys(items).forEach(key => {
+      if (key.startsWith('sb-')) {
+        localStorage.removeItem(key)
+      }
+    })
+  }, [])
+
+  const handleAuthStateChange = useCallback(async (_event: string, session: Session | null) => {
+    console.log("Auth state changed:", _event, session)
+    
+    if (_event === 'SIGNED_OUT') {
+      clearAuthState()
+      toast({
+        title: "Succesvol uitgelogd",
+        description: "U bent succesvol uitgelogd.",
+      })
+    } else if (session) {
+      setSession(session)
+      setUser(session.user)
+    }
+  }, [clearAuthState, toast])
 
   useEffect(() => {
     // Haal de huidige sessie op bij het laden
@@ -40,21 +71,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Luister naar auth status veranderingen
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log("Auth state changed:", _event, session)
-      setSession(session)
-      setUser(session?.user ?? null)
-
-      // Als de gebruiker uitlogt, wis dan het profiel
-      if (_event === 'SIGNED_OUT') {
-        setUserProfile(null)
-      }
-    })
+    } = supabase.auth.onAuthStateChange(handleAuthStateChange)
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [handleAuthStateChange])
 
   // Fetch user profile when user changes
   useEffect(() => {
@@ -135,6 +157,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   const signOut = async () => {
+    if (isSigningOut) return // Voorkom dubbele uitlog pogingen
+    
+    setIsSigningOut(true)
     try {
       const { error } = await supabase.auth.signOut()
       
@@ -148,24 +173,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return
       }
       
-      // Reset state na succesvolle uitlog
-      setUser(null)
-      setSession(null)
-      setUserProfile(null)
-      
-      // Verwijder alle Supabase gerelateerde items uit localStorage
-      const items = { ...localStorage }
-      Object.keys(items).forEach(key => {
-        if (key.startsWith('sb-')) {
-          localStorage.removeItem(key)
-        }
-      })
-
-      // Toon succes bericht
-      toast({
-        title: "Succesvol uitgelogd",
-        description: "U bent succesvol uitgelogd.",
-      })
+      // De rest wordt afgehandeld door de onAuthStateChange listener
     } catch (error) {
       console.error('Uitlog error:', error)
       toast({
@@ -173,6 +181,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Er is een fout opgetreden tijdens het uitloggen.",
         variant: "destructive"
       })
+    } finally {
+      setIsSigningOut(false)
     }
   }
 
