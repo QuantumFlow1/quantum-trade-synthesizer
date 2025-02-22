@@ -93,31 +93,30 @@ const UserDashboard = () => {
             </div>
           </div>
 
+          <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">{getText('marketOverview')}</h2>
+            <MarketOverview />
+          </div>
+
+          <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">{getText('autoTrading')}</h2>
+            <AutoTrading />
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
-              <h2 className="text-xl font-semibold mb-4">{getText('marketOverview')}</h2>
-              <MarketOverview />
-            </div>
             <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
               <h2 className="text-xl font-semibold mb-4">{getText('tradingChart')}</h2>
               <TradingChart />
+            </div>
+            <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">{getText('riskManagement')}</h2>
+              <RiskManagement />
             </div>
           </div>
 
           <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
             <h2 className="text-xl font-semibold mb-4">{getText('walletManagement')}</h2>
             <WalletManagement />
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
-              <h2 className="text-xl font-semibold mb-4">{getText('autoTrading')}</h2>
-              <AutoTrading />
-            </div>
-            <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
-              <h2 className="text-xl font-semibold mb-4">{getText('riskManagement')}</h2>
-              <RiskManagement />
-            </div>
           </div>
 
           <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
@@ -131,3 +130,4 @@ const UserDashboard = () => {
 };
 
 export default UserDashboard;
+
