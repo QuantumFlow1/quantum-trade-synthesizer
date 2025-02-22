@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { AIAnalysisCard } from "./AIAnalysisCard";
 import { SimulationToggle } from "./SimulationToggle";
+import { supabase } from "@/lib/supabase";
 
 interface TradeOrderFormProps {
   currentPrice: number;
@@ -29,9 +30,7 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
   const [takeProfit, setTakeProfit] = useState<string>("");
   const [isSimulated, setIsSimulated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Gesimuleerde AI agent analyse
-  const aiAnalysis = {
+  const [aiAnalysis, setAiAnalysis] = useState({
     confidence: 85,
     riskLevel: "medium",
     recommendation: "long",
@@ -39,6 +38,43 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     stopLossRecommendation: currentPrice * 0.98,
     takeProfitRecommendation: currentPrice * 1.035,
     collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
+  });
+
+  const performTradeAnalysis = async () => {
+    console.log("Requesting trade analysis...");
+    try {
+      const { data, error } = await supabase.functions.invoke('trading-analysis', {
+        body: {
+          riskLevel: "medium",
+          simulationMode: isSimulated,
+          rapidMode: false
+        }
+      });
+
+      if (error) {
+        console.error("Trade analysis error:", error);
+        throw error;
+      }
+
+      console.log("Trade analysis response:", data);
+      
+      if (data) {
+        setAiAnalysis({
+          ...aiAnalysis,
+          confidence: data.confidence,
+          recommendation: data.recommendedAction === 'buy' ? 'long' : 'short',
+          expectedProfit: `${(data.confidence * 0.1).toFixed(1)}%`,
+          collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
+        });
+      }
+    } catch (error) {
+      console.error("Error performing trade analysis:", error);
+      toast({
+        title: "Analysis Error",
+        description: "Failed to perform trade analysis. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,6 +101,9 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     setIsSubmitting(true);
 
     try {
+      // First perform AI analysis
+      await performTradeAnalysis();
+
       await submitTrade(
         user.id, 
         orderType, 
@@ -173,3 +212,4 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     </div>
   );
 };
+
