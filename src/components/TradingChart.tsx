@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Activity, CandlestickChart, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -67,60 +66,57 @@ const TradingChart = () => {
   };
 
   return (
-    <div className="flex flex-col w-full gap-8">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <PriceCards data={data} />
       
-      <div className="flex flex-col gap-6">
-        <Tabs defaultValue="price" className="w-full">
-          <TabsList className="mb-4 sticky top-0 z-10 bg-background/50 backdrop-blur-md">
-            <TabsTrigger value="price" className="gap-2">
-              <CandlestickChart className="w-4 h-4" />
-              Price
-            </TabsTrigger>
-            <TabsTrigger value="volume" className="gap-2">
-              <BarChart2 className="w-4 h-4" />
-              Volume
-            </TabsTrigger>
-            <TabsTrigger value="indicators" className="gap-2">
-              <Activity className="w-4 h-4" />
-              Indicators
-            </TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="price" className="w-full">
+        <TabsList className="sticky top-0 z-10 bg-background/50 backdrop-blur-md w-full flex-wrap justify-start">
+          <TabsTrigger value="price" className="gap-2">
+            <CandlestickChart className="w-4 h-4" />
+            Price
+          </TabsTrigger>
+          <TabsTrigger value="volume" className="gap-2">
+            <BarChart2 className="w-4 h-4" />
+            Volume
+          </TabsTrigger>
+          <TabsTrigger value="indicators" className="gap-2">
+            <Activity className="w-4 h-4" />
+            Indicators
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="indicators" className="mt-2">
-            <IndicatorSelector 
-              currentIndicator={indicator}
-              onIndicatorChange={setIndicator}
-            />
-          </TabsContent>
+        <TabsContent value="indicators" className="mt-4">
+          <IndicatorSelector 
+            currentIndicator={indicator}
+            onIndicatorChange={setIndicator}
+          />
+        </TabsContent>
 
-          <div className="mt-4 space-y-6">
-            <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all duration-300">
-              <ChartViews data={data} view={view} indicator={indicator} />
-            </div>
+        <div className="mt-6 space-y-6">
+          <div className="h-[400px] backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 shadow-lg transition-shadow duration-300 hover:shadow-xl">
+            <ChartViews data={data} view={view} indicator={indicator} />
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <TradeOrderForm 
-                  currentPrice={data[data.length - 1].close}
-                  onSubmitOrder={handleSubmitOrder}
-                />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <TradeOrderForm 
+                currentPrice={data[data.length - 1].close}
+                onSubmitOrder={handleSubmitOrder}
+              />
+              <div className="backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4">
                 <TransactionList />
               </div>
-              
-              <div className="space-y-6">
-                <div className="backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4">
-                  <h3 className="text-xl font-semibold mb-4">Open Positions</h3>
-                  <PositionsList positions={positions} isLoading={positionsLoading} />
-                </div>
-              </div>
+            </div>
+            
+            <div className="backdrop-blur-xl bg-secondary/20 border border-white/10 rounded-lg p-4 h-fit">
+              <h3 className="text-xl font-semibold mb-4">Open Positions</h3>
+              <PositionsList positions={positions} isLoading={positionsLoading} />
             </div>
           </div>
-        </Tabs>
-      </div>
+        </div>
+      </Tabs>
     </div>
   );
 };
 
 export default TradingChart;
-
