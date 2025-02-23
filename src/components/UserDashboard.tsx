@@ -103,10 +103,12 @@ const UserDashboard = () => {
             <AutoTrading />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
               <h2 className="text-xl font-semibold mb-4">{getText('tradingChart')}</h2>
-              <TradingChart />
+              <div className="min-h-[600px]">
+                <TradingChart />
+              </div>
             </div>
             <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
               <h2 className="text-xl font-semibold mb-4">{getText('riskManagement')}</h2>
