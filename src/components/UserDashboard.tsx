@@ -1,5 +1,4 @@
-
-import { LogOut, Home, LineChart, Wallet, Bot, Shield, Bell, Settings } from "lucide-react";
+import { LogOut, Home, LineChart, Wallet, Bot, Shield, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./auth/AuthProvider";
 import MarketOverview from "./MarketOverview";
@@ -78,8 +77,8 @@ const UserDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen w-full bg-[#1A1F2C]">
-      <div className="sticky top-0 z-50 w-full backdrop-blur-xl bg-[#1A1F2C]/80 border-b border-white/10">
+    <div className="min-h-screen bg-[#1A1F2C]">
+      <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-[#1A1F2C]/80 border-b border-white/10">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
@@ -107,10 +106,10 @@ const UserDashboard = () => {
             {getText('signOut')}
           </Button>
         </div>
-      </div>
+      </header>
         
-      <main className="p-6 space-y-6 bg-gradient-to-br from-[#1A1F2C] via-[#221F26]/95 to-[#1A1F2C]/90">
-        <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
+      <main className="container mx-auto p-6 space-y-6">
+        <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-secondary/5 to-purple-500/10 rounded-lg" />
           <div className="relative flex items-center justify-between">
             <div className="space-y-1">
@@ -122,37 +121,34 @@ const UserDashboard = () => {
           </div>
         </div>
 
-        <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
-          <h2 className="text-xl font-semibold mb-4">{getText('marketOverview')}</h2>
-          <MarketOverview />
-        </div>
+        <div className="grid gap-6">
+          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">{getText('marketOverview')}</h2>
+            <MarketOverview />
+          </div>
 
-        <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
-          <h2 className="text-xl font-semibold mb-4">{getText('autoTrading')}</h2>
-          <AutoTrading />
-        </div>
-
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">{getText('tradingChart')}</h2>
-            <div className="min-h-[600px]">
-              <TradingChart />
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">{getText('tradingChart')}</h2>
+              <div className="h-[600px]">
+                <TradingChart />
+              </div>
+            </div>
+            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">{getText('riskManagement')}</h2>
+              <RiskManagement />
             </div>
           </div>
-          <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">{getText('riskManagement')}</h2>
-            <RiskManagement />
+
+          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">{getText('walletManagement')}</h2>
+            <WalletManagement />
           </div>
-        </div>
 
-        <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
-          <h2 className="text-xl font-semibold mb-4">{getText('walletManagement')}</h2>
-          <WalletManagement />
-        </div>
-
-        <div className="relative group backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6 transition-all duration-300 hover:bg-white/[0.07] hover:shadow-lg">
-          <h2 className="text-xl font-semibold mb-4">{getText('alerts')}</h2>
-          <Alerts />
+          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">{getText('alerts')}</h2>
+            <Alerts />
+          </div>
         </div>
       </main>
     </div>
@@ -160,4 +156,3 @@ const UserDashboard = () => {
 };
 
 export default UserDashboard;
-

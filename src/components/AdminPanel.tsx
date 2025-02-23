@@ -3,6 +3,7 @@ import { useState } from "react";
 import AdminPanelHeader from "@/components/admin/AdminPanelHeader";
 import AdminPanelContent from "@/components/admin/AdminPanelContent";
 import UserDashboard from "@/components/UserDashboard";
+import { AutomatedTradingPanel } from "@/components/trading/AutomatedTradingPanel";
 import { Agent } from "@/types/agent";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -10,16 +11,25 @@ import { ArrowLeft } from "lucide-react";
 const AdminPanel = () => {
   const [showUserDashboard, setShowUserDashboard] = useState(false);
   const [showAccountManagement, setShowAccountManagement] = useState(false);
+  const [showSimulator, setShowSimulator] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
 
   const handleDashboardClick = () => {
     setShowUserDashboard(true);
     setShowAccountManagement(false);
+    setShowSimulator(false);
   };
 
   const handleAccountManagement = () => {
     setShowAccountManagement(true);
     setShowUserDashboard(false);
+    setShowSimulator(false);
+  };
+
+  const handleSimulatorClick = () => {
+    setShowSimulator(true);
+    setShowUserDashboard(false);
+    setShowAccountManagement(false);
   };
 
   const handleAddAgent = () => {
@@ -33,9 +43,9 @@ const AdminPanel = () => {
   const handleBackToAdmin = () => {
     setShowUserDashboard(false);
     setShowAccountManagement(false);
+    setShowSimulator(false);
   };
 
-  // Als showUserDashboard true is, toon dan de UserDashboard component
   if (showUserDashboard) {
     return (
       <div>
@@ -52,7 +62,25 @@ const AdminPanel = () => {
     );
   }
 
-  // Anders, toon de admin panel content
+  if (showSimulator) {
+    return (
+      <div>
+        <Button
+          variant="outline"
+          onClick={handleBackToAdmin}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Terug naar Admin
+        </Button>
+        <div className="p-6 space-y-6">
+          <h2 className="text-2xl font-bold">Trading Simulator</h2>
+          <AutomatedTradingPanel simulationMode={true} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {showAccountManagement && (
@@ -68,6 +96,7 @@ const AdminPanel = () => {
       <AdminPanelHeader
         onDashboardClick={handleDashboardClick}
         onAccountManagement={handleAccountManagement}
+        onSimulatorClick={handleSimulatorClick}
         onAddAgent={handleAddAgent}
         onSignOut={handleSignOut}
         setShowUserDashboard={setShowUserDashboard}
