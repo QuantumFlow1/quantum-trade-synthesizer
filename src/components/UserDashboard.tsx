@@ -19,7 +19,8 @@ const translations = {
     walletManagement: "Portefeuillebeheer",
     autoTrading: "Automatisch Handelen",
     riskManagement: "Risicobeheer",
-    alerts: "Meldingen"
+    alerts: "Meldingen",
+    dashboard: "Dashboard"
   },
   en: {
     welcome: "Welcome Commander",
@@ -30,7 +31,8 @@ const translations = {
     walletManagement: "Wallet Management",
     autoTrading: "Auto Trading",
     riskManagement: "Risk Management",
-    alerts: "Alerts"
+    alerts: "Alerts",
+    dashboard: "Dashboard"
   },
   ru: {
     welcome: "Добро пожаловать, Командир",
@@ -41,7 +43,8 @@ const translations = {
     walletManagement: "Управление Кошельком",
     autoTrading: "Автоматическая Торговля",
     riskManagement: "Управление Рисками",
-    alerts: "Оповещения"
+    alerts: "Оповещения",
+    dashboard: "Панель управления"
   },
   hy: {
     welcome: "Բարի գալուստ Հրամանատար",
@@ -52,7 +55,8 @@ const translations = {
     walletManagement: "Դրամապանակի կառավարում",
     autoTrading: "Ավտոմատ առևտուր",
     riskManagement: "Ռիսկերի կառավարում",
-    alerts: "Ծանուցումներ"
+    alerts: "Ծանուցումներ",
+    dashboard: "Վահանակ"
   }
 };
 
@@ -65,7 +69,7 @@ const UserDashboard = () => {
   };
 
   const menuItems = [
-    { icon: Home, label: getText('dashboard') },
+    { icon: Home, label: getText('marketOverview') },
     { icon: LineChart, label: getText('tradingChart') },
     { icon: Wallet, label: getText('walletManagement') },
     { icon: Bot, label: getText('autoTrading') },
@@ -156,3 +160,4 @@ const UserDashboard = () => {
 };
 
 export default UserDashboard;
+
