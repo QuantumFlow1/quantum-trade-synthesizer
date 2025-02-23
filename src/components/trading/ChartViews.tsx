@@ -134,13 +134,16 @@ export const ChartViews = ({ data, view, indicator }: ChartViewsProps) => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="h-[400px]">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="xl:col-span-2 h-[400px]">
         {view === "price" && renderPriceChart()}
         {view === "volume" && renderVolumeChart()}
         {view === "indicators" && renderIndicatorChart()}
       </div>
-      <AutomatedTradingPanel simulationMode={true} />
+      <div className="xl:col-span-2">
+        <AutomatedTradingPanel simulationMode={true} />
+      </div>
     </div>
   );
 };
+
