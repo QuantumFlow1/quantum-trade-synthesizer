@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from "react";
 import {
   Sheet,
@@ -6,7 +5,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +86,7 @@ export const BulkOrderModal = ({ isOpen, onOpenChange }: BulkOrderModalProps) =>
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Submitting bulk order");
     toast({
       title: getText('successTitle'),
       description: getText('successDescription'),
@@ -137,4 +136,3 @@ export const BulkOrderModal = ({ isOpen, onOpenChange }: BulkOrderModalProps) =>
     </Sheet>
   );
 };
-

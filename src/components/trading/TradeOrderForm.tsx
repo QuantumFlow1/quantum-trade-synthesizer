@@ -23,12 +23,17 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     simulationMode: false
   });
 
+  const handleBulkOrderClick = () => {
+    console.log("Opening bulk order modal");
+    setIsBulkModalOpen(true);
+  };
+
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AnalysisPanel 
           aiAnalysis={aiAnalysis}
-          onBulkOrderClick={() => setIsBulkModalOpen(true)}
+          onBulkOrderClick={handleBulkOrderClick}
         />
         <div>
           <AutomatedTradingPanel simulationMode={isSimulated} />
@@ -49,3 +54,4 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
     </div>
   );
 };
+
