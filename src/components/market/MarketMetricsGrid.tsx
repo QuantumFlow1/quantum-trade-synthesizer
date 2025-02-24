@@ -28,7 +28,7 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
     try {
       console.log('Starting market analysis for:', market.name);
       
-      const { data: analysisData, error, status } = await supabase.functions.invoke('market-analysis', {
+      const { data: analysisData, error } = await supabase.functions.invoke('market-analysis', {
         body: {
           symbol: market.name,
           market: market.name,
@@ -41,7 +41,7 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
         }
       });
 
-      console.log('Response from market-analysis function:', { analysisData, error, status });
+      console.log('Response from market-analysis function:', { analysisData, error });
 
       if (error) {
         console.error('Market analysis error:', error);
