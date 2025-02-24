@@ -15,8 +15,8 @@ serve(async (req) => {
   }
 
   try {
-    const { marketData } = await req.json();
-
+    console.log('Generating financial advice...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -28,15 +28,11 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Je bent een expert financieel adviseur die trading advies geeft op basis van marktdata.'
+            content: 'You are a professional financial advisor specializing in trading and investment strategies. Provide concise, actionable advice.'
           },
           {
             role: 'user',
-            content: `Analyseer de volgende marktdata en geef trading advies:
-              BTC Prijs: ${marketData.btcPrice}
-              ETH Prijs: ${marketData.ethPrice}
-              Markt Sentiment: ${marketData.marketSentiment}
-              Volatiliteit Index: ${marketData.volatilityIndex}`
+            content: 'Generate professional trading advice considering current market conditions, risk management, and portfolio diversification principles.'
           }
         ],
       }),
@@ -44,12 +40,13 @@ serve(async (req) => {
 
     const data = await response.json();
     const advice = data.choices[0].message.content;
+    console.log('Generated advice:', advice);
 
     return new Response(JSON.stringify({ advice }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in generate-advice function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
