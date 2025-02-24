@@ -10,7 +10,7 @@ interface MarketData {
 }
 
 interface MarketAnalysis {
-  recommendation: "KOOP" | "VERKOOP" | "OBSERVEER" | "HOUDEN";
+  recommendation: "BUY" | "SELL" | "OBSERVE" | "HOLD";
   confidence: number;
   reason: string;
 }
@@ -21,38 +21,39 @@ const analyzeMarketData = (data: MarketData): MarketAnalysis | null => {
   try {
     if (data.change24h > 3) {
       return {
-        recommendation: "KOOP",
+        recommendation: "BUY",
         confidence: 0.8,
-        reason: "Sterke positieve trend"
+        reason: "Strong positive trend"
       };
     } else if (data.change24h < -3) {
       return {
-        recommendation: "VERKOOP",
+        recommendation: "SELL",
         confidence: 0.8,
-        reason: "Sterke negatieve trend"
+        reason: "Strong negative trend"
       };
     } else if (data.volume > 1000000) {
       return {
-        recommendation: "OBSERVEER",
+        recommendation: "OBSERVE",
         confidence: 0.6,
-        reason: "Hoog handelsvolume"
+        reason: "High trading volume"
       };
     }
     
     return {
-      recommendation: "HOUDEN",
+      recommendation: "HOLD",
       confidence: 0.7,
-      reason: "Stabiele markt"
+      reason: "Stable market"
     };
   } catch (error) {
-    console.error("Analyse fout:", error);
+    console.error("Analysis error:", error);
     return null;
   }
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
@@ -75,6 +76,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error('Error in market-analysis function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
