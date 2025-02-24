@@ -25,4 +25,3 @@ export const ChartViews = ({ data, view, indicator }: ChartViewsProps) => {
 
   return null;
 };
-
