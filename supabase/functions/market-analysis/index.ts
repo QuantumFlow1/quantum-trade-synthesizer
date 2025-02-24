@@ -20,7 +20,8 @@ interface MarketAnalysis {
 }
 
 const analyzeMarketData = (data: MarketData): MarketAnalysis => {
-  console.log(`[${new Date().toISOString()}] Analyzing market data for ${data.symbol}:`, data);
+  console.log(`[${new Date().toISOString()}] Starting analysis for ${data.symbol}`);
+  console.log('Input data:', JSON.stringify(data, null, 2));
   
   try {
     // Price volatility calculation
@@ -32,127 +33,108 @@ const analyzeMarketData = (data: MarketData): MarketAnalysis => {
     const volumeRatio = data.volume / avgVolume;
     const isHighVolume = volumeRatio > 1;
     
-    console.log(`[${new Date().toISOString()}] Calculated metrics for ${data.symbol}:`, {
+    console.log('Calculated metrics:', {
       priceRange,
       volatility,
       volumeRatio,
       isHighVolume
     });
     
+    let result: MarketAnalysis;
+    
     // Enhanced trend analysis with multiple factors
     if (data.change24h > 3 && isHighVolume) {
-      return {
+      result = {
         recommendation: "BUY",
         confidence: Math.min(0.9, 0.7 + (data.change24h / 10) + (volumeRatio / 10)),
         reason: `Strong upward trend (${data.change24h.toFixed(2)}%) with ${volumeRatio.toFixed(1)}x average volume`
       };
     } else if (data.change24h < -3 && isHighVolume) {
-      return {
+      result = {
         recommendation: "SELL",
         confidence: Math.min(0.9, 0.7 + (Math.abs(data.change24h) / 10) + (volumeRatio / 10)),
         reason: `Strong downward trend (${data.change24h.toFixed(2)}%) with ${volumeRatio.toFixed(1)}x average volume`
       };
     } else if (volatility > 5 || isHighVolume) {
-      return {
+      result = {
         recommendation: "OBSERVE",
         confidence: 0.6 + (volatility / 100),
         reason: `Significant volatility (${volatility.toFixed(2)}%) ${isHighVolume ? 'with high volume' : ''}`
       };
+    } else {
+      result = {
+        recommendation: "HOLD",
+        confidence: 0.5,
+        reason: "Stable market conditions with normal trading activity"
+      };
     }
     
-    return {
-      recommendation: "HOLD",
-      confidence: 0.5,
-      reason: "Stable market conditions with normal trading activity"
-    };
+    console.log('Analysis result:', result);
+    return result;
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Analysis error for ${data.symbol}:`, error);
+    console.error('Analysis error:', error);
     throw error;
   }
 };
 
 serve(async (req) => {
-  console.log(`[${new Date().toISOString()}] Received request:`, {
-    method: req.method,
-    url: req.url
-  });
+  console.log(`[${new Date().toISOString()}] Received request`);
+  console.log('Request method:', req.method);
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
 
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const requestData = await req.json();
-    console.log(`[${new Date().toISOString()}] Request data:`, requestData);
+    console.log('Received request data:', JSON.stringify(requestData, null, 2));
 
-    if (!requestData) {
-      throw new Error('Request body is empty');
-    }
-
-    const { data } = requestData;
-
-    if (!data) {
+    if (!requestData || !requestData.data) {
+      console.error('Invalid request: Missing data');
       throw new Error('No market data provided in request');
     }
 
+    const { data } = requestData;
+    let response;
+
     // Handle both single market data and array of market data
     if (Array.isArray(data)) {
-      console.log(`[${new Date().toISOString()}] Processing batch analysis for ${data.length} markets`);
-      const analyses = data.map(marketData => {
-        try {
-          return {
-            symbol: marketData.symbol,
-            market: marketData.market,
-            analysis: analyzeMarketData(marketData)
-          };
-        } catch (error) {
-          console.error(`[${new Date().toISOString()}] Error analyzing ${marketData.symbol}:`, error);
-          return {
-            symbol: marketData.symbol,
-            market: marketData.market,
-            error: error.message
-          };
-        }
-      });
+      console.log(`Processing batch analysis for ${data.length} markets`);
+      const analyses = data.map(marketData => ({
+        symbol: marketData.symbol,
+        market: marketData.market,
+        analysis: analyzeMarketData(marketData)
+      }));
 
-      const response = { analyses, timestamp: new Date().toISOString() };
-      console.log(`[${new Date().toISOString()}] Batch analysis complete:`, response);
-
-      return new Response(
-        JSON.stringify(response),
-        { 
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+      response = { analyses, timestamp: new Date().toISOString() };
     } else {
-      console.log(`[${new Date().toISOString()}] Processing single market analysis for ${data.symbol}`);
+      console.log(`Processing single market analysis for ${data.symbol}`);
       const analysis = analyzeMarketData(data);
       
-      const response = { 
+      response = { 
         symbol: data.symbol,
         market: data.market,
         analysis,
         timestamp: new Date().toISOString()
       };
-
-      console.log(`[${new Date().toISOString()}] Single analysis complete:`, response);
-
-      return new Response(
-        JSON.stringify(response),
-        { 
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-          },
-        },
-      );
     }
+
+    console.log('Sending response:', JSON.stringify(response, null, 2));
+
+    return new Response(
+      JSON.stringify(response),
+      { 
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
   } catch (error) {
-    console.error(`[${new Date().toISOString()}] Function error:`, error);
+    console.error('Function error:', error);
     
     return new Response(
       JSON.stringify({ 

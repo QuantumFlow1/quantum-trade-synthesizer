@@ -17,7 +17,19 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
   const handleAnalyzeMarket = async (market: ChartData) => {
     setIsAnalyzing(true);
     try {
-      console.log('Analyzing market:', market);
+      console.log('Starting market analysis for:', market.name);
+      console.log('Request payload:', {
+        data: {
+          symbol: market.name,
+          market: market.name,
+          price: market.price,
+          volume: market.volume,
+          change24h: market.change,
+          high24h: market.high,
+          low24h: market.low,
+          timestamp: Date.now()
+        }
+      });
       
       const { data: analysisData, error } = await supabase.functions.invoke('market-analysis', {
         body: {
@@ -34,9 +46,16 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
         }
       });
 
+      console.log('Response from market-analysis function:', { analysisData, error });
+
       if (error) {
         console.error('Market analysis error:', error);
         throw error;
+      }
+
+      if (!analysisData) {
+        console.error('No analysis data received');
+        throw new Error('No analysis data received');
       }
 
       console.log('Market analysis result:', analysisData);
