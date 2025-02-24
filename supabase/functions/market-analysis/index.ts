@@ -59,10 +59,16 @@ const analyzeMarketWithAI = async (data: MarketData): Promise<MarketAnalysis> =>
       }),
     });
 
+    console.log('OpenAI API response status:', response.status);
     const result = await response.json();
     console.log('OpenAI response:', result);
 
+    if (!result.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response from OpenAI');
+    }
+
     const analysisText = result.choices[0].message.content;
+    console.log('Analysis text:', analysisText);
     
     // Parse the AI response
     const recommendationMatch = analysisText.match(/RECOMMENDATION:\s*(BUY|SELL|HOLD|OBSERVE)/i);
@@ -70,6 +76,7 @@ const analyzeMarketWithAI = async (data: MarketData): Promise<MarketAnalysis> =>
     const reasonMatch = analysisText.match(/REASON:\s*(.+)$/i);
 
     if (!recommendationMatch || !confidenceMatch || !reasonMatch) {
+      console.error('Failed to parse AI response:', { analysisText, recommendationMatch, confidenceMatch, reasonMatch });
       throw new Error('Failed to parse AI response');
     }
 
@@ -95,8 +102,8 @@ serve(async (req) => {
     const requestData = await req.json();
     console.log('Received market data:', requestData);
 
-    if (!requestData) {
-      throw new Error('Invalid request: No data provided');
+    if (!requestData || !requestData.symbol) {
+      throw new Error('Invalid request: Missing required market data');
     }
 
     const marketData: MarketData = {

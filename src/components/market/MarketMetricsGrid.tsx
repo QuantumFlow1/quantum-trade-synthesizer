@@ -42,7 +42,8 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
       }
 
       if (!analysisData?.analysis) {
-        throw new Error('Invalid analysis response');
+        console.error('Invalid analysis response:', analysisData);
+        throw new Error('Invalid analysis response: Missing analysis data');
       }
 
       const { recommendation, confidence, reason } = analysisData.analysis;
@@ -58,6 +59,7 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
         title: "Analysis Failed",
         description: error instanceof Error ? error.message : "Could not complete market analysis",
         variant: "destructive",
+        duration: 8000,
       });
     } finally {
       setIsAnalyzing(false);
