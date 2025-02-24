@@ -15,13 +15,20 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
   const { toast } = useToast();
 
   const handleAnalyzeMarket = async (market: ChartData) => {
-    if (isAnalyzing) return;
+    if (isAnalyzing) {
+      toast({
+        title: "Analysis in Progress",
+        description: "Please wait for the current analysis to complete",
+        duration: 3000,
+      });
+      return;
+    }
     
     setIsAnalyzing(true);
     try {
       console.log('Starting market analysis for:', market.name);
       
-      const { data: analysisData, error } = await supabase.functions.invoke('market-analysis', {
+      const { data: analysisData, error, status } = await supabase.functions.invoke('market-analysis', {
         body: {
           symbol: market.name,
           market: market.name,
@@ -34,7 +41,7 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
         }
       });
 
-      console.log('Response from market-analysis function:', { analysisData, error });
+      console.log('Response from market-analysis function:', { analysisData, error, status });
 
       if (error) {
         console.error('Market analysis error:', error);
@@ -43,7 +50,7 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
 
       if (!analysisData?.analysis) {
         console.error('Invalid analysis response:', analysisData);
-        throw new Error('Invalid analysis response: Missing analysis data');
+        throw new Error('Could not generate market analysis at this time');
       }
 
       const { recommendation, confidence, reason } = analysisData.analysis;
@@ -51,13 +58,24 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
       toast({
         title: `${market.name} Analysis`,
         description: `${recommendation} (${Math.round(confidence * 100)}% confidence)\n${reason}`,
-        duration: 5000,
+        duration: 8000,
       });
     } catch (error) {
       console.error('Failed to analyze market:', error);
+      
+      let errorMessage = "Could not complete market analysis";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('429')) {
+          errorMessage = "Analysis service is currently busy. Please try again in a few moments.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Analysis Failed",
-        description: error instanceof Error ? error.message : "Could not complete market analysis",
+        description: errorMessage,
         variant: "destructive",
         duration: 8000,
       });
