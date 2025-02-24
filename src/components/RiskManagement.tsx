@@ -15,7 +15,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Card, Badge } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useFinancialModels } from "@/hooks/use-financial-models";
 
 interface RiskSettings {
