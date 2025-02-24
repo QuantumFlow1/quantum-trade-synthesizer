@@ -1,60 +1,64 @@
 
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { checkSupabaseConnection } from "@/lib/supabase";
-import { generateLocalAdvice, generateAIAdvice } from "@/services/adviceService";
 import { AdviceHeader } from "./financial-advice/AdviceHeader";
 import { AIInsights } from "./financial-advice/AIInsights";
-import { PortfolioDiversification } from "./financial-advice/PortfolioDiversification";
 import { RiskReturnAnalysis } from "./financial-advice/RiskReturnAnalysis";
+import { PortfolioDiversification } from "./financial-advice/PortfolioDiversification";
 import { Recommendations } from "./financial-advice/Recommendations";
+import { useToast } from "@/hooks/use-toast";
 
 const FinancialAdvice = () => {
-  const { toast } = useToast();
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [aiAdvice, setAiAdvice] = useState("");
-  const [isOnline, setIsOnline] = useState(true);
+  const { toast } = useToast();
+  const isOnline = navigator.onLine;
 
   const handleGenerateAdvice = async () => {
-    setIsLoadingAI(true);
+    setIsLoading(true);
     try {
-      const isConnected = await checkSupabaseConnection();
-      setIsOnline(isConnected);
-
-      const advice = isConnected 
-        ? await generateAIAdvice()
-        : await generateLocalAdvice();
-
-      setAiAdvice(advice);
+      const response = await fetch("/api/generate-advice");
+      const data = await response.json();
+      setAiAdvice(data.advice);
       toast({
-        title: isConnected ? "AI Analyse Gereed" : "Lokaal Advies Gegenereerd",
-        description: isConnected ? "Nieuwe inzichten beschikbaar" : "Basis advies regels toegepast",
+        title: "AI Analysis Complete",
+        description: "New financial insights are available",
       });
     } catch (error) {
-      console.error('Error:', error);
+      console.error("Failed to generate advice:", error);
       toast({
         title: "Error",
-        description: "Kon advies niet genereren",
+        description: "Failed to generate AI analysis",
         variant: "destructive",
       });
+      setAiAdvice("");
     } finally {
-      setIsLoadingAI(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="space-y-6">
-      <AdviceHeader
-        isOnline={isOnline}
-        isLoadingAI={isLoadingAI}
-        onGenerateAdvice={handleGenerateAdvice}
+      <AdviceHeader 
+        isOnline={isOnline} 
+        isLoadingAI={isLoading}
+        onGenerateAdvice={handleGenerateAdvice} 
       />
-      <AIInsights isOnline={isOnline} aiAdvice={aiAdvice} />
-      <PortfolioDiversification />
-      <RiskReturnAnalysis />
-      <Recommendations />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <AIInsights 
+          isOnline={isOnline}
+          aiAdvice={aiAdvice}
+        />
+        <RiskReturnAnalysis />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <PortfolioDiversification />
+        <Recommendations />
+      </div>
     </div>
   );
 };
 
 export default FinancialAdvice;
+
