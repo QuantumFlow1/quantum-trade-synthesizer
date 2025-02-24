@@ -15,6 +15,8 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
   const { toast } = useToast();
 
   const handleAnalyzeMarket = async (market: ChartData) => {
+    if (isAnalyzing) return;
+    
     setIsAnalyzing(true);
     try {
       console.log('Starting market analysis for:', market.name);
@@ -39,22 +41,22 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
         throw error;
       }
 
-      if (!analysisData) {
-        console.error('No analysis data received');
-        throw new Error('No analysis data received');
+      if (!analysisData?.analysis) {
+        throw new Error('Invalid analysis response');
       }
 
-      console.log('Market analysis result:', analysisData);
+      const { recommendation, confidence, reason } = analysisData.analysis;
       
       toast({
-        title: "Market Analysis Complete",
-        description: `${market.name}: ${analysisData.analysis.recommendation} - ${analysisData.analysis.reason}`,
+        title: `${market.name} Analysis`,
+        description: `${recommendation} (${Math.round(confidence * 100)}% confidence)\n${reason}`,
+        duration: 5000,
       });
     } catch (error) {
       console.error('Failed to analyze market:', error);
       toast({
         title: "Analysis Failed",
-        description: "Could not complete market analysis",
+        description: error instanceof Error ? error.message : "Could not complete market analysis",
         variant: "destructive",
       });
     } finally {

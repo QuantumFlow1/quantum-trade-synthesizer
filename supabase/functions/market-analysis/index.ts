@@ -1,6 +1,8 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from "../_shared/cors.ts"
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 interface MarketData {
   symbol: string;
@@ -19,68 +21,72 @@ interface MarketAnalysis {
   reason: string;
 }
 
-const analyzeMarketData = (data: MarketData): MarketAnalysis => {
-  console.log(`[${new Date().toISOString()}] Starting analysis for ${data.symbol}`);
-  
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const analyzeMarketWithAI = async (data: MarketData): Promise<MarketAnalysis> => {
+  console.log(`[${new Date().toISOString()}] Starting AI analysis for ${data.symbol}`);
+
   try {
-    // Price volatility calculation
-    const priceRange = data.high24h - data.low24h;
-    const volatility = (priceRange / data.low24h) * 100;
-    
-    // Volume analysis
-    const avgVolume = 1000000; // Baseline for high volume
-    const volumeRatio = data.volume / avgVolume;
-    const isHighVolume = volumeRatio > 1;
-    
-    console.log('Calculated metrics:', {
-      priceRange,
-      volatility,
-      volumeRatio,
-      isHighVolume
+    const prompt = `As a financial expert, analyze this market data and provide a trading recommendation:
+    - Symbol: ${data.symbol}
+    - Current Price: ${data.price}
+    - 24h Volume: ${data.volume}
+    - 24h Change: ${data.change24h}%
+    - 24h High: ${data.high24h}
+    - 24h Low: ${data.low24h}
+
+    Provide a recommendation (BUY/SELL/HOLD/OBSERVE) with a confidence score (0-1) and a brief reason.
+    Format your response exactly like this example:
+    RECOMMENDATION: BUY
+    CONFIDENCE: 0.85
+    REASON: Strong upward trend with high volume suggesting continued momentum`;
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are a professional financial analyst providing trading recommendations.' },
+          { role: 'user', content: prompt }
+        ],
+      }),
     });
+
+    const result = await response.json();
+    console.log('OpenAI response:', result);
+
+    const analysisText = result.choices[0].message.content;
     
-    let result: MarketAnalysis;
-    
-    // Enhanced trend analysis with multiple factors
-    if (data.change24h > 3 && isHighVolume) {
-      result = {
-        recommendation: "BUY",
-        confidence: Math.min(0.9, 0.7 + (data.change24h / 10) + (volumeRatio / 10)),
-        reason: `Strong upward trend (${data.change24h.toFixed(2)}%) with ${volumeRatio.toFixed(1)}x average volume`
-      };
-    } else if (data.change24h < -3 && isHighVolume) {
-      result = {
-        recommendation: "SELL",
-        confidence: Math.min(0.9, 0.7 + (Math.abs(data.change24h) / 10) + (volumeRatio / 10)),
-        reason: `Strong downward trend (${data.change24h.toFixed(2)}%) with ${volumeRatio.toFixed(1)}x average volume`
-      };
-    } else if (volatility > 5 || isHighVolume) {
-      result = {
-        recommendation: "OBSERVE",
-        confidence: 0.6 + (volatility / 100),
-        reason: `Significant volatility (${volatility.toFixed(2)}%) ${isHighVolume ? 'with high volume' : ''}`
-      };
-    } else {
-      result = {
-        recommendation: "HOLD",
-        confidence: 0.5,
-        reason: "Stable market conditions with normal trading activity"
-      };
+    // Parse the AI response
+    const recommendationMatch = analysisText.match(/RECOMMENDATION:\s*(BUY|SELL|HOLD|OBSERVE)/i);
+    const confidenceMatch = analysisText.match(/CONFIDENCE:\s*(0\.\d+)/i);
+    const reasonMatch = analysisText.match(/REASON:\s*(.+)$/i);
+
+    if (!recommendationMatch || !confidenceMatch || !reasonMatch) {
+      throw new Error('Failed to parse AI response');
     }
-    
-    console.log('Analysis result:', result);
-    return result;
+
+    return {
+      recommendation: recommendationMatch[1].toUpperCase() as "BUY" | "SELL" | "HOLD" | "OBSERVE",
+      confidence: parseFloat(confidenceMatch[1]),
+      reason: reasonMatch[1].trim()
+    };
   } catch (error) {
-    console.error('Analysis error:', error);
+    console.error('AI analysis error:', error);
     throw error;
   }
 };
 
 serve(async (req) => {
   console.log(`[${new Date().toISOString()}] Received request`);
-  console.log('Request method:', req.method);
-  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
-
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -89,40 +95,30 @@ serve(async (req) => {
     const requestData = await req.json();
     console.log('Received market data:', requestData);
 
-    if (!requestData || (!requestData.symbol && !requestData.data)) {
-      throw new Error('Invalid request: Missing market data');
+    if (!requestData) {
+      throw new Error('Invalid request: No data provided');
     }
 
-    // Handle single market analysis
-    if (requestData.symbol) {
-      const analysis = analyzeMarketData(requestData);
-      console.log('Single market analysis result:', analysis);
-      
-      return new Response(
-        JSON.stringify({ analysis }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const marketData: MarketData = {
+      symbol: requestData.symbol,
+      market: requestData.market,
+      price: requestData.price,
+      volume: requestData.volume,
+      change24h: requestData.change24h,
+      high24h: requestData.high24h,
+      low24h: requestData.low24h,
+      timestamp: requestData.timestamp
+    };
 
-    // Handle batch analysis
-    if (Array.isArray(requestData.data)) {
-      const analyses = requestData.data.map(marketData => ({
-        symbol: marketData.symbol,
-        analysis: analyzeMarketData(marketData)
-      }));
-      
-      console.log('Batch analysis results:', analyses);
-      
-      return new Response(
-        JSON.stringify({ analyses }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const analysis = await analyzeMarketWithAI(marketData);
+    console.log('Analysis result:', analysis);
 
-    throw new Error('Invalid request format');
+    return new Response(
+      JSON.stringify({ analysis }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Function error:', error);
-    
     return new Response(
       JSON.stringify({ 
         error: error.message,
@@ -131,7 +127,7 @@ serve(async (req) => {
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400
+        status: 500
       }
     );
   }
