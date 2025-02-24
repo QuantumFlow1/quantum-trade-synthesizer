@@ -1,6 +1,6 @@
 
-import { serve } from 'https://deno.fresh.dev/std@v9.6.1/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 interface MarketData {
   symbol: string;
@@ -20,68 +20,107 @@ interface MarketAnalysis {
 }
 
 const analyzeMarketData = (data: MarketData): MarketAnalysis => {
-  console.log('Analyzing market data for symbol:', data.symbol);
+  console.log(`[${new Date().toISOString()}] Analyzing market data for ${data.symbol}:`, data);
   
-  // Price volatility calculation
-  const priceRange = data.high24h - data.low24h;
-  const volatility = (priceRange / data.low24h) * 100;
-  
-  // Volume analysis
-  const highVolume = data.volume > 1000000;
-  
-  // Trend analysis
-  if (data.change24h > 3 && highVolume) {
+  try {
+    // Price volatility calculation
+    const priceRange = data.high24h - data.low24h;
+    const volatility = (priceRange / data.low24h) * 100;
+    
+    // Volume analysis
+    const avgVolume = 1000000; // Baseline for high volume
+    const volumeRatio = data.volume / avgVolume;
+    const isHighVolume = volumeRatio > 1;
+    
+    console.log(`[${new Date().toISOString()}] Calculated metrics for ${data.symbol}:`, {
+      priceRange,
+      volatility,
+      volumeRatio,
+      isHighVolume
+    });
+    
+    // Enhanced trend analysis with multiple factors
+    if (data.change24h > 3 && isHighVolume) {
+      return {
+        recommendation: "BUY",
+        confidence: Math.min(0.9, 0.7 + (data.change24h / 10) + (volumeRatio / 10)),
+        reason: `Strong upward trend (${data.change24h.toFixed(2)}%) with ${volumeRatio.toFixed(1)}x average volume`
+      };
+    } else if (data.change24h < -3 && isHighVolume) {
+      return {
+        recommendation: "SELL",
+        confidence: Math.min(0.9, 0.7 + (Math.abs(data.change24h) / 10) + (volumeRatio / 10)),
+        reason: `Strong downward trend (${data.change24h.toFixed(2)}%) with ${volumeRatio.toFixed(1)}x average volume`
+      };
+    } else if (volatility > 5 || isHighVolume) {
+      return {
+        recommendation: "OBSERVE",
+        confidence: 0.6 + (volatility / 100),
+        reason: `Significant volatility (${volatility.toFixed(2)}%) ${isHighVolume ? 'with high volume' : ''}`
+      };
+    }
+    
     return {
-      recommendation: "BUY",
-      confidence: 0.85,
-      reason: `Strong upward trend with high volume (${data.change24h.toFixed(2)}% change)`
+      recommendation: "HOLD",
+      confidence: 0.5,
+      reason: "Stable market conditions with normal trading activity"
     };
-  } else if (data.change24h < -3 && highVolume) {
-    return {
-      recommendation: "SELL",
-      confidence: 0.85,
-      reason: `Strong downward trend with high volume (${data.change24h.toFixed(2)}% change)`
-    };
-  } else if (Math.abs(data.change24h) > 2) {
-    return {
-      recommendation: "OBSERVE",
-      confidence: 0.7,
-      reason: `Moderate volatility detected (${volatility.toFixed(2)}% range)`
-    };
+  } catch (error) {
+    console.error(`[${new Date().toISOString()}] Analysis error for ${data.symbol}:`, error);
+    throw error;
   }
-  
-  return {
-    recommendation: "HOLD",
-    confidence: 0.6,
-    reason: "Stable market conditions"
-  };
 };
 
 serve(async (req) => {
+  console.log(`[${new Date().toISOString()}] Received request:`, {
+    method: req.method,
+    url: req.url
+  });
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { data } = await req.json();
-    console.log('Received market data:', data);
+    const requestData = await req.json();
+    console.log(`[${new Date().toISOString()}] Request data:`, requestData);
+
+    if (!requestData) {
+      throw new Error('Request body is empty');
+    }
+
+    const { data } = requestData;
 
     if (!data) {
-      throw new Error('No market data provided');
+      throw new Error('No market data provided in request');
     }
 
     // Handle both single market data and array of market data
     if (Array.isArray(data)) {
-      console.log('Processing batch market data analysis');
-      const analyses = data.map(marketData => ({
-        symbol: marketData.symbol,
-        market: marketData.market,
-        analysis: analyzeMarketData(marketData)
-      }));
+      console.log(`[${new Date().toISOString()}] Processing batch analysis for ${data.length} markets`);
+      const analyses = data.map(marketData => {
+        try {
+          return {
+            symbol: marketData.symbol,
+            market: marketData.market,
+            analysis: analyzeMarketData(marketData)
+          };
+        } catch (error) {
+          console.error(`[${new Date().toISOString()}] Error analyzing ${marketData.symbol}:`, error);
+          return {
+            symbol: marketData.symbol,
+            market: marketData.market,
+            error: error.message
+          };
+        }
+      });
+
+      const response = { analyses, timestamp: new Date().toISOString() };
+      console.log(`[${new Date().toISOString()}] Batch analysis complete:`, response);
 
       return new Response(
-        JSON.stringify({ analyses }),
+        JSON.stringify(response),
         { 
           headers: {
             ...corsHeaders,
@@ -90,15 +129,20 @@ serve(async (req) => {
         },
       );
     } else {
-      console.log('Processing single market data analysis');
+      console.log(`[${new Date().toISOString()}] Processing single market analysis for ${data.symbol}`);
       const analysis = analyzeMarketData(data);
       
+      const response = { 
+        symbol: data.symbol,
+        market: data.market,
+        analysis,
+        timestamp: new Date().toISOString()
+      };
+
+      console.log(`[${new Date().toISOString()}] Single analysis complete:`, response);
+
       return new Response(
-        JSON.stringify({ 
-          symbol: data.symbol,
-          market: data.market,
-          analysis 
-        }),
+        JSON.stringify(response),
         { 
           headers: {
             ...corsHeaders,
@@ -108,12 +152,14 @@ serve(async (req) => {
       );
     }
   } catch (error) {
-    console.error('Error in market-analysis function:', error);
+    console.error(`[${new Date().toISOString()}] Function error:`, error);
+    
     return new Response(
       JSON.stringify({ 
         error: error.message,
         status: 'error',
-        details: error.stack 
+        timestamp: new Date().toISOString(),
+        details: error.stack,
       }),
       { 
         headers: {
