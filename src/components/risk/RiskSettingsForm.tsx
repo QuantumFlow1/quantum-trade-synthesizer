@@ -27,43 +27,43 @@ export const RiskSettingsForm = ({
     <div className="space-y-4 p-4 rounded-lg bg-secondary/20 backdrop-blur-xl border border-white/10">
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label>Risico Niveau</Label>
+          <Label>Risk Level</Label>
           <Select
             value={settings.risk_level}
             onValueChange={(value: 'conservative' | 'moderate' | 'aggressive') => 
               onSettingsChange({ ...settings, risk_level: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecteer risico niveau" />
+              <SelectValue placeholder="Select risk level" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="conservative">Conservatief</SelectItem>
-              <SelectItem value="moderate">Gematigd</SelectItem>
-              <SelectItem value="aggressive">Agressief</SelectItem>
+              <SelectItem value="conservative">Conservative</SelectItem>
+              <SelectItem value="moderate">Moderate</SelectItem>
+              <SelectItem value="aggressive">Aggressive</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label>Positiegrootte Berekening</Label>
+          <Label>Position Size Calculation</Label>
           <Select
             value={settings.position_size_calculation}
             onValueChange={(value) => 
               onSettingsChange({ ...settings, position_size_calculation: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecteer berekeningsmethode" />
+              <SelectValue placeholder="Select calculation method" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="fixed">Vaste Grootte</SelectItem>
-              <SelectItem value="risk_based">Risico Gebaseerd</SelectItem>
+              <SelectItem value="fixed">Fixed Size</SelectItem>
+              <SelectItem value="risk_based">Risk Based</SelectItem>
               <SelectItem value="portfolio_percentage">Portfolio Percentage</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label>Risico/Rendement Doel Ratio</Label>
+          <Label>Risk/Reward Target Ratio</Label>
           <Input
             type="number"
             value={settings.risk_reward_target}
@@ -77,7 +77,7 @@ export const RiskSettingsForm = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Portfolio Allocatie Limiet (%)</Label>
+          <Label>Portfolio Allocation Limit (%)</Label>
           <Input
             type="number"
             value={settings.portfolio_allocation_limit}
@@ -91,7 +91,7 @@ export const RiskSettingsForm = ({
         </div>
 
         <div className="space-y-2">
-          <Label>Maximale Positie Grootte</Label>
+          <Label>Maximum Position Size</Label>
           <Input
             type="number"
             value={settings.max_position_size}
@@ -109,16 +109,17 @@ export const RiskSettingsForm = ({
             onCheckedChange={(checked) => 
               onSettingsChange({ ...settings, daily_loss_notification: checked })}
           />
-          <Label>Dagelijkse Verlies Meldingen</Label>
+          <Label>Daily Loss Notifications</Label>
         </div>
 
         <Button 
           className="w-full"
           onClick={onSave}
         >
-          Instellingen Opslaan
+          Save Settings
         </Button>
       </div>
     </div>
   );
 };
+
