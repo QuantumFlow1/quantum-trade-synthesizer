@@ -122,6 +122,74 @@ export type Database = {
           },
         ]
       }
+      financial_metrics: {
+        Row: {
+          id: string
+          metadata: Json | null
+          metric_type: string
+          model_id: string | null
+          timestamp: string | null
+          value: number
+        }
+        Insert: {
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          model_id?: string | null
+          timestamp?: string | null
+          value: number
+        }
+        Update: {
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          model_id?: string | null
+          timestamp?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_metrics_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "financial_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_models: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          parameters: Json
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          parameters?: Json
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          parameters?: Json
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       positions: {
         Row: {
           amount: number

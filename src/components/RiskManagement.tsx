@@ -15,6 +15,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Card, Badge } from "@/components/ui/card";
+import { useFinancialModels } from "@/hooks/use-financial-models";
 
 interface RiskSettings {
   position_size_calculation: string;
@@ -44,6 +46,7 @@ const RiskManagement = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [settings, setSettings] = useState<RiskSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { models, isLoading: modelsLoading } = useFinancialModels();
 
   const riskMetrics = [
     {
@@ -271,22 +274,68 @@ const RiskManagement = () => {
               <Progress value={metric.value} max={metric.maxValue} className="h-2" />
             </div>
           ))}
+
+          {!modelsLoading && models && models.length > 0 && (
+            <div className="mt-6 space-y-4">
+              <h3 className="text-lg font-semibold">Model Performance</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {models.map((model) => {
+                  const latestMetrics = model.financial_metrics.reduce((acc: Record<string, number>, metric) => {
+                    acc[metric.metric_type] = metric.value;
+                    return acc;
+                  }, {});
+
+                  return (
+                    <Card key={model.id} className="p-4 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">{model.name}</h4>
+                        <Badge variant={model.is_active ? "default" : "secondary"}>
+                          {model.is_active ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Sharpe Ratio</span>
+                          <span>{latestMetrics.sharpe_ratio?.toFixed(2) || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Sortino Ratio</span>
+                          <span>{latestMetrics.sortino_ratio?.toFixed(2) || "N/A"}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Max Drawdown</span>
+                          <span>{(latestMetrics.max_drawdown * 100).toFixed(2)}%</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">ROI</span>
+                          <span className={latestMetrics.roi >= 0 ? "text-green-500" : "text-red-500"}>
+                            {latestMetrics.roi?.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+            <div className="flex items-center gap-2 text-yellow-400">
+              <AlertTriangle className="w-4 h-4" />
+              <span className="font-medium">Risk Warnings</span>
+            </div>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>• Portfolio concentration in BTC above 30%</li>
+              <li>• Margin usage approaching limit</li>
+              {settings?.daily_loss_notification && (
+                <li>• Daily loss limit: ${settings.max_daily_loss}</li>
+              )}
+            </ul>
+          </div>
         </div>
       )}
-      
-      <div className="mt-6 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-        <div className="flex items-center gap-2 text-yellow-400 mb-2">
-          <AlertTriangle className="w-4 h-4" />
-          <span className="font-medium">Risk Waarschuwingen</span>
-        </div>
-        <ul className="space-y-2 text-sm text-muted-foreground">
-          <li>• Portfolio concentratie in BTC boven 30%</li>
-          <li>• Margin gebruik nadert limiet</li>
-          {settings?.daily_loss_notification && (
-            <li>• Dagelijks verlies limiet: ${settings.max_daily_loss}</li>
-          )}
-        </ul>
-      </div>
     </div>
   );
 };
