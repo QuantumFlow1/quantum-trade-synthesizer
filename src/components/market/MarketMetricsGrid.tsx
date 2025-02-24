@@ -18,8 +18,9 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
     setIsAnalyzing(true);
     try {
       console.log('Starting market analysis for:', market.name);
-      console.log('Request payload:', {
-        data: {
+      
+      const { data: analysisData, error } = await supabase.functions.invoke('market-analysis', {
+        body: {
           symbol: market.name,
           market: market.name,
           price: market.price,
@@ -28,21 +29,6 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
           high24h: market.high,
           low24h: market.low,
           timestamp: Date.now()
-        }
-      });
-      
-      const { data: analysisData, error } = await supabase.functions.invoke('market-analysis', {
-        body: {
-          data: {
-            symbol: market.name,
-            market: market.name,
-            price: market.price,
-            volume: market.volume,
-            change24h: market.change,
-            high24h: market.high,
-            low24h: market.low,
-            timestamp: Date.now()
-          }
         }
       });
 

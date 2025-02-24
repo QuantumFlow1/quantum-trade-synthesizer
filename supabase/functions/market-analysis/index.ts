@@ -21,7 +21,6 @@ interface MarketAnalysis {
 
 const analyzeMarketData = (data: MarketData): MarketAnalysis => {
   console.log(`[${new Date().toISOString()}] Starting analysis for ${data.symbol}`);
-  console.log('Input data:', JSON.stringify(data, null, 2));
   
   try {
     // Price volatility calculation
@@ -82,57 +81,45 @@ serve(async (req) => {
   console.log('Request method:', req.method);
   console.log('Request headers:', Object.fromEntries(req.headers.entries()));
 
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const requestData = await req.json();
-    console.log('Received request data:', JSON.stringify(requestData, null, 2));
+    console.log('Received market data:', requestData);
 
-    if (!requestData || !requestData.data) {
-      console.error('Invalid request: Missing data');
-      throw new Error('No market data provided in request');
+    if (!requestData || (!requestData.symbol && !requestData.data)) {
+      throw new Error('Invalid request: Missing market data');
     }
 
-    const { data } = requestData;
-    let response;
+    // Handle single market analysis
+    if (requestData.symbol) {
+      const analysis = analyzeMarketData(requestData);
+      console.log('Single market analysis result:', analysis);
+      
+      return new Response(
+        JSON.stringify({ analysis }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Handle both single market data and array of market data
-    if (Array.isArray(data)) {
-      console.log(`Processing batch analysis for ${data.length} markets`);
-      const analyses = data.map(marketData => ({
+    // Handle batch analysis
+    if (Array.isArray(requestData.data)) {
+      const analyses = requestData.data.map(marketData => ({
         symbol: marketData.symbol,
-        market: marketData.market,
         analysis: analyzeMarketData(marketData)
       }));
-
-      response = { analyses, timestamp: new Date().toISOString() };
-    } else {
-      console.log(`Processing single market analysis for ${data.symbol}`);
-      const analysis = analyzeMarketData(data);
       
-      response = { 
-        symbol: data.symbol,
-        market: data.market,
-        analysis,
-        timestamp: new Date().toISOString()
-      };
+      console.log('Batch analysis results:', analyses);
+      
+      return new Response(
+        JSON.stringify({ analyses }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Sending response:', JSON.stringify(response, null, 2));
-
-    return new Response(
-      JSON.stringify(response),
-      { 
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
+    throw new Error('Invalid request format');
   } catch (error) {
     console.error('Function error:', error);
     
@@ -140,15 +127,11 @@ serve(async (req) => {
       JSON.stringify({ 
         error: error.message,
         status: 'error',
-        timestamp: new Date().toISOString(),
-        details: error.stack,
+        timestamp: new Date().toISOString()
       }),
       { 
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400
       }
     );
   }
