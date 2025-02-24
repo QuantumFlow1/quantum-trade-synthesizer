@@ -1,12 +1,16 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from "../_shared/cors.ts"
+import { serve } from 'https://deno.fresh.dev/std@v9.6.1/http/server.ts';
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface MarketData {
   symbol: string;
+  market: string;
   price: number;
   volume: number;
   change24h: number;
+  high24h: number;
+  low24h: number;
+  timestamp: number;
 }
 
 interface MarketAnalysis {
@@ -16,8 +20,8 @@ interface MarketAnalysis {
 }
 
 const analyzeMarketData = (data: MarketData): MarketAnalysis | null => {
-  if (!data) return null;
-
+  console.log('Analyzing market data:', data);
+  
   try {
     if (data.change24h > 3) {
       return {
@@ -53,36 +57,43 @@ const analyzeMarketData = (data: MarketData): MarketAnalysis | null => {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { marketData } = await req.json()
-    
-    if (!Array.isArray(marketData)) {
-      throw new Error('Invalid market data format')
+    const { data } = await req.json();
+    console.log('Received market data:', data);
+
+    if (!data) {
+      throw new Error('No market data provided');
     }
 
-    const analyses = marketData.map(data => ({
-      symbol: data.symbol,
-      analysis: analyzeMarketData(data)
-    })).filter(result => result.analysis !== null)
+    const analysis = analyzeMarketData(data);
+    
+    if (!analysis) {
+      throw new Error('Failed to analyze market data');
+    }
 
     return new Response(
-      JSON.stringify({ analyses }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
+      JSON.stringify(analysis),
+      { 
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
       },
-    )
+    );
   } catch (error) {
-    console.error('Error in market-analysis function:', error)
+    console.error('Error in market-analysis function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      { 
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
         status: 400,
-      },
-    )
+      }
+    );
   }
-})
+});
