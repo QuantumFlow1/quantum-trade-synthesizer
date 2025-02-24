@@ -19,39 +19,42 @@ interface MarketAnalysis {
   reason: string;
 }
 
-const analyzeMarketData = (data: MarketData): MarketAnalysis | null => {
-  console.log('Analyzing market data:', data);
+const analyzeMarketData = (data: MarketData): MarketAnalysis => {
+  console.log('Analyzing market data for symbol:', data.symbol);
   
-  try {
-    if (data.change24h > 3) {
-      return {
-        recommendation: "BUY",
-        confidence: 0.8,
-        reason: "Strong positive trend"
-      };
-    } else if (data.change24h < -3) {
-      return {
-        recommendation: "SELL",
-        confidence: 0.8,
-        reason: "Strong negative trend"
-      };
-    } else if (data.volume > 1000000) {
-      return {
-        recommendation: "OBSERVE",
-        confidence: 0.6,
-        reason: "High trading volume"
-      };
-    }
-    
+  // Price volatility calculation
+  const priceRange = data.high24h - data.low24h;
+  const volatility = (priceRange / data.low24h) * 100;
+  
+  // Volume analysis
+  const highVolume = data.volume > 1000000;
+  
+  // Trend analysis
+  if (data.change24h > 3 && highVolume) {
     return {
-      recommendation: "HOLD",
-      confidence: 0.7,
-      reason: "Stable market"
+      recommendation: "BUY",
+      confidence: 0.85,
+      reason: `Strong upward trend with high volume (${data.change24h.toFixed(2)}% change)`
     };
-  } catch (error) {
-    console.error("Analysis error:", error);
-    return null;
+  } else if (data.change24h < -3 && highVolume) {
+    return {
+      recommendation: "SELL",
+      confidence: 0.85,
+      reason: `Strong downward trend with high volume (${data.change24h.toFixed(2)}% change)`
+    };
+  } else if (Math.abs(data.change24h) > 2) {
+    return {
+      recommendation: "OBSERVE",
+      confidence: 0.7,
+      reason: `Moderate volatility detected (${volatility.toFixed(2)}% range)`
+    };
   }
+  
+  return {
+    recommendation: "HOLD",
+    confidence: 0.6,
+    reason: "Stable market conditions"
+  };
 };
 
 serve(async (req) => {
@@ -68,25 +71,50 @@ serve(async (req) => {
       throw new Error('No market data provided');
     }
 
-    const analysis = analyzeMarketData(data);
-    
-    if (!analysis) {
-      throw new Error('Failed to analyze market data');
-    }
+    // Handle both single market data and array of market data
+    if (Array.isArray(data)) {
+      console.log('Processing batch market data analysis');
+      const analyses = data.map(marketData => ({
+        symbol: marketData.symbol,
+        market: marketData.market,
+        analysis: analyzeMarketData(marketData)
+      }));
 
-    return new Response(
-      JSON.stringify(analysis),
-      { 
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json',
+      return new Response(
+        JSON.stringify({ analyses }),
+        { 
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
         },
-      },
-    );
+      );
+    } else {
+      console.log('Processing single market data analysis');
+      const analysis = analyzeMarketData(data);
+      
+      return new Response(
+        JSON.stringify({ 
+          symbol: data.symbol,
+          market: data.market,
+          analysis 
+        }),
+        { 
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+    }
   } catch (error) {
     console.error('Error in market-analysis function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        status: 'error',
+        details: error.stack 
+      }),
       { 
         headers: {
           ...corsHeaders,
@@ -97,3 +125,4 @@ serve(async (req) => {
     );
   }
 });
+
