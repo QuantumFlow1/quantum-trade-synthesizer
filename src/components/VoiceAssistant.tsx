@@ -1,5 +1,4 @@
-
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { Input } from '@/components/ui/input'
@@ -25,6 +24,15 @@ export const VoiceAssistant = () => {
   const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
+  const hasGreeted = useRef(false)
+
+  useEffect(() => {
+    if (!hasGreeted.current && !isPlaying) {
+      const greetingMessage = "Hallo! Ik ben je AI assistent. Hoe kan ik je vandaag helpen?"
+      playAudio(greetingMessage, selectedVoice.id, selectedVoice.name)
+      hasGreeted.current = true
+    }
+  }, [selectedVoice.id, selectedVoice.name, isPlaying, playAudio])
 
   const handleStopRecording = async () => {
     const audioUrl = await stopRecording()
