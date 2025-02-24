@@ -122,6 +122,74 @@ export type Database = {
           },
         ]
       }
+      financial_metrics: {
+        Row: {
+          id: string
+          metadata: Json | null
+          metric_type: string
+          model_id: string | null
+          timestamp: string | null
+          value: number
+        }
+        Insert: {
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          model_id?: string | null
+          timestamp?: string | null
+          value: number
+        }
+        Update: {
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          model_id?: string | null
+          timestamp?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_metrics_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "financial_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_models: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          parameters: Json
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          parameters?: Json
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          parameters?: Json
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       positions: {
         Row: {
           amount: number
@@ -163,6 +231,7 @@ export type Database = {
           id: string
           last_login_at: string | null
           last_name: string | null
+          preferred_language: string
           role: Database["public"]["Enums"]["user_role"] | null
           status: Database["public"]["Enums"]["user_status"] | null
           subscription_tier:
@@ -177,6 +246,7 @@ export type Database = {
           id: string
           last_login_at?: string | null
           last_name?: string | null
+          preferred_language?: string
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
           subscription_tier?:
@@ -191,6 +261,7 @@ export type Database = {
           id?: string
           last_login_at?: string | null
           last_name?: string | null
+          preferred_language?: string
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
           subscription_tier?:
@@ -247,6 +318,63 @@ export type Database = {
           stop_loss_percentage?: number | null
           take_profit_percentage?: number | null
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      simulated_trades: {
+        Row: {
+          ai_analysis: Json | null
+          ai_confidence: number | null
+          amount: number
+          closed_at: string | null
+          created_at: string | null
+          entry_price: number
+          exit_price: number | null
+          id: string
+          pair_id: string
+          pnl: number | null
+          simulation_type: string | null
+          status: Database["public"]["Enums"]["trade_status"] | null
+          strategy: string | null
+          trade_duration: unknown | null
+          type: Database["public"]["Enums"]["trade_type"]
+          user_id: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          ai_confidence?: number | null
+          amount: number
+          closed_at?: string | null
+          created_at?: string | null
+          entry_price: number
+          exit_price?: number | null
+          id?: string
+          pair_id: string
+          pnl?: number | null
+          simulation_type?: string | null
+          status?: Database["public"]["Enums"]["trade_status"] | null
+          strategy?: string | null
+          trade_duration?: unknown | null
+          type: Database["public"]["Enums"]["trade_type"]
+          user_id: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          ai_confidence?: number | null
+          amount?: number
+          closed_at?: string | null
+          created_at?: string | null
+          entry_price?: number
+          exit_price?: number | null
+          id?: string
+          pair_id?: string
+          pnl?: number | null
+          simulation_type?: string | null
+          status?: Database["public"]["Enums"]["trade_status"] | null
+          strategy?: string | null
+          trade_duration?: unknown | null
+          type?: Database["public"]["Enums"]["trade_type"]
           user_id?: string
         }
         Relationships: []
@@ -326,32 +454,97 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          last_price: number | null
           min_trade_amount: number
+          price_change_24h: number | null
+          price_precision: number | null
+          quantity_precision: number | null
           quote_asset: string
           symbol: string
           updated_at: string | null
+          volume_24h: number | null
         }
         Insert: {
           base_asset: string
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_price?: number | null
           min_trade_amount: number
+          price_change_24h?: number | null
+          price_precision?: number | null
+          quantity_precision?: number | null
           quote_asset: string
           symbol: string
           updated_at?: string | null
+          volume_24h?: number | null
         }
         Update: {
           base_asset?: string
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          last_price?: number | null
           min_trade_amount?: number
+          price_change_24h?: number | null
+          price_precision?: number | null
+          quantity_precision?: number | null
           quote_asset?: string
           symbol?: string
           updated_at?: string | null
+          volume_24h?: number | null
         }
         Relationships: []
+      }
+      trading_signals: {
+        Row: {
+          confidence: number
+          created_at: string | null
+          executed_at: string | null
+          id: string
+          metadata: Json | null
+          pair_id: string | null
+          price: number
+          signal_type: string
+          status: string | null
+          strategy: string
+          volume: number | null
+        }
+        Insert: {
+          confidence: number
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pair_id?: string | null
+          price: number
+          signal_type: string
+          status?: string | null
+          strategy: string
+          volume?: number | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          metadata?: Json | null
+          pair_id?: string | null
+          price?: number
+          signal_type?: string
+          status?: string | null
+          strategy?: string
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trading_signals_pair_id_fkey"
+            columns: ["pair_id"]
+            isOneToOne: false
+            referencedRelation: "trading_pairs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -370,6 +563,86 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          status: string
+          type: string
+          updated_at: string
+          wallet_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          type: string
+          updated_at?: string
+          wallet_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          type?: string
+          updated_at?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          available_balance: number
+          balance: number
+          created_at: string
+          id: string
+          locked_balance: number
+          name: string
+          status: Database["public"]["Enums"]["wallet_status"]
+          type: Database["public"]["Enums"]["wallet_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          balance?: number
+          created_at?: string
+          id?: string
+          locked_balance?: number
+          name: string
+          status?: Database["public"]["Enums"]["wallet_status"]
+          type?: Database["public"]["Enums"]["wallet_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          balance?: number
+          created_at?: string
+          id?: string
+          locked_balance?: number
+          name?: string
+          status?: Database["public"]["Enums"]["wallet_status"]
+          type?: Database["public"]["Enums"]["wallet_type"]
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -396,6 +669,8 @@ export type Database = {
       trade_type: "buy" | "sell" | "short" | "long"
       user_role: "admin" | "trader" | "analyst"
       user_status: "active" | "suspended" | "pending"
+      wallet_status: "active" | "suspended" | "closed"
+      wallet_type: "spot" | "margin" | "futures"
     }
     CompositeTypes: {
       [_ in never]: never
