@@ -1,12 +1,16 @@
+
 import { LogOut, Home, LineChart, Wallet, Bot, Shield, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./auth/AuthProvider";
+import { useNavigate } from "react-router-dom";
 import MarketOverview from "./MarketOverview";
 import TradingChart from "./TradingChart";
 import WalletManagement from "./WalletManagement";
 import AutoTrading from "./AutoTrading";
 import RiskManagement from "./RiskManagement";
 import Alerts from "./Alerts";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 const translations = {
   nl: {
@@ -61,20 +65,41 @@ const translations = {
 
 const UserDashboard = () => {
   const { signOut, userProfile } = useAuth();
+  const navigate = useNavigate();
   const currentLanguage = localStorage.getItem('preferred_language') as keyof typeof translations || 'nl';
+  const [activeView, setActiveView] = useState('market-overview');
 
   const getText = (key: keyof (typeof translations)['nl']) => {
     return translations[currentLanguage]?.[key] || translations.en[key];
   };
 
   const menuItems = [
-    { icon: Home, label: getText('marketOverview') },
-    { icon: LineChart, label: getText('tradingChart') },
-    { icon: Wallet, label: getText('walletManagement') },
-    { icon: Bot, label: getText('autoTrading') },
-    { icon: Shield, label: getText('riskManagement') },
-    { icon: Bell, label: getText('alerts') },
+    { id: 'market-overview', icon: Home, label: getText('marketOverview') },
+    { id: 'trading-chart', icon: LineChart, label: getText('tradingChart') },
+    { id: 'wallet', icon: Wallet, label: getText('walletManagement') },
+    { id: 'auto-trading', icon: Bot, label: getText('autoTrading') },
+    { id: 'risk', icon: Shield, label: getText('riskManagement') },
+    { id: 'alerts', icon: Bell, label: getText('alerts') },
   ];
+
+  const renderContent = () => {
+    switch (activeView) {
+      case 'market-overview':
+        return <MarketOverview />;
+      case 'trading-chart':
+        return <TradingChart />;
+      case 'wallet':
+        return <WalletManagement />;
+      case 'auto-trading':
+        return <AutoTrading />;
+      case 'risk':
+        return <RiskManagement />;
+      case 'alerts':
+        return <Alerts />;
+      default:
+        return <MarketOverview />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#1A1F2C]">
@@ -87,9 +112,13 @@ const UserDashboard = () => {
             <nav className="hidden md:flex items-center space-x-1">
               {menuItems.map((item) => (
                 <Button
-                  key={item.label}
+                  key={item.id}
                   variant="ghost"
-                  className="flex items-center gap-2 px-3 hover:bg-white/10"
+                  className={cn(
+                    "flex items-center gap-2 px-3 hover:bg-white/10",
+                    activeView === item.id && "bg-white/10"
+                  )}
+                  onClick={() => setActiveView(item.id)}
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.label}</span>
@@ -122,33 +151,7 @@ const UserDashboard = () => {
         </div>
 
         <div className="grid gap-6">
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">{getText('marketOverview')}</h2>
-            <MarketOverview />
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">{getText('tradingChart')}</h2>
-              <div className="h-[600px]">
-                <TradingChart />
-              </div>
-            </div>
-            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
-              <h2 className="text-xl font-semibold mb-4">{getText('riskManagement')}</h2>
-              <RiskManagement />
-            </div>
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">{getText('walletManagement')}</h2>
-            <WalletManagement />
-          </div>
-
-          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">{getText('alerts')}</h2>
-            <Alerts />
-          </div>
+          {renderContent()}
         </div>
       </main>
     </div>

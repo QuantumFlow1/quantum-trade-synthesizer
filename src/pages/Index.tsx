@@ -47,7 +47,6 @@ const Index = () => {
     return <LoadingProfile />;
   }
 
-  // Bepaal welke dashboard te tonen op basis van gebruikersrol
   const DashboardComponent = userProfile.role === 'admin' || userProfile.role === 'super_admin' 
     ? AdminPanel 
     : UserDashboard;
@@ -62,29 +61,7 @@ const Index = () => {
           onReset={handleResetZoom}
         />
       )}
-
-      <motion.div
-        className="container mx-auto px-4 py-4 sm:p-4"
-        style={{ 
-          scale: isMobile ? 1 : scale,
-          transition: "scale 0.2s ease-out"
-        }}
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5 }}
-            className="space-y-4 sm:space-y-6"
-          >
-            <Suspense fallback={<div>Loading...</div>}>
-              <VoiceAssistant />
-              <DashboardComponent />
-            </Suspense>
-          </motion.div>
-        </AnimatePresence>
-      </motion.div>
+      <DashboardComponent />
     </div>
   );
 };
