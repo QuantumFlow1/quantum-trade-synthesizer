@@ -9,8 +9,7 @@ export const submitTrade = async (
   amount: number,
   currentPrice: number,
   limitPrice?: number,
-  stopPrice?: number,
-  isSimulated: boolean = false
+  stopPrice?: number
 ) => {
   console.log("Starting trade submission process");
 
@@ -25,30 +24,6 @@ export const submitTrade = async (
     throw new Error("Trading pair not found");
   }
   console.log("Found trading pair:", pairs);
-
-  if (isSimulated) {
-    const { data: simulatedTrade, error } = await supabase
-      .from("simulated_trades")
-      .insert({
-        user_id: userId,
-        pair_id: pairs.id,
-        type: orderType,
-        entry_price: currentPrice,
-        amount: amount,
-        status: "active",
-        simulation_type: "daytrading",
-        strategy: "manual"
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Simulated trade creation error:", error);
-      throw error;
-    }
-    console.log("Simulated trade created successfully:", simulatedTrade);
-    return simulatedTrade;
-  }
 
   const { data: trade, error } = await supabase
     .from("trades")

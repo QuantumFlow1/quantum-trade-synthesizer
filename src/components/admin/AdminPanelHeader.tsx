@@ -5,7 +5,6 @@ import { Agent } from "@/types/agent";
 interface AdminPanelHeaderProps {
   onDashboardClick: () => void;
   onAccountManagement: () => void;
-  onSimulatorClick: () => void;
   onAddAgent: () => void;
   onSignOut: () => void;
   setShowUserDashboard: (show: boolean) => void;
@@ -16,7 +15,6 @@ interface AdminPanelHeaderProps {
 const AdminPanelHeader = ({
   onDashboardClick,
   onAccountManagement,
-  onSimulatorClick,
   onAddAgent,
   onSignOut,
   setShowUserDashboard,
@@ -28,7 +26,6 @@ const AdminPanelHeader = ({
       <div className="space-x-2">
         <Button onClick={onDashboardClick}>Dashboard</Button>
         <Button onClick={onAccountManagement}>Account Beheer</Button>
-        <Button onClick={onSimulatorClick}>Simulator</Button>
         <Button onClick={onAddAgent}>Nieuwe AI Agent</Button>
       </div>
       <Button variant="destructive" onClick={onSignOut}>Uitloggen</Button>
@@ -37,4 +34,3 @@ const AdminPanelHeader = ({
 };
 
 export default AdminPanelHeader;
-

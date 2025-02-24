@@ -48,13 +48,9 @@ export const MarketCharts = ({ data, isLoading, type }: MarketChartsProps) => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col space-y-6 isolate relative animate-in fade-in duration-1000">
-      <div className="w-full">
-        <MarketMetricsGrid data={data} onMarketClick={handleMarketClick} />
-      </div>
-      <div className="w-full flex-1 min-h-[350px]">
-        <MarketChartView data={data} type={type} />
-      </div>
+    <div className="h-full w-full space-y-6 animate-in fade-in duration-1000">
+      <MarketMetricsGrid data={data} onMarketClick={handleMarketClick} />
+      <MarketChartView data={data} type={type} />
     </div>
   );
 };

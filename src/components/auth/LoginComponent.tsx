@@ -1,19 +1,25 @@
 
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Mail, Shield, ShieldAlert } from "lucide-react"
 import { useAuth } from './AuthProvider'
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from '@/lib/supabase'
-import { PreferredLanguage, UserRole } from '@/types/auth'
-import { AuthForm } from './AuthForm'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export const LoginComponent = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<UserRole>('viewer')
-  const [language, setLanguage] = useState<PreferredLanguage>('nl')
+  const [selectedRole, setSelectedRole] = useState<'viewer' | 'trader' | 'admin' | 'super_admin'>('viewer')
   const { signIn } = useAuth()
   const { toast } = useToast()
 
@@ -42,6 +48,7 @@ export const LoginComponent = () => {
     e.preventDefault()
     setIsLoading(true)
     try {
+      // Eerst de gebruiker aanmaken
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -50,13 +57,7 @@ export const LoginComponent = () => {
       if (authError) throw authError
 
       if (authData.user) {
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ preferred_language: language })
-          .eq('id', authData.user.id)
-
-        if (updateError) throw updateError
-
+        // Voeg de gebruikersrol toe
         const { error: roleError } = await supabase
           .from('user_roles')
           .insert({
@@ -94,19 +95,66 @@ export const LoginComponent = () => {
           </p>
         </div>
         
-        <AuthForm
-          isRegistering={isRegistering}
-          isLoading={isLoading}
-          onSubmit={isRegistering ? handleSignUp : handleEmailLogin}
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          selectedRole={selectedRole}
-          setSelectedRole={setSelectedRole}
-          language={language}
-          setLanguage={setLanguage}
-        />
+        <form onSubmit={isRegistering ? handleSignUp : handleEmailLogin} className="space-y-4">
+          <Input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            type="password"
+            placeholder="Wachtwoord"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          
+          {isRegistering && (
+            <Select
+              value={selectedRole}
+              onValueChange={(value: 'viewer' | 'trader' | 'admin' | 'super_admin') => setSelectedRole(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecteer een rol" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="viewer">
+                  <div className="flex items-center">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Viewer
+                  </div>
+                </SelectItem>
+                <SelectItem value="trader">
+                  <div className="flex items-center">
+                    <Mail className="mr-2 h-4 w-4" />
+                    Trader
+                  </div>
+                </SelectItem>
+                <SelectItem value="admin">
+                  <div className="flex items-center">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Admin
+                  </div>
+                </SelectItem>
+                <SelectItem value="super_admin">
+                  <div className="flex items-center">
+                    <ShieldAlert className="mr-2 h-4 w-4" />
+                    Super Admin
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            <Mail className="mr-2 h-4 w-4" />
+            {isLoading 
+              ? "Even geduld..." 
+              : (isRegistering ? "Registreren" : "Login")}
+          </Button>
+        </form>
 
         <Button
           variant="ghost"

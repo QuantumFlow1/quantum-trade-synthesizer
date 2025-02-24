@@ -15,12 +15,13 @@ import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 
 const Index = () => {
-  const { user, userProfile, isLoading } = useAuth();
+  const { user, userProfile } = useAuth();
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   useOAuthRedirect();
 
+  // Check Supabase connection when component mounts
   React.useEffect(() => {
     const checkConnection = async () => {
       const isConnected = await checkSupabaseConnection();
@@ -35,10 +36,6 @@ const Index = () => {
     checkConnection();
   }, [toast]);
 
-  if (isLoading) {
-    return <LoadingProfile />;
-  }
-
   if (!user) {
     return <LoginComponent />;
   }
@@ -46,10 +43,6 @@ const Index = () => {
   if (!userProfile) {
     return <LoadingProfile />;
   }
-
-  const DashboardComponent = userProfile.role === 'admin' || userProfile.role === 'super_admin' 
-    ? AdminPanel 
-    : UserDashboard;
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90">
@@ -61,7 +54,33 @@ const Index = () => {
           onReset={handleResetZoom}
         />
       )}
-      <DashboardComponent />
+
+      <motion.div
+        className="container mx-auto px-4 py-4 sm:p-4"
+        style={{ 
+          scale: isMobile ? 1 : scale,
+          transition: "scale 0.2s ease-out"
+        }}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+            className="space-y-4 sm:space-y-6"
+          >
+            <Suspense fallback={<div>Loading...</div>}>
+              <VoiceAssistant />
+              {userProfile.role === 'admin' || userProfile.role === 'super_admin' ? (
+                <AdminPanel />
+              ) : (
+                <UserDashboard />
+              )}
+            </Suspense>
+          </motion.div>
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 };

@@ -1,10 +1,8 @@
 
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
 import { UserProfile, UserRole } from '@/types/auth'
-import { useAuthState } from '@/hooks/use-auth-state'
-import { useAuthMethods } from '@/hooks/use-auth-methods'
-import { useUserProfile } from '@/hooks/use-user-profile'
 
 type AuthContextType = {
   session: Session | null
@@ -12,7 +10,6 @@ type AuthContextType = {
   userProfile: UserProfile | null
   isAdmin: boolean
   isTrader: boolean
-  isLoading: boolean  // Add this line
   signIn: {
     email: (email: string, password: string) => Promise<void>
     google: () => Promise<void>
@@ -25,9 +22,54 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const { session, user, isLoading, isSigningOut, setIsSigningOut } = useAuthState()
-  const userProfile = useUserProfile(user)
-  const { signIn, signOut } = useAuthMethods(isSigningOut, setIsSigningOut)
+  const [session, setSession] = useState<Session | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Haal de huidige sessie op bij het laden
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setUser(session?.user ?? null)
+      setIsLoading(false)
+    })
+
+    // Luister naar auth status veranderingen
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log("Auth state changed:", _event, session)
+      setSession(session)
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // Fetch user profile when user changes
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user) {
+        setUserProfile(null)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (!error && data) {
+        setUserProfile(data as UserProfile)
+      }
+    }
+
+    fetchUserProfile()
+  }, [user])
 
   const isAdmin = userProfile?.role === 'admin'
   const isTrader = userProfile?.role === 'trader'
@@ -36,6 +78,64 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!userProfile) return false
     if (userProfile.role === 'admin') return true
     return userProfile.role === requiredRole
+  }
+
+  const signIn = {
+    email: async (email: string, password: string) => {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+    },
+    google: async () => {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          skipBrowserRedirect: false
+        }
+      })
+      if (error) throw error
+    },
+    github: async () => {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: window.location.origin
+        }
+      })
+      if (error) throw error
+    },
+  }
+
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      
+      // Reset state na succesvolle uitlog
+      setUser(null)
+      setSession(null)
+      setUserProfile(null)
+      
+      // Verwijder alle Supabase gerelateerde items uit localStorage
+      const items = { ...localStorage }
+      Object.keys(items).forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key)
+        }
+      })
+    } catch (error) {
+      console.error('Uitlog error:', error)
+      // Bij een error alsnog state resetten voor een clean slate
+      setUser(null)
+      setSession(null)
+      setUserProfile(null)
+    }
   }
 
   if (isLoading) {
@@ -49,7 +149,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       userProfile,
       isAdmin,
       isTrader,
-      isLoading,  // Add this line
       signIn, 
       signOut,
       checkPermission 

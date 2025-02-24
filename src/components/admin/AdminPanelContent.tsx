@@ -38,34 +38,34 @@ const AdminPanelContent = ({
   const navigate = useNavigate();
 
   useEffect(() => {
-    const tradingAgentExists = agents.some(agent => agent.type === "trader");
-    if (!tradingAgentExists) {
-      const tradingAgent: Agent = {
-        id: "trading-agent-001",
-        name: "QuantumFlow Trading AI",
+    const receptionistExists = agents.some(agent => agent.type === "receptionist");
+    if (!receptionistExists) {
+      const receptionistAgent: Agent = {
+        id: "receptionist-001",
+        name: "QuantumFlow Receptionist",
         status: "active",
-        type: "trader",
-        description: "Geautomatiseerde trading agent voor het QuantumFlow platform",
+        type: "receptionist",
+        description: "Geautomatiseerde receptioniste voor het QuantumFlow platform",
         createdAt: new Date().toISOString(),
         lastActive: new Date().toISOString(),
         tasks: [
-          "Analyseer marktcondities en identificeer trading kansen",
-          "Voer geautomatiseerde trades uit volgens risk management regels",
-          "Monitor open posities en pas stop-loss/take-profit aan",
-          "Genereer trading signalen en alerts",
-          "Optimaliseer trading strategieën op basis van marktdata",
-          "Voer backtesting uit op nieuwe strategieën",
-          "Rapporteer trading prestaties en statistieken",
-          "Beheer risico levels en position sizing",
-          "Identificeer markt trends en patronen",
-          "Integreer met externe data bronnen voor analyse"
+          "Verwelkom nieuwe gebruikers en geef platformintroductie",
+          "Beantwoord algemene vragen over QuantumFlow functionaliteiten",
+          "Help bij navigatie door de verschillende modules",
+          "Verzamel initiële gebruikersvoorkeuren en behoeften",
+          "Assisteer bij het instellen van basisconfiguraties",
+          "Verbind gebruikers met gespecialiseerde AI agents indien nodig",
+          "Monitor gebruikerservaring en verzamel feedback",
+          "Bied proactieve ondersteuning bij veelvoorkomende problemen",
+          "Beheer gebruikersnotificaties en herinneringen",
+          "Faciliteer de onboarding van nieuwe handelaren"
         ],
         performance: {
-          successRate: 85,
+          successRate: 95,
           tasksCompleted: 0
         }
       };
-      setAgents([...agents, tradingAgent]);
+      setAgents([...agents, receptionistAgent]);
     }
   }, [agents, setAgents]);
 
