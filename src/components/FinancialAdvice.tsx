@@ -6,6 +6,7 @@ import { RiskReturnAnalysis } from "./financial-advice/RiskReturnAnalysis";
 import { PortfolioDiversification } from "./financial-advice/PortfolioDiversification";
 import { Recommendations } from "./financial-advice/Recommendations";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 const FinancialAdvice = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,7 +17,27 @@ const FinancialAdvice = () => {
   const handleGenerateAdvice = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/generate-advice");
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to generate AI analysis",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await fetch("/api/generate-advice", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to generate advice: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       setAiAdvice(data.advice);
       toast({
@@ -61,4 +82,3 @@ const FinancialAdvice = () => {
 };
 
 export default FinancialAdvice;
-
