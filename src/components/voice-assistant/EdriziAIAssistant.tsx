@@ -233,5 +233,118 @@ export const EdriziAIAssistant = () => {
                 {/* Processing state indicators */}
                 {isProcessing && (
                   <div className="flex justify-start">
-                    <div className="rounded-lg px-4 py-2 max-w-[80%] bg-muted mr-12">
-                      <div
+                    <div className="rounded-lg px-4 py-2 max-w-[80%] bg-muted mr-12 flex items-center">
+                      <Bot className="w-4 h-4 mr-2" />
+                      <div className="flex items-center">
+                        <LoaderIcon className="w-4 h-4 animate-spin mr-2" />
+                        <p className="text-sm">{processingStage || "Verwerken..."}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Error indicator */}
+                {processingError && (
+                  <div className="flex justify-start">
+                    <div className="rounded-lg px-4 py-2 max-w-[80%] bg-destructive text-destructive-foreground mr-12 flex items-center">
+                      <XCircle className="w-4 h-4 mr-2" />
+                      <p className="text-sm">{processingError}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Chat input area */}
+            <div className="p-3 border-t">
+              <div className="flex space-x-2">
+                <Button
+                  variant={isRecording ? "destructive" : "outline"}
+                  size="icon"
+                  onClick={isRecording ? handleStopRecording : startRecording}
+                  disabled={isProcessing || isPlaying}
+                  className="flex-shrink-0"
+                >
+                  {isRecording ? (
+                    <MicOff className="h-4 w-4" />
+                  ) : (
+                    <Mic className="h-4 w-4" />
+                  )}
+                </Button>
+                
+                <DirectTextInput
+                  onTextChange={(text) => setLastUserInput(text)}
+                  onSubmit={handleDirectTextSubmit}
+                  disabled={isRecording || isProcessing || isPlaying}
+                  placeholder="Typ je bericht..."
+                />
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="settings" className="p-3">
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-medium">Grok3 API Status</h3>
+                <div className="flex items-center mt-2 space-x-2">
+                  <div className={`w-3 h-3 rounded-full ${grok3Available ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <p className="text-sm">
+                    {grok3Available 
+                      ? "Grok3 API is beschikbaar en actief" 
+                      : "Grok3 API is niet beschikbaar, standaard AI wordt gebruikt"}
+                  </p>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={() => resetGrok3Connection()}
+                  disabled={isProcessing}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Test Verbinding
+                </Button>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-medium">Spraakassistent</h3>
+                <p className="text-sm text-muted-foreground">
+                  Selecteer de stem die gebruikt wordt voor de AI Assistant
+                </p>
+                <div className="mt-2">
+                  <VoiceSelector 
+                    selectedVoiceIndex={selectedVoiceIndex}
+                    setSelectedVoiceIndex={setSelectedVoiceIndex}
+                    voiceTemplates={VOICE_TEMPLATES}
+                    setSelectedVoice={setSelectedVoice}
+                    disabled={isRecording || isProcessing || isPlaying}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Button
+                  variant="outline"
+                  onClick={() => setChatHistory([])}
+                  className="w-full"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Wis Chatgeschiedenis
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+      
+      {/* Hidden audio element for playback */}
+      <audio
+        ref={previewAudioRef}
+        src={previewAudioUrl || undefined}
+        onEnded={() => setIsPreviewPlaying(false)}
+        className="hidden"
+      />
+    </Card>
+  )
+}
