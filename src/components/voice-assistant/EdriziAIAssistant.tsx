@@ -23,7 +23,8 @@ export const EdriziAIAssistant = () => {
   const STORAGE_KEY = 'edriziAIChatHistory'
 
   // Get the EdriziAI voice template
-  const edriziVoice = VOICE_TEMPLATES.find(v => v.id === 'EdriziAI-info')
+  // Changed from const to let to allow reassignment
+  let edriziVoice = VOICE_TEMPLATES.find(v => v.id === 'EdriziAI-info')
   if (!edriziVoice) {
     console.error('EdriziAI voice template not found')
     // Fallback to first available voice if EdriziAI is not found
