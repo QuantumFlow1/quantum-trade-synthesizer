@@ -1,11 +1,14 @@
 
 import { Button } from '@/components/ui/button'
-import { MessageSquare, CheckCircle } from 'lucide-react'
+import { MessageSquare, CheckCircle, Power } from 'lucide-react'
 import { VoiceSelector } from './audio/VoiceSelector'
+import { Switch } from '@/components/ui/switch'
 
 type EdriziAISettingsProps = {
   grok3Available: boolean;
+  manuallyDisabled?: boolean;
   resetGrok3Connection: () => void;
+  disableGrok3Connection?: () => void;
   isProcessing: boolean;
   selectedVoiceId: string;
   onVoiceChange: (voiceId: string) => void;
@@ -14,22 +17,58 @@ type EdriziAISettingsProps = {
 
 export const EdriziAISettings = ({ 
   grok3Available, 
+  manuallyDisabled = false,
   resetGrok3Connection,
+  disableGrok3Connection,
   isProcessing,
   selectedVoiceId,
   onVoiceChange,
   clearChatHistory
 }: EdriziAISettingsProps) => {
+  
+  const handleConnectionToggle = (enabled: boolean) => {
+    if (!enabled && disableGrok3Connection) {
+      disableGrok3Connection()
+    } else if (enabled) {
+      resetGrok3Connection()
+    }
+  }
+  
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium">Grok3 API Status</h3>
+        <h3 className="text-lg font-medium">Grok3 AI Status</h3>
+        
+        {disableGrok3Connection && (
+          <div className="flex items-center justify-between my-3 p-3 border rounded-md">
+            <div>
+              <p className="font-medium">Grok3 AI Connectie</p>
+              <p className="text-sm text-muted-foreground">
+                Zet uit om terug te vallen op standaard AI
+              </p>
+            </div>
+            <Switch
+              checked={!manuallyDisabled}
+              onCheckedChange={handleConnectionToggle}
+              disabled={isProcessing}
+            />
+          </div>
+        )}
+        
         <div className="flex items-center mt-2 space-x-2">
-          <div className={`w-3 h-3 rounded-full ${grok3Available ? 'bg-green-500' : 'bg-red-500'}`}></div>
+          <div className={`w-3 h-3 rounded-full ${
+            manuallyDisabled 
+              ? 'bg-orange-500' 
+              : grok3Available 
+                ? 'bg-green-500' 
+                : 'bg-red-500'
+          }`}></div>
           <p className="text-sm">
-            {grok3Available 
-              ? "Grok3 API is beschikbaar en actief" 
-              : "Grok3 API is niet beschikbaar, standaard AI wordt gebruikt"}
+            {manuallyDisabled 
+              ? "Grok3 API is handmatig uitgeschakeld" 
+              : grok3Available 
+                ? "Grok3 API is beschikbaar en actief" 
+                : "Grok3 API is niet beschikbaar, standaard AI wordt gebruikt"}
           </p>
         </div>
         
@@ -38,7 +77,7 @@ export const EdriziAISettings = ({
           size="sm" 
           className="mt-2"
           onClick={resetGrok3Connection}
-          disabled={isProcessing}
+          disabled={isProcessing || manuallyDisabled}
         >
           <CheckCircle className="w-4 h-4 mr-2" />
           Test Verbinding

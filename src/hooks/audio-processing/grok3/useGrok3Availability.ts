@@ -6,6 +6,7 @@ export const useGrok3Availability = () => {
   const [grok3Available, setGrok3Available] = useState<boolean>(false)
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
   const [checkCount, setCheckCount] = useState<number>(0)
+  const [manuallyDisabled, setManuallyDisabled] = useState<boolean>(false)
   
   // The maximum number of retries for the API
   const MAX_RETRY_COUNT = 3
@@ -13,6 +14,7 @@ export const useGrok3Availability = () => {
   // Reset connection status for the Grok3 API
   const resetGrok3Connection = async (): Promise<void> => {
     console.log('Resetting Grok3 connection status...')
+    setManuallyDisabled(false)
     setGrok3Available(false)
     setLastChecked(null)
     setCheckCount(0)
@@ -20,15 +22,29 @@ export const useGrok3Availability = () => {
     await checkGrok3Availability()
   }
   
+  // Explicitly disable Grok3 API connection
+  const disableGrok3Connection = (): void => {
+    console.log('Manually disabling Grok3 connection...')
+    setManuallyDisabled(true)
+    setGrok3Available(false)
+    setLastChecked(new Date())
+  }
+  
   // Determine if we should retry the API connection based on check count
   const shouldRetryGrok3 = (): boolean => {
-    return checkCount < MAX_RETRY_COUNT
+    return checkCount < MAX_RETRY_COUNT && !manuallyDisabled
   }
   
   // Check if Grok3 API is available
   const checkGrok3Availability = useCallback(async (): Promise<boolean> => {
     try {
       console.log('Checking Grok3 API availability...')
+      
+      // If manually disabled, don't perform any checks
+      if (manuallyDisabled) {
+        console.log('Grok3 API is manually disabled, skipping check')
+        return false
+      }
       
       // If we've checked too many times, don't retry
       if (checkCount >= MAX_RETRY_COUNT) {
@@ -61,12 +77,14 @@ export const useGrok3Availability = () => {
       setCheckCount(prev => prev + 1)
       return false
     }
-  }, [grok3Available, checkCount])
+  }, [grok3Available, checkCount, manuallyDisabled])
   
   // Check availability on initial mount
   useEffect(() => {
-    checkGrok3Availability()
-  }, [])
+    if (!manuallyDisabled) {
+      checkGrok3Availability()
+    }
+  }, [manuallyDisabled, checkGrok3Availability])
   
   return {
     grok3Available,
@@ -74,6 +92,8 @@ export const useGrok3Availability = () => {
     lastChecked,
     checkGrok3Availability,
     resetGrok3Connection,
+    disableGrok3Connection,
+    manuallyDisabled,
     shouldRetryGrok3
   }
 }

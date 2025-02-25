@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -25,7 +24,13 @@ export const EdriziAIAssistant = () => {
   const [activeTab, setActiveTab] = useState('chat')
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
   
-  const { grok3Available, checkGrok3Availability, resetGrok3Connection } = useGrok3Availability()
+  const { 
+    grok3Available, 
+    manuallyDisabled,
+    checkGrok3Availability, 
+    resetGrok3Connection,
+    disableGrok3Connection
+  } = useGrok3Availability()
   
   // Audio recorder
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()

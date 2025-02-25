@@ -29,8 +29,10 @@ interface SuperAdminVoiceContainerProps {
   chatHistory: ChatMessage[];
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   grok3Available: boolean;
+  manuallyDisabled?: boolean;
   checkGrok3Availability: () => Promise<boolean>;
   resetGrok3Connection: () => Promise<void>;
+  disableGrok3Connection?: () => void;
   processAudio: (url: string) => Promise<void>;
 }
 
@@ -55,8 +57,10 @@ export const SuperAdminVoiceContainer = ({
   chatHistory,
   setChatHistory,
   grok3Available,
+  manuallyDisabled,
   checkGrok3Availability,
   resetGrok3Connection,
+  disableGrok3Connection,
   processAudio
 }: SuperAdminVoiceContainerProps) => {
   return (
@@ -102,8 +106,10 @@ export const SuperAdminVoiceContainer = ({
       <TabsContent value="connection">
         <ConnectionTest
           grok3Available={grok3Available}
+          manuallyDisabled={manuallyDisabled}
           checkGrok3Availability={checkGrok3Availability}
           resetGrok3Connection={resetGrok3Connection}
+          disableGrok3Connection={disableGrok3Connection}
         />
       </TabsContent>
     </Tabs>

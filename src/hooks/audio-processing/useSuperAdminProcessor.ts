@@ -40,6 +40,9 @@ export const useSuperAdminProcessor = ({
     grok3Available,
     setGrok3Available,
     checkGrok3Availability,
+    resetGrok3Connection,
+    disableGrok3Connection,
+    manuallyDisabled,
     shouldRetryGrok3
   } = useGrok3Availability()
 
@@ -66,7 +69,7 @@ export const useSuperAdminProcessor = ({
     // No return statement needed - this function returns void
   }
 
-  // Fix: recheckGrok3Availability returns Promise<void>
+  // Fixed: recheckGrok3Availability returns Promise<void>
   const recheckGrok3Availability = async (): Promise<void> => {
     console.log('Manually rechecking Grok3 API availability...')
     await checkGrok3Availability()
@@ -96,9 +99,12 @@ export const useSuperAdminProcessor = ({
     processingError,
     processingStage,
     grok3Available,
+    manuallyDisabled,
     processAudio,
     processDirectText,
     checkGrok3Availability,
-    recheckGrok3Availability
+    recheckGrok3Availability,
+    resetGrok3Connection,
+    disableGrok3Connection
   }
 }

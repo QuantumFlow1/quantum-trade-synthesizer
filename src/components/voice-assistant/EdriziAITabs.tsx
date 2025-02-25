@@ -22,7 +22,9 @@ type EdriziAITabsProps = {
   processingError: string | null;
   processingStage?: string;
   grok3Available: boolean;
+  manuallyDisabled?: boolean;
   resetGrok3Connection: () => void;
+  disableGrok3Connection?: () => void;
   selectedVoiceId: string;
   onVoiceChange: (voiceId: string) => void;
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
@@ -36,7 +38,9 @@ export const EdriziAITabs = ({
   processingError,
   processingStage,
   grok3Available,
+  manuallyDisabled,
   resetGrok3Connection,
+  disableGrok3Connection,
   selectedVoiceId,
   onVoiceChange,
   setChatHistory
@@ -61,7 +65,7 @@ export const EdriziAITabs = ({
             size="sm" 
             className="text-xs"
             onClick={() => resetGrok3Connection()}
-            disabled={isProcessing}
+            disabled={isProcessing || manuallyDisabled}
           >
             <CheckCircle className="w-3 h-3 mr-1" />
             Test Verbinding
@@ -87,7 +91,9 @@ export const EdriziAITabs = ({
       <TabsContent value="settings" className="p-3">
         <EdriziAISettings
           grok3Available={grok3Available}
+          manuallyDisabled={manuallyDisabled}
           resetGrok3Connection={resetGrok3Connection}
+          disableGrok3Connection={disableGrok3Connection}
           isProcessing={isProcessing}
           selectedVoiceId={selectedVoiceId}
           onVoiceChange={onVoiceChange}
