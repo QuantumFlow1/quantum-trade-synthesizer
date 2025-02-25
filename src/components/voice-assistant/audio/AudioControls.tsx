@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button'
-import { Mic, Square, Upload, PlayCircle, StopCircle } from 'lucide-react'
+import { Mic, Square, Upload } from 'lucide-react'
 
 type AudioControlsProps = {
   isRecording: boolean
@@ -18,14 +18,9 @@ type AudioControlsProps = {
 export const AudioControls = ({
   isRecording,
   isProcessing,
-  previewAudioUrl,
-  isPreviewPlaying,
   onStartRecording,
   onStopRecording,
   onTriggerFileUpload,
-  onPlayPreview,
-  onStopPreview,
-  onProcessAudio
 }: AudioControlsProps) => {
   return (
     <div className="flex justify-center space-x-4">
@@ -56,36 +51,6 @@ export const AudioControls = ({
         <Upload className="w-6 h-6 mr-2" />
         Upload Audio
       </Button>
-
-      {previewAudioUrl && !isPreviewPlaying && (
-        <Button
-          onClick={onPlayPreview}
-          variant="outline"
-        >
-          <PlayCircle className="w-6 h-6 mr-2" />
-          Preview
-        </Button>
-      )}
-
-      {previewAudioUrl && isPreviewPlaying && (
-        <Button
-          onClick={onStopPreview}
-          variant="outline"
-        >
-          <StopCircle className="w-6 h-6 mr-2" />
-          Stop
-        </Button>
-      )}
-
-      {previewAudioUrl && (
-        <Button
-          onClick={onProcessAudio}
-          disabled={isProcessing}
-          variant="secondary"
-        >
-          Verwerk Audio
-        </Button>
-      )}
     </div>
   )
 }

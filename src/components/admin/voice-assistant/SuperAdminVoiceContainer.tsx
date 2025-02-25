@@ -8,6 +8,7 @@ import { useAudioPreview } from '@/hooks/use-audio-preview'
 import { useStopRecording } from '@/hooks/use-stop-recording'
 import { DirectTextInput } from '@/components/voice-assistant/audio/DirectTextInput'
 import { AudioControls } from '@/components/voice-assistant/audio/AudioControls'
+import { AudioPreview } from './AudioPreview'
 import { ChatHistory } from './ChatHistory'
 import { VoiceTemplate } from '@/lib/types'
 import { ChatMessage } from '../types/chat-types'
@@ -108,6 +109,15 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
           onPlayPreview={playPreview}
           onStopPreview={stopPreview}
           onProcessAudio={() => processAudio(previewAudioUrl)}
+        />
+        
+        <AudioPreview 
+          previewAudioUrl={previewAudioUrl}
+          isPreviewPlaying={isPreviewPlaying}
+          onPlayPreview={playPreview}
+          onStopPreview={stopPreview}
+          onProcessAudio={() => processAudio(previewAudioUrl)}
+          isProcessing={isProcessing}
         />
         
         <Input
