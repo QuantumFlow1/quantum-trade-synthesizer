@@ -18,6 +18,7 @@ export const DirectTextInputSection = ({
 }: DirectTextInputSectionProps) => {
   return (
     <DirectTextInput
+      directText={directText}
       onTextChange={onTextChange}
       onSubmit={onSubmit}
       disabled={isPlaying || isProcessing}

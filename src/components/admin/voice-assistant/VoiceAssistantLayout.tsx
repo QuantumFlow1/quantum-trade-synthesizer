@@ -69,6 +69,7 @@ export const VoiceAssistantLayout = ({
         />
 
         <DirectTextInput
+          directText={directText}
           onTextChange={onDirectTextChange}
           onSubmit={onDirectTextSubmit}
           disabled={isPlaying || isRecording || isProcessing}

@@ -1,8 +1,8 @@
 
+import { useState, useRef, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { SendIcon } from 'lucide-react'
-import { useState, useRef, useEffect } from 'react'
 
 type DirectTextInputProps = {
   onTextChange: (text: string) => void
@@ -56,9 +56,10 @@ export const DirectTextInput = ({
   }
 
   return (
-    <div className="flex items-center space-x-2 w-full">
+    <div className="relative flex w-full max-w-[900px] items-center space-x-2">
       <Input
         ref={inputRef}
+        type="text"
         value={text}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
