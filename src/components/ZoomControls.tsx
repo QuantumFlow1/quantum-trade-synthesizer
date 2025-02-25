@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button";
 import { ZoomIn, ZoomOut, Minimize2, Maximize2 } from "lucide-react";
 
 interface ZoomControlsProps {
-  scale: number;
+  scale?: number;
   onZoomIn: () => void;
   onZoomOut: () => void;
-  onReset: () => void;
+  onResetZoom: () => void;
 }
 
-export const ZoomControls = ({ scale, onZoomIn, onZoomOut, onReset }: ZoomControlsProps) => {
+export const ZoomControls = ({ scale = 1, onZoomIn, onZoomOut, onResetZoom }: ZoomControlsProps) => {
   return (
     <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
       <Button
@@ -31,7 +31,7 @@ export const ZoomControls = ({ scale, onZoomIn, onZoomOut, onReset }: ZoomContro
       <Button
         variant="outline"
         size="icon"
-        onClick={onReset}
+        onClick={onResetZoom}
         className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10"
       >
         {scale !== 1 ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
