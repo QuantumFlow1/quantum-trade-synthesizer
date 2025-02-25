@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button'
-import { Mic, MicOff } from 'lucide-react'
+import { Mic, MicOff, Loader2 } from 'lucide-react'
 import { DirectTextInput } from './audio/DirectTextInput'
 
 type EdriziAIChatInputProps = {
@@ -32,10 +32,12 @@ export const EdriziAIChatInput = ({
           size="icon"
           onClick={isRecording ? handleStopRecording : startRecording}
           disabled={isProcessing || isPlaying}
-          className="flex-shrink-0"
+          className={`flex-shrink-0 transition-all ${isRecording ? "animate-pulse" : ""}`}
         >
           {isRecording ? (
             <MicOff className="h-4 w-4" />
+          ) : isProcessing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Mic className="h-4 w-4" />
           )}
@@ -46,7 +48,11 @@ export const EdriziAIChatInput = ({
           onTextChange={handleTextChange}
           onSubmit={handleDirectTextSubmit}
           disabled={isRecording || isProcessing || isPlaying}
-          placeholder="Typ je bericht..."
+          placeholder={
+            isProcessing ? "Een moment geduld..." : 
+            isRecording ? "Spreek nu..." : 
+            "Typ je bericht..."
+          }
         />
       </div>
     </div>

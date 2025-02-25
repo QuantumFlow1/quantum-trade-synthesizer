@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { ChatMessage } from '@/components/admin/types/chat-types'
 import { supabase } from '@/lib/supabase'
 import { VoiceTemplate } from '@/lib/types'
@@ -23,8 +23,8 @@ export const useBaseAudioProcessor = ({
   const [processingError, setProcessingError] = useState<string | null>(null)
   const [processingStage, setProcessingStage] = useState<string>('')
 
-  // Pre-process user input to handle web browsing requests
-  const preprocessUserInput = (input: string): { 
+  // Optimized function to check for web browsing requests
+  const preprocessUserInput = useCallback((input: string): { 
     isWebRequest: boolean, 
     processedInput: string 
   } => {
@@ -37,29 +37,71 @@ export const useBaseAudioProcessor = ({
     const lowerInput = input.toLowerCase()
     const isWebRequest = webRelatedKeywords.some(keyword => lowerInput.includes(keyword))
     
-    // If it's a web request, return the original input but flag it as web request
     return {
       isWebRequest,
       processedInput: input
     }
-  }
+  }, [])
 
-  // Common function to generate speech from text
-  const generateSpeech = async (text: string) => {
+  // Optimized function to add messages to chat history - reduces rerenders
+  const addMessageToChatHistory = useCallback((message: ChatMessage) => {
+    setChatHistory(prev => [...prev, message])
+  }, [setChatHistory])
+
+  // Handle web requests consistently and efficiently
+  const handleWebRequest = useCallback(async (text: string) => {
+    console.log('Detected web browsing request, providing explanation response')
+    
+    // Create an explanation message
+    const explanationResponse = "Ik kan geen externe websites openen of bezoeken. Als AI-assistent kan ik geen toegang krijgen tot internet links of webpagina's. Ik kan je wel helpen met trading informatie, analyse en educatie op basis van mijn training. Hoe kan ik je verder helpen met je trading vragen?"
+    
+    // Add user message to chat history
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: text,
+      timestamp: new Date()
+    }
+    addMessageToChatHistory(userMessage)
+    
+    // Add AI explanation message to chat history
+    const aiMessage: ChatMessage = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: explanationResponse,
+      timestamp: new Date()
+    }
+    addMessageToChatHistory(aiMessage)
+    
+    // Generate speech for the explanation
+    await generateSpeech(explanationResponse)
+    setIsProcessing(false)
+  }, [addMessageToChatHistory])
+
+  // Optimized function to generate speech from text
+  const generateSpeech = useCallback(async (text: string) => {
     try {
       console.log('Starting speech generation with text:', text.substring(0, 100) + '...')
-      setProcessingStage('Generating speech')
+      setProcessingStage('Converting to speech')
       setProcessingError(null)
+      
+      // Create a controller for fetch request - will enable cancellation later if needed
+      const controller = new AbortController()
+      const signal = controller.signal
       
       // More detailed request logging
       console.log('Sending request to text-to-speech function with voice ID:', selectedVoice.id)
       
+      const startTime = performance.now()
       const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
         body: { 
           text, 
           voiceId: selectedVoice.id 
-        }
+        },
+        signal
       })
+      const requestTime = performance.now() - startTime
+      console.log(`TTS request completed in ${requestTime.toFixed(0)}ms`)
 
       if (speechError) {
         console.error('Error from text-to-speech function:', speechError)
@@ -86,7 +128,7 @@ export const useBaseAudioProcessor = ({
 
       console.log('Received audioContent, converting to URL')
       
-      // Convert the base64 audio content to a playable URL
+      // Convert the base64 audio content to a playable URL - optimized for performance
       try {
         const audioBlob = await fetch(`data:audio/mp3;base64,${speechData.audioContent}`).then(r => r.blob())
         const audioUrl = URL.createObjectURL(audioBlob)
@@ -112,27 +154,32 @@ export const useBaseAudioProcessor = ({
         variant: "destructive",
       })
     }
-  }
+  }, [selectedVoice.id, playAudio, toast])
 
-  // Function to handle audio processing
-  const processAudio = async (audioUrl: string, processingFn: (transcription: string, previousMessages: any[]) => Promise<void>) => {
+  // Function to handle audio processing with optimizations for responsiveness
+  const processAudio = useCallback(async (audioUrl: string, processingFn: (transcription: string, previousMessages: any[]) => Promise<void>) => {
     if (!audioUrl) return
 
     setIsProcessing(true)
     setProcessingError(null)
-    setProcessingStage('Processing audio')
+    setProcessingStage('Transcribing audio')
     
     try {
-      // First step: Process voice to get transcription
-      console.log('Starting audio transcription')
+      // Show immediate feedback to user
       toast({
-        title: "Processing",
-        description: "Transcribing your audio...",
+        title: "Verwerken",
+        description: "Audio wordt getranscribeerd...",
       })
       
+      // First step: Process voice to get transcription
+      console.log('Starting audio transcription')
+      
+      const startTranscribeTime = performance.now()
       const { data: transcriptionData, error: transcriptionError } = await supabase.functions.invoke('process-voice', {
         body: { audioUrl }
       })
+      const transcribeTime = performance.now() - startTranscribeTime
+      console.log(`Transcription completed in ${transcribeTime.toFixed(0)}ms`)
 
       if (transcriptionError) {
         console.error('Error processing voice:', transcriptionError)
@@ -171,30 +218,13 @@ export const useBaseAudioProcessor = ({
         timestamp: new Date()
       }
       
-      setChatHistory(prev => [...prev, userMessage])
+      addMessageToChatHistory(userMessage)
 
       // Check if this is a web browsing request
       const { isWebRequest, processedInput } = preprocessUserInput(transcription)
       
       if (isWebRequest) {
-        console.log('Detected web browsing request, providing explanation response')
-        
-        // Create an explanation message
-        const explanationResponse = "Ik kan geen externe websites openen of bezoeken. Als AI-assistent kan ik geen toegang krijgen tot internet links of webpagina's. Ik kan je wel helpen met trading informatie, analyse en educatie op basis van mijn training. Hoe kan ik je verder helpen met je trading vragen?"
-        
-        // Add AI explanation message to chat history
-        const aiMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: explanationResponse,
-          timestamp: new Date()
-        }
-        
-        setChatHistory(prev => [...prev, aiMessage])
-        
-        // Generate speech for the explanation
-        await generateSpeech(explanationResponse)
-        setIsProcessing(false)
+        await handleWebRequest(transcription)
         return
       }
 
@@ -210,8 +240,8 @@ export const useBaseAudioProcessor = ({
       })
 
       toast({
-        title: "Processing",
-        description: "Generating AI response...",
+        title: "Verwerken",
+        description: "AI-antwoord wordt gegenereerd...",
       })
 
       // Process with the provided function
@@ -228,10 +258,10 @@ export const useBaseAudioProcessor = ({
     } finally {
       setIsProcessing(false)
     }
-  }
+  }, [toast, preprocessUserInput, addMessageToChatHistory, handleWebRequest])
 
-  // Function to handle direct text input
-  const processDirectText = async (text: string, processingFn: (text: string, previousMessages: any[]) => Promise<void>) => {
+  // Function to handle direct text input with optimizations
+  const processDirectText = useCallback(async (text: string, processingFn: (text: string, previousMessages: any[]) => Promise<void>) => {
     if (!text.trim()) return
 
     setIsProcessing(true)
@@ -251,36 +281,19 @@ export const useBaseAudioProcessor = ({
         timestamp: new Date()
       }
       
-      setChatHistory(prev => [...prev, userMessage])
+      addMessageToChatHistory(userMessage)
 
       if (isWebRequest) {
-        console.log('Detected web browsing request in text input, providing explanation response')
-        
-        // Create an explanation message
-        const explanationResponse = "Ik kan geen externe websites openen of bezoeken. Als AI-assistent kan ik geen toegang krijgen tot internet links of webpagina's. Ik kan je wel helpen met trading informatie, analyse en educatie op basis van mijn training. Hoe kan ik je verder helpen met je trading vragen?"
-        
-        // Add AI explanation message to chat history
-        const aiMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: explanationResponse,
-          timestamp: new Date()
-        }
-        
-        setChatHistory(prev => [...prev, aiMessage])
-        
-        // Generate speech for the explanation
-        await generateSpeech(explanationResponse)
-        setIsProcessing(false)
+        await handleWebRequest(text)
         return
       }
 
       toast({
-        title: "Processing",
-        description: "Generating response...",
+        title: "Verwerken",
+        description: "Antwoord wordt gegenereerd...",
       })
 
-      // Get previous messages for context
+      // Get previous messages for context - optimized to reduce state changes
       let previousMessages: any[] = []
       setChatHistory(prev => {
         // Take the last 10 messages
@@ -305,10 +318,10 @@ export const useBaseAudioProcessor = ({
     } finally {
       setIsProcessing(false)
     }
-  }
+  }, [preprocessUserInput, addMessageToChatHistory, handleWebRequest, toast])
 
   // Add an AI response to chat history
-  const addAIResponseToChatHistory = (response: string) => {
+  const addAIResponseToChatHistory = useCallback((response: string) => {
     const aiMessage: ChatMessage = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
@@ -316,8 +329,8 @@ export const useBaseAudioProcessor = ({
       timestamp: new Date()
     }
     
-    setChatHistory(prev => [...prev, aiMessage])
-  }
+    addMessageToChatHistory(aiMessage)
+  }, [addMessageToChatHistory])
 
   return {
     lastTranscription,
@@ -332,4 +345,4 @@ export const useBaseAudioProcessor = ({
     addAIResponseToChatHistory,
     setProcessingError
   }
-}
+}, [])
