@@ -345,4 +345,4 @@ export const useBaseAudioProcessor = ({
     addAIResponseToChatHistory,
     setProcessingError
   }
-}, [])
+}
