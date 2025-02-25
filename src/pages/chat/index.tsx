@@ -12,8 +12,8 @@ export default function ChatPage() {
   }
   
   return (
-    <div className="container py-8">
-      <h1 className="text-2xl font-bold mb-6 text-center">Grok AI Chat</h1>
+    <div className="container py-8 px-4">
+      <h1 className="text-3xl font-bold mb-8 text-center text-indigo-700">Grok AI Assistent</h1>
       <GrokChat />
     </div>
   )

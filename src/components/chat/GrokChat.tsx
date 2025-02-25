@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { SendIcon, Bot, User, Loader2, ArrowLeft } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { SendIcon, Bot, User, Loader2, ArrowLeft, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
 import { Link } from 'react-router-dom'
@@ -158,8 +159,9 @@ export function GrokChat() {
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !isLoading) {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
+      e.preventDefault()
       sendMessage()
     }
   }
@@ -174,19 +176,29 @@ export function GrokChat() {
   }
 
   return (
-    <Card className="w-full max-w-3xl mx-auto shadow-lg">
-      <CardHeader className="border-b px-4 py-3">
+    <Card className="w-full max-w-4xl mx-auto shadow-lg bg-white">
+      <CardHeader className="border-b px-6 py-4 bg-gradient-to-r from-indigo-500 to-violet-500 text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Bot className="mr-2 h-5 w-5 text-primary" />
-            <h2 className="text-lg font-medium">Grok Chat</h2>
+            <Bot className="mr-3 h-6 w-6" />
+            <h2 className="text-xl font-semibold">Grok Chat</h2>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={clearChat}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={clearChat}
+              className="text-white border-white hover:bg-white/20 hover:text-white"
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
               Wis chat
             </Button>
             <Link to="/">
-              <Button variant="ghost" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="text-white border-white hover:bg-white/20 hover:text-white"
+              >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 Terug
               </Button>
@@ -195,14 +207,14 @@ export function GrokChat() {
         </div>
       </CardHeader>
       
-      <CardContent className="p-0">
+      <CardContent className="p-0 flex flex-col h-[600px]">
         {/* Chat Messages */}
-        <div className="h-[400px] overflow-y-auto p-4 space-y-4">
+        <div className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-              <Bot className="w-12 h-12 mb-4 opacity-20" />
-              <p>Begin een gesprek met Grok AI.</p>
-              <p className="text-sm mt-2">Stel een vraag door te typen en op Enter te drukken.</p>
+              <Bot className="w-16 h-16 mb-6 opacity-20" />
+              <p className="text-lg">Begin een gesprek met Grok AI.</p>
+              <p className="text-sm mt-2">Stel een vraag in het tekstvak hieronder.</p>
             </div>
           ) : (
             messages.map((message) => (
@@ -211,23 +223,23 @@ export function GrokChat() {
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div 
-                  className={`rounded-lg px-4 py-2 max-w-[80%] flex ${
+                  className={`rounded-lg px-5 py-3 max-w-[85%] flex ${
                     message.role === 'user' 
-                      ? 'bg-primary text-primary-foreground ml-12' 
-                      : 'bg-muted mr-12'
+                      ? 'bg-indigo-600 text-white' 
+                      : 'bg-white border border-gray-200 shadow-sm'
                   }`}
                 >
-                  <div className="mr-2 mt-1">
+                  <div className={`mr-3 mt-1 ${message.role === 'user' ? 'text-white' : 'text-indigo-600'}`}>
                     {message.role === 'user' ? (
-                      <User className="w-4 h-4" />
+                      <User className="w-5 h-5" />
                     ) : (
-                      <Bot className="w-4 h-4" />
+                      <Bot className="w-5 h-5" />
                     )}
                   </div>
-                  <div>
-                    <p className="whitespace-pre-line text-sm">{message.content}</p>
-                    <p className="text-xs opacity-50 mt-1">
-                      {message.timestamp.toLocaleTimeString()}
+                  <div className="flex-1">
+                    <p className="whitespace-pre-line">{message.content}</p>
+                    <p className={`text-xs mt-2 ${message.role === 'user' ? 'text-indigo-200' : 'text-gray-400'}`}>
+                      {message.timestamp.toLocaleTimeString()} - {message.timestamp.toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -238,27 +250,27 @@ export function GrokChat() {
         </div>
         
         {/* Chat Input */}
-        <div className="p-3 border-t">
+        <div className="p-4 border-t bg-white">
           <div className="flex space-x-2">
-            <Input
+            <Textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={isLoading ? "Even geduld..." : "Typ je bericht..."}
+              placeholder={isLoading ? "Even geduld..." : "Typ je bericht... (Enter om te versturen)"}
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 min-h-[60px] resize-none border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
             />
             <Button
               onClick={sendMessage}
               disabled={!inputMessage.trim() || isLoading}
               variant="default"
               size="icon"
-              className={isLoading ? "animate-pulse" : ""}
+              className={`bg-indigo-600 hover:bg-indigo-700 h-[60px] w-[60px] ${isLoading ? "animate-pulse" : ""}`}
             >
               {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <SendIcon className="h-4 w-4" />
+                <SendIcon className="h-5 w-5" />
               )}
             </Button>
           </div>
