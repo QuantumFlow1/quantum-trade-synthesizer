@@ -24,6 +24,9 @@ export const useAudioProcessing = (
       reader.onloadend = async () => {
         const base64Data = (reader.result as string).split('base64,')[1]
         
+        // Log which voice template is being used
+        console.log(`Processing audio with voice template: ${selectedVoice.name} (${selectedVoice.id})`)
+        
         const { data, error } = await supabase.functions.invoke('process-voice', {
           body: { 
             audioData: base64Data,
@@ -37,11 +40,14 @@ export const useAudioProcessing = (
           throw new Error('Geen transcriptie ontvangen')
         }
 
+        // Log the transcription that was received
+        console.log(`Transcription received: ${data.transcription}`)
+        
         setLastTranscription(data.transcription)
         
         toast({
-          title: "Verwerkt",
-          description: data.transcription,
+          title: `${selectedVoice.name} heeft geantwoord`,
+          description: data.transcription.substring(0, 100) + (data.transcription.length > 100 ? '...' : ''),
         })
       }
       

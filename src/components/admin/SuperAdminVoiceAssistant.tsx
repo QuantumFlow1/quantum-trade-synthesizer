@@ -22,6 +22,7 @@ export const SuperAdminVoiceAssistant = () => {
   const { isPlaying, playAudio } = useAudioPlayback()
   const [lastTranscription, setLastTranscription] = useState<string>('')
   const [directText, setDirectText] = useState<string>('')
+  
   // Find and default to EdriziAI voice model
   const defaultVoice = VOICE_TEMPLATES.find(v => v.id === "EdriziAI-info") || VOICE_TEMPLATES[0]
   const [selectedVoice, setSelectedVoice] = useState(defaultVoice)
@@ -51,13 +52,17 @@ export const SuperAdminVoiceAssistant = () => {
   // Initialize with voice greeting
   useVoiceGreeting(selectedVoice, isPlaying)
 
+  // Log the current voice selection at render
+  console.log(`Current voice: ${selectedVoice.name} (ID: ${selectedVoice.id})`)
+
   const handleStopRecording = async () => {
     try {
       const audioUrl = await stopRecording()
       if (audioUrl) {
         setPreviewAudioUrl(audioUrl)
+        console.log('Recording stopped, processing audio...')
         // Automatically process audio after recording
-        processAudio()
+        setTimeout(() => processAudio(), 100) // Small delay to ensure audio is ready
       }
     } catch (error) {
       console.error('Error stopping recording:', error)
@@ -82,21 +87,25 @@ export const SuperAdminVoiceAssistant = () => {
 
     const audioUrl = URL.createObjectURL(file)
     setPreviewAudioUrl(audioUrl)
+    // Automatically process after upload
+    setTimeout(() => processAudio(), 200)
   }
 
   const handleVoiceChange = (voiceId: string) => {
     const voice = VOICE_TEMPLATES.find(v => v.id === voiceId)
     if (voice) {
+      console.log(`Switching to voice: ${voice.name} (ID: ${voice.id})`)
       setSelectedVoice(voice)
       toast({
-        title: "Voice Updated",
-        description: `Switched to ${voice.name}`,
+        title: "Stem gewijzigd",
+        description: `Je gebruikt nu ${voice.name}`,
       })
     }
   }
 
   const handleDirectTextSubmit = () => {
     if (directText.trim()) {
+      console.log(`Submitting text: ${directText}`)
       playAudio(directText, selectedVoice.id, selectedVoice.name)
       setDirectText('') // Clear input after submission
     }
@@ -104,6 +113,7 @@ export const SuperAdminVoiceAssistant = () => {
 
   const playTranscription = () => {
     if (lastTranscription) {
+      console.log(`Playing transcription: ${lastTranscription.substring(0, 50)}...`)
       playAudio(lastTranscription, selectedVoice.id, selectedVoice.name)
     }
   }
