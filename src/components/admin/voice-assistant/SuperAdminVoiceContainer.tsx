@@ -1,18 +1,18 @@
 
-import React from 'react';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { useToast } from '@/hooks/use-toast';
-import { VoiceTemplate } from '@/lib/types';
-import ConnectionTest from './ConnectionTest';
-import { WelcomeMessage } from './SuperAdminGreeting';
-import { ChatHistorySection } from './ChatHistorySection';
-import { AudioSection } from './AudioSection';
-import VoiceAssistantLayout from './VoiceAssistantLayout';
+import { ReactNode, useEffect } from 'react'
+import { VoiceTemplate } from '@/lib/types'
+import { ChatMessage } from '../types/chat-types'
+import VoiceAssistantLayout from './VoiceAssistantLayout'
+import { AudioSection } from './AudioSection'
+import { ChatHistorySection } from './ChatHistorySection'
+import { ConnectionTest } from './ConnectionTest'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { SuperAdminGreeting } from './SuperAdminGreeting'
 
 interface SuperAdminVoiceContainerProps {
   selectedVoice: VoiceTemplate;
   directText: string;
-  setDirectText: (text: string) => void;
+  setDirectText: React.Dispatch<React.SetStateAction<string>>;
   handleDirectTextSubmit: () => void;
   isRecording: boolean;
   isProcessing: boolean;
@@ -24,17 +24,17 @@ interface SuperAdminVoiceContainerProps {
   isPreviewPlaying: boolean;
   playPreview: () => void;
   stopPreview: () => void;
-  setIsPreviewPlaying: (isPlaying: boolean) => void;
+  setIsPreviewPlaying: React.Dispatch<React.SetStateAction<boolean>>;
   processingError: string | null;
   processingStage: string;
-  chatHistory: any[];
-  setChatHistory: (history: any[]) => void;
+  chatHistory: ChatMessage[];
+  setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   grok3Available: boolean;
   checkGrok3Availability: () => Promise<boolean>;
   resetGrok3Connection: () => void;
 }
 
-export const SuperAdminVoiceContainer: React.FC<SuperAdminVoiceContainerProps> = ({
+export const SuperAdminVoiceContainer = ({
   selectedVoice,
   directText,
   setDirectText,
@@ -57,75 +57,54 @@ export const SuperAdminVoiceContainer: React.FC<SuperAdminVoiceContainerProps> =
   grok3Available,
   checkGrok3Availability,
   resetGrok3Connection
-}) => {
-  const { userProfile } = useAuth();
-  const { toast } = useToast();
-  const [showConnectionTest, setShowConnectionTest] = React.useState(false);
-  const chatHistoryStorageKey = 'superadmin-chat-history';
-
+}: SuperAdminVoiceContainerProps) => {
   return (
-    <VoiceAssistantLayout
-      title="Super Admin Voice Assistant"
-      selectedVoiceId={selectedVoice.id}
-      onVoiceChange={() => {}} // This will be passed from parent
-      directText={directText}
-      setDirectText={setDirectText}
-      handleDirectTextSubmit={handleDirectTextSubmit}
-      isRecording={isRecording}
-      isProcessing={isProcessing}
-      isPlaying={isPlaying}
-      startRecording={startRecording}
-      handleStopRecording={handleStopRecording}
-      previewAudioUrl={previewAudioUrl}
-      previewAudioRef={previewAudioRef}
-      isPreviewPlaying={isPreviewPlaying}
-      playPreview={playPreview}
-      stopPreview={stopPreview}
-      setIsPreviewPlaying={setIsPreviewPlaying}
-      processingError={processingError}
-      processingStage={processingStage}
-    >
-      {showConnectionTest ? (
-        <ConnectionTest 
-          grok3Available={grok3Available} 
-          resetGrok3Connection={resetGrok3Connection}
-          onClose={() => setShowConnectionTest(false)}
+    <Tabs defaultValue="voice" className="w-full">
+      <TabsList className="grid grid-cols-3 mb-6">
+        <TabsTrigger value="voice">Voice Control</TabsTrigger>
+        <TabsTrigger value="chat">Chat History</TabsTrigger>
+        <TabsTrigger value="connection">Connection Test</TabsTrigger>
+      </TabsList>
+      
+      <TabsContent value="voice" className="space-y-4">
+        <SuperAdminGreeting />
+        
+        <AudioSection
+          selectedVoice={selectedVoice}
+          directText={directText}
+          setDirectText={setDirectText}
+          handleDirectTextSubmit={handleDirectTextSubmit}
+          isRecording={isRecording}
+          isProcessing={isProcessing}
+          isPlaying={isPlaying}
+          startRecording={startRecording}
+          handleStopRecording={handleStopRecording}
+          previewAudioUrl={previewAudioUrl}
+          previewAudioRef={previewAudioRef}
+          isPreviewPlaying={isPreviewPlaying}
+          playPreview={playPreview}
+          stopPreview={stopPreview}
+          setIsPreviewPlaying={setIsPreviewPlaying}
+          processingError={processingError}
+          processingStage={processingStage}
         />
-      ) : (
-        <>
-          <WelcomeMessage 
-            selectedVoice={selectedVoice} 
-            userProfile={userProfile}
-            onConnectionTestClick={() => setShowConnectionTest(true)}
-          />
-          
-          <ChatHistorySection 
-            chatHistory={chatHistory} 
-            setChatHistory={setChatHistory}
-            storageKey={chatHistoryStorageKey}
-          />
-          
-          <AudioSection
-            isRecording={isRecording}
-            isProcessing={isProcessing}
-            isPlaying={isPlaying}
-            directText={directText}
-            previewAudioUrl={previewAudioUrl}
-            isPreviewPlaying={isPreviewPlaying}
-            previewAudioRef={previewAudioRef}
-            selectedVoice={selectedVoice}
-            processingError={processingError}
-            setDirectText={setDirectText}
-            startRecording={startRecording}
-            handleStopRecording={handleStopRecording}
-            playPreview={playPreview}
-            stopPreview={stopPreview}
-            processAudio={() => {}} // This will be passed from parent
-            handleDirectTextSubmit={handleDirectTextSubmit}
-            setIsPreviewPlaying={setIsPreviewPlaying}
-          />
-        </>
-      )}
-    </VoiceAssistantLayout>
-  );
-};
+      </TabsContent>
+      
+      <TabsContent value="chat">
+        <ChatHistorySection
+          chatHistory={chatHistory}
+          setChatHistory={setChatHistory}
+          storageKey="superadmin-chat-history"
+        />
+      </TabsContent>
+      
+      <TabsContent value="connection">
+        <ConnectionTest
+          grok3Available={grok3Available}
+          checkGrok3Availability={checkGrok3Availability}
+          resetGrok3Connection={resetGrok3Connection}
+        />
+      </TabsContent>
+    </Tabs>
+  )
+}
