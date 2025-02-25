@@ -80,8 +80,8 @@ export const useBaseAudioProcessor = ({
     }
   }
   
-  // Function to generate speech from text
-  const generateSpeech = async (text: string) => {
+  // Function to generate speech from text - modified to return Promise<void>
+  const generateSpeech = async (text: string): Promise<boolean> => {
     try {
       // In a real implementation, this would call a text-to-speech API
       // For now, we'll just console.log the text

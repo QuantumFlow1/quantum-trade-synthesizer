@@ -10,8 +10,10 @@ import { EdriziAIHeader } from './voice-assistant/EdriziAIHeader'
 import { EdriziAITabs } from './voice-assistant/EdriziAITabs'
 import { EdriziAIChatInput } from './voice-assistant/EdriziAIChatInput'
 import { DirectTextInput } from './voice-assistant/audio/DirectTextInput'
+import { ChatMessage } from '@/components/admin/types/chat-types'
 
-interface ChatMessage {
+// Define a mapping interface to convert between ChatMessage and local message format
+interface LocalChatMessage {
   id: string;
   text: string;
   sender: 'user' | 'bot';
@@ -20,7 +22,7 @@ interface ChatMessage {
 
 export default function VoiceAssistant() {
   const [activeTab, setActiveTab] = useState('chat')
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
+  const [chatHistory, setChatHistory] = useState<LocalChatMessage[]>([])
   const previewAudioRef = useRef<HTMLAudioElement>(null)
   
   // Voice selection
@@ -42,6 +44,23 @@ export default function VoiceAssistant() {
   // Audio Playback
   const { isPlaying, playAudio } = useAudioPlayback()
   
+  // Adapter function to update our local chatHistory from the processor's messages
+  const updateChatHistory = (processorMessages: ChatMessage[]) => {
+    const newLocalMessages = processorMessages.map(msg => ({
+      id: msg.id,
+      text: msg.content,
+      sender: msg.role === 'user' ? 'user' as const : 'bot' as const,
+      timestamp: msg.timestamp
+    }))
+    
+    setChatHistory(prevHistory => {
+      // Convert only the new messages that aren't already in the history
+      const existingIds = new Set(prevHistory.map(msg => msg.id))
+      const uniqueNewMessages = newLocalMessages.filter(msg => !existingIds.has(msg.id))
+      return [...prevHistory, ...uniqueNewMessages]
+    })
+  }
+  
   // Audio processing with Grok3 support
   const {
     lastTranscription,
@@ -55,7 +74,7 @@ export default function VoiceAssistant() {
   } = useEdriziAudioProcessor({
     selectedVoice,
     playAudio: (url: string) => playAudio(url, selectedVoice.id, selectedVoice.name),
-    setChatHistory,
+    setChatHistory: updateChatHistory,
     isSuperAdmin: false
   })
   

@@ -25,7 +25,7 @@ export const useSuperAdminProcessor = ({
     setLastUserInput,
     isProcessing,
     processingError,
-    generateSpeech,
+    generateSpeech: baseGenerateSpeech,
     processAudio: baseProcessAudio,
     processDirectText: baseProcessDirectText,
     addAIResponseToChatHistory,
@@ -45,6 +45,12 @@ export const useSuperAdminProcessor = ({
     manuallyDisabled,
     shouldRetryGrok3
   } = useGrok3Availability()
+
+  // Wrap the generateSpeech function to return void instead of boolean
+  const generateSpeech = async (text: string): Promise<void> => {
+    await baseGenerateSpeech(text);
+    return;
+  }
 
   const {
     generateGrok3Response

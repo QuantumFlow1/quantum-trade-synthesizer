@@ -7,7 +7,7 @@ import { ChatMessage } from '@/components/admin/types/chat-types'
 interface AudioProcessorProps {
   selectedVoice: VoiceTemplate
   playAudio: (url: string) => void
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>
+  setChatHistory: (messages: ChatMessage[]) => void
   isSuperAdmin?: boolean
 }
 
@@ -17,17 +17,30 @@ export const useEdriziAudioProcessor = ({
   setChatHistory,
   isSuperAdmin = false
 }: AudioProcessorProps) => {
+  // Create an adapter function that wraps the setChatHistory function
+  // to ensure it conforms to the expected type
+  const setChatHistoryAdapter: React.Dispatch<React.SetStateAction<ChatMessage[]>> = 
+    (action) => {
+      // Handle the functional update case
+      if (typeof action === 'function') {
+        setChatHistory(action([] as ChatMessage[]));
+      } else {
+        // Handle the direct value case
+        setChatHistory(action);
+      }
+    };
+
   // Choose the appropriate processor based on user type
   const regularProcessor = useRegularUserProcessor({
     selectedVoice,
     playAudio,
-    setChatHistory
+    setChatHistory: setChatHistoryAdapter
   })
 
   const superAdminProcessor = useSuperAdminProcessor({
     selectedVoice,
     playAudio,
-    setChatHistory
+    setChatHistory: setChatHistoryAdapter
   })
 
   // Select the appropriate processor based on user type
