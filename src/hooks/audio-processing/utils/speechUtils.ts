@@ -15,25 +15,27 @@ export const generateSpeechFromText = async (
   try {
     if (!text || !selectedVoice) {
       console.error('Missing required parameters for speech generation')
+      setProcessingError('Missing required parameters for speech generation')
       return
     }
     
     setProcessingStage('Generating speech')
+    console.log('Generating speech for text:', text.substring(0, 100))
+    console.log('Using voice:', selectedVoice.name, 'with ID:', selectedVoice.id)
     
     // Create a controller for fetch request - will enable cancellation later if needed
     const controller = new AbortController()
     
-    // More detailed request logging
-    console.log('Sending request to text-to-speech function with voice ID:', selectedVoice.id)
-    
     const startTime = performance.now()
-    // Remove the signal property from function options
+    
+    // Make the request to the text-to-speech function
     const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
       body: { 
         text, 
         voiceId: selectedVoice.id 
       }
     })
+
     const requestTime = performance.now() - startTime
     console.log(`TTS request completed in ${requestTime.toFixed(0)}ms`)
 
@@ -43,21 +45,36 @@ export const generateSpeechFromText = async (
       return
     }
 
-    if (!speechData?.audioUrl) {
-      console.error('No audio URL returned from TTS service')
-      setProcessingError('No audio was generated. Please try again.')
+    // Validate the response data
+    if (!speechData) {
+      console.error('No response data from TTS service')
+      setProcessingError('No response received from speech service')
       return
     }
 
-    // Get the audio URL
-    const audioUrl = speechData.audioUrl
-    console.log('Audio URL generated:', audioUrl)
+    // Check for audioContent in the response
+    if (!speechData.audioContent) {
+      console.error('No audio content in response:', speechData)
+      setProcessingError('No audio content received from speech service')
+      return
+    }
+
+    // Create audio URL from base64 content
+    const audioBlob = await fetch(`data:audio/mp3;base64,${speechData.audioContent}`).then(r => r.blob())
+    const audioUrl = URL.createObjectURL(audioBlob)
+    console.log('Created audio URL from base64 content')
 
     // Play the audio
     setProcessingStage('Playing audio response')
     playAudio(audioUrl)
+    
+    // Clean up the URL after a delay
+    setTimeout(() => {
+      URL.revokeObjectURL(audioUrl)
+    }, 30000) // Cleanup after 30 seconds
+    
   } catch (error) {
-    console.error('Error generating speech:', error)
-    setProcessingError('An error occurred during speech generation.')
+    console.error('Error in speech generation:', error)
+    setProcessingError('An unexpected error occurred during speech generation.')
   }
 }
