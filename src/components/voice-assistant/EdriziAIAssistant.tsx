@@ -24,12 +24,27 @@ export const EdriziAIAssistant = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [activeTab, setActiveTab] = useState<string>('chat')
+  const previewAudioRef = useRef<HTMLAudioElement>(null)
   
   // Check if user is super admin
   const isSuperAdmin = userProfile?.role === 'super_admin'
   
   // Create a user-specific storage key
   const STORAGE_KEY = user ? `edriziAIChatHistory_${user.id}` : 'edriziAIChatHistory_guest'
+
+  // If user is super admin, don't render this component
+  // This prevents conflicts between the two voice assistants
+  useEffect(() => {
+    if (isSuperAdmin) {
+      console.log('EdriziAIAssistant not rendering for super admin')
+    } else {
+      console.log('EdriziAIAssistant rendering for regular user')
+    }
+  }, [isSuperAdmin])
+
+  if (isSuperAdmin) {
+    return null
+  }
 
   // Common trading questions for quick access
   const quickQuestions = [
@@ -40,18 +55,16 @@ export const EdriziAIAssistant = () => {
     "Hoe stel ik een stop-loss en take-profit in?"
   ]
 
-  // Get the appropriate EdriziAI voice template based on user role
-  let edriziVoice = VOICE_TEMPLATES.find(v => 
-    isSuperAdmin ? v.id === 'EdriziAI-admin' : v.id === 'EdriziAI-info'
-  )
+  // Get the appropriate EdriziAI voice template for regular users
+  let edriziVoice = VOICE_TEMPLATES.find(v => v.id === 'EdriziAI-info')
   
   if (!edriziVoice) {
-    console.error('Appropriate EdriziAI voice template not found')
+    console.error('EdriziAI voice template not found')
     // Fallback to first available voice if preferred voice is not found
     edriziVoice = VOICE_TEMPLATES[0]
     console.log('Falling back to voice:', edriziVoice.name)
   } else {
-    console.log('Using voice:', edriziVoice.name, 'for user role:', userProfile?.role)
+    console.log('Using voice:', edriziVoice.name, 'for regular user')
   }
 
   const {
@@ -59,7 +72,6 @@ export const EdriziAIAssistant = () => {
     setPreviewAudioUrl,
     isPreviewPlaying,
     setIsPreviewPlaying,
-    previewAudioRef,
     playPreview,
     stopPreview
   } = useAudioPreview()
@@ -80,7 +92,7 @@ export const EdriziAIAssistant = () => {
     selectedVoice: edriziVoice,
     playAudio: playAudioWrapper,
     setChatHistory,
-    isSuperAdmin
+    isSuperAdmin: false // Explicitly set to false for regular users
   })
 
   // Load chat history from localStorage on component mount or when user changes
@@ -173,7 +185,7 @@ export const EdriziAIAssistant = () => {
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <CardTitle className="text-center flex-1">
-            {isSuperAdmin ? "EdriziAI Admin Assistant" : "EdriziAI Quantumflow Specialist"}
+            EdriziAI Quantumflow Specialist
           </CardTitle>
           {chatHistory.length > 0 && (
             <Button 
