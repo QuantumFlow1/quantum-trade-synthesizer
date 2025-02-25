@@ -11,7 +11,7 @@ import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
 import { useAudioProcessing } from '@/hooks/use-audio-processing'
 import { VOICE_TEMPLATES } from '@/lib/voice-templates'
-import { toast } from 'sonner'
+import { toast as sonnerToast } from 'sonner'
 
 export const SuperAdminVoiceAssistant = () => {
   const { userProfile } = useAuth()
@@ -55,9 +55,8 @@ export const SuperAdminVoiceAssistant = () => {
     if (!file) return
 
     if (!file.type.startsWith('audio/')) {
-      toast({
-        title: "Error",
-        description: "Only audio files are allowed",
+      sonnerToast("Only audio files are allowed", {
+        description: "Please select a valid audio file",
         variant: "destructive",
       })
       return
