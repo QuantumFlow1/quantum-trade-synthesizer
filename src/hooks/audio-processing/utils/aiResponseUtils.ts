@@ -22,11 +22,23 @@ export const generateRegularAIResponse = async (
       return
     }
 
-    // Add response to chat history
-    addAIResponseToChatHistory(data.response)
+    console.log('Received AI response:', data.response)
     
-    // Generate speech from response
-    await generateSpeech(data.response)
+    // Add response to chat history
+    if (typeof data.response === 'string') {
+      addAIResponseToChatHistory({
+        id: Date.now().toString(),
+        content: data.response,
+        role: 'assistant',
+        timestamp: new Date()
+      })
+      
+      // Generate speech from response
+      await generateSpeech(data.response)
+    } else {
+      console.error('Invalid response format:', data.response)
+      setProcessingError('Invalid response format received')
+    }
 
   } catch (error) {
     console.error('Error in generateRegularAIResponse:', error)
@@ -70,11 +82,24 @@ export const generateTradingAdvice = async (
       return
     }
 
-    // Add response to chat history
-    addAIResponseToChatHistory(data.response)
+    console.log('Received trading advice response:', data.response)
     
-    // Generate speech from response
-    await generateSpeech(data.response)
+    // Add response to chat history
+    if (typeof data.response === 'string') {
+      addAIResponseToChatHistory({
+        id: Date.now().toString(),
+        content: data.response,
+        role: 'assistant',
+        timestamp: new Date()
+      })
+      
+      // Generate speech from response
+      await generateSpeech(data.response)
+    } else {
+      console.error('Invalid response format:', data.response)
+      setProcessingError('Invalid response format received')
+      await fallbackHandler(message)
+    }
 
   } catch (error) {
     console.error('Error in generateTradingAdvice:', error)

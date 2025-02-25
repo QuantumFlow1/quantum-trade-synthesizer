@@ -1,150 +1,120 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+import { corsHeaders } from "../_shared/cors.ts"
+import { OpenAI } from "https://esm.sh/openai@3.3.0"
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY') || '';
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || ''
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Create a Supabase client
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Initialize OpenAI
+const openai = new OpenAI({ apiKey: OPENAI_API_KEY })
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // This is needed if you're planning to invoke your function from a browser.
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { message, userId, userLevel = 'beginner' } = await req.json();
-    console.log(`Processing trading advice request for user ${userId} (${userLevel} level)`);
+    // Get request body
+    const { message, userId, userLevel = 'beginner', previousMessages = [] } = await req.json()
 
-    // Get user risk settings if available
-    let riskProfile = 'moderate';
-    let maxPositionSize = 1000;
-    
-    const { data: riskData, error: riskError } = await supabase
-      .from('risk_settings')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    
-    if (riskData) {
-      console.log('User risk settings found:', riskData);
-      riskProfile = riskData.risk_level;
-      maxPositionSize = riskData.max_position_size;
-    } else if (riskError) {
-      console.log('No risk settings found, using defaults');
-    }
-
-    // Get recent market data
-    const { data: marketData, error: marketError } = await supabase
-      .from('trading_pairs')
-      .select('*')
-      .eq('is_active', true)
-      .limit(5);
-
-    if (marketError) {
-      console.error('Error fetching market data:', marketError);
+    if (!message) {
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch market data' }),
-        { 
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
+        JSON.stringify({ error: 'Message is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
     }
 
-    // Get user's open positions
-    const { data: positionsData, error: positionsError } = await supabase
-      .from('positions')
-      .select('*')
-      .eq('user_id', userId);
+    console.log(`Generating trading advice for message: ${message.substring(0, 100)}...`)
+    console.log(`User level: ${userLevel}`)
 
-    if (positionsError) {
-      console.error('Error fetching positions:', positionsError);
+    // Build the prompt based on user level
+    let systemPrompt = 'You are EdriziAI, a professional trading assistant specialized in helping users with market analysis and trading advice. '
+    
+    // Add level-specific instructions
+    switch (userLevel) {
+      case 'expert':
+        systemPrompt += 'The user is an expert trader. Use advanced terminology and detailed analysis. Skip basic explanations.'
+        break
+      case 'intermediate':
+        systemPrompt += 'The user has intermediate trading knowledge. Provide detailed explanations and some deeper insights.'
+        break
+      case 'beginner':
+      default:
+        systemPrompt += 'The user is new to trading. Explain concepts clearly and avoid jargon. Focus on basics and educational content.'
+        break
     }
+    
+    // Add response guidelines
+    systemPrompt += ' Always respond in the same language as the user\'s question. Provide factual, helpful information about trading and market analysis. Never pretend to access real-time market data if you don\'t have it.'
 
-    // Prepare context for AI
-    const context = {
-      riskProfile,
-      maxPositionSize,
-      marketData: marketData || [],
-      openPositions: positionsData || [],
-      userLevel
-    };
+    // Check for patterns that might indicate web requests or other unsupported tasks
+    if (message.toLowerCase().includes('open') || 
+        message.toLowerCase().includes('search') || 
+        message.toLowerCase().includes('browse') ||
+        message.toLowerCase().includes('http') ||
+        message.toLowerCase().includes('website') ||
+        message.toLowerCase().includes('www')) {
+      
+      const response = `Ik kan geen externe websites openen of bezoeken. Als AI-assistent kan ik geen toegang krijgen tot internet links of webpagina's. Ik kan je wel helpen met trading informatie, analyse en educatie op basis van mijn training. Hoe kan ik je verder helpen met je trading vragen?`
+      
+      return new Response(
+        JSON.stringify({ response }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      )
+    }
+    
+    // Add context from previous messages if available
+    const chatContext = previousMessages.length > 0 
+      ? previousMessages.map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }))
+      : []
+    
+    // Create messages array for the API request
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...chatContext,
+      { role: "user", content: message }
+    ]
 
-    // Generate advice with OpenAI
-    console.log('Generating trading advice with OpenAI');
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: `You are EdriziAI, a financial trading assistant specializing in Quantumflow trading strategies.
-            
-            Follow these guidelines:
-            - Adapt your advice to the user's experience level (${userLevel})
-            - Consider their risk profile (${riskProfile}) in all recommendations
-            - Maximum position size allowed: ${maxPositionSize}
-            - If the user is a beginner, focus more on education than specific trading advice
-            - For intermediate users, provide both educational content and trading suggestions
-            - For advanced users, focus on sophisticated strategies and technical analysis
-            - Always emphasize risk management
-            - Respond in Dutch unless specifically asked for English
-            - Keep responses clear and concise`
-          },
-          { 
-            role: 'user', 
-            content: `${message}\n\nCurrent market context: ${JSON.stringify(context)}`
-          }
-        ],
-      }),
-    });
+    console.log('Sending request to OpenAI with messages:', JSON.stringify(messages.slice(0, 2)))
+    
+    // Call OpenAI API
+    const completion = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: messages,
+      max_tokens: 1000,
+      temperature: 0.7,
+    })
 
-    const data = await response.json();
-    const generatedAdvice = data.choices[0].message.content;
+    // Extract the assistant's response
+    const response = completion.data.choices[0]?.message?.content || "I apologize, but I couldn't generate a response. Please try asking in a different way."
+    
+    console.log(`Generated response: ${response.substring(0, 100)}...`)
 
-    // Log the advice being sent back
-    console.log('Generated trading advice successfully');
-
-    // Store this interaction for future analysis
-    await supabase.from('agent_collected_data').insert({
-      agent_id: 'EdriziAI',
-      content: { 
-        user_query: message,
-        generated_advice: generatedAdvice,
-        context: context 
-      },
-      data_type: 'trading_advice',
-      source: 'chat_interaction'
-    });
-
+    // Return the response
     return new Response(
-      JSON.stringify({ advice: generatedAdvice }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+      JSON.stringify({ response }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+
   } catch (error) {
-    console.error('Error generating trading advice:', error);
+    console.error('Error generating trading advice:', error)
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Failed to generate trading advice' }),
       { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500 
       }
-    );
+    )
   }
-});
+})

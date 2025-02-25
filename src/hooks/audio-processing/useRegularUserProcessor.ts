@@ -54,14 +54,7 @@ export const useRegularUserProcessor = ({
       
       await generateRegularAIResponse(
         userInput,
-        (response: string) => {
-          addAIResponseToChatHistory({
-            id: Date.now().toString(),
-            content: response,
-            role: 'assistant',
-            timestamp: new Date()
-          })
-        },
+        addAIResponseToChatHistory,
         generateSpeech,
         setProcessingError,
         controller
@@ -88,19 +81,14 @@ export const useRegularUserProcessor = ({
       const controller = new AbortController()
       pendingRequestRef.current = controller
       
+      console.log('Processing user message:', message)
+      
       await generateTradingAdvice(
         message,
         user?.id,
         getUserLevel(userProfile),
         previousMessages,
-        (response: string) => {
-          addAIResponseToChatHistory({
-            id: Date.now().toString(),
-            content: response,
-            role: 'assistant',
-            timestamp: new Date()
-          })
-        },
+        addAIResponseToChatHistory,
         generateSpeech,
         setProcessingError,
         generateRegularAIResponseHandler,

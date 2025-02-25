@@ -1,12 +1,10 @@
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { ChatMessage } from '@/components/admin/types/chat-types'
 import { VoiceTemplate } from '@/lib/types'
-import { useToast } from '@/hooks/use-toast'
-import { preprocessUserInput, createUserMessage } from './utils/messageUtils'
 import { generateSpeechFromText } from './utils/speechUtils'
-import { handleWebRequest } from './utils/webRequestHandler'
 import { transcribeAudio } from './utils/transcriptionUtils'
+import { handleWebRequest } from './utils/webRequestHandler'
 
 interface BaseAudioProcessorProps {
   selectedVoice: VoiceTemplate
@@ -14,167 +12,141 @@ interface BaseAudioProcessorProps {
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>
 }
 
-export const useBaseAudioProcessor = ({ 
-  selectedVoice, 
-  playAudio, 
-  setChatHistory,
+export const useBaseAudioProcessor = ({
+  selectedVoice,
+  playAudio,
+  setChatHistory
 }: BaseAudioProcessorProps) => {
-  const { toast } = useToast()
   const [lastTranscription, setLastTranscription] = useState<string>('')
   const [lastUserInput, setLastUserInput] = useState<string>('')
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [processingError, setProcessingError] = useState<string | null>(null)
-  const [processingStage, setProcessingStage] = useState<string>('')
 
-  // Optimized function to add messages to chat history - reduces rerenders
-  const addMessageToChatHistory = useCallback((message: ChatMessage) => {
-    setChatHistory(prev => [...prev, message])
+  // Helper to add user messages to chat history
+  const addUserMessageToChatHistory = useCallback((message: string) => {
+    setChatHistory(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        content: message,
+        role: 'user',
+        timestamp: new Date()
+      }
+    ])
   }, [setChatHistory])
 
-  // Optimized function to generate speech from text
+  // Helper to add AI responses to chat history
+  const addAIResponseToChatHistory = useCallback((response: string | ChatMessage) => {
+    setChatHistory(prev => [
+      ...prev,
+      typeof response === 'string' 
+        ? {
+            id: Date.now().toString(),
+            content: response,
+            role: 'assistant',
+            timestamp: new Date()
+          }
+        : response
+    ])
+  }, [setChatHistory])
+
+  // Generate speech from text
   const generateSpeech = useCallback(async (text: string) => {
-    return generateSpeechFromText(
-      text, 
-      selectedVoice, 
-      playAudio, 
-      setProcessingStage, 
-      setProcessingError
-    )
-  }, [selectedVoice, playAudio])
-
-  // Function to handle audio processing with optimizations for responsiveness
-  const processAudio = useCallback(async (audioUrl: string, processingFn: (transcription: string, previousMessages: any[]) => Promise<void>) => {
-    if (!audioUrl) return
-
-    setIsProcessing(true)
-    setProcessingError(null)
-    setProcessingStage('Transcribing audio')
-    
     try {
-      // Transcribe the audio
-      const transcription = await transcribeAudio(
-        audioUrl,
-        setProcessingStage,
-        setProcessingError
-      )
+      console.log('Generating speech for text:', text.substring(0, 50) + '...')
       
-      if (!transcription) {
-        setIsProcessing(false)
+      if (text.length === 0) {
+        console.warn('Empty text passed to generateSpeech')
         return
       }
       
+      const audioContent = await generateSpeechFromText(text, selectedVoice.id)
+      
+      if (!audioContent) {
+        console.error('No audio content generated')
+        return
+      }
+      
+      // Play the audio
+      playAudio(audioContent)
+      
+    } catch (error) {
+      console.error('Error in generateSpeech:', error)
+      setProcessingError('Failed to generate speech')
+    }
+  }, [playAudio, selectedVoice.id])
+
+  // Process audio recording
+  const processAudio = useCallback(async (
+    audioUrl: string,
+    messageProcessor: (message: string, previousMessages?: any[]) => Promise<void>
+  ) => {
+    if (!audioUrl) return
+    
+    setIsProcessing(true)
+    setProcessingError(null)
+
+    try {
+      // Transcribe the audio
+      const transcription = await transcribeAudio(audioUrl)
+      
+      if (!transcription) {
+        throw new Error('Failed to transcribe audio')
+      }
+      
+      console.log('Transcription received:', transcription)
       setLastTranscription(transcription)
       setLastUserInput(transcription)
       
       // Add user message to chat history
-      const userMessage = createUserMessage(transcription)
-      addMessageToChatHistory(userMessage)
-
-      // Check if this is a web browsing request
-      const { isWebRequest, processedInput } = preprocessUserInput(transcription)
+      addUserMessageToChatHistory(transcription)
       
-      if (isWebRequest) {
-        await handleWebRequest(transcription, addMessageToChatHistory, generateSpeech, setIsProcessing)
-        return
+      // Check if this is a web request
+      const isWebRequest = handleWebRequest(transcription)
+      
+      if (!isWebRequest) {
+        // Process the message
+        await messageProcessor(transcription)
       }
-
-      // Get previous messages for context
-      let previousMessages: any[] = []
-      setChatHistory(prev => {
-        // Take the last 10 messages
-        previousMessages = prev.slice(-10).map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        }))
-        return prev
-      })
-
-      toast({
-        title: "Verwerken",
-        description: "AI-antwoord wordt gegenereerd...",
-      })
-
-      // Process with the provided function
-      setProcessingStage('Generating AI response')
-      await processingFn(processedInput, previousMessages)
+      
     } catch (error) {
-      console.error('Error in audio processing flow:', error)
-      setProcessingError('An unexpected error occurred during audio processing.')
-      toast({
-        title: "Processing Error",
-        description: "Failed to process your request. Please try again later.",
-        variant: "destructive",
-      })
+      console.error('Error processing audio:', error)
+      setProcessingError('Failed to process audio recording')
     } finally {
       setIsProcessing(false)
     }
-  }, [toast, addMessageToChatHistory, generateSpeech])
+  }, [addUserMessageToChatHistory])
 
-  // Function to handle direct text input with optimizations
-  const processDirectText = useCallback(async (text: string, processingFn: (text: string, previousMessages: any[]) => Promise<void>) => {
+  // Process direct text input
+  const processDirectText = useCallback(async (
+    text: string,
+    messageProcessor: (message: string, previousMessages?: any[]) => Promise<void>
+  ) => {
     if (!text.trim()) return
-
+    
     setIsProcessing(true)
-    setProcessingStage('Processing text input')
     setProcessingError(null)
     setLastUserInput(text)
 
     try {
-      // Check if this is a web browsing request
-      const { isWebRequest, processedInput } = preprocessUserInput(text)
-      
       // Add user message to chat history
-      const userMessage = createUserMessage(text)
-      addMessageToChatHistory(userMessage)
-
-      if (isWebRequest) {
-        await handleWebRequest(text, addMessageToChatHistory, generateSpeech, setIsProcessing)
-        return
+      addUserMessageToChatHistory(text)
+      
+      // Check if this is a web request
+      const isWebRequest = handleWebRequest(text)
+      
+      if (!isWebRequest) {
+        // Process the message
+        await messageProcessor(text)
       }
-
-      toast({
-        title: "Verwerken",
-        description: "Antwoord wordt gegenereerd...",
-      })
-
-      // Get previous messages for context - optimized to reduce state changes
-      let previousMessages: any[] = []
-      setChatHistory(prev => {
-        // Take the last 10 messages
-        previousMessages = prev.slice(-10).map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        }))
-        return prev
-      })
-
-      // Process with the provided function
-      setProcessingStage('Generating AI response')
-      await processingFn(processedInput, previousMessages)
+      
     } catch (error) {
       console.error('Error processing direct text:', error)
-      setProcessingError('Failed to process your message. Please try again.')
-      toast({
-        title: "Processing Error",
-        description: "An error occurred while processing your message",
-        variant: "destructive",
-      })
+      setProcessingError('Failed to process your message')
     } finally {
       setIsProcessing(false)
     }
-  }, [toast, addMessageToChatHistory, generateSpeech])
-
-  // Add an AI response to chat history
-  const addAIResponseToChatHistory = useCallback((response: string) => {
-    const aiMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: response,
-      timestamp: new Date()
-    }
-    
-    addMessageToChatHistory(aiMessage)
-  }, [addMessageToChatHistory])
+  }, [addUserMessageToChatHistory])
 
   return {
     lastTranscription,
@@ -182,7 +154,6 @@ export const useBaseAudioProcessor = ({
     setLastUserInput,
     isProcessing,
     processingError,
-    processingStage,
     generateSpeech,
     processAudio,
     processDirectText,
