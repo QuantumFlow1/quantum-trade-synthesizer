@@ -1,39 +1,45 @@
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
 import { Input } from '@/components/ui/input'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPlayback } from '@/hooks/use-audio-playback'
+import { useVoiceGreeting } from '@/hooks/use-voice-greeting'
+import { useAudioPreview } from '@/hooks/use-audio-preview'
+import { useAudioProcessing } from '@/hooks/use-audio-processing'
 import { VoiceSelector } from './voice-assistant/VoiceSelector'
 import { AudioControls } from './voice-assistant/AudioControls'
 import { TranscriptionDisplay } from './voice-assistant/TranscriptionDisplay'
 import { DirectTextInput } from './voice-assistant/DirectTextInput'
 import { VOICE_TEMPLATES } from '@/lib/voice-templates'
-import { VoiceTemplate } from '@/lib/types'
-import { supabase } from '@/lib/supabase'
+import { useToast } from '@/hooks/use-toast'
 
 export const VoiceAssistant = () => {
   const { toast } = useToast()
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
   const { isPlaying, playAudio } = useAudioPlayback()
-  const [isProcessing, setIsProcessing] = useState(false)
   const [lastTranscription, setLastTranscription] = useState<string>('')
   const [directText, setDirectText] = useState<string>('')
-  const [selectedVoice, setSelectedVoice] = useState<VoiceTemplate>(VOICE_TEMPLATES[0])
-  const [previewAudioUrl, setPreviewAudioUrl] = useState<string | null>(null)
-  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false)
+  const [selectedVoice, setSelectedVoice] = useState(VOICE_TEMPLATES[0])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
-  const hasGreeted = useRef(false)
 
-  useEffect(() => {
-    if (!hasGreeted.current && !isPlaying) {
-      const greetingMessage = "Hallo! Ik ben je AI assistent. Hoe kan ik je vandaag helpen?"
-      playAudio(greetingMessage, selectedVoice.id, selectedVoice.name)
-      hasGreeted.current = true
-    }
-  }, [selectedVoice.id, selectedVoice.name, isPlaying, playAudio])
+  const {
+    previewAudioUrl,
+    setPreviewAudioUrl,
+    isPreviewPlaying,
+    setIsPreviewPlaying,
+    previewAudioRef,
+    playPreview,
+    stopPreview
+  } = useAudioPreview()
+
+  const { isProcessing, processAudio } = useAudioProcessing(
+    selectedVoice,
+    previewAudioUrl,
+    setLastTranscription
+  )
+
+  useVoiceGreeting(selectedVoice, isPlaying)
 
   const handleStopRecording = async () => {
     const audioUrl = await stopRecording()
@@ -57,78 +63,6 @@ export const VoiceAssistant = () => {
 
     const audioUrl = URL.createObjectURL(file)
     setPreviewAudioUrl(audioUrl)
-  }
-
-  const playPreview = async () => {
-    if (!previewAudioUrl || isPreviewPlaying) return
-
-    if (previewAudioRef.current) {
-      try {
-        setIsPreviewPlaying(true)
-        await previewAudioRef.current.play()
-      } catch (error) {
-        console.error('Error playing preview:', error)
-        toast({
-          title: "Fout",
-          description: "Kon de audio preview niet afspelen",
-          variant: "destructive",
-        })
-      }
-    }
-  }
-
-  const stopPreview = () => {
-    if (previewAudioRef.current) {
-      previewAudioRef.current.pause()
-      previewAudioRef.current.currentTime = 0
-      setIsPreviewPlaying(false)
-    }
-  }
-
-  const processAudio = async () => {
-    if (!previewAudioUrl) return
-
-    setIsProcessing(true)
-    try {
-      const response = await fetch(previewAudioUrl)
-      const blob = await response.blob()
-      const reader = new FileReader()
-      
-      reader.onloadend = async () => {
-        const base64Data = (reader.result as string).split('base64,')[1]
-        
-        const { data, error } = await supabase.functions.invoke('process-voice', {
-          body: { 
-            audioData: base64Data,
-            voiceTemplate: selectedVoice.prompt
-          }
-        })
-
-        if (error) throw error
-
-        if (!data?.transcription) {
-          throw new Error('Geen transcriptie ontvangen')
-        }
-
-        setLastTranscription(data.transcription)
-        
-        toast({
-          title: "Verwerkt",
-          description: data.transcription,
-        })
-      }
-      
-      reader.readAsDataURL(blob)
-    } catch (error) {
-      console.error('Error processing audio:', error)
-      toast({
-        title: "Fout",
-        description: "Kon audio niet verwerken. Probeer het opnieuw.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsProcessing(false)
-    }
   }
 
   const handleVoiceChange = (voiceId: string) => {
@@ -214,4 +148,3 @@ export const VoiceAssistant = () => {
     </Card>
   )
 }
-
