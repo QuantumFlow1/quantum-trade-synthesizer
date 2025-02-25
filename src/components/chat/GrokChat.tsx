@@ -7,7 +7,7 @@ import { useGrokChat } from './useGrokChat'
 import { useEffect } from 'react'
 import { toast } from '@/components/ui/use-toast'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function GrokChat() {
@@ -42,25 +42,25 @@ export function GrokChat() {
       <CardContent className="p-0 flex flex-col h-[600px]">
         {/* API Status Alert */}
         {apiAvailable === false && (
-          <Alert variant="destructive" className="m-4 rounded-md">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>API Status</AlertTitle>
+          <Alert variant="warning" className="m-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>AI Service Status</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
-              <p>De Grok API is momenteel niet beschikbaar. We gebruiken een alternatieve AI-service.</p>
+              <p>Our primary AI service (Grok) is currently unavailable. We have automatically switched to our backup AI service to ensure uninterrupted assistance.</p>
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="self-end" 
+                className="self-end hover:bg-yellow-100" 
                 onClick={handleRetryConnection}
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Controleren...
+                    Checking connection...
                   </>
                 ) : (
-                  'Verbinding opnieuw proberen'
+                  'Try reconnecting'
                 )}
               </Button>
             </AlertDescription>
@@ -83,3 +83,4 @@ export function GrokChat() {
     </Card>
   )
 }
+
