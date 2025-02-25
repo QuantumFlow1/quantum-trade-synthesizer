@@ -64,10 +64,12 @@ export const useSuperAdminProcessor = ({
     );
   }
 
+  // Fix: Change recheckGrok3Availability to return Promise<void> instead of Promise<boolean>
   const recheckGrok3Availability = async (): Promise<void> => {
     console.log('Manually rechecking Grok3 API availability...')
     await checkGrok3Availability()
     console.log('Grok3 availability check complete')
+    // No return value - this function now correctly returns Promise<void>
   }
 
   const processAudio = async (audioUrl: string): Promise<void> => {
