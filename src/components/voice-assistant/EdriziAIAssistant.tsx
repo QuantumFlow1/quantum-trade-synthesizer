@@ -1,435 +1,237 @@
 
-import { useState, useRef, useEffect } from 'react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Mic, Send, StopCircle, FileAudio, Play, X, Trash2, BookOpen, BadgeDollarSign, TrendingUp } from 'lucide-react'
-import { useAudioRecorder } from '@/hooks/use-audio-recorder'
-import { useAudioPlayback } from '@/hooks/use-audio-playback'
-import { useAudioPreview } from '@/hooks/use-audio-preview'
-import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
+import { useState, useEffect, useRef } from 'react'
 import { VOICE_TEMPLATES } from '@/lib/voice-templates'
-import { ChatHistory } from '@/components/admin/voice-assistant/ChatHistory'
-import { ChatMessage } from '@/components/admin/types/chat-types'
-import { useToast } from '@/hooks/use-toast'
-import { useAuth } from '@/components/auth/AuthProvider'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Mic, MicOff, Send, LoaderIcon, XCircle, MessageSquare, Bot, User, Sparkles, CheckCircle } from 'lucide-react'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { DirectTextInput } from './audio/DirectTextInput'
+import { AudioControls } from './audio/AudioControls'
+import { VoiceSelector } from './audio/VoiceSelector'
+import { TranscriptionDisplay } from './audio/TranscriptionDisplay'
+import { useAudioRecorder } from '@/hooks/use-audio-recorder'
+import { useAudioPreview } from '@/hooks/use-audio-preview'
+import { useVoiceGreeting } from '@/hooks/use-voice-greeting'
+import { useAudioPlayback } from '@/hooks/use-audio-playback'
+import { useVoiceSelection } from '@/hooks/use-voice-selection'
+import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
+import { supabase } from '@/lib/supabase'
+import { useGrok3Availability } from '@/hooks/audio-processing/grok3/useGrok3Availability'
+
+interface ChatMessage {
+  id: string;
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+}
 
 export const EdriziAIAssistant = () => {
-  const { toast } = useToast()
-  const { user, userProfile } = useAuth() // Use Auth provider to get current user
-  const { isRecording, startRecording, stopRecording } = useAudioRecorder()
-  const { isPlaying, playAudio: originalPlayAudio } = useAudioPlayback()
-  const [directText, setDirectText] = useState<string>('')
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { user, userProfile } = useAuth()
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
-  const [activeTab, setActiveTab] = useState<string>('chat')
-  const previewAudioRef = useRef<HTMLAudioElement>(null)
+  const [showControls, setShowControls] = useState(false)
+  const [activeTab, setActiveTab] = useState('chat')
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
+  const chatContainerRef = useRef<HTMLDivElement | null>(null)
+  const chatBoxRef = useRef<HTMLDivElement | null>(null)
   
-  // Check if user is super admin
-  const isSuperAdmin = userProfile?.role === 'super_admin'
+  const { grok3Available, checkGrok3Availability, resetGrok3Connection } = useGrok3Availability()
   
-  // Create a user-specific storage key
-  const STORAGE_KEY = user ? `edriziAIChatHistory_${user.id}` : 'edriziAIChatHistory_guest'
-
-  // If user is super admin, don't render this component
-  // This prevents conflicts between the two voice assistants
-  useEffect(() => {
-    if (isSuperAdmin) {
-      console.log('EdriziAIAssistant not rendering for super admin')
-    } else {
-      console.log('EdriziAIAssistant rendering for regular user')
-    }
-  }, [isSuperAdmin])
-
-  if (isSuperAdmin) {
-    return null
-  }
-
-  // Common trading questions for quick access
-  const quickQuestions = [
-    "Wat zijn de beste handelsstrategieën voor beginners?",
-    "Hoe kan ik mijn risico beheren bij het handelen?",
-    "Kun je de huidige markttrends analyseren?",
-    "Wat zijn de tekenen van een bullish of bearish markt?",
-    "Hoe stel ik een stop-loss en take-profit in?"
-  ]
-
-  // Get the appropriate EdriziAI voice template for regular users
-  let edriziVoice = VOICE_TEMPLATES.find(v => v.id === 'EdriziAI-info')
+  // Audio recorder
+  const { isRecording, startRecording, stopRecording } = useAudioRecorder()
   
-  if (!edriziVoice) {
-    console.error('EdriziAI voice template not found')
-    // Fallback to first available voice if preferred voice is not found
-    edriziVoice = VOICE_TEMPLATES[0]
-    console.log('Falling back to voice:', edriziVoice.name)
-  } else {
-    console.log('Using voice:', edriziVoice.name, 'for regular user')
-  }
-
-  const {
-    previewAudioUrl,
-    setPreviewAudioUrl,
-    isPreviewPlaying,
-    setIsPreviewPlaying,
-    playPreview,
-    stopPreview
+  // Audio preview
+  const { 
+    previewAudioUrl, 
+    setPreviewAudioUrl, 
+    isPreviewPlaying, 
+    setIsPreviewPlaying, 
+    playPreview, 
+    stopPreview 
   } = useAudioPreview()
-
-  // Create a wrapper for playAudio to match the expected signature
-  const playAudioWrapper = (url: string) => {
-    originalPlayAudio(url, edriziVoice.id, edriziVoice.name)
-  }
-
+  
+  // Voice selection
   const {
+    selectedVoice,
+    setSelectedVoice,
+    selectedVoiceIndex,
+    setSelectedVoiceIndex,
+  } = useVoiceSelection()
+  
+  // Audio playback for the selected voice
+  const { isPlaying, playAudio } = useAudioPlayback()
+  
+  // Audio processing for the selected voice
+  const { 
     lastTranscription,
     lastUserInput,
     setLastUserInput,
     isProcessing,
+    processingError,
+    processingStage,
     processAudio,
     processDirectText
   } = useEdriziAudioProcessor({
-    selectedVoice: edriziVoice,
-    playAudio: playAudioWrapper,
+    selectedVoice,
+    playAudio,
     setChatHistory,
-    isSuperAdmin: false // Explicitly set to false for regular users
+    isSuperAdmin: userProfile?.role === 'super_admin' || userProfile?.role === 'lov_trader'
   })
-
-  // Load chat history from localStorage on component mount or when user changes
-  useEffect(() => {
-    const savedHistory = localStorage.getItem(STORAGE_KEY)
-    if (savedHistory) {
-      try {
-        const parsedHistory = JSON.parse(savedHistory)
-        if (Array.isArray(parsedHistory)) {
-          setChatHistory(parsedHistory)
-        }
-      } catch (error) {
-        console.error('Error parsing chat history:', error)
-      }
+  
+  // Voice greeting (welcome message)
+  useVoiceGreeting({ playAudio, selectedVoice, isFirstVisit: chatHistory.length === 0 })
+  
+  // Add a message to the chat history
+  const addMessage = (text: string, sender: 'user' | 'bot') => {
+    const newMessage: ChatMessage = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      text,
+      sender,
+      timestamp: new Date()
     }
     
-    // Add a greeting message if no history exists
-    if (!savedHistory || JSON.parse(savedHistory || '[]').length === 0) {
-      const greetingMessage: ChatMessage = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: "Welkom bij EdriziAI. Ik ben je Quantumflow trading specialist. Ik kan je helpen met marktanalyse, trading strategieën, risicobeheer en educatieve content om je handelsvaardigheden te verbeteren. Hoe kan ik je vandaag assisteren?",
-        timestamp: new Date()
-      }
-      setChatHistory([greetingMessage])
-    }
-  }, [STORAGE_KEY, user]) // Re-run when STORAGE_KEY or user changes
-
-  // Save chat history to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistory))
-  }, [chatHistory, STORAGE_KEY])
-
+    setChatHistory(prevHistory => [...prevHistory, newMessage])
+  }
+  
+  // Process the recorded audio
   const handleStopRecording = async () => {
     const audioUrl = await stopRecording()
     if (audioUrl) {
       setPreviewAudioUrl(audioUrl)
-      await processAudio(audioUrl)
+      
+      // Process the audio
+      addMessage('Audio opname wordt verwerkt...', 'user')
+      processAudio(audioUrl)
     }
   }
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('audio/')) {
-      toast({
-        title: "Fout",
-        description: "Alleen audiobestanden zijn toegestaan",
-        variant: "destructive",
-      })
-      return
+  
+  // Process the direct text input
+  const handleDirectTextSubmit = (text: string) => {
+    if (!text.trim()) return
+    
+    // Add the message to the chat history
+    addMessage(text, 'user')
+    
+    // Process the direct text input
+    processDirectText(text)
+  }
+  
+  // Scroll to the bottom of the chat when the chat history changes
+  useEffect(() => {
+    if (chatBoxRef.current) {
+      chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight
     }
-
-    const audioUrl = URL.createObjectURL(file)
-    setPreviewAudioUrl(audioUrl)
-    await processAudio(audioUrl)
-  }
-
-  const triggerFileUpload = () => {
-    fileInputRef.current?.click()
-  }
-
-  const handleDirectTextSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (directText.trim()) {
-      processDirectText(directText)
-      setDirectText('') // Clear after submission
-    }
-  }
-
-  const handleQuickQuestion = (question: string) => {
-    processDirectText(question)
-  }
-
-  const clearHistory = () => {
-    const confirmClear = window.confirm('Weet je zeker dat je de chatgeschiedenis wilt wissen?')
-    if (confirmClear) {
-      setChatHistory([])
-      localStorage.removeItem(STORAGE_KEY)
-      toast({
-        title: "Chat Geschiedenis",
-        description: "De chatgeschiedenis is gewist",
-      })
-    }
-  }
+  }, [chatHistory])
 
   return (
-    <Card className="w-full mx-auto mt-2">
+    <Card className="w-full max-w-4xl mx-auto shadow-lg">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-center flex-1">
-            EdriziAI Quantumflow Specialist
-          </CardTitle>
-          {chatHistory.length > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={clearHistory}
-              className="text-destructive hover:text-destructive/90"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Wis Geschiedenis
-            </Button>
-          )}
+          <div className="flex flex-col">
+            <CardTitle>Edrizi AI Assistant</CardTitle>
+            <CardDescription>Je persoonlijke AI-assistent</CardDescription>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant={grok3Available ? "default" : "outline"} className="flex items-center space-x-1">
+              {grok3Available ? (
+                <>
+                  <Sparkles className="w-3 h-3" />
+                  <span>Grok3 Actief</span>
+                </>
+              ) : (
+                <>
+                  <Bot className="w-3 h-3" />
+                  <span>Standaard AI</span>
+                </>
+              )}
+            </Badge>
+            <VoiceSelector 
+              selectedVoiceIndex={selectedVoiceIndex}
+              setSelectedVoiceIndex={setSelectedVoiceIndex}
+              voiceTemplates={VOICE_TEMPLATES}
+              setSelectedVoice={setSelectedVoice}
+              disabled={isRecording || isProcessing || isPlaying}
+            />
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Tabs defaultValue="chat" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="chat" className="flex items-center gap-1">
-              <Mic className="h-4 w-4" />
-              <span>Chat</span>
-            </TabsTrigger>
-            <TabsTrigger value="learn" className="flex items-center gap-1">
-              <BookOpen className="h-4 w-4" />
-              <span>Leren</span>
-            </TabsTrigger>
-            <TabsTrigger value="trading" className="flex items-center gap-1">
-              <TrendingUp className="h-4 w-4" />
-              <span>Trading</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="chat" className="space-y-4">
-            {/* Chat History */}
-            <ChatHistory chatHistory={chatHistory} />
-
-            {/* Text Input Form */}
-            <form onSubmit={handleDirectTextSubmit} className="flex space-x-2 items-center">
-              <Input
-                type="text"
-                placeholder={`Typ een bericht naar ${edriziVoice.name}...`}
-                value={directText}
-                onChange={(e) => setDirectText(e.target.value)}
-                disabled={isProcessing || isRecording || isPlaying}
-                className="flex-1"
-              />
-              <Button 
-                type="submit" 
-                disabled={!directText.trim() || isProcessing || isRecording || isPlaying}
-                size="icon"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
-
-            {/* Audio Controls */}
-            <div className="flex flex-wrap gap-2 justify-center">
-              {!isRecording ? (
-                <Button
-                  onClick={startRecording}
-                  disabled={isProcessing || isPlaying}
-                  variant="outline"
-                  size="sm"
-                  className={isRecording ? "bg-red-100 hover:bg-red-200 text-red-500" : ""}
-                >
-                  <Mic className="h-4 w-4 mr-2" />
-                  Start Opname
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleStopRecording}
-                  variant="outline"
-                  size="sm"
-                  className="bg-red-100 hover:bg-red-200 text-red-500"
-                >
-                  <StopCircle className="h-4 w-4 mr-2" />
-                  Stop Opname
-                </Button>
-              )}
-
-              <Button
-                onClick={triggerFileUpload}
-                disabled={isRecording || isProcessing}
-                variant="outline"
-                size="sm"
-              >
-                <FileAudio className="h-4 w-4 mr-2" />
-                Upload Audio
-              </Button>
-
-              {previewAudioUrl && !isPreviewPlaying ? (
-                <Button
-                  onClick={playPreview}
-                  disabled={isRecording || !previewAudioUrl}
-                  variant="outline"
-                  size="sm"
-                >
-                  <Play className="h-4 w-4 mr-2" />
-                  Speel Opname
-                </Button>
-              ) : previewAudioUrl ? (
-                <Button
-                  onClick={stopPreview}
-                  disabled={isRecording || !previewAudioUrl}
-                  variant="outline"
-                  size="sm"
-                >
-                  <StopCircle className="h-4 w-4 mr-2" />
-                  Stop Afspelen
-                </Button>
-              ) : null}
-
-              {previewAudioUrl && (
-                <Button
-                  onClick={() => setPreviewAudioUrl(null)}
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive"
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Wis Opname
-                </Button>
-              )}
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="learn" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="p-4 bg-secondary/20 hover:bg-secondary/30 transition-colors cursor-pointer">
-                <div className="flex flex-col space-y-2">
-                  <h3 className="font-medium">Basis Trading Principes</h3>
-                  <p className="text-sm text-muted-foreground">Leer over fundamentele concepten zoals support, resistance en trends.</p>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => processDirectText("Leg uit wat support en resistance is in trading")}
-                  >
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    Beginnen Met Leren
-                  </Button>
-                </div>
-              </Card>
-              
-              <Card className="p-4 bg-secondary/20 hover:bg-secondary/30 transition-colors cursor-pointer">
-                <div className="flex flex-col space-y-2">
-                  <h3 className="font-medium">Risicobeheer</h3>
-                  <p className="text-sm text-muted-foreground">Ontdek hoe je risico's effectief kunt beheren bij het handelen.</p>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => processDirectText("Hoe kan ik het risico in mijn trades beheren?")}
-                  >
-                    <BadgeDollarSign className="h-4 w-4 mr-2" />
-                    Leer Over Risicobeheer
-                  </Button>
-                </div>
-              </Card>
-              
-              <Card className="p-4 bg-secondary/20 hover:bg-secondary/30 transition-colors cursor-pointer">
-                <div className="flex flex-col space-y-2">
-                  <h3 className="font-medium">Technische Analyse</h3>
-                  <p className="text-sm text-muted-foreground">Leer grafiekpatronen en indicatoren te lezen.</p>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => processDirectText("Wat zijn de meest gebruikte technische indicatoren?")}
-                  >
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Verken Technische Analyse
-                  </Button>
-                </div>
-              </Card>
-              
-              <Card className="p-4 bg-secondary/20 hover:bg-secondary/30 transition-colors cursor-pointer">
-                <div className="flex flex-col space-y-2">
-                  <h3 className="font-medium">Trading Psychologie</h3>
-                  <p className="text-sm text-muted-foreground">Begrijp de emotionele aspecten van trading en hoe je ze kunt beheersen.</p>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => processDirectText("Hoe kan ik emoties onder controle houden tijdens het traden?")}
-                  >
-                    <BookOpen className="h-4 w-4 mr-2" />
-                    Ontdek Trading Psychologie
-                  </Button>
-                </div>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="trading" className="space-y-4">
-            <h3 className="font-medium mb-2">Veelgestelde Trading Vragen</h3>
-            <div className="grid grid-cols-1 gap-2">
-              {quickQuestions.map((question, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start h-auto py-2 text-left"
-                  onClick={() => handleQuickQuestion(question)}
-                >
-                  <TrendingUp className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{question}</span>
-                </Button>
-              ))}
-            </div>
-            
-            <div className="mt-4">
-              <h3 className="font-medium mb-2">Stel een Gerichte Trading Vraag</h3>
-              <form onSubmit={handleDirectTextSubmit} className="flex space-x-2">
-                <Input
-                  type="text"
-                  placeholder="Stel je trading vraag hier..."
-                  value={directText}
-                  onChange={(e) => setDirectText(e.target.value)}
-                  disabled={isProcessing || isRecording || isPlaying}
-                  className="flex-1"
-                />
-                <Button 
-                  type="submit" 
-                  disabled={!directText.trim() || isProcessing || isRecording || isPlaying}
-                  size="icon"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
       
-      <input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        accept="audio/*"
-        onChange={handleFileUpload}
-      />
-
-      <audio 
-        ref={previewAudioRef}
-        src={previewAudioUrl || undefined}
-        onEnded={() => stopPreview()}
-        className="hidden"
-      />
-    </Card>
-  )
-}
+      <CardContent className="px-2 pb-0">
+        <Tabs defaultValue="chat" value={activeTab} onValueChange={setActiveTab}>
+          <div className="flex justify-between items-center px-3">
+            <TabsList>
+              <TabsTrigger value="chat">Chat</TabsTrigger>
+              <TabsTrigger value="settings">Instellingen</TabsTrigger>
+            </TabsList>
+            
+            {activeTab === 'chat' && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-xs"
+                onClick={() => resetGrok3Connection()}
+                disabled={isProcessing}
+              >
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Test Verbinding
+              </Button>
+            )}
+          </div>
+          
+          <TabsContent value="chat" className="m-0 p-0">
+            <div 
+              ref={chatContainerRef}
+              className="relative rounded-md h-[400px] mb-2 p-3"
+            >
+              <div 
+                ref={chatBoxRef}
+                className="h-full overflow-y-auto pr-2 space-y-4"
+              >
+                {chatHistory.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-center p-6 text-muted-foreground">
+                    <Bot className="w-12 h-12 mb-4 opacity-20" />
+                    <p>
+                      Welkom bij de Edrizi AI Assistant!<br/>
+                      Ik ben hier om al je vragen te beantwoorden.
+                    </p>
+                    <p className="text-sm mt-2">
+                      Begin een gesprek door te typen of op de microfoonknop te klikken.
+                    </p>
+                  </div>
+                ) : (
+                  chatHistory.map((message) => (
+                    <div 
+                      key={message.id} 
+                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div 
+                        className={`rounded-lg px-4 py-2 max-w-[80%] flex ${
+                          message.sender === 'user' 
+                            ? 'bg-primary text-primary-foreground ml-12' 
+                            : 'bg-muted mr-12'
+                        }`}
+                      >
+                        <div className="mr-2 mt-1">
+                          {message.sender === 'user' ? (
+                            <User className="w-4 h-4" />
+                          ) : (
+                            <Bot className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="whitespace-pre-line text-sm">{message.text}</p>
+                          <p className="text-xs opacity-50 mt-1">
+                            {message.timestamp.toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+                
+                {/* Processing state indicators */}
+                {isProcessing && (
+                  <div className="flex justify-start">
+                    <div className="rounded-lg px-4 py-2 max-w-[80%] bg-muted mr-12">
+                      <div

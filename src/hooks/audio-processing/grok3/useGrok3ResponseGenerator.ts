@@ -78,7 +78,7 @@ export const useGrok3ResponseGenerator = ({
       const { data: grok3Data, error: grok3Error } = await supabase.functions.invoke('grok3-response', {
         body: { 
           message: userInput,
-          context: context 
+          context: context || []
         }
       })
 

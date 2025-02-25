@@ -8,6 +8,7 @@ export const useGrok3Availability = () => {
   const [grok3Available, setGrok3Available] = useState<boolean>(true)
   const [retryCount, setRetryCount] = useState<number>(0)
   const [lastRetryTime, setLastRetryTime] = useState<number>(0)
+  const [isChecking, setIsChecking] = useState<boolean>(false)
   const MAX_RETRIES = 3
   const RETRY_COOLDOWN = 60000 // 1 minuut cooldown tussen hertestpogingen
 
@@ -19,6 +20,13 @@ export const useGrok3Availability = () => {
 
   // Functie om te controleren of Grok3 API beschikbaar is
   const checkGrok3Availability = useCallback(async () => {
+    if (isChecking) {
+      console.log('Er loopt al een Grok3 beschikbaarheidscontrole, wacht op resultaat...')
+      return grok3Available
+    }
+    
+    setIsChecking(true)
+    
     try {
       console.log('Controleren of Grok3 API beschikbaar is...')
       
@@ -37,6 +45,7 @@ export const useGrok3Availability = () => {
           variant: "destructive"
         })
         setGrok3Available(false)
+        setIsChecking(false)
         return false
       }
       
@@ -51,6 +60,7 @@ export const useGrok3Availability = () => {
           variant: "destructive"
         })
         setGrok3Available(false)
+        setIsChecking(false)
         return false
       }
       
@@ -69,11 +79,13 @@ export const useGrok3Availability = () => {
           description: "Schakel over naar standaard AI. Controleer je API-sleutel in Supabase.",
           variant: "destructive"
         })
+        setIsChecking(false)
         return false
       } else if (data?.response === "pong" && data?.status === "available") {
         console.log('Grok3 API is beschikbaar')
         setGrok3Available(true)
         setRetryCount(0) // Reset retryCount bij succesvolle verbinding
+        setIsChecking(false)
         return true
       } else {
         console.warn('Onverwachte response van Grok3 API-controle:', data)
@@ -84,6 +96,7 @@ export const useGrok3Availability = () => {
           description: "Onverwachte respons. Schakel over naar standaard AI.",
           variant: "destructive"
         })
+        setIsChecking(false)
         return false
       }
     } catch (error) {
@@ -95,9 +108,10 @@ export const useGrok3Availability = () => {
         description: "Kon niet verbinden met Grok3 API. Schakel over naar standaard AI.",
         variant: "destructive"
       })
+      setIsChecking(false)
       return false
     }
-  }, [toast])
+  }, [toast, grok3Available, isChecking])
 
   const shouldRetryGrok3 = useCallback(() => {
     const currentTime = Date.now()
@@ -122,11 +136,20 @@ export const useGrok3Availability = () => {
     return false
   }, [retryCount, lastRetryTime])
 
+  const resetGrok3Connection = useCallback(() => {
+    console.log('Grok3 verbinding handmatig resetten...')
+    setRetryCount(0)
+    setLastRetryTime(0)
+    return checkGrok3Availability()
+  }, [checkGrok3Availability])
+
   return {
     grok3Available,
     setGrok3Available,
     retryCount,
     checkGrok3Availability,
-    shouldRetryGrok3
+    shouldRetryGrok3,
+    resetGrok3Connection,
+    isChecking
   }
 }
