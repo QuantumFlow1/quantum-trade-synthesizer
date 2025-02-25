@@ -17,13 +17,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export const EdriziAIAssistant = () => {
   const { toast } = useToast()
-  const { user } = useAuth() // Use Auth provider to get current user
+  const { user, userProfile } = useAuth() // Use Auth provider to get current user
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
   const { isPlaying, playAudio: originalPlayAudio } = useAudioPlayback()
   const [directText, setDirectText] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [activeTab, setActiveTab] = useState<string>('chat')
+  
+  // Check if user is super admin
+  const isSuperAdmin = userProfile?.role === 'super_admin'
   
   // Create a user-specific storage key
   const STORAGE_KEY = user ? `edriziAIChatHistory_${user.id}` : 'edriziAIChatHistory_guest'
@@ -37,13 +40,18 @@ export const EdriziAIAssistant = () => {
     "Hoe stel ik een stop-loss en take-profit in?"
   ]
 
-  // Get the EdriziAI voice template
-  // Changed from const to let to allow reassignment
-  let edriziVoice = VOICE_TEMPLATES.find(v => v.id === 'EdriziAI-info')
+  // Get the appropriate EdriziAI voice template based on user role
+  let edriziVoice = VOICE_TEMPLATES.find(v => 
+    isSuperAdmin ? v.id === 'EdriziAI-admin' : v.id === 'EdriziAI-info'
+  )
+  
   if (!edriziVoice) {
-    console.error('EdriziAI voice template not found')
-    // Fallback to first available voice if EdriziAI is not found
+    console.error('Appropriate EdriziAI voice template not found')
+    // Fallback to first available voice if preferred voice is not found
     edriziVoice = VOICE_TEMPLATES[0]
+    console.log('Falling back to voice:', edriziVoice.name)
+  } else {
+    console.log('Using voice:', edriziVoice.name, 'for user role:', userProfile?.role)
   }
 
   const {
@@ -71,7 +79,8 @@ export const EdriziAIAssistant = () => {
   } = useEdriziAudioProcessor({
     selectedVoice: edriziVoice,
     playAudio: playAudioWrapper,
-    setChatHistory
+    setChatHistory,
+    isSuperAdmin
   })
 
   // Load chat history from localStorage on component mount or when user changes
@@ -163,7 +172,9 @@ export const EdriziAIAssistant = () => {
     <Card className="w-full mx-auto mt-2">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-center flex-1">EdriziAI Quantumflow Specialist</CardTitle>
+          <CardTitle className="text-center flex-1">
+            {isSuperAdmin ? "EdriziAI Admin Assistant" : "EdriziAI Quantumflow Specialist"}
+          </CardTitle>
           {chatHistory.length > 0 && (
             <Button 
               variant="ghost" 
@@ -202,7 +213,7 @@ export const EdriziAIAssistant = () => {
             <form onSubmit={handleDirectTextSubmit} className="flex space-x-2 items-center">
               <Input
                 type="text"
-                placeholder="Typ een bericht naar EdriziAI..."
+                placeholder={`Typ een bericht naar ${edriziVoice.name}...`}
                 value={directText}
                 onChange={(e) => setDirectText(e.target.value)}
                 disabled={isProcessing || isRecording || isPlaying}
@@ -392,15 +403,4 @@ export const EdriziAIAssistant = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Hidden file input for audio upload */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          accept="audio/*"
-          onChange={handleFileUpload}
-        />
-      </CardContent>
-    </Card>
-  );
-};
+        {/*

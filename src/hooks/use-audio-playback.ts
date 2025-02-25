@@ -18,11 +18,12 @@ export const useAudioPlayback = () => {
     console.log(`Text to speak: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`)
     
     try {
-      // For EdriziAI, process the text through the AI first
+      // For EdriziAI voice processing
       let textToSpeak = text;
       
-      if (voiceId === 'EdriziAI-info') {
-        console.log('Processing text with AI before speaking for EdriziAI')
+      // Only process AI responses for EdriziAI voices
+      if (voiceId.includes('EdriziAI')) {
+        console.log(`Processing text with AI before speaking for ${voiceName}`)
         
         try {
           // Pre-process to handle URL or web access mentions

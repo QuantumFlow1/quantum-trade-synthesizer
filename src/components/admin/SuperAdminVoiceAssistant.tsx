@@ -11,12 +11,18 @@ export const SuperAdminVoiceAssistant = () => {
     return null
   }
 
-  // Find the EdriziAI voice template
-  const edriziVoice = VOICE_TEMPLATES.find(v => v.id === 'EdriziAI-info')
-  if (!edriziVoice) {
-    console.error('EdriziAI voice template not found')
-    return null
+  // Find the EdriziAI Admin voice template
+  const edriziAdminVoice = VOICE_TEMPLATES.find(v => v.id === 'EdriziAI-admin')
+  if (!edriziAdminVoice) {
+    console.error('EdriziAI Admin voice template not found')
+    // Fallback to standard EdriziAI if admin voice is not found
+    const fallbackVoice = VOICE_TEMPLATES.find(v => v.id === 'EdriziAI-info')
+    if (!fallbackVoice) {
+      console.error('No suitable voice template found')
+      return null
+    }
+    return <SuperAdminVoiceContainer edriziVoice={fallbackVoice} />
   }
 
-  return <SuperAdminVoiceContainer edriziVoice={edriziVoice} />
+  return <SuperAdminVoiceContainer edriziVoice={edriziAdminVoice} />
 }
