@@ -8,10 +8,19 @@ export const useVoiceGreeting = (selectedVoice: VoiceTemplate, isPlaying: boolea
   const { playAudio } = useAudioPlayback()
 
   useEffect(() => {
-    if (!hasGreeted.current && !isPlaying) {
-      const greetingMessage = "Hallo! Ik ben je AI assistent. Hoe kan ik je vandaag helpen?"
-      playAudio(greetingMessage, selectedVoice.id, selectedVoice.name)
-      hasGreeted.current = true
+    const handleGreeting = async () => {
+      if (!hasGreeted.current && !isPlaying) {
+        const greetingMessage = "Hallo! Ik ben je AI assistent. Hoe kan ik je vandaag helpen?"
+        hasGreeted.current = true // Set this before playing to prevent multiple greetings
+        try {
+          await playAudio(greetingMessage, selectedVoice.id, selectedVoice.name)
+        } catch (error) {
+          console.error('Error playing greeting:', error)
+          hasGreeted.current = false // Reset if playback fails
+        }
+      }
     }
+
+    handleGreeting()
   }, [selectedVoice.id, selectedVoice.name, isPlaying, playAudio])
 }
