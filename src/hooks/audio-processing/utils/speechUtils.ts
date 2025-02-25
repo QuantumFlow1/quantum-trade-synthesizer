@@ -1,6 +1,7 @@
 
 import { supabase } from "@/lib/supabase"
 import { VoiceTemplate } from "@/lib/types"
+import { handleAIResponseError } from "./errorHandlingUtils"
 
 /**
  * Generates speech from text using selected voice
@@ -75,6 +76,6 @@ export const generateSpeechFromText = async (
     
   } catch (error) {
     console.error('Error in speech generation:', error)
-    setProcessingError('An unexpected error occurred during speech generation.')
+    handleAIResponseError(error, setProcessingError, { setProcessing: undefined })
   }
 }

@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from '@/components/ui/use-toast'
+import { handleTranscriptionError } from './errorHandlingUtils'
 
 /**
  * Transcribes audio from a URL
@@ -10,8 +11,6 @@ export const transcribeAudio = async (
   setProcessingStage: (stage: string) => void,
   setProcessingError: (error: string | null) => void
 ): Promise<string | null> => {
-  const { toast } = useToast()
-  
   try {
     // Show immediate feedback to user
     toast({
@@ -55,13 +54,7 @@ export const transcribeAudio = async (
     console.log('Got transcription:', transcription)
     return transcription
   } catch (error) {
-    console.error('Error in transcription process:', error)
-    setProcessingError('An error occurred during transcription.')
-    toast({
-      title: "Transcription Error",
-      description: "An error occurred during transcription. Please try again.",
-      variant: "destructive",
-    })
+    handleTranscriptionError(error, setProcessingError)
     return null
   }
 }

@@ -4,7 +4,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { VoiceAssistantLayout } from './voice-assistant/VoiceAssistantLayout'
 import { AudioSection } from './voice-assistant/AudioSection'
 import { ChatHistorySection } from './voice-assistant/ChatHistorySection'
-import { WelcomeMessage } from './voice-assistant/WelcomeMessage'
+import { WelcomeMessage } from './voice-assistant/SuperAdminGreeting'
 import { ConnectionTest } from './voice-assistant/ConnectionTest'
 import { ChatMessage } from './types/chat-types'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
@@ -46,10 +46,17 @@ export const SuperAdminVoiceAssistant = () => {
   const { selectedVoice, handleVoiceChange } = useVoiceSelection(defaultVoice)
   
   // Audio playback for the selected voice
-  const { isPlaying, playAudio } = useAudioPlayback()
+  const { isPlaying, isProcessing: isAudioProcessing, playAudio } = useAudioPlayback()
   
   // Check if Grok3 API is available
   const { grok3Available, checkGrok3Availability, resetGrok3Connection } = useGrok3Availability()
+  
+  // Use adapter function to convert playAudio to expected signature
+  const playAudioAdapter = (url: string) => {
+    // This is a simplified adapter - in a real implementation, 
+    // you would need to determine voiceId and voiceName from context
+    playAudio(url, selectedVoice.id, selectedVoice.name)
+  }
   
   // Enhanced Audio processing with Grok3 integration 
   const { 
@@ -63,7 +70,7 @@ export const SuperAdminVoiceAssistant = () => {
     processDirectText
   } = useEdriziAudioProcessor({
     selectedVoice,
-    playAudio,
+    playAudio: playAudioAdapter,
     setChatHistory,
     isSuperAdmin: true
   })
@@ -115,7 +122,27 @@ export const SuperAdminVoiceAssistant = () => {
   }, [checkGrok3Availability])
   
   return (
-    <VoiceAssistantLayout>
+    <VoiceAssistantLayout
+      title="Super Admin Voice Assistant"
+      selectedVoiceId={selectedVoice.id}
+      onVoiceChange={handleVoiceChange}
+      directText={directText}
+      setDirectText={setDirectText}
+      handleDirectTextSubmit={handleDirectTextSubmit}
+      isRecording={isRecording}
+      isProcessing={isProcessing || isAudioProcessing}
+      isPlaying={isPlaying}
+      startRecording={startRecording}
+      handleStopRecording={handleStopRecording}
+      previewAudioUrl={previewAudioUrl}
+      previewAudioRef={previewAudioRef}
+      isPreviewPlaying={isPreviewPlaying}
+      playPreview={playPreview}
+      stopPreview={stopPreview}
+      setIsPreviewPlaying={setIsPreviewPlaying}
+      processingError={processingError}
+      processingStage={processingStage}
+    >
       {showConnectionTest ? (
         <ConnectionTest 
           grok3Available={grok3Available} 
@@ -138,7 +165,7 @@ export const SuperAdminVoiceAssistant = () => {
           
           <AudioSection
             isRecording={isRecording}
-            isProcessing={isProcessing}
+            isProcessing={isProcessing || isAudioProcessing}
             isPlaying={isPlaying}
             directText={directText}
             previewAudioUrl={previewAudioUrl}

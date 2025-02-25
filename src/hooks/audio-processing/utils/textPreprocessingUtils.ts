@@ -1,13 +1,12 @@
 
 import { supabase } from "@/lib/supabase"
-import { useToast } from '@/hooks/use-toast'
+import { toast } from '@/components/ui/use-toast'
 import { handleSpeechGenerationError } from './errorHandlingUtils'
 
 export const preprocessTextForVoice = async (
   text: string,
   voiceId: string
 ): Promise<string> => {
-  const { toast } = useToast()
   let textToSpeak = text
   
   // Only process AI responses for EdriziAI voices

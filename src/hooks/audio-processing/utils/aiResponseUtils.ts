@@ -1,6 +1,7 @@
 
 import { supabase } from "@/lib/supabase"
 import { ChatMessage } from '@/components/admin/types/chat-types'
+import { handleAIResponseError } from "./errorHandlingUtils"
 
 export const generateRegularAIResponse = async (
   userInput: string,
@@ -41,8 +42,7 @@ export const generateRegularAIResponse = async (
     }
 
   } catch (error) {
-    console.error('Error in generateRegularAIResponse:', error)
-    setProcessingError('An unexpected error occurred during AI response generation')
+    handleAIResponseError(error, setProcessingError)
   }
 }
 
@@ -103,7 +103,7 @@ export const generateTradingAdvice = async (
 
   } catch (error) {
     console.error('Error in generateTradingAdvice:', error)
-    setProcessingError('Failed to generate trading advice')
+    handleAIResponseError(error, setProcessingError)
     // Attempt fallback to regular AI response
     await fallbackHandler(message)
   }

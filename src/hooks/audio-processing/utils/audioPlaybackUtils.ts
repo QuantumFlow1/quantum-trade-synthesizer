@@ -1,5 +1,5 @@
 
-import { useToast } from '@/hooks/use-toast'
+import { toast } from '@/components/ui/use-toast'
 import { handlePlaybackError, handleAudioProcessingError } from './errorHandlingUtils'
 
 export const createAndPlayAudioBlob = async (
@@ -10,7 +10,6 @@ export const createAndPlayAudioBlob = async (
   setIsPlaying: (isPlaying: boolean) => void,
   setIsProcessing: (isProcessing: boolean) => void
 ): Promise<void> => {
-  const { toast } = useToast()
   const options = { setIsPlaying, setIsProcessing }
   
   try {

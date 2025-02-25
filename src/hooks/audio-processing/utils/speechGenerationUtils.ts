@@ -1,7 +1,7 @@
 
 import { supabase } from "@/lib/supabase"
 import { handleSpeechGenerationError } from "./errorHandlingUtils"
-import { useToast } from '@/hooks/use-toast'
+import { toast } from '@/components/ui/use-toast'
 
 export const generateSpeechFromText = async (
   text: string,
@@ -10,7 +10,6 @@ export const generateSpeechFromText = async (
   setIsPlaying: (isPlaying: boolean) => void,
   setIsProcessing: (isProcessing: boolean) => void
 ) => {
-  const { toast } = useToast()
   console.log(`Attempting to play audio with voice ID: ${voiceId}, name: ${voiceName}`)
   console.log(`Text to speak: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`)
 
