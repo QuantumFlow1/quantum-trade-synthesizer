@@ -1,12 +1,9 @@
 
-import { useAuth } from '@/components/auth/AuthProvider'
-import { useBaseAudioProcessor } from './useBaseAudioProcessor'
-import { VoiceTemplate } from '@/lib/types'
+import { useState } from 'react'
 import { ChatMessage } from '@/components/admin/types/chat-types'
-import { useState, useCallback, useRef } from 'react'
-import { useToast } from '@/hooks/use-toast'
-import { generateRegularAIResponse, generateTradingAdvice } from './utils/aiResponseUtils'
-import { getUserLevel } from './utils/userUtils'
+import { VoiceTemplate } from '@/lib/types'
+import { useBaseAudioProcessor } from './useBaseAudioProcessor'
+import { createChatMessage } from './utils/messageUtils'
 
 interface RegularUserProcessorProps {
   selectedVoice: VoiceTemplate
@@ -19,13 +16,9 @@ export const useRegularUserProcessor = ({
   playAudio,
   setChatHistory
 }: RegularUserProcessorProps) => {
-  const { toast } = useToast()
-  const { user, userProfile } = useAuth()
   const [processingStage, setProcessingStage] = useState<string>('')
   
-  // Track ongoing requests to prevent duplicates
-  const pendingRequestRef = useRef<AbortController | null>(null)
-  
+  // Use our base audio processor for common functionality
   const {
     lastTranscription,
     lastUserInput,
@@ -43,88 +36,42 @@ export const useRegularUserProcessor = ({
     setChatHistory
   })
 
-  // Optimized function to generate AI response, extracted to utility
-  const generateRegularAIResponseHandler = useCallback(async (userInput: string) => {
+  // Function to generate a standard AI response
+  const generateStandardAIResponse = async (userInput: string, context: ChatMessage[]) => {
     try {
       setProcessingStage('Generating standard AI response')
+      console.log('Generating standard AI response for input:', userInput)
       
-      // Create a new abort controller for this request
-      const controller = new AbortController()
-      pendingRequestRef.current = controller
+      // For now, we'll use a simple fixed response
+      // In a real system, this would call an AI API
+      const fixedResponse = "I'm your regular AI assistant. I can help answer your questions about trading and investments. How can I assist you today?"
       
-      await generateRegularAIResponse(
-        userInput,
-        addAIResponseToChatHistory,
-        generateSpeech,
-        setProcessingError,
-        controller
-      )
-
-      // Clear the pending request reference
-      pendingRequestRef.current = null
+      // Add the response to chat history
+      addAIResponseToChatHistory(fixedResponse)
+      
+      // Generate speech for the response
+      setProcessingStage('Converting standard AI response to speech')
+      await generateSpeech(fixedResponse)
+      
     } catch (error) {
-      console.error('Error in AI response handler:', error)
-      setProcessingError('An unexpected error occurred.')
+      console.error('Error in generateStandardAIResponse:', error)
+      setProcessingError('Failed to generate an AI response')
     }
-  }, [addAIResponseToChatHistory, generateSpeech, setProcessingError, setProcessingStage])
+  }
 
-  // Optimized user message processor with better abort control
-  const processUserMessage = useCallback(async (message: string, previousMessages: any[] = []) => {
-    try {
-      // First abort any previous in-flight requests to avoid race conditions
-      if (pendingRequestRef.current) {
-        console.log('Aborting previous request')
-        pendingRequestRef.current.abort()
-      }
-      
-      // Create a new controller for this request
-      const controller = new AbortController()
-      pendingRequestRef.current = controller
-      
-      console.log('Processing user message:', message)
-      
-      await generateTradingAdvice(
-        message,
-        user?.id,
-        getUserLevel(userProfile),
-        previousMessages,
-        addAIResponseToChatHistory,
-        generateSpeech,
-        setProcessingError,
-        generateRegularAIResponseHandler,
-        controller,
-        setProcessingStage
-      )
-      
-      // Clear the pending request reference if not already cleared
-      if (pendingRequestRef.current === controller) {
-        pendingRequestRef.current = null
-      }
-    } catch (error) {
-      console.error('Error in processUserMessage:', error)
-      setProcessingError('An unexpected error occurred during processing.')
-      
-      // Attempt to recover with regular AI response
-      await generateRegularAIResponseHandler(message)
-    }
-  }, [
-    user?.id, 
-    userProfile, 
-    generateRegularAIResponseHandler,
-    addAIResponseToChatHistory,
-    generateSpeech,
-    setProcessingError,
-    setProcessingStage
-  ])
+  // Wrapper function to process audio with standard AI
+  const processAudio = async (audioUrl: string) => {
+    await baseProcessAudio(audioUrl, async (text) => {
+      await generateStandardAIResponse(text, [])
+    })
+  }
 
-  // Optimized process functions
-  const processAudio = useCallback(async (audioUrl: string) => {
-    await baseProcessAudio(audioUrl, processUserMessage)
-  }, [baseProcessAudio, processUserMessage])
-
-  const processDirectText = useCallback(async (text: string) => {
-    await baseProcessDirectText(text, processUserMessage)
-  }, [baseProcessDirectText, processUserMessage])
+  // Wrapper function to process direct text input with standard AI
+  const processDirectText = async (text: string) => {
+    await baseProcessDirectText(text, async (text) => {
+      await generateStandardAIResponse(text, [])
+    })
+  }
 
   return {
     lastTranscription,

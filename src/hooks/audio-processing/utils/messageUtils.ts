@@ -13,6 +13,14 @@ export const createChatMessage = (
   };
 };
 
+export const createUserMessage = (content: string): ChatMessage => {
+  return createChatMessage(content, 'user');
+};
+
+export const createAssistantMessage = (content: string): ChatMessage => {
+  return createChatMessage(content, 'assistant');
+};
+
 export const extractContextFromChat = (
   chatHistory: ChatMessage[], 
   contextLength: number = 10

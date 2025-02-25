@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { VoiceTemplate } from '@/lib/types';
 
 export interface VoiceAssistantLayoutProps {
   title: string;
@@ -9,32 +10,42 @@ export interface VoiceAssistantLayoutProps {
   onVoiceChange: (voiceId: string) => void;
   directText: string;
   setDirectText: React.Dispatch<React.SetStateAction<string>>;
-  handleSendDirectText: () => void;
+  handleDirectTextSubmit: () => void;
   isRecording: boolean;
-  startRecording: () => void;
-  stopRecording: () => void;
-  audioUrl: string | null;
-  processingError: string | null;
   isProcessing: boolean;
-  lastTranscription: string;
+  isPlaying: boolean;
+  startRecording: () => void;
+  handleStopRecording: () => void;
+  previewAudioUrl: string | null;
+  previewAudioRef: React.RefObject<HTMLAudioElement>;
+  isPreviewPlaying: boolean;
+  playPreview: () => void;
+  stopPreview: () => void;
+  setIsPreviewPlaying: React.Dispatch<React.SetStateAction<boolean>>;
+  processingError: string | null;
   processingStage: string;
-  children?: React.ReactNode; // Add children prop
+  children?: React.ReactNode;
 }
 
-const VoiceAssistantLayout: React.FC<VoiceAssistantLayoutProps> = ({
+export const VoiceAssistantLayout: React.FC<VoiceAssistantLayoutProps> = ({
   title,
   selectedVoiceId,
   onVoiceChange,
   directText,
   setDirectText,
-  handleSendDirectText,
+  handleDirectTextSubmit,
   isRecording,
-  startRecording,
-  stopRecording,
-  audioUrl,
-  processingError,
   isProcessing,
-  lastTranscription,
+  isPlaying,
+  startRecording,
+  handleStopRecording,
+  previewAudioUrl,
+  previewAudioRef,
+  isPreviewPlaying,
+  playPreview,
+  stopPreview,
+  setIsPreviewPlaying,
+  processingError,
   processingStage,
   children
 }) => {
@@ -74,5 +85,3 @@ const VoiceAssistantLayout: React.FC<VoiceAssistantLayoutProps> = ({
     </Card>
   );
 };
-
-export default VoiceAssistantLayout;

@@ -65,13 +65,13 @@ export const useSuperAdminProcessor = ({
 
   // Wrapper function to process audio with Grok3
   const processAudio = async (audioUrl: string) => {
-    await baseProcessAudio(audioUrl, async (text, context) => {
+    await baseProcessAudio(audioUrl, async (text) => {
       // Try to ensure we have the latest availability status
       await recheckGrok3Availability()
       
       await generateGrok3Response(
         text, 
-        context, 
+        [], 
         checkGrok3Availability, 
         grok3Available, 
         shouldRetryGrok3,
@@ -82,13 +82,13 @@ export const useSuperAdminProcessor = ({
 
   // Wrapper function to process direct text input with Grok3
   const processDirectText = async (text: string) => {
-    await baseProcessDirectText(text, async (text, context) => {
+    await baseProcessDirectText(text, async (text) => {
       // Try to ensure we have the latest availability status
       await recheckGrok3Availability()
       
       await generateGrok3Response(
         text, 
-        context, 
+        [], 
         checkGrok3Availability, 
         grok3Available, 
         shouldRetryGrok3,
