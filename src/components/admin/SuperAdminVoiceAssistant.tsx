@@ -14,6 +14,7 @@ import { useVoiceGreeting } from '@/hooks/use-voice-greeting'
 import { VOICE_TEMPLATES } from '@/lib/voice-templates'
 import { toast as sonnerToast } from 'sonner'
 import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/lib/supabase'
 
 export const SuperAdminVoiceAssistant = () => {
   const { userProfile } = useAuth()
