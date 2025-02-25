@@ -19,7 +19,7 @@ export const EdriziAIAssistant = () => {
   const { toast } = useToast()
   const { user } = useAuth() // Use Auth provider to get current user
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
-  const { isPlaying, playAudio } = useAudioPlayback()
+  const { isPlaying, playAudio: originalPlayAudio } = useAudioPlayback()
   const [directText, setDirectText] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
@@ -56,6 +56,11 @@ export const EdriziAIAssistant = () => {
     stopPreview
   } = useAudioPreview()
 
+  // Create a wrapper for playAudio to match the expected signature
+  const playAudioWrapper = (url: string) => {
+    originalPlayAudio(url, edriziVoice.id, edriziVoice.name)
+  }
+
   const {
     lastTranscription,
     lastUserInput,
@@ -65,7 +70,7 @@ export const EdriziAIAssistant = () => {
     processDirectText
   } = useEdriziAudioProcessor({
     selectedVoice: edriziVoice,
-    playAudio,
+    playAudio: playAudioWrapper,
     setChatHistory
   })
 
@@ -366,49 +371,4 @@ export const EdriziAIAssistant = () => {
             
             <div className="mt-4">
               <h3 className="font-medium mb-2">Stel een Gerichte Trading Vraag</h3>
-              <form onSubmit={handleDirectTextSubmit} className="flex space-x-2 items-center">
-                <Input
-                  type="text"
-                  placeholder="Bijv. Hoe analyseer ik BTCUSD momentum?"
-                  value={directText}
-                  onChange={(e) => setDirectText(e.target.value)}
-                  disabled={isProcessing || isRecording || isPlaying}
-                  className="flex-1"
-                />
-                <Button 
-                  type="submit" 
-                  disabled={!directText.trim() || isProcessing || isRecording || isPlaying}
-                  size="icon"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        <Input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept="audio/*"
-          onChange={handleFileUpload}
-        />
-
-        <audio 
-          ref={previewAudioRef}
-          src={previewAudioUrl || undefined}
-          onEnded={() => setIsPreviewPlaying(false)}
-          className="hidden"
-        />
-
-        {/* Status information */}
-        {isProcessing && (
-          <div className="text-sm text-center text-muted-foreground">
-            Verwerken van audio...
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
+              <form onSubmit={handleDirectTextSubmit} className="flex space-x-2

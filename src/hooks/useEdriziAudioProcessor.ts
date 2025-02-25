@@ -1,9 +1,17 @@
 
 import { useState, useEffect } from 'react'
 import { ChatMessage } from '@/components/admin/types/chat-types'
-import { VoiceTemplate } from '@/lib/voice-templates'
+import { VOICE_TEMPLATES } from '@/lib/voice-templates'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { supabase } from '@/lib/supabase'
+
+// Define a type for the selected voice
+type VoiceTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  prompt?: string;
+}
 
 interface AudioProcessorProps {
   selectedVoice: VoiceTemplate
@@ -22,9 +30,12 @@ export const useEdriziAudioProcessor = ({
   const { user, userProfile } = useAuth()
 
   const getUserLevel = () => {
-    // Determine user level based on activity or explicitly set level
-    // This is a simplified version - you might want to implement a more sophisticated approach
-    return userProfile?.subscription_tier === 'premium' ? 'advanced' : 'beginner'
+    // Determine user level based on userProfile or default to beginner
+    // This checks if the userProfile has a role property set to 'trader' or 'admin'
+    if (userProfile?.role === 'trader' || userProfile?.role === 'admin') {
+      return 'advanced'
+    }
+    return 'beginner'
   }
 
   const processAudio = async (audioUrl: string) => {

@@ -10,7 +10,6 @@ import { DirectTextInput } from '@/components/voice-assistant/audio/DirectTextIn
 import { AudioControls } from '@/components/voice-assistant/audio/AudioControls'
 import { AudioPreview } from './AudioPreview'
 import { ChatHistory } from './ChatHistory'
-import { VoiceTemplate } from '@/lib/types'
 import { ChatMessage } from '../types/chat-types'
 import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
 import { Button } from '@/components/ui/button'
@@ -19,13 +18,21 @@ import { Trash2 } from 'lucide-react'
 // Local storage key for chat history
 const CHAT_HISTORY_STORAGE_KEY = 'edriziAIChatHistory'
 
+// Define the VoiceTemplate type to match what's expected
+type VoiceTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  prompt?: string;
+}
+
 type SuperAdminVoiceContainerProps = {
   edriziVoice: VoiceTemplate
 }
 
 export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContainerProps) => {
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
-  const { isPlaying, playAudio } = useAudioPlayback()
+  const { isPlaying, playAudio: originalPlayAudio } = useAudioPlayback()
   const [directText, setDirectText] = useState<string>('')
   const [selectedVoice, setSelectedVoice] = useState(edriziVoice)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -64,6 +71,11 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
     stopPreview
   } = useAudioPreview()
 
+  // Create a wrapper for playAudio to match the expected signature
+  const playAudioWrapper = (url: string) => {
+    originalPlayAudio(url, selectedVoice.id, selectedVoice.name)
+  }
+
   const {
     lastUserInput,
     setLastUserInput,
@@ -72,7 +84,7 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
     processDirectText
   } = useEdriziAudioProcessor({
     selectedVoice,
-    playAudio,
+    playAudio: playAudioWrapper,
     setChatHistory
   })
 
