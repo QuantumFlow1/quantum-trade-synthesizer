@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useBaseAudioProcessor } from './useBaseAudioProcessor'
 import { VoiceTemplate } from '@/lib/types'
 import { ChatMessage } from '@/components/admin/types/chat-types'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '@/hooks/use-toast'
 
 interface SuperAdminProcessorProps {
@@ -31,7 +31,7 @@ export const useSuperAdminProcessor = ({
   }, [])
   
   // Function to check if Grok3 API is available
-  const checkGrok3Availability = async () => {
+  const checkGrok3Availability = useCallback(async () => {
     try {
       console.log('Checking Grok3 API availability...')
       
@@ -47,19 +47,33 @@ export const useSuperAdminProcessor = ({
           description: "Schakel over naar standaard AI. Controleer je API-sleutel in Supabase.",
           variant: "destructive"
         })
-      } else if (data?.response) {
+        return false
+      } else if (data?.response === "pong" && data?.status === "available") {
         console.log('Grok3 API is available')
         setGrok3Available(true)
         setRetryCount(0) // Reset retry count on successful connection
+        return true
       } else {
-        console.warn('No response from Grok3 API check')
+        console.warn('Unexpected response from Grok3 API check:', data)
         setGrok3Available(false)
+        toast({
+          title: "Grok3 API Niet Beschikbaar",
+          description: "Onverwachte respons. Schakel over naar standaard AI.",
+          variant: "destructive"
+        })
+        return false
       }
     } catch (error) {
       console.error('Error checking Grok3 API:', error)
       setGrok3Available(false)
+      toast({
+        title: "Grok3 API Fout",
+        description: "Kon niet verbinden met Grok3 API. Schakel over naar standaard AI.",
+        variant: "destructive"
+      })
+      return false
     }
-  }
+  }, [toast])
   
   const {
     lastTranscription,
@@ -118,23 +132,28 @@ export const useSuperAdminProcessor = ({
 
   const generateGrok3Response = async (userInput: string, context: any[] = []) => {
     try {
+      // Check Grok3 availability before proceeding
+      const isGrok3Available = await checkGrok3Availability()
+      
       // If Grok3 is known to be unavailable and we're not due for a retry, skip directly to fallback
-      const currentTime = Date.now()
-      const shouldRetry = lastRetryTime === 0 || (currentTime - lastRetryTime > RETRY_COOLDOWN)
-      
-      if (!grok3Available && retryCount >= MAX_RETRIES && !shouldRetry) {
-        console.log('Skipping Grok3 API due to previous failures, using fallback directly')
-        await generateRegularAIResponse(userInput)
-        return
-      }
-      
-      // If we should attempt a retry
-      if (!grok3Available && shouldRetry) {
-        console.log(`Retrying Grok3 API after cooldown (retry ${retryCount + 1}/${MAX_RETRIES})`)
-        setLastRetryTime(currentTime)
+      if (!isGrok3Available) {
+        const currentTime = Date.now()
+        const shouldRetry = lastRetryTime === 0 || (currentTime - lastRetryTime > RETRY_COOLDOWN)
         
-        if (retryCount < MAX_RETRIES) {
-          setRetryCount(prev => prev + 1)
+        if (retryCount >= MAX_RETRIES && !shouldRetry) {
+          console.log('Skipping Grok3 API due to previous failures, using fallback directly')
+          await generateRegularAIResponse(userInput)
+          return
+        }
+        
+        // If we should attempt a retry
+        if (shouldRetry) {
+          console.log(`Retrying Grok3 API after cooldown (retry ${retryCount + 1}/${MAX_RETRIES})`)
+          setLastRetryTime(currentTime)
+          
+          if (retryCount < MAX_RETRIES) {
+            setRetryCount(prev => prev + 1)
+          }
         }
       }
       

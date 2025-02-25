@@ -58,7 +58,7 @@ export const checkSupabaseConnection = async () => {
     try {
       const grokTestParams = {
         body: {
-          message: "Simple test message",
+          message: "system: ping test",
           context: []
         }
       };
@@ -86,7 +86,7 @@ export const checkSupabaseConnection = async () => {
         }
       } else {
         console.log('Grok3 API test response:', grokData ? JSON.stringify(grokData).substring(0, 100) + '...' : 'No data');
-        results.grok3API = !!grokData;
+        results.grok3API = grokData?.status === "available" && grokData?.response === "pong";
       }
     } catch (grokException) {
       console.error('Grok3 API exception details:', grokException);
@@ -102,5 +102,37 @@ export const checkSupabaseConnection = async () => {
     console.error('Supabase connection check failed with details:', error);
     console.log('Connection check results:', results);
     return false;
+  }
+}
+
+// New function to check if the Grok3 API is properly configured and working
+export const checkGrok3APIConfig = async () => {
+  try {
+    console.log('Checking Grok3 API configuration...');
+    
+    const { data, error } = await supabase.functions.invoke('grok3-response', {
+      body: { message: "system: ping test", context: [] }
+    });
+    
+    if (error) {
+      console.error('Grok3 API configuration error:', error);
+      return { 
+        isConfigured: false, 
+        error: error 
+      };
+    }
+    
+    console.log('Grok3 API configuration check result:', data);
+    
+    return { 
+      isConfigured: data?.status === "available" && data?.response === "pong",
+      data: data
+    };
+  } catch (error) {
+    console.error('Failed to check Grok3 API configuration:', error);
+    return { 
+      isConfigured: false, 
+      error: error 
+    };
   }
 }
