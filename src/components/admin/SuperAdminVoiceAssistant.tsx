@@ -55,9 +55,8 @@ export const SuperAdminVoiceAssistant = () => {
     if (!file) return
 
     if (!file.type.startsWith('audio/')) {
-      sonnerToast("Only audio files are allowed", {
-        description: "Please select a valid audio file",
-        variant: "destructive",
+      sonnerToast.error("Only audio files are allowed", {
+        description: "Please select a valid audio file"
       })
       return
     }
