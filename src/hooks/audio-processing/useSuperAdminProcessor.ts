@@ -19,7 +19,6 @@ export const useSuperAdminProcessor = ({
 }: SuperAdminProcessorProps) => {
   const [processingStage, setProcessingStage] = useState<string>('')
   
-  // Use our base audio processor for common functionality
   const {
     lastTranscription,
     lastUserInput,
@@ -37,7 +36,6 @@ export const useSuperAdminProcessor = ({
     setChatHistory
   })
 
-  // Use our Grok3 availability hook
   const {
     grok3Available,
     setGrok3Available,
@@ -45,7 +43,6 @@ export const useSuperAdminProcessor = ({
     shouldRetryGrok3
   } = useGrok3Availability()
 
-  // Use our Grok3 response generator
   const {
     generateGrok3Response
   } = useGrok3ResponseGenerator({
@@ -55,11 +52,8 @@ export const useSuperAdminProcessor = ({
     setProcessingStage
   })
 
-  // Function to generate a Grok3 response with all necessary parameters
-  const generateFullGrok3Response = async (text: string) => {
-    // Create an empty context array for now - in a real app, this would include chat history
+  const generateFullGrok3Response = async (text: string): Promise<void> => {
     const context: any[] = [];
-    
     await generateGrok3Response(
       text,
       context,
@@ -70,7 +64,6 @@ export const useSuperAdminProcessor = ({
     );
   }
 
-  // Manual function to recheck API availability
   const recheckGrok3Availability = async () => {
     console.log('Manually rechecking Grok3 API availability...')
     const isAvailable = await checkGrok3Availability()
@@ -78,22 +71,16 @@ export const useSuperAdminProcessor = ({
     return isAvailable
   }
 
-  // Wrapper function to process audio with Grok3
-  const processAudio = async (audioUrl: string) => {
+  const processAudio = async (audioUrl: string): Promise<void> => {
     await baseProcessAudio(audioUrl, async (text: string) => {
-      // Try to ensure we have the latest availability status
       await recheckGrok3Availability()
-      
       await generateFullGrok3Response(text)
     })
   }
 
-  // Wrapper function to process direct text input with Grok3
-  const processDirectText = async (text: string) => {
+  const processDirectText = async (text: string): Promise<void> => {
     await baseProcessDirectText(text, async (text: string) => {
-      // Try to ensure we have the latest availability status
       await recheckGrok3Availability()
-      
       await generateFullGrok3Response(text)
     })
   }

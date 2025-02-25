@@ -1,8 +1,7 @@
 
-import { ReactNode, useEffect } from 'react'
+import { ReactNode } from 'react'
 import { VoiceTemplate } from '@/lib/types'
 import { ChatMessage } from '../types/chat-types'
-import VoiceAssistantLayout from './VoiceAssistantLayout'
 import { AudioSection } from './AudioSection'
 import { ChatHistorySection } from './ChatHistorySection'
 import { ConnectionTest } from './ConnectionTest'
@@ -86,7 +85,6 @@ export const SuperAdminVoiceContainer = ({
           stopPreview={stopPreview}
           setIsPreviewPlaying={setIsPreviewPlaying}
           processingError={processingError}
-          processingStage={processingStage}
         />
       </TabsContent>
       

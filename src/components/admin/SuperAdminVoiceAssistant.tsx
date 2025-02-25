@@ -12,14 +12,10 @@ import { useToast } from '@/hooks/use-toast'
 import { SuperAdminVoiceContainer } from './voice-assistant/SuperAdminVoiceContainer'
 
 export const SuperAdminVoiceAssistant = () => {
-  console.log('SuperAdminVoiceAssistant component is rendering')
-  
   const { userProfile } = useAuth()
   const { toast } = useToast()
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [directText, setDirectText] = useState('')
-  const chatHistoryStorageKey = 'superadmin-chat-history'
-  
   const previewAudioRef = useRef<HTMLAudioElement>(null)
   
   // Audio recorder
@@ -36,8 +32,7 @@ export const SuperAdminVoiceAssistant = () => {
   } = useAudioPreview()
   
   // Voice selection (default to EdriziAI Admin voice)
-  const defaultVoice = 'EdriziAI-admin'
-  const { selectedVoice, handleVoiceChange } = useVoiceSelection(defaultVoice)
+  const { selectedVoice } = useVoiceSelection()
   
   // Audio playback for the selected voice
   const { isPlaying, isProcessing: isAudioProcessing, playAudio } = useAudioPlayback()
@@ -47,8 +42,6 @@ export const SuperAdminVoiceAssistant = () => {
   
   // Use adapter function to convert playAudio to expected signature
   const playAudioAdapter = (url: string) => {
-    // This is a simplified adapter - in a real implementation, 
-    // you would need to determine voiceId and voiceName from context
     playAudio(url, selectedVoice.id, selectedVoice.name)
   }
   
@@ -76,27 +69,26 @@ export const SuperAdminVoiceAssistant = () => {
       if (audioUrl) {
         setPreviewAudioUrl(audioUrl)
         
-        // Process the audio right away
         toast({
-          title: 'Audio Processing',
-          description: 'Processing your audio recording...'
+          title: "Audio Processing",
+          description: "Processing your audio recording..."
         })
         
         processAudio(audioUrl)
       } else {
         console.error('No audio URL was returned from stopRecording')
         toast({
-          title: 'Recording Error',
-          description: 'Failed to process recording. Please try again.',
-          variant: 'destructive'
+          title: "Recording Error",
+          description: "Failed to process recording. Please try again.",
+          variant: "destructive"
         })
       }
     } catch (error) {
       console.error('Error in handleStopRecording:', error)
       toast({
-        title: 'Recording Error',
-        description: 'An error occurred while processing the recording.',
-        variant: 'destructive'
+        title: "Recording Error",
+        description: "An error occurred while processing the recording.",
+        variant: "destructive"
       })
     }
   }
@@ -111,9 +103,8 @@ export const SuperAdminVoiceAssistant = () => {
   }
   
   useEffect(() => {
-    // Check if Grok3 API is available on component mount
     checkGrok3Availability()
-  }, [checkGrok3Availability])
+  }, [])
   
   return (
     <SuperAdminVoiceContainer

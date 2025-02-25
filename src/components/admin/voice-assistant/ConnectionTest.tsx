@@ -6,21 +6,22 @@ import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 interface ConnectionTestProps {
   grok3Available: boolean;
-  resetGrok3Connection: () => Promise<boolean>;
-  onClose: () => void;
+  checkGrok3Availability: () => Promise<boolean>;
+  resetGrok3Connection: () => void;
 }
 
-const ConnectionTest: React.FC<ConnectionTestProps> = ({
+export const ConnectionTest = ({
   grok3Available,
-  resetGrok3Connection,
-  onClose
-}) => {
+  checkGrok3Availability,
+  resetGrok3Connection
+}: ConnectionTestProps) => {
   const [isResetting, setIsResetting] = React.useState(false);
 
   const handleReset = async () => {
     setIsResetting(true);
     try {
       await resetGrok3Connection();
+      await checkGrok3Availability();
     } finally {
       setIsResetting(false);
     }
@@ -53,13 +54,7 @@ const ConnectionTest: React.FC<ConnectionTestProps> = ({
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={onClose}
-        >
-          Close
-        </Button>
+      <CardFooter className="flex justify-end">
         <Button
           variant="default"
           onClick={handleReset}
@@ -81,5 +76,3 @@ const ConnectionTest: React.FC<ConnectionTestProps> = ({
     </Card>
   );
 };
-
-export default ConnectionTest;
