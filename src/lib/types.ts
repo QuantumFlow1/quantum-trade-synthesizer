@@ -1,8 +1,9 @@
+
 export type VoiceTemplate = {
   id: string
   name: string
   description: string
-  prompt: string
+  prompt: string // Making sure prompt is required, not optional
 }
 
 export interface AdviceModel {
