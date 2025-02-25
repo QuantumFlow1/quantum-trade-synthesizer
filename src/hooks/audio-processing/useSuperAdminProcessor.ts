@@ -57,16 +57,34 @@ export const useSuperAdminProcessor = ({
 
   const generateFullGrok3Response = async (text: string): Promise<void> => {
     const context: any[] = [];
-    // We're not returning anything from this function, so it's Promise<void>
-    await generateGrok3Response(
-      text,
-      context,
-      checkGrok3Availability,
-      grok3Available,
-      shouldRetryGrok3(),
-      setGrok3Available
-    );
-    // No return statement needed - this function returns void
+    
+    try {
+      // Add the user message to chat history first
+      addAIResponseToChatHistory({
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: text,
+        timestamp: new Date()
+      });
+      
+      setProcessingStage('Generating AI response...');
+      
+      // Generate the response
+      await generateGrok3Response(
+        text,
+        context,
+        checkGrok3Availability,
+        grok3Available,
+        shouldRetryGrok3(),
+        setGrok3Available
+      );
+      
+      setProcessingStage('');
+    } catch (error) {
+      console.error("Error generating Grok3 response:", error);
+      setProcessingError("Failed to generate AI response. Please try again.");
+      setProcessingStage('');
+    }
   }
 
   // Fixed: recheckGrok3Availability returns Promise<void>
@@ -74,7 +92,6 @@ export const useSuperAdminProcessor = ({
     console.log('Manually rechecking Grok3 API availability...')
     await checkGrok3Availability()
     console.log('Grok3 availability check complete')
-    // No return value - this function returns Promise<void>
   }
 
   const processAudio = async (audioUrl: string): Promise<void> => {

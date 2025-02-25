@@ -1,81 +1,61 @@
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { SendIcon } from 'lucide-react'
+import { Send } from 'lucide-react'
 
 type DirectTextInputProps = {
+  directText: string
   onTextChange: (text: string) => void
   onSubmit: () => void
   disabled?: boolean
   placeholder?: string
-  // Allow old props to be passed for backward compatibility
-  directText?: string
-  isPlaying?: boolean
-  isProcessing?: boolean
 }
 
 export const DirectTextInput = ({
+  directText,
   onTextChange,
   onSubmit,
   disabled = false,
-  placeholder = 'Type your message...',
-  directText: externalText,
-  isPlaying,
-  isProcessing
+  placeholder = 'Typ je bericht...'
 }: DirectTextInputProps) => {
-  // Determine if we should be disabled based on either the disabled prop or the legacy props
-  const isDisabled = disabled || isPlaying || isProcessing || false
-  
-  // Use either external state or internal state
-  const [internalText, setInternalText] = useState('')
-  const text = externalText !== undefined ? externalText : internalText
-  
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    // Focus the input field when it's rendered and not disabled
-    if (inputRef.current && !isDisabled) {
-      inputRef.current.focus()
-    }
-  }, [isDisabled])
-
+  // Handle Enter key press to submit
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && text.trim() !== '' && !isDisabled) {
+    if (e.key === 'Enter' && !e.shiftKey && !disabled && directText.trim()) {
+      e.preventDefault()
       onSubmit()
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newText = e.target.value
-    if (externalText === undefined) {
-      // Only update internal state if we're not using external state
-      setInternalText(newText)
+  // Focus the input when it becomes enabled
+  useEffect(() => {
+    if (!disabled && inputRef.current) {
+      inputRef.current.focus()
     }
-    onTextChange(newText)
-  }
-
+  }, [disabled])
+  
   return (
-    <div className="relative flex w-full max-w-[900px] items-center space-x-2">
+    <div className="flex w-full gap-2">
       <Input
         ref={inputRef}
         type="text"
-        value={text}
-        onChange={handleChange}
+        value={directText}
+        onChange={(e) => onTextChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        disabled={isDisabled}
+        disabled={disabled}
         className="flex-1"
-        data-testid="text-input"
       />
       <Button
-        onClick={onSubmit}
-        disabled={text.trim() === '' || isDisabled}
-        variant="default"
+        type="submit"
         size="icon"
-        className={isProcessing ? "animate-pulse" : ""}
+        disabled={disabled || !directText.trim()}
+        onClick={onSubmit}
+        className={`transition-all ${directText.trim() ? 'opacity-100' : 'opacity-50'}`}
       >
-        <SendIcon className="h-4 w-4" />
+        <Send className="h-4 w-4" />
       </Button>
     </div>
   )

@@ -6,8 +6,7 @@ import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
 import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useVoiceSelection } from '@/hooks/use-voice-selection'
-import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
-import { useGrok3Availability } from '@/hooks/audio-processing/grok3/useGrok3Availability'
+import { useSuperAdminProcessor } from '@/hooks/audio-processing/useSuperAdminProcessor'
 import { useToast } from '@/hooks/use-toast'
 import { SuperAdminVoiceContainer } from './voice-assistant/SuperAdminVoiceContainer'
 
@@ -38,7 +37,6 @@ export const SuperAdminVoiceAssistant = () => {
   const { isPlaying, isProcessing: isAudioProcessing, playAudio } = useAudioPlayback()
   
   // Check if Grok3 API is available
-  const { grok3Available, checkGrok3Availability, resetGrok3Connection } = useGrok3Availability()
   
   // Use adapter function to convert playAudio to expected signature
   const playAudioAdapter = (url: string) => {
@@ -53,13 +51,14 @@ export const SuperAdminVoiceAssistant = () => {
     isProcessing,
     processingError,
     processingStage,
+    grok3Available,
+    resetGrok3Connection,
     processAudio,
     processDirectText
-  } = useEdriziAudioProcessor({
+  } = useSuperAdminProcessor({
     selectedVoice,
     playAudio: playAudioAdapter,
-    setChatHistory,
-    isSuperAdmin: true
+    setChatHistory
   })
   
   // Process the recorded audio
@@ -94,16 +93,34 @@ export const SuperAdminVoiceAssistant = () => {
   }
   
   // Process direct text input
-  const handleDirectTextSubmit = () => {
+  const handleDirectTextSubmit = async () => {
     if (!directText.trim()) return
     
-    setLastUserInput(directText)
-    processDirectText(directText)
-    setDirectText('')
+    try {
+      // Store the text before clearing the input
+      const textToProcess = directText
+      
+      // Clear the input field immediately for better UX
+      setDirectText('')
+      
+      // Set the last user input for display
+      setLastUserInput(textToProcess)
+      
+      // Process the direct text input
+      await processDirectText(textToProcess)
+    } catch (error) {
+      console.error('Error in handleDirectTextSubmit:', error)
+      toast({
+        title: "Text Processing Error",
+        description: "An error occurred while processing your message.",
+        variant: "destructive"
+      })
+    }
   }
   
   useEffect(() => {
-    checkGrok3Availability()
+    // Check Grok3 availability on component mount
+    resetGrok3Connection()
   }, [])
   
   return (
@@ -128,7 +145,7 @@ export const SuperAdminVoiceAssistant = () => {
       chatHistory={chatHistory}
       setChatHistory={setChatHistory}
       grok3Available={grok3Available}
-      checkGrok3Availability={checkGrok3Availability}
+      checkGrok3Availability={resetGrok3Connection}
       resetGrok3Connection={resetGrok3Connection}
       processAudio={processAudio}
     />
