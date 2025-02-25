@@ -1,23 +1,18 @@
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
 import { useStopRecording } from '@/hooks/use-stop-recording'
-import { DirectTextInput } from '@/components/voice-assistant/audio/DirectTextInput'
-import { AudioControls } from '@/components/voice-assistant/audio/AudioControls'
-import { AudioPreview } from './AudioPreview'
-import { ChatHistory } from './ChatHistory'
-import { ChatMessage } from '../types/chat-types'
 import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
-import { Button } from '@/components/ui/button'
-import { Trash2, Bot, Loader2 } from 'lucide-react'
+import { Bot } from 'lucide-react'
 import { VoiceTemplate } from '@/lib/types'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { checkSupabaseConnection } from '@/lib/supabase'
-import { toast } from '@/components/ui/use-toast'
+import { ConnectionTest } from './ConnectionTest'
+import { ChatHistorySection } from './ChatHistorySection'
+import { AudioSection } from './AudioSection'
+import { useAdminChatHistory } from './useAdminChatHistory'
 
 type SuperAdminVoiceContainerProps = {
   edriziVoice: VoiceTemplate
@@ -32,69 +27,9 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
   const { isPlaying, playAudio: originalPlayAudio } = useAudioPlayback()
   const [directText, setDirectText] = useState<string>('')
   const [selectedVoice, setSelectedVoice] = useState(edriziVoice)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isCheckingConnection, setIsCheckingConnection] = useState(false)
   
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
-    const savedHistory = localStorage.getItem(CHAT_HISTORY_STORAGE_KEY)
-    if (savedHistory) {
-      try {
-        const parsedHistory = JSON.parse(savedHistory)
-        return parsedHistory.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))
-      } catch (e) {
-        console.error('Failed to parse chat history from localStorage:', e)
-        return []
-      }
-    }
-    // Add a welcome message if no chat history
-    return [{
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: "Welcome to the EdriziAI Super Admin Assistant. I'm here to provide comprehensive insights and support for your advanced requirements. How can I assist you today?",
-      timestamp: new Date()
-    }]
-  })
-
-  useEffect(() => {
-    localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistory))
-  }, [chatHistory, CHAT_HISTORY_STORAGE_KEY])
-
-  useEffect(() => {
-    // Test connection when component mounts
-    testSupabaseConnection()
-  }, [])
-
-  const testSupabaseConnection = async () => {
-    setIsCheckingConnection(true)
-    try {
-      const isConnected = await checkSupabaseConnection()
-      if (isConnected) {
-        toast({
-          title: "Connection Successful",
-          description: "Successfully connected to all required services including Grok3 API.",
-          variant: "default",
-        })
-      } else {
-        toast({
-          title: "Connection Warning",
-          description: "Some services might not be available. Check console for details.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Connection test error:", error)
-      toast({
-        title: "Connection Error",
-        description: "Failed to test connections. Check console for details.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsCheckingConnection(false)
-    }
-  }
+  // Use the extracted hook for chat history management
+  const { chatHistory, setChatHistory } = useAdminChatHistory(CHAT_HISTORY_STORAGE_KEY)
 
   const {
     previewAudioUrl,
@@ -131,34 +66,11 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
     setLastUserInput
   })
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('audio/')) {
-      return
-    }
-
-    const audioUrl = URL.createObjectURL(file)
-    setPreviewAudioUrl(audioUrl)
-    setTimeout(() => processAudio(audioUrl), 200)
-  }
-
   const handleDirectTextSubmit = () => {
     if (directText.trim()) {
       processDirectText(directText)
       setDirectText('')
     }
-  }
-
-  const clearChatHistory = () => {
-    setChatHistory([{
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: "Welcome to the EdriziAI Super Admin Assistant. I'm here to provide comprehensive insights and support for your advanced requirements. How can I assist you today?",
-      timestamp: new Date()
-    }])
-    localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY)
   }
 
   return (
@@ -169,86 +81,33 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
           EdriziAI Super Admin Assistant
         </CardTitle>
         <div className="flex justify-end">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={testSupabaseConnection}
-            disabled={isCheckingConnection}
-            className="h-8"
-          >
-            {isCheckingConnection ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <>Test Connection</>
-            )}
-          </Button>
+          <ConnectionTest />
         </div>
       </CardHeader>
       <CardContent className="flex flex-col space-y-4">
-        <div className="flex flex-col space-y-2">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-medium">Chat History</h3>
-            {chatHistory.length > 1 && (
-              <Button 
-                variant="destructive" 
-                size="sm" 
-                onClick={clearChatHistory}
-                className="h-8"
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Clear
-              </Button>
-            )}
-          </div>
-          <ChatHistory chatHistory={chatHistory} />
-        </div>
-
-        <DirectTextInput
-          directText={directText}
-          isPlaying={isPlaying}
-          onTextChange={setDirectText}
-          onSubmit={handleDirectTextSubmit}
+        <ChatHistorySection 
+          chatHistory={chatHistory}
+          setChatHistory={setChatHistory}
+          storageKey={CHAT_HISTORY_STORAGE_KEY}
         />
 
-        <div className="relative">
-          <div className="absolute inset-0 w-full h-0.5 bg-border -top-2" />
-        </div>
-
-        <AudioControls
+        <AudioSection
           isRecording={isRecording}
           isProcessing={isProcessing}
+          isPlaying={isPlaying}
+          directText={directText}
           previewAudioUrl={previewAudioUrl}
           isPreviewPlaying={isPreviewPlaying}
-          onStartRecording={startRecording}
-          onStopRecording={handleStopRecording}
-          onTriggerFileUpload={() => fileInputRef.current?.click()}
-          onPlayPreview={playPreview}
-          onStopPreview={stopPreview}
-          onProcessAudio={() => processAudio(previewAudioUrl)}
-        />
-        
-        <AudioPreview 
-          previewAudioUrl={previewAudioUrl}
-          isPreviewPlaying={isPreviewPlaying}
-          onPlayPreview={playPreview}
-          onStopPreview={stopPreview}
-          onProcessAudio={() => processAudio(previewAudioUrl)}
-          isProcessing={isProcessing}
-        />
-        
-        <Input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept="audio/*"
-          onChange={handleFileUpload}
-        />
-
-        <audio 
-          ref={previewAudioRef}
-          src={previewAudioUrl || undefined}
-          onEnded={() => setIsPreviewPlaying(false)}
-          className="hidden"
+          previewAudioRef={previewAudioRef}
+          selectedVoice={selectedVoice}
+          setDirectText={setDirectText}
+          startRecording={startRecording}
+          handleStopRecording={handleStopRecording}
+          playPreview={playPreview}
+          stopPreview={stopPreview}
+          processAudio={processAudio}
+          handleDirectTextSubmit={handleDirectTextSubmit}
+          setIsPreviewPlaying={setIsPreviewPlaying}
         />
       </CardContent>
     </Card>

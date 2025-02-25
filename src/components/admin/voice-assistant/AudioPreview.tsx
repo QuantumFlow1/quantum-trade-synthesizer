@@ -46,7 +46,7 @@ export const AudioPreview = ({
         disabled={isProcessing}
         variant="secondary"
       >
-        Verwerk Audio
+        Process Audio
       </Button>
     </div>
   )
