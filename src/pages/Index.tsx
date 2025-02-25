@@ -78,16 +78,15 @@ const Index = () => {
             className="space-y-4 sm:space-y-6"
           >
             <Suspense fallback={<div>Loading...</div>}>
-              {/* Show SuperAdminVoiceAssistant for super admins */}
-              {isSuperAdmin && (
+              {/* Show either SuperAdminVoiceAssistant or regular VoiceAssistant, not both */}
+              {isSuperAdmin ? (
                 <div className="mb-6">
                   <h2 className="text-xl font-bold mb-4">Super Admin Tools</h2>
                   <SuperAdminVoiceAssistant />
                 </div>
+              ) : (
+                <VoiceAssistant />
               )}
-              
-              {/* Regular voice assistant for everyone */}
-              <VoiceAssistant />
               
               {userProfile.role === 'admin' || userProfile.role === 'super_admin' ? (
                 <AdminPanel />
