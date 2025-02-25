@@ -1,11 +1,12 @@
 
 import { useAuth } from '@/components/auth/AuthProvider'
-import { supabase } from '@/lib/supabase'
 import { useBaseAudioProcessor } from './useBaseAudioProcessor'
 import { VoiceTemplate } from '@/lib/types'
 import { ChatMessage } from '@/components/admin/types/chat-types'
 import { useState, useCallback, useRef } from 'react'
 import { useToast } from '@/hooks/use-toast'
+import { generateRegularAIResponse, generateTradingAdvice } from './utils/aiResponseUtils'
+import { getUserLevel } from './utils/userUtils'
 
 interface RegularUserProcessorProps {
   selectedVoice: VoiceTemplate
@@ -42,17 +43,8 @@ export const useRegularUserProcessor = ({
     setChatHistory
   })
 
-  // Memoized function to get user level - prevents unnecessary recalculations
-  const getUserLevel = useCallback(() => {
-    // Determine user level based on userProfile or default to beginner
-    if (userProfile?.role === 'trader' || userProfile?.role === 'admin') {
-      return 'advanced'
-    }
-    return 'beginner'
-  }, [userProfile?.role])
-
-  // Optimized function to generate AI response
-  const generateRegularAIResponse = useCallback(async (userInput: string) => {
+  // Optimized function to generate AI response, extracted to utility
+  const generateRegularAIResponseHandler = useCallback(async (userInput: string) => {
     try {
       setProcessingStage('Generating standard AI response')
       
@@ -60,61 +52,21 @@ export const useRegularUserProcessor = ({
       const controller = new AbortController()
       pendingRequestRef.current = controller
       
-      // Fallback to regular AI response if trading advice fails
-      const startTime = performance.now()
-      // Remove the signal property from Supabase function options
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
-        body: { prompt: userInput }
-      })
-      console.log(`AI response generated in ${performance.now() - startTime}ms`)
+      await generateRegularAIResponse(
+        userInput,
+        addAIResponseToChatHistory,
+        generateSpeech,
+        setProcessingError,
+        controller
+      )
 
-      // Check if this request was aborted or superseded
-      if (controller.signal.aborted) {
-        console.log('Request was aborted, not processing response')
-        return
-      }
-      
       // Clear the pending request reference
       pendingRequestRef.current = null
-
-      if (aiError) {
-        console.error('Error generating AI response:', aiError)
-        setProcessingError('Failed to generate AI response. Please try again.')
-        toast({
-          title: "AI Error",
-          description: "Failed to generate AI response",
-          variant: "destructive"
-        })
-        return
-      }
-
-      const aiResponse = aiData?.response
-      if (!aiResponse) {
-        console.error('No response returned from AI service')
-        setProcessingError('No response received from AI service.')
-        toast({
-          title: "AI Error",
-          description: "No response received from AI service",
-          variant: "destructive"
-        })
-        return
-      }
-
-      // Add AI response to chat history
-      addAIResponseToChatHistory(aiResponse)
-
-      // Convert AI response to speech
-      await generateSpeech(aiResponse)
     } catch (error) {
-      // Only handle errors if the request wasn't aborted
-      if (error.name !== 'AbortError') {
-        console.error('Error generating regular AI response:', error)
-        setProcessingError('Failed to generate AI response. Please try again later.')
-      } else {
-        console.log('AI response request was aborted')
-      }
+      console.error('Error in AI response handler:', error)
+      setProcessingError('An unexpected error occurred.')
     }
-  }, [addAIResponseToChatHistory, generateSpeech, setProcessingError, setProcessingStage, toast])
+  }, [addAIResponseToChatHistory, generateSpeech, setProcessingError, setProcessingStage])
 
   // Optimized user message processor with better abort control
   const processUserMessage = useCallback(async (message: string, previousMessages: any[] = []) => {
@@ -129,73 +81,39 @@ export const useRegularUserProcessor = ({
       const controller = new AbortController()
       pendingRequestRef.current = controller
       
-      setProcessingStage('Generating trading advice')
+      await generateTradingAdvice(
+        message,
+        user?.id,
+        getUserLevel(userProfile),
+        previousMessages,
+        addAIResponseToChatHistory,
+        generateSpeech,
+        setProcessingError,
+        generateRegularAIResponseHandler,
+        controller,
+        setProcessingStage
+      )
       
-      // Generate trading-specific advice
-      const startTime = performance.now()
-      // Remove the signal property from Supabase function options
-      const { data: adviceData, error: adviceError } = await supabase.functions.invoke('generate-trading-advice', {
-        body: { 
-          message, 
-          userId: user?.id,
-          userLevel: getUserLevel(),
-          previousMessages
-        }
-      })
-      console.log(`Trading advice generated in ${performance.now() - startTime}ms`)
-
-      // Check if this request was aborted
-      if (controller.signal.aborted) {
-        console.log('Request was aborted, not processing response')
-        return
+      // Clear the pending request reference if not already cleared
+      if (pendingRequestRef.current === controller) {
+        pendingRequestRef.current = null
       }
-      
-      // Clear the pending request reference
-      pendingRequestRef.current = null
-
-      if (adviceError) {
-        console.error('Error generating trading advice:', adviceError)
-        setProcessingError('Failed to generate trading advice. Falling back to regular AI.')
-        toast({
-          title: "Trading Advice Error",
-          description: "Falling back to standard AI response",
-          variant: "destructive"
-        })
-        // Fall back to regular AI response
-        await generateRegularAIResponse(message)
-        return
-      }
-
-      const advice = adviceData?.advice
-      if (!advice) {
-        console.error('No advice returned from trading service')
-        setProcessingError('No advice received. Falling back to regular AI.')
-        await generateRegularAIResponse(message)
-        return
-      }
-
-      // Add AI response to chat history
-      addAIResponseToChatHistory(advice)
-
-      // Convert AI response to speech
-      await generateSpeech(advice)
-      
-      toast({
-        title: "Success",
-        description: "Trading advice generated successfully",
-      })
     } catch (error) {
-      // Only handle errors if the request wasn't aborted
-      if (error.name !== 'AbortError') {
-        console.error('Error processing user message:', error)
-        setProcessingError('An error occurred. Falling back to regular AI.')
-        // Fall back to regular AI response as a last resort
-        await generateRegularAIResponse(message)
-      } else {
-        console.log('User message processing request was aborted')
-      }
+      console.error('Error in processUserMessage:', error)
+      setProcessingError('An unexpected error occurred during processing.')
+      
+      // Attempt to recover with regular AI response
+      await generateRegularAIResponseHandler(message)
     }
-  }, [user?.id, getUserLevel, generateRegularAIResponse, addAIResponseToChatHistory, generateSpeech, setProcessingError, setProcessingStage, toast])
+  }, [
+    user?.id, 
+    userProfile, 
+    generateRegularAIResponseHandler,
+    addAIResponseToChatHistory,
+    generateSpeech,
+    setProcessingError,
+    setProcessingStage
+  ])
 
   // Optimized process functions
   const processAudio = useCallback(async (audioUrl: string) => {
