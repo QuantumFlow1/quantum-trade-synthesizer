@@ -1,73 +1,61 @@
 
-import { useRef } from 'react'
+import React from 'react'
 import { VoiceTemplate } from '@/lib/types'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { DirectTextInputSection } from './audio-sections/DirectTextInputSection'
 import { AudioControlsSection } from './audio-sections/AudioControlsSection'
+import { DirectTextInputSection } from './audio-sections/DirectTextInputSection'
 import { AudioPreviewSection } from './audio-sections/AudioPreviewSection'
+import { AudioPreview } from './AudioPreview'
 import { FileUploadSection } from './audio-sections/FileUploadSection'
 
-type AudioSectionProps = {
+interface AudioSectionProps {
+  selectedVoice: VoiceTemplate
+  directText: string
+  setDirectText: React.Dispatch<React.SetStateAction<string>>
+  handleDirectTextSubmit: () => void
   isRecording: boolean
   isProcessing: boolean
   isPlaying: boolean
-  directText: string
-  previewAudioUrl: string | null
-  isPreviewPlaying: boolean
-  previewAudioRef: React.RefObject<HTMLAudioElement>
-  selectedVoice: VoiceTemplate
-  processingError: string | null
-  setDirectText: (text: string) => void
   startRecording: () => void
-  handleStopRecording: () => void
+  handleStopRecording: () => Promise<void>
+  previewAudioUrl: string | null
+  previewAudioRef: React.RefObject<HTMLAudioElement>
+  isPreviewPlaying: boolean
   playPreview: () => void
   stopPreview: () => void
-  processAudio: (url: string) => void
-  handleDirectTextSubmit: () => void
-  setIsPreviewPlaying: (isPlaying: boolean) => void
+  setIsPreviewPlaying: React.Dispatch<React.SetStateAction<boolean>>
+  processingError: string | null
+  processAudio: (url: string) => Promise<void>
 }
 
-export const AudioSection = ({
+export const AudioSection: React.FC<AudioSectionProps> = ({
+  selectedVoice,
+  directText,
+  setDirectText,
+  handleDirectTextSubmit,
   isRecording,
   isProcessing,
   isPlaying,
-  directText,
-  previewAudioUrl,
-  isPreviewPlaying,
-  previewAudioRef,
-  selectedVoice,
-  processingError,
-  setDirectText,
   startRecording,
   handleStopRecording,
+  previewAudioUrl,
+  previewAudioRef,
+  isPreviewPlaying,
   playPreview,
   stopPreview,
-  processAudio,
-  handleDirectTextSubmit,
-  setIsPreviewPlaying
-}: AudioSectionProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('audio/')) {
-      return
-    }
-
-    const audioUrl = URL.createObjectURL(file)
-    processAudio(audioUrl)
-  }
-
-  const handleTriggerFileUpload = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
-  }
-
+  setIsPreviewPlaying,
+  processingError,
+  processAudio
+}) => {
   return (
-    <>
+    <div className="space-y-6">
+      <AudioControlsSection
+        isRecording={isRecording}
+        isProcessing={isProcessing}
+        isPlaying={isPlaying}
+        startRecording={startRecording}
+        handleStopRecording={handleStopRecording}
+      />
+      
       <DirectTextInputSection
         directText={directText}
         isPlaying={isPlaying}
@@ -75,46 +63,28 @@ export const AudioSection = ({
         onTextChange={setDirectText}
         onSubmit={handleDirectTextSubmit}
       />
-
-      <div className="relative">
-        <div className="absolute inset-0 w-full h-0.5 bg-border -top-2" />
-      </div>
-
-      {processingError && (
-        <Alert variant="destructive" className="mt-4 mb-2 animate-fade-in">
-          <AlertDescription>{processingError}</AlertDescription>
-        </Alert>
-      )}
-
-      <AudioControlsSection
-        isRecording={isRecording}
-        isProcessing={isProcessing}
-        onStartRecording={startRecording}
-        onStopRecording={handleStopRecording}
-        onTriggerFileUpload={handleTriggerFileUpload}
-      />
       
-      <AudioPreviewSection 
+      <AudioPreviewSection
         previewAudioUrl={previewAudioUrl}
         isPreviewPlaying={isPreviewPlaying}
-        isProcessing={isProcessing}
-        processingError={processingError}
-        onPlayPreview={playPreview}
-        onStopPreview={stopPreview}
-        onProcessAudio={() => previewAudioUrl && processAudio(previewAudioUrl)}
+        playPreview={playPreview}
+        stopPreview={stopPreview}
       />
       
-      <FileUploadSection
-        fileInputRef={fileInputRef}
-        onFileUpload={handleFileUpload}
+      <AudioPreview 
+        previewAudioRef={previewAudioRef}
+        previewAudioUrl={previewAudioUrl}
+        setIsPreviewPlaying={setIsPreviewPlaying}
       />
-
-      <audio 
-        ref={previewAudioRef}
-        src={previewAudioUrl || undefined}
-        onEnded={() => setIsPreviewPlaying(false)}
-        className="hidden"
-      />
-    </>
+      
+      {processingError && (
+        <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded">
+          <p className="font-bold">Fout</p>
+          <p>{processingError}</p>
+        </div>
+      )}
+      
+      <FileUploadSection processAudio={processAudio} />
+    </div>
   )
 }

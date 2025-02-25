@@ -54,6 +54,7 @@ export const useSuperAdminProcessor = ({
 
   const generateFullGrok3Response = async (text: string): Promise<void> => {
     const context: any[] = [];
+    // We're not returning anything from this function, so it's Promise<void>
     await generateGrok3Response(
       text,
       context,
@@ -62,14 +63,15 @@ export const useSuperAdminProcessor = ({
       shouldRetryGrok3,
       setGrok3Available
     );
+    // No return statement needed - this function returns void
   }
 
-  // Fix: Change recheckGrok3Availability to return Promise<void> instead of Promise<boolean>
+  // Fix: recheckGrok3Availability returns Promise<void>
   const recheckGrok3Availability = async (): Promise<void> => {
     console.log('Manually rechecking Grok3 API availability...')
     await checkGrok3Availability()
     console.log('Grok3 availability check complete')
-    // No return value - this function now correctly returns Promise<void>
+    // No return value - this function returns Promise<void>
   }
 
   const processAudio = async (audioUrl: string): Promise<void> => {
