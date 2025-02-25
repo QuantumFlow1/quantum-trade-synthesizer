@@ -38,8 +38,18 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
   // Audio playback
   const { isPlaying, playAudio } = useAudioPlayback()
   
-  // Direct text input
-  const { directText, setDirectText } = useDirectTextInput()
+  // Create a simple wrapper for playAudio that handles the expected parameters
+  const handlePlayAudio = (url: string) => {
+    playAudio(url, edriziVoice.id, edriziVoice.name);
+  }
+  
+  // Direct text input with proper arguments
+  const { directText, setDirectText } = useDirectTextInput({
+    playAudio,
+    selectedVoiceId: edriziVoice.id,
+    selectedVoiceName: edriziVoice.name,
+    setLastUserInput: () => {} // We're not using this in the current implementation
+  })
 
   // Audio processing
   const { 
@@ -53,7 +63,7 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
     processDirectText
   } = useSuperAdminProcessor({
     selectedVoice: edriziVoice,
-    playAudio: (url: string) => playAudio(url),
+    playAudio: handlePlayAudio,
     setChatHistory: setChatHistory
   })
 

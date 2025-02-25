@@ -8,20 +8,15 @@ type DirectTextInputProps = {
   setLastUserInput: (text: string) => void
 }
 
-export const useDirectTextInput = ({
-  playAudio,
-  selectedVoiceId,
-  selectedVoiceName,
-  setLastUserInput
-}: DirectTextInputProps) => {
+export const useDirectTextInput = (props?: DirectTextInputProps) => {
   const [directText, setDirectText] = useState<string>('')
 
   const handleDirectTextSubmit = () => {
-    if (directText.trim()) {
+    if (directText.trim() && props) {
       console.log(`Submitting text: ${directText}`)
       // Save the user input before processing
-      setLastUserInput(directText)
-      playAudio(directText, selectedVoiceId, selectedVoiceName)
+      props.setLastUserInput(directText)
+      props.playAudio(directText, props.selectedVoiceId, props.selectedVoiceName)
       setDirectText('') // Clear input after submission
     }
   }
