@@ -18,7 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// Enhanced connection check function with more logging and Grok3 API test
+// Enhanced connection check function with graceful error handling
 export const checkSupabaseConnection = async () => {
   console.log('Starting Supabase connection check...');
   const results = {
@@ -33,9 +33,9 @@ export const checkSupabaseConnection = async () => {
     const { data: marketData, error: marketError } = await supabase.functions.invoke('market-data-collector')
     
     if (marketError) {
-      console.error('Market data collector error:', marketError)
+      console.error('Market data collector error:', marketError);
     } else {
-      console.log('Market data collector response:', marketData)
+      console.log('Market data collector response:', marketData);
       results.marketData = true;
     }
 
@@ -47,33 +47,40 @@ export const checkSupabaseConnection = async () => {
       .limit(1)
     
     if (dbError) {
-      console.error('Database connection error:', dbError)
+      console.error('Database connection error:', dbError);
     } else {
-      console.log('Database connection successful:', dbData)
+      console.log('Database connection successful:', dbData);
       results.database = true;
     }
 
-    // Test Grok3 API access through edge function
+    // Test Grok3 API access through edge function - with improved error handling
     console.log('Testing Grok3 API connection...');
-    const { data: grokData, error: grokError } = await supabase.functions.invoke('grok3-response', {
-      body: {
-        message: 'Simple test message',
-        context: []
+    try {
+      const { data: grokData, error: grokError } = await supabase.functions.invoke('grok3-response', {
+        body: {
+          message: "Simple test message",
+          context: []
+        }
+      });
+      
+      if (grokError) {
+        console.error('Grok3 API connection error:', grokError);
+      } else {
+        console.log('Grok3 API test response:', grokData ? 'Received data' : 'No data');
+        results.grok3API = !!grokData;
       }
-    })
-    
-    if (grokError) {
-      console.error('Grok3 API connection error:', grokError)
-    } else {
-      console.log('Grok3 API test response:', grokData ? 'Received data' : 'No data')
-      results.grok3API = !!grokData;
+    } catch (grokException) {
+      console.error('Grok3 API exception:', grokException);
+      // Don't fail the entire connection check for just the Grok3 API
     }
 
-    const allConnected = results.marketData && results.database && results.grok3API;
+    // Consider the connection successful if at least the core services are working
+    // We don't need to require Grok3 API for the basic functionality
+    const essentialServicesWorking = results.marketData && results.database;
     console.log('Connection check results:', results);
-    return allConnected;
+    return essentialServicesWorking;
   } catch (error) {
-    console.error('Supabase connection check failed:', error)
+    console.error('Supabase connection check failed:', error);
     console.log('Connection check results:', results);
     return false;
   }
