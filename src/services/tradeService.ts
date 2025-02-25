@@ -1,6 +1,6 @@
-
 import { supabase } from "@/lib/supabase";
-import { TradeOrder } from "@/components/trading/types";
+import { TradeOrder, MarketData } from "@/components/trading/types";
+import { MarketAnalyzer } from "@/utils/marketAnalyzer";
 
 export const submitTrade = async (
   userId: string,
@@ -58,4 +58,32 @@ export const submitTrade = async (
   console.log("Position update completed");
 
   return trade;
+};
+
+export const analyzeMarketTrend = async (marketData: MarketData[]) => {
+  console.log("Starting market trend analysis");
+  try {
+    const analysis = MarketAnalyzer.analyzeMarketTrend(marketData);
+    
+    // Log analysis to Supabase for tracking
+    const { error } = await supabase
+      .from('market_analysis')
+      .insert({
+        trend: analysis.trend,
+        current_ma: analysis.currentMA,
+        previous_ma: analysis.previousMA,
+        difference: analysis.difference,
+        window_size: analysis.windowSize,
+        timestamp: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error("Error logging market analysis:", error);
+    }
+
+    return analysis;
+  } catch (error) {
+    console.error("Error in market trend analysis:", error);
+    throw error;
+  }
 };
