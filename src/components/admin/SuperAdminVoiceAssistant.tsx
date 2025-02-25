@@ -130,6 +130,7 @@ export const SuperAdminVoiceAssistant = () => {
       grok3Available={grok3Available}
       checkGrok3Availability={checkGrok3Availability}
       resetGrok3Connection={resetGrok3Connection}
+      processAudio={processAudio}
     />
   )
 }

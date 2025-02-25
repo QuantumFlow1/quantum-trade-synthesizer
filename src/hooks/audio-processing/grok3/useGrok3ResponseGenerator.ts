@@ -62,6 +62,7 @@ export const useGrok3ResponseGenerator = ({
         console.error('Fout bij het controleren van Grok3 API-sleutel:', keyError)
         setProcessingStage('Fout bij API-sleutelcontrole, terugvallen naar standaard AI')
         setGrok3Available(false)
+        setProcessingError('Kon Grok3 API-sleutel niet controleren: ' + JSON.stringify(keyError))
         throw new Error('Kon Grok3 API-sleutel niet controleren: ' + JSON.stringify(keyError))
       }
       
@@ -69,6 +70,7 @@ export const useGrok3ResponseGenerator = ({
         console.error('Grok3 API-sleutel is niet geldig of niet geconfigureerd:', keyData)
         setProcessingStage('Ongeldige API-sleutel, terugvallen naar standaard AI')
         setGrok3Available(false)
+        setProcessingError('Ongeldige Grok3 API-sleutel: ' + JSON.stringify(keyData))
         throw new Error('Ongeldige Grok3 API-sleutel: ' + JSON.stringify(keyData))
       }
       
@@ -84,7 +86,7 @@ export const useGrok3ResponseGenerator = ({
 
       if (grok3Error) {
         console.error('Fout van Grok3 API:', grok3Error)
-        setProcessingError('Kon geen antwoord genereren van Grok3 API')
+        setProcessingError('Kon geen antwoord genereren van Grok3 API: ' + JSON.stringify(grok3Error))
         setGrok3Available(false) // Mark Grok3 as unavailable after an error
         throw grok3Error
       }
@@ -104,11 +106,18 @@ export const useGrok3ResponseGenerator = ({
       
       // Generate speech from the response
       setProcessingStage('Grok3 antwoord omzetten naar spraak')
-      await generateSpeech(grok3Response)
+      try {
+        await generateSpeech(grok3Response)
+      } catch (speechError) {
+        console.error('Fout bij het genereren van spraak:', speechError)
+        setProcessingError('Kon spraak niet genereren: ' + (speechError.message || 'Onbekende fout'))
+        // Continue with the function despite speech error
+      }
       
       return grok3Response
     } catch (error) {
       console.error('Error in generateGrok3Response:', error)
+      setProcessingError('Fout bij het genereren van een antwoord: ' + (error.message || 'Onbekende fout'))
       throw error // Re-throw to be handled by the caller
     }
   }, [addAIResponseToChatHistory, generateSpeech, setProcessingError, setProcessingStage])
