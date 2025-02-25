@@ -99,4 +99,21 @@ export const useGrok3ResponseGenerator = ({
       console.log('Grok3 antwoord ontvangen:', grok3Data)
       
       // Add Grok3 response to chat history
-      const grok3Response = g
+      const grok3Response = grok3Data.response
+      addAIResponseToChatHistory(grok3Response)
+      
+      // Generate speech from the response
+      setProcessingStage('Grok3 antwoord omzetten naar spraak')
+      await generateSpeech(grok3Response)
+      
+      return grok3Response
+    } catch (error) {
+      console.error('Error in generateGrok3Response:', error)
+      throw error // Re-throw to be handled by the caller
+    }
+  }, [addAIResponseToChatHistory, generateSpeech, setProcessingError, setProcessingStage])
+
+  return {
+    generateGrok3Response
+  }
+}
