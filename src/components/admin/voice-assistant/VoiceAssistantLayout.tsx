@@ -1,123 +1,78 @@
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { VoiceSelector } from '@/components/voice-assistant/audio/VoiceSelector'
-import { AudioControls } from '@/components/voice-assistant/audio/AudioControls'
-import { TranscriptionDisplay } from '@/components/voice-assistant/audio/TranscriptionDisplay'
-import { DirectTextInput } from '@/components/voice-assistant/audio/DirectTextInput'
-import { useRef } from 'react'
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-type VoiceAssistantLayoutProps = {
-  title: string
-  selectedVoiceId: string
-  onVoiceChange: (voiceId: string) => void
-  directText: string
-  isPlaying: boolean
-  onDirectTextChange: (text: string) => void
-  onDirectTextSubmit: () => void
-  isRecording: boolean
-  isProcessing: boolean
-  previewAudioUrl: string | null
-  isPreviewPlaying: boolean
-  onStartRecording: () => void
-  onStopRecording: () => void
-  onPlayPreview: () => void
-  onStopPreview: () => void
-  onProcessAudio: () => void
-  lastTranscription: string
-  voiceName: string
-  onPlayTranscription: () => void
-  lastUserInput?: string
-  previewAudioRef: React.RefObject<HTMLAudioElement>
-  fileInputRef: React.RefObject<HTMLInputElement>
-  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
+export interface VoiceAssistantLayoutProps {
+  title: string;
+  selectedVoiceId: string;
+  onVoiceChange: (voiceId: string) => void;
+  directText: string;
+  setDirectText: React.Dispatch<React.SetStateAction<string>>;
+  handleSendDirectText: () => void;
+  isRecording: boolean;
+  startRecording: () => void;
+  stopRecording: () => void;
+  audioUrl: string | null;
+  processingError: string | null;
+  isProcessing: boolean;
+  lastTranscription: string;
+  processingStage: string;
+  children?: React.ReactNode; // Add children prop
 }
 
-export const VoiceAssistantLayout = ({
+const VoiceAssistantLayout: React.FC<VoiceAssistantLayoutProps> = ({
   title,
   selectedVoiceId,
   onVoiceChange,
   directText,
-  isPlaying,
-  onDirectTextChange,
-  onDirectTextSubmit,
+  setDirectText,
+  handleSendDirectText,
   isRecording,
+  startRecording,
+  stopRecording,
+  audioUrl,
+  processingError,
   isProcessing,
-  previewAudioUrl,
-  isPreviewPlaying,
-  onStartRecording,
-  onStopRecording,
-  onPlayPreview,
-  onStopPreview,
-  onProcessAudio,
   lastTranscription,
-  voiceName,
-  onPlayTranscription,
-  lastUserInput,
-  previewAudioRef,
-  fileInputRef,
-  onFileUpload
-}: VoiceAssistantLayoutProps) => {
+  processingStage,
+  children
+}) => {
   return (
-    <Card className="w-full max-w-md mx-auto mt-8">
-      <CardHeader>
-        <CardTitle className="text-center">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col space-y-4">
-        <VoiceSelector 
-          selectedVoiceId={selectedVoiceId}
-          onVoiceChange={onVoiceChange}
-        />
-
-        <DirectTextInput
-          directText={directText}
-          onTextChange={onDirectTextChange}
-          onSubmit={onDirectTextSubmit}
-          disabled={isPlaying || isRecording || isProcessing}
-          placeholder="Type your question here..."
-        />
-
-        <div className="relative">
-          <div className="absolute inset-0 w-full h-0.5 bg-border -top-2" />
-        </div>
-
-        <AudioControls
-          isRecording={isRecording}
-          isProcessing={isProcessing}
-          previewAudioUrl={previewAudioUrl}
-          isPreviewPlaying={isPreviewPlaying}
-          onStartRecording={onStartRecording}
-          onStopRecording={onStopRecording}
-          onTriggerFileUpload={() => fileInputRef.current?.click()}
-          onPlayPreview={onPlayPreview}
-          onStopPreview={onStopPreview}
-          onProcessAudio={onProcessAudio}
-        />
+    <Card className="bg-card w-full max-w-4xl mx-auto shadow-lg">
+      <CardContent className="p-6">
+        <h2 className="text-xl font-semibold mb-4">{title}</h2>
         
-        <input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept="audio/*"
-          onChange={onFileUpload}
-        />
-
-        <audio 
-          ref={previewAudioRef}
-          src={previewAudioUrl || undefined}
-          onEnded={() => onStopPreview()}
-          className="hidden"
-        />
-        
-        <TranscriptionDisplay
-          isProcessing={isProcessing}
-          lastTranscription={lastTranscription}
-          voiceName={voiceName}
-          isPlaying={isPlaying}
-          onPlay={onPlayTranscription}
-          isRecording={isRecording}
-          lastUserInput={lastUserInput}
-        />
+        <Tabs defaultValue="voice" className="w-full">
+          <TabsList className="mb-4 w-full">
+            <TabsTrigger value="voice" className="flex-1">Voice Control</TabsTrigger>
+            <TabsTrigger value="chat" className="flex-1">Chat History</TabsTrigger>
+            <TabsTrigger value="connection" className="flex-1">Connection Test</TabsTrigger>
+          </TabsList>
+          
+          {/* Voice Control Tab */}
+          <TabsContent value="voice" className="space-y-6">
+            {/* Render child components */}
+            {children}
+          </TabsContent>
+          
+          {/* Chat History Tab */}
+          <TabsContent value="chat">
+            <div className="p-4 h-[500px] overflow-y-auto border rounded-md bg-background">
+              <p className="text-muted-foreground">Chat history will appear here...</p>
+            </div>
+          </TabsContent>
+          
+          {/* Connection Test Tab */}
+          <TabsContent value="connection">
+            <div className="p-4 h-[500px] overflow-y-auto border rounded-md bg-background">
+              <p className="text-muted-foreground">Connection test results will appear here...</p>
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
-  )
-}
+  );
+};
+
+export default VoiceAssistantLayout;

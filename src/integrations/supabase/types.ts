@@ -190,6 +190,36 @@ export type Database = {
         }
         Relationships: []
       }
+      market_analysis: {
+        Row: {
+          current_ma: number
+          difference: number
+          id: string
+          previous_ma: number
+          timestamp: string
+          trend: string
+          window_size: number
+        }
+        Insert: {
+          current_ma: number
+          difference: number
+          id?: string
+          previous_ma: number
+          timestamp?: string
+          trend: string
+          window_size: number
+        }
+        Update: {
+          current_ma?: number
+          difference?: number
+          id?: string
+          previous_ma?: number
+          timestamp?: string
+          trend?: string
+          window_size?: number
+        }
+        Relationships: []
+      }
       positions: {
         Row: {
           amount: number

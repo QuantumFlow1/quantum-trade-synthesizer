@@ -1,12 +1,9 @@
 
 import { useState, useCallback } from 'react'
-import { transcribeAudio } from './utils/transcriptionUtils'
-import { generateSpeechFromText } from './utils/speechUtils'
 import { VoiceTemplate } from '@/lib/types'
 import { ChatMessage } from '@/components/admin/types/chat-types'
 import { createChatMessage, extractContextFromChat } from './utils/messageUtils'
 import { toast } from '@/components/ui/use-toast'
-import { handleTranscriptionError, handleAIResponseError } from './utils/errorHandlingUtils'
 
 interface BaseAudioProcessorProps {
   selectedVoice: VoiceTemplate
@@ -23,6 +20,21 @@ export const useBaseAudioProcessor = ({
   const [lastUserInput, setLastUserInput] = useState<string>('')
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [processingError, setProcessingError] = useState<string | null>(null)
+  
+  // Generic function to process audio (to be implemented by specialized hooks)
+  const processAudio = async (audioBlob: Blob): Promise<void> => {
+    throw new Error("Method processAudio must be implemented by specialized processor");
+  };
+  
+  // Generic function to process direct text input (to be implemented by specialized hooks)
+  const processDirectText = async (text: string): Promise<void> => {
+    throw new Error("Method processDirectText must be implemented by specialized processor");
+  };
+  
+  // Generic function to generate speech from text (to be implemented by specialized hooks)
+  const generateSpeech = async (text: string): Promise<void> => {
+    throw new Error("Method generateSpeech must be implemented by specialized hooks");
+  };
   
   // Generic function to add AI response to chat history
   const addAIResponseToChatHistory = useCallback((response: string | ChatMessage) => {
@@ -44,6 +56,9 @@ export const useBaseAudioProcessor = ({
     setIsProcessing,
     processingError,
     setProcessingError,
+    processAudio,
+    processDirectText,
+    generateSpeech,
     addAIResponseToChatHistory
   }
 }

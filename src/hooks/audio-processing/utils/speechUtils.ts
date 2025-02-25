@@ -1,81 +1,101 @@
 
-import { supabase } from "@/lib/supabase"
-import { VoiceTemplate } from "@/lib/types"
-import { handleAIResponseError } from "./errorHandlingUtils"
+import { supabase } from '@/lib/supabase';
+import { VoiceTemplate } from '@/lib/types';
+import { toast } from '@/components/ui/use-toast';
+
+interface ErrorHandlingOptions {
+  setIsProcessing?: (isProcessing: boolean) => void;
+  setError?: (error: string | null) => void;
+}
 
 /**
- * Generates speech from text using selected voice
+ * Generate speech from text using Eleven Labs API through Supabase Edge Function
  */
 export const generateSpeechFromText = async (
   text: string,
-  selectedVoice: VoiceTemplate,
+  voice: VoiceTemplate,
   playAudio: (url: string) => void,
-  setProcessingStage: (stage: string) => void,
-  setProcessingError: (error: string | null) => void
+  options?: ErrorHandlingOptions
 ): Promise<void> => {
+  const { setIsProcessing, setError } = options || {};
+  
   try {
-    if (!text || !selectedVoice) {
-      console.error('Missing required parameters for speech generation')
-      setProcessingError('Missing required parameters for speech generation')
-      return
+    if (setIsProcessing) {
+      setIsProcessing(true);
     }
     
-    setProcessingStage('Generating speech')
-    console.log('Generating speech for text:', text.substring(0, 100))
-    console.log('Using voice:', selectedVoice.name, 'with ID:', selectedVoice.id)
+    if (!text || text.trim() === '') {
+      throw new Error('No text provided for speech generation');
+    }
     
-    // Create a controller for fetch request - will enable cancellation later if needed
-    const controller = new AbortController()
+    console.log(`Generating speech for text (${text.length} chars) with voice: ${voice.name}`);
     
-    const startTime = performance.now()
-    
-    // Make the request to the text-to-speech function
-    const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
-      body: { 
-        text, 
-        voiceId: selectedVoice.id 
+    // Call Supabase Edge Function
+    const { data, error } = await supabase.functions.invoke('text-to-speech', {
+      body: {
+        text,
+        voice: voice.id,
       }
-    })
-
-    const requestTime = performance.now() - startTime
-    console.log(`TTS request completed in ${requestTime.toFixed(0)}ms`)
-
-    if (speechError) {
-      console.error('Text-to-speech error:', speechError)
-      setProcessingError('Failed to generate speech. Please try again.')
-      return
-    }
-
-    // Validate the response data
-    if (!speechData) {
-      console.error('No response data from TTS service')
-      setProcessingError('No response received from speech service')
-      return
-    }
-
-    // Check for audioContent in the response
-    if (!speechData.audioContent) {
-      console.error('No audio content in response:', speechData)
-      setProcessingError('No audio content received from speech service')
-      return
-    }
-
-    // Create audio URL from base64 content
-    const audioBlob = await fetch(`data:audio/mp3;base64,${speechData.audioContent}`).then(r => r.blob())
-    const audioUrl = URL.createObjectURL(audioBlob)
-    console.log('Created audio URL from base64 content')
-
-    // Play the audio
-    setProcessingStage('Playing audio response')
-    playAudio(audioUrl)
+    });
     
-    // Clean up the URL after a delay
-    setTimeout(() => {
-      URL.revokeObjectURL(audioUrl)
-    }, 30000) // Cleanup after 30 seconds
+    if (error) {
+      console.error('Speech generation error:', error);
+      throw new Error(`Speech generation failed: ${error.message}`);
+    }
     
+    if (!data || !data.audioUrl) {
+      throw new Error('No audio URL returned from speech generation');
+    }
+    
+    console.log('Speech generated successfully, playing audio now');
+    
+    // Play the generated audio
+    playAudio(data.audioUrl);
+    
+    return data;
   } catch (error) {
-    console.error('Error in speech generation:', error)
-    handleAIResponseError(error, setProcessingError, { setProcessing: undefined })
+    console.error('Error generating speech:', error);
+    
+    if (setError) {
+      setError(error instanceof Error ? error.message : 'Failed to generate speech');
+    }
+    
+    toast({
+      title: 'Speech Generation Failed',
+      description: error instanceof Error ? error.message : 'Failed to generate speech',
+      variant: 'destructive',
+    });
+    
+    throw error;
+  } finally {
+    if (setIsProcessing) {
+      setIsProcessing(false);
+    }
   }
-}
+};
+
+/**
+ * Create a function to play audio from a URL
+ */
+export const createAudioPlayer = (): (url: string) => void => {
+  let audio: HTMLAudioElement | null = null;
+  
+  return (url: string) => {
+    // Stop any currently playing audio
+    if (audio) {
+      audio.pause();
+      audio = null;
+    }
+    
+    // Create new audio element
+    audio = new Audio(url);
+    audio.play().catch(err => {
+      console.error('Error playing audio:', err);
+      toast({
+        title: 'Audio Playback Failed',
+        description: 'Failed to play the generated audio',
+        variant: 'destructive',
+      });
+    });
+  };
+};
