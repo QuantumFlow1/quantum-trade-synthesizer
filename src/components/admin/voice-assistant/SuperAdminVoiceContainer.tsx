@@ -30,7 +30,7 @@ interface SuperAdminVoiceContainerProps {
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   grok3Available: boolean;
   manuallyDisabled?: boolean;
-  checkGrok3Availability: () => Promise<boolean>;
+  checkGrok3Availability: () => Promise<void>;
   resetGrok3Connection: () => Promise<void>;
   disableGrok3Connection?: () => void;
   processAudio: (url: string) => Promise<void>;

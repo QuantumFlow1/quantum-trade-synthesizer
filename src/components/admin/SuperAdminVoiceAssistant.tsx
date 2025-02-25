@@ -36,8 +36,6 @@ export const SuperAdminVoiceAssistant = () => {
   // Audio playback for the selected voice
   const { isPlaying, isProcessing: isAudioProcessing, playAudio } = useAudioPlayback()
   
-  // Check if Grok3 API is available
-  
   // Use adapter function to convert playAudio to expected signature
   const playAudioAdapter = (url: string) => {
     playAudio(url, selectedVoice.id, selectedVoice.name)
@@ -52,7 +50,9 @@ export const SuperAdminVoiceAssistant = () => {
     processingError,
     processingStage,
     grok3Available,
+    manuallyDisabled,
     resetGrok3Connection,
+    disableGrok3Connection,
     processAudio,
     processDirectText
   } = useSuperAdminProcessor({
@@ -145,8 +145,10 @@ export const SuperAdminVoiceAssistant = () => {
       chatHistory={chatHistory}
       setChatHistory={setChatHistory}
       grok3Available={grok3Available}
+      manuallyDisabled={manuallyDisabled}
       checkGrok3Availability={resetGrok3Connection}
       resetGrok3Connection={resetGrok3Connection}
+      disableGrok3Connection={disableGrok3Connection}
       processAudio={processAudio}
     />
   )
