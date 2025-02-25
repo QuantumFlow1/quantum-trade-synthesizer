@@ -23,6 +23,27 @@ export const useBaseAudioProcessor = ({
   const [processingError, setProcessingError] = useState<string | null>(null)
   const [processingStage, setProcessingStage] = useState<string>('')
 
+  // Pre-process user input to handle web browsing requests
+  const preprocessUserInput = (input: string): { 
+    isWebRequest: boolean, 
+    processedInput: string 
+  } => {
+    const webRelatedKeywords = [
+      'http', 'www', 'website', 'link', 'open', 'browse', 'internet', 'url',
+      'visit', 'webpagina', 'bekijk', 'bezoek', 'ga naar'
+    ]
+    
+    // Check for web-related keywords
+    const lowerInput = input.toLowerCase()
+    const isWebRequest = webRelatedKeywords.some(keyword => lowerInput.includes(keyword))
+    
+    // If it's a web request, return the original input but flag it as web request
+    return {
+      isWebRequest,
+      processedInput: input
+    }
+  }
+
   // Common function to generate speech from text
   const generateSpeech = async (text: string) => {
     try {
@@ -152,6 +173,31 @@ export const useBaseAudioProcessor = ({
       
       setChatHistory(prev => [...prev, userMessage])
 
+      // Check if this is a web browsing request
+      const { isWebRequest, processedInput } = preprocessUserInput(transcription)
+      
+      if (isWebRequest) {
+        console.log('Detected web browsing request, providing explanation response')
+        
+        // Create an explanation message
+        const explanationResponse = "Ik kan geen externe websites openen of bezoeken. Als AI-assistent kan ik geen toegang krijgen tot internet links of webpagina's. Ik kan je wel helpen met trading informatie, analyse en educatie op basis van mijn training. Hoe kan ik je verder helpen met je trading vragen?"
+        
+        // Add AI explanation message to chat history
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: explanationResponse,
+          timestamp: new Date()
+        }
+        
+        setChatHistory(prev => [...prev, aiMessage])
+        
+        // Generate speech for the explanation
+        await generateSpeech(explanationResponse)
+        setIsProcessing(false)
+        return
+      }
+
       // Get previous messages for context
       let previousMessages: any[] = []
       setChatHistory(prev => {
@@ -170,7 +216,7 @@ export const useBaseAudioProcessor = ({
 
       // Process with the provided function
       setProcessingStage('Generating AI response')
-      await processingFn(transcription, previousMessages)
+      await processingFn(processedInput, previousMessages)
     } catch (error) {
       console.error('Error in audio processing flow:', error)
       setProcessingError('An unexpected error occurred during audio processing.')
@@ -194,6 +240,9 @@ export const useBaseAudioProcessor = ({
     setLastUserInput(text)
 
     try {
+      // Check if this is a web browsing request
+      const { isWebRequest, processedInput } = preprocessUserInput(text)
+      
       // Add user message to chat history
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
@@ -203,6 +252,28 @@ export const useBaseAudioProcessor = ({
       }
       
       setChatHistory(prev => [...prev, userMessage])
+
+      if (isWebRequest) {
+        console.log('Detected web browsing request in text input, providing explanation response')
+        
+        // Create an explanation message
+        const explanationResponse = "Ik kan geen externe websites openen of bezoeken. Als AI-assistent kan ik geen toegang krijgen tot internet links of webpagina's. Ik kan je wel helpen met trading informatie, analyse en educatie op basis van mijn training. Hoe kan ik je verder helpen met je trading vragen?"
+        
+        // Add AI explanation message to chat history
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: explanationResponse,
+          timestamp: new Date()
+        }
+        
+        setChatHistory(prev => [...prev, aiMessage])
+        
+        // Generate speech for the explanation
+        await generateSpeech(explanationResponse)
+        setIsProcessing(false)
+        return
+      }
 
       toast({
         title: "Processing",
@@ -222,7 +293,7 @@ export const useBaseAudioProcessor = ({
 
       // Process with the provided function
       setProcessingStage('Generating AI response')
-      await processingFn(text, previousMessages)
+      await processingFn(processedInput, previousMessages)
     } catch (error) {
       console.error('Error processing direct text:', error)
       setProcessingError('Failed to process your message. Please try again.')
