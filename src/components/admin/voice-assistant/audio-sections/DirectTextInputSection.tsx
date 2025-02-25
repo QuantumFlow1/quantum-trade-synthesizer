@@ -18,11 +18,10 @@ export const DirectTextInputSection = ({
 }: DirectTextInputSectionProps) => {
   return (
     <DirectTextInput
-      directText={directText}
-      isPlaying={isPlaying}
-      isProcessing={isProcessing}
       onTextChange={onTextChange}
       onSubmit={onSubmit}
+      disabled={isPlaying || isProcessing}
+      placeholder="Type your question here..."
     />
   )
 }

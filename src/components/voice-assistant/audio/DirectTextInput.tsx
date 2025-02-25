@@ -9,33 +9,49 @@ type DirectTextInputProps = {
   onSubmit: () => void
   disabled?: boolean
   placeholder?: string
+  // Allow old props to be passed for backward compatibility
+  directText?: string
+  isPlaying?: boolean
+  isProcessing?: boolean
 }
 
 export const DirectTextInput = ({
   onTextChange,
   onSubmit,
   disabled = false,
-  placeholder = 'Type your message...'
+  placeholder = 'Type your message...',
+  directText: externalText,
+  isPlaying,
+  isProcessing
 }: DirectTextInputProps) => {
-  const [text, setText] = useState('')
+  // Determine if we should be disabled based on either the disabled prop or the legacy props
+  const isDisabled = disabled || isPlaying || isProcessing || false
+  
+  // Use either external state or internal state
+  const [internalText, setInternalText] = useState('')
+  const text = externalText !== undefined ? externalText : internalText
+  
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     // Focus the input field when it's rendered and not disabled
-    if (inputRef.current && !disabled) {
+    if (inputRef.current && !isDisabled) {
       inputRef.current.focus()
     }
-  }, [disabled])
+  }, [isDisabled])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && text.trim() !== '' && !disabled) {
+    if (e.key === 'Enter' && text.trim() !== '' && !isDisabled) {
       onSubmit()
     }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value
-    setText(newText)
+    if (externalText === undefined) {
+      // Only update internal state if we're not using external state
+      setInternalText(newText)
+    }
     onTextChange(newText)
   }
 
@@ -47,15 +63,16 @@ export const DirectTextInput = ({
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        disabled={disabled}
+        disabled={isDisabled}
         className="flex-1"
         data-testid="text-input"
       />
       <Button
         onClick={onSubmit}
-        disabled={text.trim() === '' || disabled}
+        disabled={text.trim() === '' || isDisabled}
         variant="default"
         size="icon"
+        className={isProcessing ? "animate-pulse" : ""}
       >
         <SendIcon className="h-4 w-4" />
       </Button>
