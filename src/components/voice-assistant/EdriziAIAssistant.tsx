@@ -19,6 +19,7 @@ import { useVoiceSelection } from '@/hooks/use-voice-selection'
 import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
 import { supabase } from '@/lib/supabase'
 import { useGrok3Availability } from '@/hooks/audio-processing/grok3/useGrok3Availability'
+import { VoiceTemplate } from '@/lib/types'
 
 interface ChatMessage {
   id: string;
@@ -52,15 +53,43 @@ export const EdriziAIAssistant = () => {
   } = useAudioPreview()
   
   // Voice selection
-  const {
-    selectedVoice,
-    setSelectedVoice,
-    selectedVoiceIndex,
-    setSelectedVoiceIndex,
-  } = useVoiceSelection()
+  const { selectedVoice, handleVoiceChange } = useVoiceSelection()
+
+  // Define selectedVoiceId and onVoiceChange for VoiceSelector
+  const selectedVoiceId = selectedVoice.id
+  const onVoiceChange = handleVoiceChange
   
   // Audio playback for the selected voice
   const { isPlaying, playAudio } = useAudioPlayback()
+  
+  // Wrapper function to adapt playAudio to the expected interface
+  const playAudioWrapper = (url: string) => {
+    // This adapts the playAudio function to match the signature expected by useEdriziAudioProcessor
+    playAudio(url, selectedVoice.id, selectedVoice.name)
+  }
+
+  // Adapter function to convert our ChatMessage to the expected type
+  const adaptChatHistory = (messages: ChatMessage[]) => {
+    return messages.map(msg => ({
+      id: msg.id,
+      role: msg.sender === 'user' ? 'user' as const : 'assistant' as const,
+      content: msg.text,
+      timestamp: msg.timestamp
+    }))
+  }
+
+  // Adapter function to update our chatHistory from the processor's messages
+  const updateChatHistory = (processorMessages: any[]) => {
+    setChatHistory(prevHistory => {
+      const newMessages = processorMessages.map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        sender: msg.role === 'user' ? 'user' as const : 'bot' as const,
+        timestamp: msg.timestamp || new Date()
+      }))
+      return [...prevHistory, ...newMessages]
+    })
+  }
   
   // Audio processing for the selected voice
   const { 
@@ -74,13 +103,22 @@ export const EdriziAIAssistant = () => {
     processDirectText
   } = useEdriziAudioProcessor({
     selectedVoice,
-    playAudio,
-    setChatHistory,
+    playAudio: playAudioWrapper,
+    setChatHistory: updateChatHistory,
     isSuperAdmin: userProfile?.role === 'super_admin' || userProfile?.role === 'lov_trader'
   })
   
   // Voice greeting (welcome message)
-  useVoiceGreeting({ playAudio, selectedVoice, isFirstVisit: chatHistory.length === 0 })
+  useEffect(() => {
+    if (chatHistory.length === 0 && !isPlaying) {
+      // Simple greeting effect
+      const greetingMessage = selectedVoice.id.includes('EdriziAI') 
+        ? "Welkom bij EdriziAI. Ik ben je Quantumflow specialist. Hoe kan ik je vandaag assisteren met je trading strategie of marktanalyse?"
+        : "Hallo! Ik ben je AI assistent. Hoe kan ik je vandaag helpen?";
+      
+      playAudio(greetingMessage, selectedVoice.id, selectedVoice.name);
+    }
+  }, []);
   
   // Add a message to the chat history
   const addMessage = (text: string, sender: 'user' | 'bot') => {
@@ -116,6 +154,11 @@ export const EdriziAIAssistant = () => {
     // Process the direct text input
     processDirectText(text)
   }
+
+  // Handler for text change
+  const handleTextChange = (text: string) => {
+    setLastUserInput(text);
+  }
   
   // Scroll to the bottom of the chat when the chat history changes
   useEffect(() => {
@@ -147,11 +190,8 @@ export const EdriziAIAssistant = () => {
               )}
             </Badge>
             <VoiceSelector 
-              selectedVoiceIndex={selectedVoiceIndex}
-              setSelectedVoiceIndex={setSelectedVoiceIndex}
-              voiceTemplates={VOICE_TEMPLATES}
-              setSelectedVoice={setSelectedVoice}
-              disabled={isRecording || isProcessing || isPlaying}
+              selectedVoiceId={selectedVoiceId}
+              onVoiceChange={onVoiceChange}
             />
           </div>
         </div>
@@ -273,7 +313,7 @@ export const EdriziAIAssistant = () => {
                 </Button>
                 
                 <DirectTextInput
-                  onTextChange={(text) => setLastUserInput(text)}
+                  onTextChange={handleTextChange}
                   onSubmit={handleDirectTextSubmit}
                   disabled={isRecording || isProcessing || isPlaying}
                   placeholder="Typ je bericht..."
@@ -314,11 +354,8 @@ export const EdriziAIAssistant = () => {
                 </p>
                 <div className="mt-2">
                   <VoiceSelector 
-                    selectedVoiceIndex={selectedVoiceIndex}
-                    setSelectedVoiceIndex={setSelectedVoiceIndex}
-                    voiceTemplates={VOICE_TEMPLATES}
-                    setSelectedVoice={setSelectedVoice}
-                    disabled={isRecording || isProcessing || isPlaying}
+                    selectedVoiceId={selectedVoiceId}
+                    onVoiceChange={onVoiceChange}
                   />
                 </div>
               </div>
