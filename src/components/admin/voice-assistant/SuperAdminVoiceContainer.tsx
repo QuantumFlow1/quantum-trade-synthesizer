@@ -13,9 +13,11 @@ import { ChatHistory } from './ChatHistory'
 import { ChatMessage } from '../types/chat-types'
 import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
 import { Button } from '@/components/ui/button'
-import { Trash2, Bot } from 'lucide-react'
+import { Trash2, Bot, Loader2 } from 'lucide-react'
 import { VoiceTemplate } from '@/lib/types'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { checkSupabaseConnection } from '@/lib/supabase'
+import { toast } from '@/components/ui/use-toast'
 
 type SuperAdminVoiceContainerProps = {
   edriziVoice: VoiceTemplate
@@ -31,6 +33,7 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
   const [directText, setDirectText] = useState<string>('')
   const [selectedVoice, setSelectedVoice] = useState(edriziVoice)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false)
   
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>(() => {
     const savedHistory = localStorage.getItem(CHAT_HISTORY_STORAGE_KEY)
@@ -58,6 +61,40 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
   useEffect(() => {
     localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistory))
   }, [chatHistory, CHAT_HISTORY_STORAGE_KEY])
+
+  useEffect(() => {
+    // Test connection when component mounts
+    testSupabaseConnection()
+  }, [])
+
+  const testSupabaseConnection = async () => {
+    setIsCheckingConnection(true)
+    try {
+      const isConnected = await checkSupabaseConnection()
+      if (isConnected) {
+        toast({
+          title: "Connection Successful",
+          description: "Successfully connected to all required services including Grok3 API.",
+          variant: "default",
+        })
+      } else {
+        toast({
+          title: "Connection Warning",
+          description: "Some services might not be available. Check console for details.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Connection test error:", error)
+      toast({
+        title: "Connection Error",
+        description: "Failed to test connections. Check console for details.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCheckingConnection(false)
+    }
+  }
 
   const {
     previewAudioUrl,
@@ -131,6 +168,21 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
           <Bot className="h-5 w-5 text-primary" />
           EdriziAI Super Admin Assistant
         </CardTitle>
+        <div className="flex justify-end">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={testSupabaseConnection}
+            disabled={isCheckingConnection}
+            className="h-8"
+          >
+            {isCheckingConnection ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <>Test Connection</>
+            )}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col space-y-4">
         <div className="flex flex-col space-y-2">

@@ -18,9 +18,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// Verbeterde connection check function met meer logging
+// Enhanced connection check function with more logging and Grok3 API test
 export const checkSupabaseConnection = async () => {
   console.log('Starting Supabase connection check...');
+  const results = {
+    marketData: false,
+    database: false,
+    grok3API: false
+  };
   
   try {
     // Test edge function connection
@@ -29,9 +34,10 @@ export const checkSupabaseConnection = async () => {
     
     if (marketError) {
       console.error('Market data collector error:', marketError)
-      return false
+    } else {
+      console.log('Market data collector response:', marketData)
+      results.marketData = true;
     }
-    console.log('Market data collector response:', marketData)
 
     // Test database connection
     console.log('Testing database connection...');
@@ -42,13 +48,33 @@ export const checkSupabaseConnection = async () => {
     
     if (dbError) {
       console.error('Database connection error:', dbError)
-      return false
+    } else {
+      console.log('Database connection successful:', dbData)
+      results.database = true;
     }
-    console.log('Database connection successful:', dbData)
 
-    return true
+    // Test Grok3 API access through edge function
+    console.log('Testing Grok3 API connection...');
+    const { data: grokData, error: grokError } = await supabase.functions.invoke('grok3-response', {
+      body: {
+        message: 'Simple test message',
+        context: []
+      }
+    })
+    
+    if (grokError) {
+      console.error('Grok3 API connection error:', grokError)
+    } else {
+      console.log('Grok3 API test response:', grokData ? 'Received data' : 'No data')
+      results.grok3API = !!grokData;
+    }
+
+    const allConnected = results.marketData && results.database && results.grok3API;
+    console.log('Connection check results:', results);
+    return allConnected;
   } catch (error) {
     console.error('Supabase connection check failed:', error)
-    return false
+    console.log('Connection check results:', results);
+    return false;
   }
 }
