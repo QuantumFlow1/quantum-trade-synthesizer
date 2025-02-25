@@ -13,6 +13,7 @@ import { LoadingProfile } from "@/components/LoadingProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
+import { SuperAdminVoiceAssistant } from "@/components/admin/SuperAdminVoiceAssistant";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
@@ -44,6 +45,8 @@ const Index = () => {
     return <LoadingProfile />;
   }
 
+  const isSuperAdmin = userProfile.role === 'super_admin';
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90">
       {!isMobile && (
@@ -71,7 +74,12 @@ const Index = () => {
             className="space-y-4 sm:space-y-6"
           >
             <Suspense fallback={<div>Loading...</div>}>
+              {/* Show SuperAdminVoiceAssistant for super admins */}
+              {isSuperAdmin && <SuperAdminVoiceAssistant />}
+              
+              {/* Regular voice assistant for everyone */}
               <VoiceAssistant />
+              
               {userProfile.role === 'admin' || userProfile.role === 'super_admin' ? (
                 <AdminPanel />
               ) : (

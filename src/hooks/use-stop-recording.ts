@@ -61,13 +61,18 @@ export const useStopRecording = ({
           } else if (transcriptionData?.transcription) {
             console.log(`User said: ${transcriptionData.transcription}`)
             setLastUserInput(transcriptionData.transcription)
+            
+            // Then process with AI
+            console.log('Processing audio for AI response...')
+            processAudio()
           } else {
             console.error('No transcription received')
+            toast({
+              title: "Error",
+              description: "No transcription received from the server",
+              variant: "destructive"
+            })
           }
-          
-          // Then process with AI
-          console.log('Processing audio for AI response...')
-          processAudio()
         }
         
         reader.readAsDataURL(blob)
