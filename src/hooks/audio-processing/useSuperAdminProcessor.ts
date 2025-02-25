@@ -60,7 +60,7 @@ export const useSuperAdminProcessor = ({
       context,
       checkGrok3Availability,
       grok3Available,
-      shouldRetryGrok3,
+      shouldRetryGrok3(),
       setGrok3Available
     );
     // No return statement needed - this function returns void

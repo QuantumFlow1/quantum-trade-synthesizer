@@ -1,10 +1,9 @@
 
-import React from 'react'
+import React, { useRef } from 'react'
 import { VoiceTemplate } from '@/lib/types'
 import { AudioControlsSection } from './audio-sections/AudioControlsSection'
 import { DirectTextInputSection } from './audio-sections/DirectTextInputSection'
 import { AudioPreviewSection } from './audio-sections/AudioPreviewSection'
-import { AudioPreview } from './AudioPreview'
 import { FileUploadSection } from './audio-sections/FileUploadSection'
 
 interface AudioSectionProps {
@@ -46,14 +45,36 @@ export const AudioSection: React.FC<AudioSectionProps> = ({
   processingError,
   processAudio
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleTriggerFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+  
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      await processAudio(url);
+    }
+  };
+  
+  const handleProcessAudio = async () => {
+    if (previewAudioUrl) {
+      await processAudio(previewAudioUrl);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <AudioControlsSection
         isRecording={isRecording}
         isProcessing={isProcessing}
-        isPlaying={isPlaying}
-        startRecording={startRecording}
-        handleStopRecording={handleStopRecording}
+        onStartRecording={startRecording}
+        onStopRecording={handleStopRecording}
+        onTriggerFileUpload={handleTriggerFileUpload}
       />
       
       <DirectTextInputSection
@@ -64,17 +85,23 @@ export const AudioSection: React.FC<AudioSectionProps> = ({
         onSubmit={handleDirectTextSubmit}
       />
       
-      <AudioPreviewSection
-        previewAudioUrl={previewAudioUrl}
-        isPreviewPlaying={isPreviewPlaying}
-        playPreview={playPreview}
-        stopPreview={stopPreview}
-      />
+      {previewAudioUrl && (
+        <AudioPreviewSection
+          previewAudioUrl={previewAudioUrl}
+          isPreviewPlaying={isPreviewPlaying}
+          isProcessing={isProcessing}
+          processingError={processingError}
+          onPlayPreview={playPreview}
+          onStopPreview={stopPreview}
+          onProcessAudio={handleProcessAudio}
+        />
+      )}
       
-      <AudioPreview 
-        previewAudioRef={previewAudioRef}
-        previewAudioUrl={previewAudioUrl}
-        setIsPreviewPlaying={setIsPreviewPlaying}
+      <audio
+        ref={previewAudioRef}
+        src={previewAudioUrl || undefined}
+        onEnded={() => setIsPreviewPlaying(false)}
+        className="hidden"
       />
       
       {processingError && (
@@ -84,7 +111,10 @@ export const AudioSection: React.FC<AudioSectionProps> = ({
         </div>
       )}
       
-      <FileUploadSection processAudio={processAudio} />
+      <FileUploadSection
+        fileInputRef={fileInputRef}
+        onFileUpload={handleFileUpload}
+      />
     </div>
   )
 }

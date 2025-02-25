@@ -74,7 +74,7 @@ export const SuperAdminVoiceAssistant = () => {
           description: "Processing your audio recording..."
         })
         
-        processAudio(audioUrl)
+        await processAudio(audioUrl)
       } else {
         console.error('No audio URL was returned from stopRecording')
         toast({

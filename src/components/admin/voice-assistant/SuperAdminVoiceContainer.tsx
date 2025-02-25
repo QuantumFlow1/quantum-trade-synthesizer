@@ -17,7 +17,7 @@ interface SuperAdminVoiceContainerProps {
   isProcessing: boolean;
   isPlaying: boolean;
   startRecording: () => void;
-  handleStopRecording: () => void;
+  handleStopRecording: () => Promise<void>;
   previewAudioUrl: string | null;
   previewAudioRef: React.RefObject<HTMLAudioElement>;
   isPreviewPlaying: boolean;
@@ -30,7 +30,7 @@ interface SuperAdminVoiceContainerProps {
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   grok3Available: boolean;
   checkGrok3Availability: () => Promise<boolean>;
-  resetGrok3Connection: () => void;
+  resetGrok3Connection: () => Promise<void>;
   processAudio: (url: string) => Promise<void>;
 }
 

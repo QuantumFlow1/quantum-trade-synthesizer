@@ -5,7 +5,7 @@ type AudioControlsSectionProps = {
   isRecording: boolean
   isProcessing: boolean
   onStartRecording: () => void
-  onStopRecording: () => void
+  onStopRecording: () => Promise<void>
   onTriggerFileUpload: () => void
 }
 
