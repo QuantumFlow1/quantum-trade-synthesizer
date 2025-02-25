@@ -1,11 +1,12 @@
 
 import { useRef } from 'react'
 import { Input } from '@/components/ui/input'
-import { DirectTextInput } from '@/components/voice-assistant/audio/DirectTextInput'
-import { AudioControls } from '@/components/voice-assistant/audio/AudioControls'
-import { AudioPreview } from './AudioPreview'
 import { VoiceTemplate } from '@/lib/types'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { DirectTextInputSection } from './audio-sections/DirectTextInputSection'
+import { AudioControlsSection } from './audio-sections/AudioControlsSection'
+import { AudioPreviewSection } from './audio-sections/AudioPreviewSection'
+import { FileUploadSection } from './audio-sections/FileUploadSection'
 
 type AudioSectionProps = {
   isRecording: boolean
@@ -63,14 +64,20 @@ export const AudioSection = ({
     }
   }
 
+  const handleTriggerFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
   return (
     <>
-      <DirectTextInput
+      <DirectTextInputSection
         directText={directText}
         isPlaying={isPlaying}
+        isProcessing={isProcessing}
         onTextChange={setDirectText}
         onSubmit={handleDirectTextSubmit}
-        isProcessing={isProcessing}
       />
 
       <div className="relative">
@@ -83,35 +90,27 @@ export const AudioSection = ({
         </Alert>
       )}
 
-      <AudioControls
+      <AudioControlsSection
         isRecording={isRecording}
         isProcessing={isProcessing}
-        previewAudioUrl={previewAudioUrl}
-        isPreviewPlaying={isPreviewPlaying}
         onStartRecording={startRecording}
         onStopRecording={handleStopRecording}
-        onTriggerFileUpload={() => fileInputRef.current?.click()}
-        onPlayPreview={playPreview}
-        onStopPreview={stopPreview}
-        onProcessAudio={() => previewAudioUrl && processAudio(previewAudioUrl)}
+        onTriggerFileUpload={handleTriggerFileUpload}
       />
       
-      <AudioPreview 
+      <AudioPreviewSection 
         previewAudioUrl={previewAudioUrl}
         isPreviewPlaying={isPreviewPlaying}
+        isProcessing={isProcessing}
+        processingError={processingError}
         onPlayPreview={playPreview}
         onStopPreview={stopPreview}
         onProcessAudio={() => previewAudioUrl && processAudio(previewAudioUrl)}
-        isProcessing={isProcessing}
-        processingError={processingError}
       />
       
-      <Input
-        type="file"
-        ref={fileInputRef}
-        className="hidden"
-        accept="audio/*"
-        onChange={handleFileUpload}
+      <FileUploadSection
+        fileInputRef={fileInputRef}
+        onFileUpload={handleFileUpload}
       />
 
       <audio 

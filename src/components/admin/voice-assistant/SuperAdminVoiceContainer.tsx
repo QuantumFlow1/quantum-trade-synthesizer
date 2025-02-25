@@ -1,23 +1,25 @@
+
 import { useState, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { VoiceTemplate } from '@/lib/types'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
-import { useStopRecording } from '@/hooks/use-stop-recording'
 import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useDirectTextInput } from '@/hooks/use-direct-text-input'
-import { VoiceAssistantLayout } from './VoiceAssistantLayout'
 import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
+import { VoiceAssistantLayout } from './VoiceAssistantLayout'
 import { ChatHistorySection } from './ChatHistorySection'
 import { AudioSection } from './AudioSection'
+import { ChatMessage } from '@/components/admin/types/chat-types'
 
 type SuperAdminVoiceContainerProps = {
   edriziVoice: VoiceTemplate
 }
 
 export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContainerProps) => {
-  const [chatHistory, setChatHistory] = useState([])
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
+  const STORAGE_KEY = 'superAdminChatHistory'
   
   // Audio recorder
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
@@ -56,26 +58,31 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
   })
 
   // Stop recording
-  const { handleStopRecording } = useStopRecording({
-    stopRecording,
-    setPreviewAudioUrl,
-    processAudio,
-    selectedVoice: edriziVoice,
-    setLastUserInput
-  })
+  const handleStopRecording = async () => {
+    const audioUrl = await stopRecording()
+    if (audioUrl) {
+      setPreviewAudioUrl(audioUrl)
+      processAudio(audioUrl)
+    }
+  }
 
   const handleDirectTextSubmit = () => {
     processDirectText(directText)
+    setDirectText('')
   }
 
   return (
-    <VoiceAssistantLayout>
+    <div className="flex flex-col space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>EdriziAI Super Admin Voice Assistant</CardTitle>
         </CardHeader>
         <CardContent className="pl-4 pb-4 relative">
-          <ChatHistorySection chatHistory={chatHistory} />
+          <ChatHistorySection 
+            chatHistory={chatHistory} 
+            setChatHistory={setChatHistory}
+            storageKey={STORAGE_KEY}
+          />
 
           <AudioSection
             isRecording={isRecording}
@@ -98,6 +105,6 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
           />
         </CardContent>
       </Card>
-    </VoiceAssistantLayout>
+    </div>
   )
 }

@@ -93,7 +93,7 @@ export const useSuperAdminProcessor = ({
         toast({
           title: "Grok3 API Error",
           description: "Falling back to standard AI response",
-          variant: "warning"
+          variant: "destructive"
         })
         // Fall back to regular AI response
         await generateRegularAIResponse(userInput)

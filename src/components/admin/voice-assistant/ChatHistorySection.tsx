@@ -1,11 +1,9 @@
 
-import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
 import { ChatHistory } from './ChatHistory'
-import { ChatMessage } from '../types/chat-types'
-import { createWelcomeMessage } from './WelcomeMessage'
+import { ChatMessage } from '@/components/admin/types/chat-types'
+import { useEffect } from 'react'
 
-type ChatHistorySectionProps = {
+export interface ChatHistorySectionProps {
   chatHistory: ChatMessage[]
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>
   storageKey: string
@@ -14,30 +12,28 @@ type ChatHistorySectionProps = {
 export const ChatHistorySection = ({ 
   chatHistory, 
   setChatHistory,
-  storageKey
+  storageKey 
 }: ChatHistorySectionProps) => {
-  const clearChatHistory = () => {
-    setChatHistory([createWelcomeMessage()])
-    localStorage.removeItem(storageKey)
-  }
+  
+  // Load chat history from localStorage on component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem(storageKey)
+    if (savedHistory) {
+      try {
+        const parsedHistory = JSON.parse(savedHistory)
+        if (Array.isArray(parsedHistory)) {
+          setChatHistory(parsedHistory)
+        }
+      } catch (error) {
+        console.error('Error parsing chat history:', error)
+      }
+    }
+  }, [storageKey, setChatHistory])
 
-  return (
-    <div className="flex flex-col space-y-2">
-      <div className="flex justify-between items-center">
-        <h3 className="text-sm font-medium">Chat History</h3>
-        {chatHistory.length > 1 && (
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={clearChatHistory}
-            className="h-8"
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Clear
-          </Button>
-        )}
-      </div>
-      <ChatHistory chatHistory={chatHistory} />
-    </div>
-  )
+  // Save chat history to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(chatHistory))
+  }, [chatHistory, storageKey])
+
+  return <ChatHistory chatHistory={chatHistory} />
 }

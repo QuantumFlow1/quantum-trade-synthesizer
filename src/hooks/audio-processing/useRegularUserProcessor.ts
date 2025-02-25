@@ -110,7 +110,7 @@ export const useRegularUserProcessor = ({
         toast({
           title: "Trading Advice Error",
           description: "Falling back to standard AI response",
-          variant: "warning"
+          variant: "destructive"
         })
         // Fall back to regular AI response
         await generateRegularAIResponse(message)
