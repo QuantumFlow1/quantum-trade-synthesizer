@@ -667,7 +667,7 @@ export type Database = {
       subscription_tier: "free" | "basic" | "premium" | "enterprise"
       trade_status: "pending" | "executed" | "cancelled" | "failed"
       trade_type: "buy" | "sell" | "short" | "long"
-      user_role: "admin" | "trader" | "analyst"
+      user_role: "admin" | "trader" | "analyst" | "super_admin"
       user_status: "active" | "suspended" | "pending"
       wallet_status: "active" | "suspended" | "closed"
       wallet_type: "spot" | "margin" | "futures"
