@@ -64,9 +64,18 @@ export const checkSupabaseConnection = async () => {
       });
       
       if (grokError) {
+        // Provide more detailed logging about the specific error
         console.error('Grok3 API connection error:', grokError);
+        
+        // Check if it's an API key issue specifically
+        if (typeof grokError === 'object' && grokError !== null) {
+          const errorMsg = JSON.stringify(grokError);
+          if (errorMsg.includes('API Key') || errorMsg.includes('Invalid API')) {
+            console.error('Detected API key issue with Grok3 API. Please check if GROK3_API_KEY is properly set in Supabase Edge Function secrets.');
+          }
+        }
       } else {
-        console.log('Grok3 API test response:', grokData ? 'Received data' : 'No data');
+        console.log('Grok3 API test response:', grokData ? JSON.stringify(grokData).substring(0, 100) + '...' : 'No data');
         results.grok3API = !!grokData;
       }
     } catch (grokException) {

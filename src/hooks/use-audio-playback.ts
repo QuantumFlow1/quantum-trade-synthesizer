@@ -23,25 +23,60 @@ export const useAudioPlayback = () => {
         console.log('Processing text with AI before speaking for EdriziAI')
         
         try {
-          const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
+          // First try Grok3 API for advanced responses
+          console.log('Attempting to use Grok3 API first...')
+          const { data: grokData, error: grokError } = await supabase.functions.invoke('grok3-response', {
             body: {
-              prompt: text,
-              voiceId: voiceId
+              message: text,
+              context: []
             }
           })
           
-          if (aiError) {
-            console.error('AI processing error:', aiError)
-            toast({
-              title: "AI Fout",
-              description: "Er was een probleem bij het genereren van een AI-antwoord",
-              variant: "destructive",
+          if (grokError) {
+            console.error('Grok3 API error:', grokError)
+            console.log('Falling back to standard AI processing...')
+            
+            // Fallback to generate-ai-response function if Grok3 fails
+            const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
+              body: {
+                prompt: text,
+                voiceId: voiceId
+              }
             })
-          } else if (aiData?.response) {
-            console.log(`AI generated response: ${aiData.response}`)
-            textToSpeak = aiData.response
+            
+            if (aiError) {
+              console.error('AI processing error:', aiError)
+              toast({
+                title: "AI Fout",
+                description: "Er was een probleem bij het genereren van een AI-antwoord",
+                variant: "destructive",
+              })
+            } else if (aiData?.response) {
+              console.log(`AI generated response: ${aiData.response}`)
+              textToSpeak = aiData.response
+            } else {
+              console.error('No AI response received')
+            }
+          } else if (grokData?.response) {
+            console.log(`Grok3 generated response: ${grokData.response}`)
+            textToSpeak = grokData.response
           } else {
-            console.error('No AI response received')
+            console.log('No Grok3 response received, using fallback')
+            
+            // Fallback to generate-ai-response if Grok3 returns no data
+            const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
+              body: {
+                prompt: text,
+                voiceId: voiceId
+              }
+            })
+            
+            if (aiError) {
+              console.error('AI processing error:', aiError)
+            } else if (aiData?.response) {
+              console.log(`AI generated response: ${aiData.response}`)
+              textToSpeak = aiData.response
+            }
           }
         } catch (aiError) {
           console.error('Failed to process with AI, using original text:', aiError)
