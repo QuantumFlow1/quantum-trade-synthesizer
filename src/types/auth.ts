@@ -1,5 +1,5 @@
 
-export type UserRole = 'admin' | 'trader' | 'viewer' | 'super_admin'
+export type UserRole = 'admin' | 'trader' | 'viewer' | 'super_admin' | 'lov_trader'
 
 export interface UserProfile {
   id: string
@@ -10,4 +10,6 @@ export interface UserProfile {
   trading_enabled: boolean
   max_trade_amount?: number
   last_login?: string
+  api_access?: boolean
+  enhanced_features?: boolean
 }

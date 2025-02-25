@@ -10,13 +10,14 @@ type AuthContextType = {
   userProfile: UserProfile | null
   isAdmin: boolean
   isTrader: boolean
+  isLovTrader: boolean
   signIn: {
     email: (email: string, password: string) => Promise<void>
     google: () => Promise<void>
     github: () => Promise<void>
   }
   signOut: () => Promise<void>
-  checkPermission: (requiredRole: UserRole) => boolean
+  checkPermission: (requiredRole: UserRole | UserRole[]) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -80,13 +81,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [user])
 
   const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin'
-  const isTrader = userProfile?.role === 'trader'
+  const isTrader = userProfile?.role === 'trader' || userProfile?.role === 'lov_trader'
+  const isLovTrader = userProfile?.role === 'lov_trader'
 
-  const checkPermission = (requiredRole: UserRole): boolean => {
+  const checkPermission = (requiredRole: UserRole | UserRole[]): boolean => {
     if (!userProfile) return false
+    
+    // Super admin can do everything
     if (userProfile.role === 'super_admin') return true
-    if (userProfile.role === 'admin') return requiredRole !== 'super_admin'
-    return userProfile.role === requiredRole
+    
+    // Check if user has any of the required roles
+    if (Array.isArray(requiredRole)) {
+      return requiredRole.includes(userProfile.role);
+    }
+    
+    // For normal admins, check if they're not trying to access super_admin stuff
+    if (userProfile.role === 'admin') {
+      return requiredRole !== 'super_admin';
+    }
+    
+    // For lov_trader, check if they can access trader stuff
+    if (userProfile.role === 'lov_trader') {
+      return requiredRole === 'trader' || requiredRole === 'lov_trader' || requiredRole === 'viewer';
+    }
+    
+    // Direct role check
+    return userProfile.role === requiredRole;
   }
 
   const signIn = {
@@ -160,6 +180,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       userProfile,
       isAdmin,
       isTrader,
+      isLovTrader,
       signIn, 
       signOut,
       checkPermission 
