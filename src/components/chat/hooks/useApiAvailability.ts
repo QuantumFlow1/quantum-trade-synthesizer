@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
 
@@ -49,6 +49,11 @@ export const useApiAvailability = () => {
       setIsLoading(false);
     }
   };
+
+  // Automatically check API availability when component mounts
+  useEffect(() => {
+    checkGrokAvailability();
+  }, []);
 
   const retryApiConnection = async () => {
     const isAvailable = await checkGrokAvailability();
