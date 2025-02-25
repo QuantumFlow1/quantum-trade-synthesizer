@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import { generateSpeechFromText } from './audio-processing/utils/speechGenerationUtils'
 import { createAndPlayAudioBlob } from './audio-processing/utils/audioPlaybackUtils'
 import { preprocessTextForVoice } from './audio-processing/utils/textPreprocessingUtils'
+import { handleAudioProcessingError } from './audio-processing/utils/errorHandlingUtils'
 
 export const useAudioPlayback = () => {
   const [isPlaying, setIsPlaying] = useState(false)
@@ -42,9 +43,7 @@ export const useAudioPlayback = () => {
         setIsProcessing
       )
     } catch (error) {
-      console.error('Error in audio playback flow:', error)
-      setIsPlaying(false)
-      setIsProcessing(false)
+      handleAudioProcessingError(error, { setIsPlaying, setIsProcessing })
     }
   }
 

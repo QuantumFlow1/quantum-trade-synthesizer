@@ -1,6 +1,7 @@
 
 import { supabase } from "@/lib/supabase"
 import { useToast } from '@/hooks/use-toast'
+import { handleSpeechGenerationError } from './errorHandlingUtils'
 
 export const preprocessTextForVoice = async (
   text: string,
@@ -63,6 +64,7 @@ export const preprocessTextForVoice = async (
         return aiData.response
       }
     } catch (aiError) {
+      handleSpeechGenerationError(aiError, 'AI text preprocessing')
       console.error('Failed to process with AI, using original text:', aiError)
     }
   }

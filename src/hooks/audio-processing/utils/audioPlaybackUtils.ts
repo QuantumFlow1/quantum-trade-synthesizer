@@ -1,5 +1,6 @@
 
 import { useToast } from '@/hooks/use-toast'
+import { handlePlaybackError, handleAudioProcessingError } from './errorHandlingUtils'
 
 export const createAndPlayAudioBlob = async (
   audioContent: string,
@@ -10,6 +11,7 @@ export const createAndPlayAudioBlob = async (
   setIsProcessing: (isProcessing: boolean) => void
 ): Promise<void> => {
   const { toast } = useToast()
+  const options = { setIsPlaying, setIsProcessing }
   
   try {
     const audioBlob = await fetch(`data:audio/mp3;base64,${audioContent}`).then(r => r.blob())
@@ -27,18 +29,18 @@ export const createAndPlayAudioBlob = async (
       try {
         await audioRef.current.play()
       } catch (playError) {
-        console.error('Error playing audio:', playError)
-        toast({
-          title: "Playback Error",
-          description: "Could not play the audio. Please try again.",
-          variant: "destructive",
-        })
-        setIsPlaying(false)
-        setIsProcessing(false)
+        handlePlaybackError(playError, options)
       }
     } else {
       const audio = new Audio(audioUrl)
-      audioRef.current = audio
+      // Use instead of direct assignment to readonly property
+      if (audioRef) {
+        Object.defineProperty(audioRef, 'current', {
+          writable: true,
+          value: audio
+        })
+      }
+      
       audio.onended = () => {
         setIsPlaying(false)
         setIsProcessing(false)
@@ -49,14 +51,7 @@ export const createAndPlayAudioBlob = async (
       try {
         await audio.play()
       } catch (playError) {
-        console.error('Error playing audio with new Audio element:', playError)
-        toast({
-          title: "Playback Error",
-          description: "Could not play the audio. Please try again.",
-          variant: "destructive",
-        })
-        setIsPlaying(false)
-        setIsProcessing(false)
+        handlePlaybackError(playError, options)
       }
     }
 
@@ -65,13 +60,6 @@ export const createAndPlayAudioBlob = async (
       description: text.length > 60 ? `${text.substring(0, 60)}...` : text,
     })
   } catch (blobError) {
-    console.error('Error creating audio blob:', blobError)
-    toast({
-      title: "Audio Processing Error",
-      description: "Could not process the audio data.",
-      variant: "destructive",
-    })
-    setIsPlaying(false)
-    setIsProcessing(false)
+    handleAudioProcessingError(blobError, options)
   }
 }

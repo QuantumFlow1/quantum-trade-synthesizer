@@ -1,5 +1,6 @@
 
 import { supabase } from "@/lib/supabase"
+import { handleSpeechGenerationError } from "./errorHandlingUtils"
 import { useToast } from '@/hooks/use-toast'
 
 export const generateSpeechFromText = async (
@@ -51,14 +52,6 @@ export const generateSpeechFromText = async (
     console.log('Audio content received successfully')
     return data.audioContent
   } catch (error) {
-    console.error('Error in speech generation:', error)
-    toast({
-      title: "Speech Generation Error",
-      description: "An unexpected error occurred",
-      variant: "destructive",
-    })
-    setIsPlaying(false)
-    setIsProcessing(false)
-    return null
+    return handleSpeechGenerationError(error, 'speech generation', { setIsPlaying, setIsProcessing })
   }
 }
