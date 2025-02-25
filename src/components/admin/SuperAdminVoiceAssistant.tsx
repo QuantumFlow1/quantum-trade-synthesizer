@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { VoiceSelector } from '../voice-assistant/audio/VoiceSelector'
@@ -12,15 +12,18 @@ import { useAudioPreview } from '@/hooks/use-audio-preview'
 import { useAudioProcessing } from '@/hooks/use-audio-processing'
 import { VOICE_TEMPLATES } from '@/lib/voice-templates'
 import { toast as sonnerToast } from 'sonner'
+import { useToast } from '@/hooks/use-toast'
 
 export const SuperAdminVoiceAssistant = () => {
   const { userProfile } = useAuth()
+  const { toast } = useToast()
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
   const { isPlaying, playAudio } = useAudioPlayback()
   const [lastTranscription, setLastTranscription] = useState<string>('')
   const [directText, setDirectText] = useState<string>('')
   const [selectedVoice, setSelectedVoice] = useState(VOICE_TEMPLATES[0])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   // Early return if not super admin
   if (userProfile?.role !== 'super_admin') {
@@ -43,10 +46,30 @@ export const SuperAdminVoiceAssistant = () => {
     setLastTranscription
   )
 
+  // Initialize with greeting
+  useEffect(() => {
+    if (!isInitialized && !isPlaying) {
+      const greetingText = "Welcome to EdriziAI Super Admin Assistant. How may I help you today?"
+      playAudio(greetingText, selectedVoice.id, selectedVoice.name)
+      setIsInitialized(true)
+    }
+  }, [isInitialized, isPlaying, selectedVoice, playAudio])
+
   const handleStopRecording = async () => {
-    const audioUrl = await stopRecording()
-    if (audioUrl) {
-      setPreviewAudioUrl(audioUrl)
+    try {
+      const audioUrl = await stopRecording()
+      if (audioUrl) {
+        setPreviewAudioUrl(audioUrl)
+        // Automatically process audio after recording
+        processAudio()
+      }
+    } catch (error) {
+      console.error('Error stopping recording:', error)
+      toast({
+        title: "Error",
+        description: "Failed to process recording",
+        variant: "destructive"
+      })
     }
   }
 
@@ -67,12 +90,19 @@ export const SuperAdminVoiceAssistant = () => {
 
   const handleVoiceChange = (voiceId: string) => {
     const voice = VOICE_TEMPLATES.find(v => v.id === voiceId)
-    if (voice) setSelectedVoice(voice)
+    if (voice) {
+      setSelectedVoice(voice)
+      toast({
+        title: "Voice Updated",
+        description: `Switched to ${voice.name}`,
+      })
+    }
   }
 
   const handleDirectTextSubmit = () => {
     if (directText.trim()) {
       playAudio(directText, selectedVoice.id, selectedVoice.name)
+      setDirectText('') // Clear input after submission
     }
   }
 
