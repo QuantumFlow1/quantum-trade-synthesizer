@@ -19,7 +19,7 @@ export const useAudioPlayback = () => {
       // For EdriziAI, process the text through the AI first
       let textToSpeak = text;
       
-      if (voiceId === 'EdriziAI-info' && !text.startsWith('EdriziAI:')) {
+      if (voiceId === 'EdriziAI-info') {
         console.log('Processing text with AI before speaking for EdriziAI')
         
         try {
@@ -32,9 +32,16 @@ export const useAudioPlayback = () => {
           
           if (aiError) {
             console.error('AI processing error:', aiError)
+            toast({
+              title: "AI Fout",
+              description: "Er was een probleem bij het genereren van een AI-antwoord",
+              variant: "destructive",
+            })
           } else if (aiData?.response) {
             console.log(`AI generated response: ${aiData.response}`)
             textToSpeak = aiData.response
+          } else {
+            console.error('No AI response received')
           }
         } catch (aiError) {
           console.error('Failed to process with AI, using original text:', aiError)

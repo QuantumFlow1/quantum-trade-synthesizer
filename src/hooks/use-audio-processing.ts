@@ -35,9 +35,13 @@ export const useAudioProcessing = (
           }
         })
 
-        if (transcriptionError) throw transcriptionError
+        if (transcriptionError) {
+          console.error('Transcription error:', transcriptionError)
+          throw transcriptionError
+        }
 
         if (!transcriptionData?.transcription) {
+          console.error('No transcription received')
           throw new Error('Geen transcriptie ontvangen')
         }
 
@@ -62,7 +66,7 @@ export const useAudioProcessing = (
             }
             
             if (aiData?.response) {
-              console.log(`AI response: ${aiData.response}`)
+              console.log(`AI response received: ${aiData.response}`)
               setLastTranscription(aiData.response)
               
               toast({
@@ -71,10 +75,21 @@ export const useAudioProcessing = (
               })
               
               return
+            } else {
+              console.error('No AI response data received')
+              throw new Error('Geen AI antwoord ontvangen')
             }
           } catch (aiProcessingError) {
             console.error('Error processing with AI:', aiProcessingError)
             // Fall back to regular transcription if AI processing fails
+            setLastTranscription(`Error: Kon geen AI-antwoord genereren. Ruw antwoord: ${transcriptionData.transcription}`)
+            
+            toast({
+              title: "AI Fout",
+              description: "Er was een probleem bij het genereren van een AI-antwoord",
+              variant: "destructive",
+            })
+            return
           }
         }
         

@@ -27,7 +27,7 @@ export const DirectTextInput = ({
     <div className="flex items-center space-x-2">
       <div className="flex-1">
         <Input
-          placeholder="Type your message..."
+          placeholder="Type je bericht..."
           value={directText}
           onChange={(e) => onTextChange(e.target.value)}
           onKeyDown={handleKeyDown}
