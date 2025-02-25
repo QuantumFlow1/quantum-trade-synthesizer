@@ -22,7 +22,9 @@ export const SuperAdminVoiceAssistant = () => {
   const { isPlaying, playAudio } = useAudioPlayback()
   const [lastTranscription, setLastTranscription] = useState<string>('')
   const [directText, setDirectText] = useState<string>('')
-  const [selectedVoice, setSelectedVoice] = useState(VOICE_TEMPLATES[0])
+  // Find and default to EdriziAI voice model
+  const defaultVoice = VOICE_TEMPLATES.find(v => v.id === "EdriziAI-info") || VOICE_TEMPLATES[0]
+  const [selectedVoice, setSelectedVoice] = useState(defaultVoice)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Early return if not super admin

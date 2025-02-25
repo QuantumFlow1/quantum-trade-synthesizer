@@ -10,7 +10,13 @@ export const useVoiceGreeting = (selectedVoice: VoiceTemplate, isPlaying: boolea
   useEffect(() => {
     const handleGreeting = async () => {
       if (!hasGreeted.current && !isPlaying) {
-        const greetingMessage = "Hallo! Ik ben je AI assistent. Hoe kan ik je vandaag helpen?"
+        let greetingMessage = "Hallo! Ik ben je AI assistent. Hoe kan ik je vandaag helpen?"
+        
+        // Specialized greeting for EdriziAI
+        if (selectedVoice.id === "EdriziAI-info") {
+          greetingMessage = "Welkom bij EdriziAI. Ik ben je Quantumflow specialist. Hoe kan ik je vandaag assisteren met je trading strategie of marktanalyse?"
+        }
+        
         hasGreeted.current = true // Set this before playing to prevent multiple greetings
         try {
           await playAudio(greetingMessage, selectedVoice.id, selectedVoice.name)
