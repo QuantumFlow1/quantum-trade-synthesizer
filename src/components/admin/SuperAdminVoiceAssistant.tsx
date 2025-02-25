@@ -10,6 +10,7 @@ import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
 import { useAudioProcessing } from '@/hooks/use-audio-processing'
+import { useVoiceGreeting } from '@/hooks/use-voice-greeting'
 import { VOICE_TEMPLATES } from '@/lib/voice-templates'
 import { toast as sonnerToast } from 'sonner'
 import { useToast } from '@/hooks/use-toast'
@@ -23,7 +24,6 @@ export const SuperAdminVoiceAssistant = () => {
   const [directText, setDirectText] = useState<string>('')
   const [selectedVoice, setSelectedVoice] = useState(VOICE_TEMPLATES[0])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
 
   // Early return if not super admin
   if (userProfile?.role !== 'super_admin') {
@@ -46,14 +46,8 @@ export const SuperAdminVoiceAssistant = () => {
     setLastTranscription
   )
 
-  // Initialize with greeting
-  useEffect(() => {
-    if (!isInitialized && !isPlaying) {
-      const greetingText = "Welcome to EdriziAI Super Admin Assistant. How may I help you today?"
-      playAudio(greetingText, selectedVoice.id, selectedVoice.name)
-      setIsInitialized(true)
-    }
-  }, [isInitialized, isPlaying, selectedVoice, playAudio])
+  // Initialize with voice greeting
+  useVoiceGreeting(selectedVoice, isPlaying)
 
   const handleStopRecording = async () => {
     try {
