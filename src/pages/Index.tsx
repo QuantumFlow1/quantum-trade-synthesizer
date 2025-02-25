@@ -4,7 +4,6 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
 import AdminPanel from "@/components/AdminPanel";
 import UserDashboard from "@/components/UserDashboard";
-import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { motion, AnimatePresence } from "framer-motion";
 import { useZoomControls } from "@/hooks/use-zoom-controls";
 import { useOAuthRedirect } from "@/hooks/use-oauth-redirect";
@@ -13,7 +12,7 @@ import { LoadingProfile } from "@/components/LoadingProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
-import { SuperAdminVoiceAssistant } from "@/components/admin/SuperAdminVoiceAssistant";
+import { EdriziAIAssistant } from "@/components/voice-assistant/EdriziAIAssistant";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
@@ -45,11 +44,10 @@ const Index = () => {
     return <LoadingProfile />;
   }
 
-  const isSuperAdmin = userProfile.role === 'super_admin';
+  const isAdminUser = userProfile.role === 'admin' || userProfile.role === 'super_admin';
   
   // For debugging
   console.log("User role:", userProfile.role);
-  console.log("Is super admin:", isSuperAdmin);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90">
@@ -78,17 +76,10 @@ const Index = () => {
             className="space-y-4 sm:space-y-6"
           >
             <Suspense fallback={<div>Loading...</div>}>
-              {/* Show either SuperAdminVoiceAssistant or regular VoiceAssistant, not both */}
-              {isSuperAdmin ? (
-                <div className="mb-6">
-                  <h2 className="text-xl font-bold mb-4">Super Admin Tools</h2>
-                  <SuperAdminVoiceAssistant />
-                </div>
-              ) : (
-                <VoiceAssistant />
-              )}
+              {/* EdriziAI Assistant for all users */}
+              <EdriziAIAssistant />
               
-              {userProfile.role === 'admin' || userProfile.role === 'super_admin' ? (
+              {isAdminUser ? (
                 <AdminPanel />
               ) : (
                 <UserDashboard />
