@@ -99,7 +99,7 @@ export const useGrok3ResponseGenerator = ({
         toast({
           title: "Fallback naar Standaard AI",
           description: "Kon geen verbinding maken met Grok3. Controleer de API-sleutelconfiguratie in Supabase.",
-          variant: "warning"
+          variant: "destructive"  // Gewijzigd van "warning" naar "destructive" om te voldoen aan de toegestane varianten
         })
       } catch (fallbackError) {
         console.error('Even fallback failed:', fallbackError)
