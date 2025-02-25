@@ -14,10 +14,7 @@ export const useVoiceSelection = () => {
     if (voice) {
       console.log(`Switching to voice: ${voice.name} (ID: ${voice.id})`)
       setSelectedVoice(voice)
-      toast({
-        title: "Stem gewijzigd",
-        description: `Je gebruikt nu ${voice.name}`,
-      })
+      toast(`Stem gewijzigd: Je gebruikt nu ${voice.name}`)
     }
   }
 
