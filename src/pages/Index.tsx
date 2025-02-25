@@ -64,17 +64,22 @@ const Index = () => {
     return <LoadingProfile />;
   }
 
+  // Helper function to determine if user is a super admin
+  const isSuperAdmin = userProfile?.role === "super_admin" || userProfile?.role === "lov_trader";
+
   return (
     <div className="w-full min-h-screen bg-background">
       {!user ? (
         <LoginComponent />
       ) : (
         <div style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}>
-          {userProfile?.role === "admin" || userProfile?.role === "super_admin" ? (
+          {isSuperAdmin ? (
             <>
               <AdminPanel />
               <SuperAdminVoiceAssistant />
             </>
+          ) : userProfile?.role === "admin" ? (
+            <AdminPanel />
           ) : (
             <>
               <UserDashboard />
@@ -93,3 +98,4 @@ const Index = () => {
 };
 
 export default Index;
+

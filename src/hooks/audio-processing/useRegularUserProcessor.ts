@@ -54,7 +54,14 @@ export const useRegularUserProcessor = ({
       
       await generateRegularAIResponse(
         userInput,
-        addAIResponseToChatHistory,
+        (response: string) => {
+          addAIResponseToChatHistory({
+            id: Date.now().toString(),
+            content: response,
+            role: 'assistant',
+            timestamp: new Date()
+          })
+        },
         generateSpeech,
         setProcessingError,
         controller
@@ -86,7 +93,14 @@ export const useRegularUserProcessor = ({
         user?.id,
         getUserLevel(userProfile),
         previousMessages,
-        addAIResponseToChatHistory,
+        (response: string) => {
+          addAIResponseToChatHistory({
+            id: Date.now().toString(),
+            content: response,
+            role: 'assistant',
+            timestamp: new Date()
+          })
+        },
         generateSpeech,
         setProcessingError,
         generateRegularAIResponseHandler,
