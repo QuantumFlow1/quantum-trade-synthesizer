@@ -1,17 +1,14 @@
 
 project_id = "tfmlretexydslgowlkid"
 
-[api]
-enabled = true
-port = 54321
-schemas = ["public", "storage"]
+[functions.process-voice]
+verify_jwt = false
 
-[db]
-port = 54322
+[functions.text-to-speech]
+verify_jwt = false
 
-[realtime]
-enabled = true
+[functions.generate-ai-response]
+verify_jwt = false
 
-[functions]
-[functions.trading-analysis]
+[functions.generate-trading-advice]
 verify_jwt = false

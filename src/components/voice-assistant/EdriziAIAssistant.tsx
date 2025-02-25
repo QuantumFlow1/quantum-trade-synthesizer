@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Mic, Send, StopCircle, FileAudio, Play, X, Trash2 } from 'lucide-react'
+import { Mic, Send, StopCircle, FileAudio, Play, X, Trash2, BookOpen, BadgeDollarSign, TrendingUp } from 'lucide-react'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
@@ -13,6 +13,7 @@ import { ChatHistory } from '@/components/admin/voice-assistant/ChatHistory'
 import { ChatMessage } from '@/components/admin/types/chat-types'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export const EdriziAIAssistant = () => {
   const { toast } = useToast()
@@ -22,9 +23,19 @@ export const EdriziAIAssistant = () => {
   const [directText, setDirectText] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
+  const [activeTab, setActiveTab] = useState<string>('chat')
   
   // Create a user-specific storage key
   const STORAGE_KEY = user ? `edriziAIChatHistory_${user.id}` : 'edriziAIChatHistory_guest'
+
+  // Common trading questions for quick access
+  const quickQuestions = [
+    "Wat zijn de beste handelsstrategieën voor beginners?",
+    "Hoe kan ik mijn risico beheren bij het handelen?",
+    "Kun je de huidige markttrends analyseren?",
+    "Wat zijn de tekenen van een bullish of bearish markt?",
+    "Hoe stel ik een stop-loss en take-profit in?"
+  ]
 
   // Get the EdriziAI voice template
   // Changed from const to let to allow reassignment
@@ -77,7 +88,7 @@ export const EdriziAIAssistant = () => {
       const greetingMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: "Welkom bij EdriziAI. Ik ben je Quantumflow specialist. Hoe kan ik je vandaag assisteren met je trading strategie of marktanalyse?",
+        content: "Welkom bij EdriziAI. Ik ben je Quantumflow trading specialist. Ik kan je helpen met marktanalyse, trading strategieën, risicobeheer en educatieve content om je handelsvaardigheden te verbeteren. Hoe kan ik je vandaag assisteren?",
         timestamp: new Date()
       }
       setChatHistory([greetingMessage])
@@ -127,6 +138,10 @@ export const EdriziAIAssistant = () => {
     }
   }
 
+  const handleQuickQuestion = (question: string) => {
+    processDirectText(question)
+  }
+
   const clearHistory = () => {
     const confirmClear = window.confirm('Weet je zeker dat je de chatgeschiedenis wilt wissen?')
     if (confirmClear) {
@@ -158,97 +173,219 @@ export const EdriziAIAssistant = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Chat History */}
-        <ChatHistory chatHistory={chatHistory} />
+        <Tabs defaultValue="chat" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="chat" className="flex items-center gap-1">
+              <Mic className="h-4 w-4" />
+              <span>Chat</span>
+            </TabsTrigger>
+            <TabsTrigger value="learn" className="flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              <span>Leren</span>
+            </TabsTrigger>
+            <TabsTrigger value="trading" className="flex items-center gap-1">
+              <TrendingUp className="h-4 w-4" />
+              <span>Trading</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="chat" className="space-y-4">
+            {/* Chat History */}
+            <ChatHistory chatHistory={chatHistory} />
 
-        {/* Text Input Form */}
-        <form onSubmit={handleDirectTextSubmit} className="flex space-x-2 items-center">
-          <Input
-            type="text"
-            placeholder="Typ een bericht naar EdriziAI..."
-            value={directText}
-            onChange={(e) => setDirectText(e.target.value)}
-            disabled={isProcessing || isRecording || isPlaying}
-            className="flex-1"
-          />
-          <Button 
-            type="submit" 
-            disabled={!directText.trim() || isProcessing || isRecording || isPlaying}
-            size="icon"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
+            {/* Text Input Form */}
+            <form onSubmit={handleDirectTextSubmit} className="flex space-x-2 items-center">
+              <Input
+                type="text"
+                placeholder="Typ een bericht naar EdriziAI..."
+                value={directText}
+                onChange={(e) => setDirectText(e.target.value)}
+                disabled={isProcessing || isRecording || isPlaying}
+                className="flex-1"
+              />
+              <Button 
+                type="submit" 
+                disabled={!directText.trim() || isProcessing || isRecording || isPlaying}
+                size="icon"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
 
-        {/* Audio Controls */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          {!isRecording ? (
-            <Button
-              onClick={startRecording}
-              disabled={isProcessing || isPlaying}
-              variant="outline"
-              size="sm"
-              className={isRecording ? "bg-red-100 hover:bg-red-200 text-red-500" : ""}
-            >
-              <Mic className="h-4 w-4 mr-2" />
-              Start Opname
-            </Button>
-          ) : (
-            <Button
-              onClick={handleStopRecording}
-              variant="outline"
-              size="sm"
-              className="bg-red-100 hover:bg-red-200 text-red-500"
-            >
-              <StopCircle className="h-4 w-4 mr-2" />
-              Stop Opname
-            </Button>
-          )}
+            {/* Audio Controls */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {!isRecording ? (
+                <Button
+                  onClick={startRecording}
+                  disabled={isProcessing || isPlaying}
+                  variant="outline"
+                  size="sm"
+                  className={isRecording ? "bg-red-100 hover:bg-red-200 text-red-500" : ""}
+                >
+                  <Mic className="h-4 w-4 mr-2" />
+                  Start Opname
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleStopRecording}
+                  variant="outline"
+                  size="sm"
+                  className="bg-red-100 hover:bg-red-200 text-red-500"
+                >
+                  <StopCircle className="h-4 w-4 mr-2" />
+                  Stop Opname
+                </Button>
+              )}
 
-          <Button
-            onClick={triggerFileUpload}
-            disabled={isRecording || isProcessing}
-            variant="outline"
-            size="sm"
-          >
-            <FileAudio className="h-4 w-4 mr-2" />
-            Upload Audio
-          </Button>
+              <Button
+                onClick={triggerFileUpload}
+                disabled={isRecording || isProcessing}
+                variant="outline"
+                size="sm"
+              >
+                <FileAudio className="h-4 w-4 mr-2" />
+                Upload Audio
+              </Button>
 
-          {previewAudioUrl && !isPreviewPlaying ? (
-            <Button
-              onClick={playPreview}
-              disabled={isRecording || !previewAudioUrl}
-              variant="outline"
-              size="sm"
-            >
-              <Play className="h-4 w-4 mr-2" />
-              Speel Opname
-            </Button>
-          ) : previewAudioUrl ? (
-            <Button
-              onClick={stopPreview}
-              disabled={isRecording || !previewAudioUrl}
-              variant="outline"
-              size="sm"
-            >
-              <StopCircle className="h-4 w-4 mr-2" />
-              Stop Afspelen
-            </Button>
-          ) : null}
+              {previewAudioUrl && !isPreviewPlaying ? (
+                <Button
+                  onClick={playPreview}
+                  disabled={isRecording || !previewAudioUrl}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Play className="h-4 w-4 mr-2" />
+                  Speel Opname
+                </Button>
+              ) : previewAudioUrl ? (
+                <Button
+                  onClick={stopPreview}
+                  disabled={isRecording || !previewAudioUrl}
+                  variant="outline"
+                  size="sm"
+                >
+                  <StopCircle className="h-4 w-4 mr-2" />
+                  Stop Afspelen
+                </Button>
+              ) : null}
 
-          {previewAudioUrl && (
-            <Button
-              onClick={() => setPreviewAudioUrl(null)}
-              variant="outline"
-              size="sm"
-              className="text-destructive"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Wis Opname
-            </Button>
-          )}
-        </div>
+              {previewAudioUrl && (
+                <Button
+                  onClick={() => setPreviewAudioUrl(null)}
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Wis Opname
+                </Button>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="learn" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="p-4 bg-secondary/20 hover:bg-secondary/30 transition-colors cursor-pointer">
+                <div className="flex flex-col space-y-2">
+                  <h3 className="font-medium">Basis Trading Principes</h3>
+                  <p className="text-sm text-muted-foreground">Leer over fundamentele concepten zoals support, resistance en trends.</p>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => processDirectText("Leg uit wat support en resistance is in trading")}
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Beginnen Met Leren
+                  </Button>
+                </div>
+              </Card>
+              
+              <Card className="p-4 bg-secondary/20 hover:bg-secondary/30 transition-colors cursor-pointer">
+                <div className="flex flex-col space-y-2">
+                  <h3 className="font-medium">Risicobeheer</h3>
+                  <p className="text-sm text-muted-foreground">Ontdek hoe je risico's effectief kunt beheren bij het handelen.</p>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => processDirectText("Hoe kan ik het risico in mijn trades beheren?")}
+                  >
+                    <BadgeDollarSign className="h-4 w-4 mr-2" />
+                    Leer Over Risicobeheer
+                  </Button>
+                </div>
+              </Card>
+              
+              <Card className="p-4 bg-secondary/20 hover:bg-secondary/30 transition-colors cursor-pointer">
+                <div className="flex flex-col space-y-2">
+                  <h3 className="font-medium">Technische Analyse</h3>
+                  <p className="text-sm text-muted-foreground">Leer grafiekpatronen en indicatoren te lezen.</p>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => processDirectText("Wat zijn de meest gebruikte technische indicatoren?")}
+                  >
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    Verken Technische Analyse
+                  </Button>
+                </div>
+              </Card>
+              
+              <Card className="p-4 bg-secondary/20 hover:bg-secondary/30 transition-colors cursor-pointer">
+                <div className="flex flex-col space-y-2">
+                  <h3 className="font-medium">Trading Psychologie</h3>
+                  <p className="text-sm text-muted-foreground">Begrijp de emotionele aspecten van trading en hoe je ze kunt beheersen.</p>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => processDirectText("Hoe kan ik emoties onder controle houden tijdens het traden?")}
+                  >
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Ontdek Trading Psychologie
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="trading" className="space-y-4">
+            <h3 className="font-medium mb-2">Veelgestelde Trading Vragen</h3>
+            <div className="grid grid-cols-1 gap-2">
+              {quickQuestions.map((question, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  className="justify-start h-auto py-2 text-left"
+                  onClick={() => handleQuickQuestion(question)}
+                >
+                  <TrendingUp className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span className="truncate">{question}</span>
+                </Button>
+              ))}
+            </div>
+            
+            <div className="mt-4">
+              <h3 className="font-medium mb-2">Stel een Gerichte Trading Vraag</h3>
+              <form onSubmit={handleDirectTextSubmit} className="flex space-x-2 items-center">
+                <Input
+                  type="text"
+                  placeholder="Bijv. Hoe analyseer ik BTCUSD momentum?"
+                  value={directText}
+                  onChange={(e) => setDirectText(e.target.value)}
+                  disabled={isProcessing || isRecording || isPlaying}
+                  className="flex-1"
+                />
+                <Button 
+                  type="submit" 
+                  disabled={!directText.trim() || isProcessing || isRecording || isPlaying}
+                  size="icon"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
+            </div>
+          </TabsContent>
+        </Tabs>
 
         <Input
           type="file"
