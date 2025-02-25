@@ -21,20 +21,82 @@ export const useBaseAudioProcessor = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [processingError, setProcessingError] = useState<string | null>(null)
   
-  // Generic function to process audio (to be implemented by specialized hooks)
-  const processAudio = async (audioBlob: Blob): Promise<void> => {
-    throw new Error("Method processAudio must be implemented by specialized processor");
-  };
+  // Function to process audio with a callback for response generation
+  const processAudio = async (audioUrl: string, responseCallback: (text: string) => Promise<void>) => {
+    if (isProcessing) {
+      console.log('Already processing audio, ignoring request')
+      return
+    }
+    
+    setIsProcessing(true)
+    setProcessingError(null)
+    
+    try {
+      // In a real implementation, this would transcribe the audio
+      // For now, we'll just use a dummy transcription
+      const transcription = "This is a simulated transcription of user audio input."
+      setLastTranscription(transcription)
+      setLastUserInput(transcription)
+      
+      // Add user message to chat history
+      const userMessage = createChatMessage(transcription, 'user')
+      setChatHistory(prev => [...prev, userMessage])
+      
+      // Call the callback to generate a response
+      await responseCallback(transcription)
+      
+    } catch (error) {
+      console.error('Error processing audio:', error)
+      setProcessingError('Failed to process audio')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
   
-  // Generic function to process direct text input (to be implemented by specialized hooks)
-  const processDirectText = async (text: string): Promise<void> => {
-    throw new Error("Method processDirectText must be implemented by specialized processor");
-  };
+  // Function to process direct text input with a callback for response generation
+  const processDirectText = async (text: string, responseCallback: (text: string) => Promise<void>) => {
+    if (isProcessing || !text.trim()) {
+      return
+    }
+    
+    setIsProcessing(true)
+    setProcessingError(null)
+    
+    try {
+      setLastUserInput(text)
+      
+      // Add user message to chat history
+      const userMessage = createChatMessage(text, 'user')
+      setChatHistory(prev => [...prev, userMessage])
+      
+      // Call the callback to generate a response
+      await responseCallback(text)
+      
+    } catch (error) {
+      console.error('Error processing text:', error)
+      setProcessingError('Failed to process text input')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
   
-  // Generic function to generate speech from text (to be implemented by specialized hooks)
-  const generateSpeech = async (text: string): Promise<void> => {
-    throw new Error("Method generateSpeech must be implemented by specialized hooks");
-  };
+  // Function to generate speech from text
+  const generateSpeech = async (text: string) => {
+    try {
+      // In a real implementation, this would call a text-to-speech API
+      // For now, we'll just console.log the text
+      console.log('Generating speech for:', text)
+      
+      // Simulate audio generation
+      playAudio(text)
+      
+      return true
+    } catch (error) {
+      console.error('Error generating speech:', error)
+      setProcessingError('Failed to generate speech')
+      return false
+    }
+  }
   
   // Generic function to add AI response to chat history
   const addAIResponseToChatHistory = useCallback((response: string | ChatMessage) => {

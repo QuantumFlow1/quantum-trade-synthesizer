@@ -61,14 +61,14 @@ export const useRegularUserProcessor = ({
 
   // Wrapper function to process audio with standard AI
   const processAudio = async (audioUrl: string) => {
-    await baseProcessAudio(audioUrl, async (text) => {
+    await baseProcessAudio(audioUrl, async (text: string) => {
       await generateStandardAIResponse(text)
     })
   }
 
   // Wrapper function to process direct text input with standard AI
   const processDirectText = async (text: string) => {
-    await baseProcessDirectText(text, async (text) => {
+    await baseProcessDirectText(text, async (text: string) => {
       await generateStandardAIResponse(text)
     })
   }

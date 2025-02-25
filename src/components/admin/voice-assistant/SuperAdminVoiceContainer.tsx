@@ -1,111 +1,110 @@
 
-import { useState, useRef } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { VoiceTemplate } from '@/lib/types'
-import { useAudioRecorder } from '@/hooks/use-audio-recorder'
-import { useAudioPreview } from '@/hooks/use-audio-preview'
-import { useAudioPlayback } from '@/hooks/use-audio-playback'
-import { useDirectTextInput } from '@/hooks/use-direct-text-input'
-import { useSuperAdminProcessor } from '@/hooks/audio-processing/useSuperAdminProcessor'
-import { VoiceAssistantLayout } from './VoiceAssistantLayout'
-import { ChatHistorySection } from './ChatHistorySection'
-import { AudioSection } from './AudioSection'
-import { ChatMessage } from '@/components/admin/types/chat-types'
+import React from 'react';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { useToast } from '@/hooks/use-toast';
+import { VoiceTemplate } from '@/lib/types';
+import ConnectionTest from './ConnectionTest';
+import { WelcomeMessage } from './SuperAdminGreeting';
+import { ChatHistorySection } from './ChatHistorySection';
+import { AudioSection } from './AudioSection';
+import VoiceAssistantLayout from './VoiceAssistantLayout';
 
-type SuperAdminVoiceContainerProps = {
-  edriziVoice: VoiceTemplate
+interface SuperAdminVoiceContainerProps {
+  selectedVoice: VoiceTemplate;
+  directText: string;
+  setDirectText: (text: string) => void;
+  handleDirectTextSubmit: () => void;
+  isRecording: boolean;
+  isProcessing: boolean;
+  isPlaying: boolean;
+  startRecording: () => void;
+  handleStopRecording: () => void;
+  previewAudioUrl: string | null;
+  previewAudioRef: React.RefObject<HTMLAudioElement>;
+  isPreviewPlaying: boolean;
+  playPreview: () => void;
+  stopPreview: () => void;
+  setIsPreviewPlaying: (isPlaying: boolean) => void;
+  processingError: string | null;
+  processingStage: string;
+  chatHistory: any[];
+  setChatHistory: (history: any[]) => void;
+  grok3Available: boolean;
+  checkGrok3Availability: () => Promise<boolean>;
+  resetGrok3Connection: () => void;
 }
 
-export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContainerProps) => {
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
-  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const STORAGE_KEY = 'superAdminChatHistory'
-  
-  // Audio recorder
-  const { isRecording, startRecording, stopRecording } = useAudioRecorder()
-  
-  // Audio preview
-  const { 
-    previewAudioUrl, 
-    setPreviewAudioUrl, 
-    isPreviewPlaying, 
-    setIsPreviewPlaying, 
-    playPreview, 
-    stopPreview 
-  } = useAudioPreview()
-  
-  // Audio playback
-  const { isPlaying, playAudio } = useAudioPlayback()
-  
-  // Create a simple wrapper for playAudio that handles the expected parameters
-  const handlePlayAudio = (url: string) => {
-    playAudio(url, edriziVoice.id, edriziVoice.name);
-  }
-  
-  // Direct text input with proper arguments
-  const { directText, setDirectText } = useDirectTextInput({
-    playAudio,
-    selectedVoiceId: edriziVoice.id,
-    selectedVoiceName: edriziVoice.name,
-    setLastUserInput: () => {} // We're not using this in the current implementation
-  })
-
-  // Audio processing
-  const { 
-    lastTranscription,
-    lastUserInput,
-    setLastUserInput,
-    isProcessing,
-    processingError,
-    processingStage,
-    processAudio,
-    processDirectText
-  } = useSuperAdminProcessor({
-    selectedVoice: edriziVoice,
-    playAudio: handlePlayAudio,
-    setChatHistory: setChatHistory
-  })
-
-  // Stop recording
-  const handleStopRecording = async () => {
-    const audioUrl = await stopRecording()
-    if (audioUrl) {
-      setPreviewAudioUrl(audioUrl)
-      processAudio(audioUrl)
-    }
-  }
-
-  const handleDirectTextSubmit = () => {
-    processDirectText(directText)
-    setDirectText('')
-  }
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    if (!file.type.startsWith('audio/')) {
-      return
-    }
-
-    const audioUrl = URL.createObjectURL(file)
-    processAudio(audioUrl)
-  }
+export const SuperAdminVoiceContainer: React.FC<SuperAdminVoiceContainerProps> = ({
+  selectedVoice,
+  directText,
+  setDirectText,
+  handleDirectTextSubmit,
+  isRecording,
+  isProcessing,
+  isPlaying,
+  startRecording,
+  handleStopRecording,
+  previewAudioUrl,
+  previewAudioRef,
+  isPreviewPlaying,
+  playPreview,
+  stopPreview,
+  setIsPreviewPlaying,
+  processingError,
+  processingStage,
+  chatHistory,
+  setChatHistory,
+  grok3Available,
+  checkGrok3Availability,
+  resetGrok3Connection
+}) => {
+  const { userProfile } = useAuth();
+  const { toast } = useToast();
+  const [showConnectionTest, setShowConnectionTest] = React.useState(false);
+  const chatHistoryStorageKey = 'superadmin-chat-history';
 
   return (
-    <div className="flex flex-col space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>EdriziAI Super Admin Voice Assistant</CardTitle>
-        </CardHeader>
-        <CardContent className="pl-4 pb-4 relative">
+    <VoiceAssistantLayout
+      title="Super Admin Voice Assistant"
+      selectedVoiceId={selectedVoice.id}
+      onVoiceChange={() => {}} // This will be passed from parent
+      directText={directText}
+      setDirectText={setDirectText}
+      handleDirectTextSubmit={handleDirectTextSubmit}
+      isRecording={isRecording}
+      isProcessing={isProcessing}
+      isPlaying={isPlaying}
+      startRecording={startRecording}
+      handleStopRecording={handleStopRecording}
+      previewAudioUrl={previewAudioUrl}
+      previewAudioRef={previewAudioRef}
+      isPreviewPlaying={isPreviewPlaying}
+      playPreview={playPreview}
+      stopPreview={stopPreview}
+      setIsPreviewPlaying={setIsPreviewPlaying}
+      processingError={processingError}
+      processingStage={processingStage}
+    >
+      {showConnectionTest ? (
+        <ConnectionTest 
+          grok3Available={grok3Available} 
+          resetGrok3Connection={resetGrok3Connection}
+          onClose={() => setShowConnectionTest(false)}
+        />
+      ) : (
+        <>
+          <WelcomeMessage 
+            selectedVoice={selectedVoice} 
+            userProfile={userProfile}
+            onConnectionTestClick={() => setShowConnectionTest(true)}
+          />
+          
           <ChatHistorySection 
             chatHistory={chatHistory} 
             setChatHistory={setChatHistory}
-            storageKey={STORAGE_KEY}
+            storageKey={chatHistoryStorageKey}
           />
-
+          
           <AudioSection
             isRecording={isRecording}
             isProcessing={isProcessing}
@@ -114,19 +113,19 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
             previewAudioUrl={previewAudioUrl}
             isPreviewPlaying={isPreviewPlaying}
             previewAudioRef={previewAudioRef}
-            selectedVoice={edriziVoice}
+            selectedVoice={selectedVoice}
             processingError={processingError}
             setDirectText={setDirectText}
             startRecording={startRecording}
             handleStopRecording={handleStopRecording}
             playPreview={playPreview}
             stopPreview={stopPreview}
-            processAudio={processAudio}
+            processAudio={() => {}} // This will be passed from parent
             handleDirectTextSubmit={handleDirectTextSubmit}
             setIsPreviewPlaying={setIsPreviewPlaying}
           />
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
+        </>
+      )}
+    </VoiceAssistantLayout>
+  );
+};

@@ -55,6 +55,21 @@ export const useSuperAdminProcessor = ({
     setProcessingStage
   })
 
+  // Function to generate a Grok3 response with all necessary parameters
+  const generateFullGrok3Response = async (text: string) => {
+    // Create an empty context array for now - in a real app, this would include chat history
+    const context: any[] = [];
+    
+    await generateGrok3Response(
+      text,
+      context,
+      checkGrok3Availability,
+      grok3Available,
+      shouldRetryGrok3,
+      setGrok3Available
+    );
+  }
+
   // Manual function to recheck API availability
   const recheckGrok3Availability = async () => {
     console.log('Manually rechecking Grok3 API availability...')
@@ -65,21 +80,21 @@ export const useSuperAdminProcessor = ({
 
   // Wrapper function to process audio with Grok3
   const processAudio = async (audioUrl: string) => {
-    await baseProcessAudio(audioUrl, async (text) => {
+    await baseProcessAudio(audioUrl, async (text: string) => {
       // Try to ensure we have the latest availability status
       await recheckGrok3Availability()
       
-      await generateGrok3Response(text)
+      await generateFullGrok3Response(text)
     })
   }
 
   // Wrapper function to process direct text input with Grok3
   const processDirectText = async (text: string) => {
-    await baseProcessDirectText(text, async (text) => {
+    await baseProcessDirectText(text, async (text: string) => {
       // Try to ensure we have the latest availability status
       await recheckGrok3Availability()
       
-      await generateGrok3Response(text)
+      await generateFullGrok3Response(text)
     })
   }
 

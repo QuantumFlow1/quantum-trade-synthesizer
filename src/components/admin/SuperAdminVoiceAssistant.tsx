@@ -1,11 +1,6 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import VoiceAssistantLayout from './voice-assistant/VoiceAssistantLayout'
-import { AudioSection } from './voice-assistant/AudioSection'
-import { ChatHistorySection } from './voice-assistant/ChatHistorySection'
-import { WelcomeMessage } from './voice-assistant/SuperAdminGreeting'
-import ConnectionTest from './voice-assistant/ConnectionTest'
 import { ChatMessage } from './types/chat-types'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
@@ -14,14 +9,13 @@ import { useVoiceSelection } from '@/hooks/use-voice-selection'
 import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
 import { useGrok3Availability } from '@/hooks/audio-processing/grok3/useGrok3Availability'
 import { useToast } from '@/hooks/use-toast'
-import { useRef } from 'react'
+import { SuperAdminVoiceContainer } from './voice-assistant/SuperAdminVoiceContainer'
 
 export const SuperAdminVoiceAssistant = () => {
   console.log('SuperAdminVoiceAssistant component is rendering')
   
   const { userProfile } = useAuth()
   const { toast } = useToast()
-  const [showConnectionTest, setShowConnectionTest] = useState(false)
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [directText, setDirectText] = useState('')
   const chatHistoryStorageKey = 'superadmin-chat-history'
@@ -122,10 +116,8 @@ export const SuperAdminVoiceAssistant = () => {
   }, [checkGrok3Availability])
   
   return (
-    <VoiceAssistantLayout
-      title="Super Admin Voice Assistant"
-      selectedVoiceId={selectedVoice.id}
-      onVoiceChange={handleVoiceChange}
+    <SuperAdminVoiceContainer
+      selectedVoice={selectedVoice}
       directText={directText}
       setDirectText={setDirectText}
       handleDirectTextSubmit={handleDirectTextSubmit}
@@ -142,48 +134,11 @@ export const SuperAdminVoiceAssistant = () => {
       setIsPreviewPlaying={setIsPreviewPlaying}
       processingError={processingError}
       processingStage={processingStage}
-    >
-      {showConnectionTest ? (
-        <ConnectionTest 
-          grok3Available={grok3Available} 
-          resetGrok3Connection={resetGrok3Connection}
-          onClose={() => setShowConnectionTest(false)}
-        />
-      ) : (
-        <>
-          <WelcomeMessage 
-            selectedVoice={selectedVoice} 
-            userProfile={userProfile}
-            onConnectionTestClick={() => setShowConnectionTest(true)}
-          />
-          
-          <ChatHistorySection 
-            chatHistory={chatHistory} 
-            setChatHistory={setChatHistory}
-            storageKey={chatHistoryStorageKey}
-          />
-          
-          <AudioSection
-            isRecording={isRecording}
-            isProcessing={isProcessing || isAudioProcessing}
-            isPlaying={isPlaying}
-            directText={directText}
-            previewAudioUrl={previewAudioUrl}
-            isPreviewPlaying={isPreviewPlaying}
-            previewAudioRef={previewAudioRef}
-            selectedVoice={selectedVoice}
-            processingError={processingError}
-            setDirectText={setDirectText}
-            startRecording={startRecording}
-            handleStopRecording={handleStopRecording}
-            playPreview={playPreview}
-            stopPreview={stopPreview}
-            processAudio={processAudio}
-            handleDirectTextSubmit={handleDirectTextSubmit}
-            setIsPreviewPlaying={setIsPreviewPlaying}
-          />
-        </>
-      )}
-    </VoiceAssistantLayout>
+      chatHistory={chatHistory}
+      setChatHistory={setChatHistory}
+      grok3Available={grok3Available}
+      checkGrok3Availability={checkGrok3Availability}
+      resetGrok3Connection={resetGrok3Connection}
+    />
   )
 }

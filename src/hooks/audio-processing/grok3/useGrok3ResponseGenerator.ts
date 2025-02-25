@@ -20,7 +20,7 @@ export const useGrok3ResponseGenerator = ({
   
   const generateGrok3Response = useCallback(async (
     userInput: string,
-    context: any[],
+    context: any[] = [],
     checkGrok3Availability: () => Promise<boolean>,
     grok3Available: boolean,
     shouldRetryGrok3: () => boolean,
@@ -99,39 +99,4 @@ export const useGrok3ResponseGenerator = ({
       console.log('Grok3 antwoord ontvangen:', grok3Data)
       
       // Add Grok3 response to chat history
-      const grok3Response = grok3Data.response
-      addAIResponseToChatHistory(grok3Response)
-
-      // Generate speech for the Grok3 response
-      setProcessingStage('Grok3 antwoord omzetten naar spraak')
-      await generateSpeech(grok3Response)
-      
-    } catch (error) {
-      console.error('Fout in generateGrok3Response:', error)
-
-      // Fall back to standard AI
-      setProcessingStage('Terugvallen naar standaard AI')
-      console.log('Terugvallen naar standaard AI na Grok3 fout')
-      
-      try {
-        const fallbackResponse = "Ik kon geen verbinding maken met de geavanceerde Grok3 AI. Ik gebruik nu een standaard AI-model. Dit kan gebeuren als de API-sleutel niet goed geconfigureerd is in Supabase. Kan ik je anders helpen met trading informatie of advies?"
-        
-        addAIResponseToChatHistory(fallbackResponse)
-        await generateSpeech(fallbackResponse)
-        
-        toast({
-          title: "Fallback naar Standaard AI",
-          description: "Kon geen verbinding maken met Grok3. Controleer de API-sleutelconfiguratie in Supabase.",
-          variant: "destructive"
-        })
-      } catch (fallbackError) {
-        console.error('Zelfs de fallback is mislukt:', fallbackError)
-        setProcessingError('Kon geen enkel AI-antwoord genereren. Probeer het later opnieuw.')
-      }
-    }
-  }, [addAIResponseToChatHistory, generateSpeech, setProcessingError, setProcessingStage, toast])
-
-  return {
-    generateGrok3Response
-  }
-}
+      const grok3Response = g
