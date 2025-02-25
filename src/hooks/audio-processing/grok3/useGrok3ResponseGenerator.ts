@@ -1,8 +1,7 @@
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
-import { ChatMessage } from '@/components/admin/types/chat-types'
 
 interface Grok3ResponseGeneratorProps {
   addAIResponseToChatHistory: (response: string) => void
@@ -18,139 +17,98 @@ export const useGrok3ResponseGenerator = ({
   setProcessingStage
 }: Grok3ResponseGeneratorProps) => {
   const { toast } = useToast()
-
-  // Function to generate regular AI response as fallback
-  const generateRegularAIResponse = async (userInput: string) => {
-    try {
-      setProcessingStage('Genereren standaard AI-antwoord')
-      
-      // Fallback to regular AI response
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
-        body: { prompt: userInput }
-      })
-
-      if (aiError) {
-        console.error('Error generating AI response:', aiError)
-        setProcessingError('Failed to generate AI response.')
-        toast({
-          title: "AI Fout",
-          description: "Kon geen AI-antwoord genereren",
-          variant: "destructive"
-        })
-        return
-      }
-
-      const aiResponse = aiData?.response
-      if (!aiResponse) {
-        console.error('No response returned from AI service')
-        setProcessingError('No response received from AI service.')
-        return
-      }
-
-      // Add AI response to chat history
-      addAIResponseToChatHistory(aiResponse)
-
-      // Convert AI response to speech
-      await generateSpeech(aiResponse)
-    } catch (error) {
-      console.error('Error generating regular AI response:', error)
-      setProcessingError('Failed to generate AI response. Please try again later.')
-    }
-  }
-
-  // Function to generate Grok3 response
-  const generateGrok3Response = async (
-    userInput: string, 
-    context: any[] = [],
+  
+  const generateGrok3Response = useCallback(async (
+    userInput: string,
+    context: any[],
     checkGrok3Availability: () => Promise<boolean>,
     grok3Available: boolean,
     shouldRetryGrok3: () => boolean,
     setGrok3Available: (available: boolean) => void
   ) => {
     try {
-      // Check Grok3 availability before proceeding
-      const isGrok3Available = await checkGrok3Availability()
-      
-      // If Grok3 is known to be unavailable and we're not due for a retry, skip directly to fallback
-      if (!isGrok3Available && !shouldRetryGrok3()) {
-        console.log('Skipping Grok3 API due to previous failures, using fallback directly')
-        await generateRegularAIResponse(userInput)
-        return
+      // Check if Grok3 is currently marked as available
+      if (!grok3Available) {
+        console.log('Grok3 marked as unavailable, checking if we should retry...')
+        // Should we retry connecting to Grok3?
+        if (shouldRetryGrok3()) {
+          console.log('Retrying Grok3 connection...')
+          const isAvailable = await checkGrok3Availability()
+          console.log('Retry result:', isAvailable)
+          
+          if (!isAvailable) {
+            console.log('Grok3 still unavailable after retry, falling back to standard AI')
+            setProcessingStage('Grok3 unavailable, falling back to standard AI')
+            throw new Error('Grok3 API unavailable after retry')
+          }
+        } else {
+          console.log('Not retrying Grok3, using standard AI')
+          setProcessingStage('Using standard AI (Grok3 unavailable)')
+          throw new Error('Grok3 API unavailable')
+        }
       }
+
+      // Grok3 is available, let's use it
+      setProcessingStage('Generating response using Grok3')
+      console.log('Generating Grok3 response with input:', userInput)
       
-      setProcessingStage('Verbinden met Grok3 API')
-      console.log('Generating response with Grok3 API for super admin...')
-      
-      // Set a timeout to avoid waiting too long for Grok3
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Grok3 API request timed out')), 15000) // 15 second timeout
-      })
-      
-      // Make the actual API request
-      const apiPromise = supabase.functions.invoke('grok3-response', {
-        body: {
+      const { data: grok3Data, error: grok3Error } = await supabase.functions.invoke('grok3-response', {
+        body: { 
           message: userInput,
-          context: context
+          context: context 
         }
       })
-      
-      // Race between the timeout and API request
-      const { data, error } = await Promise.race([
-        apiPromise,
-        timeoutPromise.then(() => ({ data: null, error: new Error('Timeout') }))
-      ]) as any
 
-      if (error) {
-        console.error('Error calling Grok3 API:', error)
-        setProcessingError('Failed to connect to Grok3 API. Falling back to regular AI.')
-        setGrok3Available(false) // Mark as unavailable for future requests
+      if (grok3Error) {
+        console.error('Error from Grok3 API:', grok3Error)
+        setProcessingError('Failed to generate response from Grok3 API')
+        setGrok3Available(false) // Mark Grok3 as unavailable after an error
+        throw grok3Error
+      }
+
+      if (!grok3Data?.response) {
+        console.error('No response from Grok3 API:', grok3Data)
+        setProcessingError('No response received from Grok3 API')
+        setGrok3Available(false) // Mark Grok3 as unavailable if no response
+        throw new Error('No response from Grok3 API')
+      }
+
+      console.log('Received Grok3 response:', grok3Data)
+      
+      // Add Grok3 response to chat history
+      const grok3Response = grok3Data.response
+      addAIResponseToChatHistory(grok3Response)
+
+      // Generate speech for the Grok3 response
+      setProcessingStage('Converting Grok3 response to speech')
+      await generateSpeech(grok3Response)
+      
+    } catch (error) {
+      console.error('Error in generateGrok3Response:', error)
+
+      // Fall back to standard AI
+      setProcessingStage('Falling back to standard AI')
+      console.log('Falling back to standard AI after Grok3 error')
+      
+      try {
+        const fallbackResponse = "Ik kon geen verbinding maken met de geavanceerde Grok3 AI. Ik gebruik nu een standaard AI-model. Dit kan gebeuren als de API-sleutel niet goed geconfigureerd is in Supabase. Kan ik je anders helpen met trading informatie of advies?"
+        
+        addAIResponseToChatHistory(fallbackResponse)
+        await generateSpeech(fallbackResponse)
         
         toast({
-          title: "Grok3 API Fout",
-          description: "Schakel over naar standaard AI-antwoord",
-          variant: "destructive"
+          title: "Fallback naar Standaard AI",
+          description: "Kon geen verbinding maken met Grok3. Controleer de API-sleutelconfiguratie in Supabase.",
+          variant: "warning"
         })
-        
-        // Fall back to regular AI response
-        await generateRegularAIResponse(userInput)
-        return
+      } catch (fallbackError) {
+        console.error('Even fallback failed:', fallbackError)
+        setProcessingError('Failed to generate any AI response. Please try again later.')
       }
-
-      const aiResponse = data?.response
-      if (!aiResponse) {
-        console.error('No response returned from Grok3 API')
-        setProcessingError('No response received from Grok3 API. Falling back to regular AI.')
-        setGrok3Available(false) // Mark as unavailable for future requests
-        
-        await generateRegularAIResponse(userInput)
-        return
-      }
-
-      console.log('Got Grok3 response:', aiResponse.substring(0, 100) + '...')
-      setProcessingStage('Processing Grok3 response')
-      
-      // Add AI response to chat history
-      addAIResponseToChatHistory(aiResponse)
-
-      // Convert AI response to speech
-      await generateSpeech(aiResponse)
-      
-      toast({
-        title: "Succes",
-        description: "Grok3 antwoord succesvol gegenereerd",
-      })
-    } catch (error) {
-      console.error('Error generating Grok3 response:', error)
-      setProcessingError('Error with Grok3 response. Falling back to regular AI.')
-      setGrok3Available(false) // Mark as unavailable for future requests
-      
-      // Fall back to regular AI response
-      await generateRegularAIResponse(userInput)
     }
-  }
+  }, [addAIResponseToChatHistory, generateSpeech, setProcessingError, setProcessingStage, toast])
 
   return {
-    generateRegularAIResponse,
     generateGrok3Response
   }
 }

@@ -21,6 +21,38 @@ export const useGrok3Availability = () => {
     try {
       console.log('Checking Grok3 API availability...')
       
+      // First check API keys to ensure they're properly configured
+      console.log('Invoking check-api-keys function...')
+      const { data: keyData, error: keyError } = await supabase.functions.invoke('check-api-keys', {
+        body: { check: 'grok3' }
+      })
+      
+      if (keyError) {
+        console.error('API key check failed:', keyError)
+        toast({
+          title: "API Configuratie Fout",
+          description: "Kon de API-sleutels niet controleren. Controleer de Supabase-functielogs.",
+          variant: "destructive"
+        })
+        setGrok3Available(false)
+        return false
+      }
+      
+      console.log('API key check response:', keyData)
+      
+      if (!keyData?.apiKeyValid) {
+        console.warn('Grok3 API key is not valid or not configured')
+        toast({
+          title: "Grok3 API Sleutel Ontbreekt",
+          description: "De Grok3 API-sleutel is niet geconfigureerd. Controleer de functiegeheimen in Supabase.",
+          variant: "destructive"
+        })
+        setGrok3Available(false)
+        return false
+      }
+      
+      // Now test the Grok3 API connection
+      console.log('Testing Grok3 API connection...')
       const { data, error } = await supabase.functions.invoke('grok3-response', {
         body: { message: "system: ping test", context: [] }
       })

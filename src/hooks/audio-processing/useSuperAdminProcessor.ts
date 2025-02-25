@@ -55,9 +55,20 @@ export const useSuperAdminProcessor = ({
     setProcessingStage
   })
 
+  // Manual function to recheck API availability
+  const recheckGrok3Availability = async () => {
+    console.log('Manually rechecking Grok3 API availability...')
+    const isAvailable = await checkGrok3Availability()
+    console.log('Grok3 availability check result:', isAvailable)
+    return isAvailable
+  }
+
   // Wrapper function to process audio with Grok3
   const processAudio = async (audioUrl: string) => {
     await baseProcessAudio(audioUrl, async (text, context) => {
+      // Try to ensure we have the latest availability status
+      await recheckGrok3Availability()
+      
       await generateGrok3Response(
         text, 
         context, 
@@ -72,6 +83,9 @@ export const useSuperAdminProcessor = ({
   // Wrapper function to process direct text input with Grok3
   const processDirectText = async (text: string) => {
     await baseProcessDirectText(text, async (text, context) => {
+      // Try to ensure we have the latest availability status
+      await recheckGrok3Availability()
+      
       await generateGrok3Response(
         text, 
         context, 
@@ -93,6 +107,7 @@ export const useSuperAdminProcessor = ({
     grok3Available,
     processAudio,
     processDirectText,
-    checkGrok3Availability
+    checkGrok3Availability,
+    recheckGrok3Availability
   }
 }
