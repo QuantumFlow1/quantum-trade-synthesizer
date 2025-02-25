@@ -1,17 +1,8 @@
 
-import { useState, useEffect } from 'react'
+import { useRegularUserProcessor } from './audio-processing/useRegularUserProcessor'
+import { useSuperAdminProcessor } from './audio-processing/useSuperAdminProcessor'
+import { VoiceTemplate } from '@/lib/types'
 import { ChatMessage } from '@/components/admin/types/chat-types'
-import { VOICE_TEMPLATES } from '@/lib/voice-templates'
-import { useAuth } from '@/components/auth/AuthProvider'
-import { supabase } from '@/lib/supabase'
-
-// Define a type for the selected voice
-type VoiceTemplate = {
-  id: string;
-  name: string;
-  description: string;
-  prompt: string;
-}
 
 interface AudioProcessorProps {
   selectedVoice: VoiceTemplate
@@ -26,304 +17,29 @@ export const useEdriziAudioProcessor = ({
   setChatHistory,
   isSuperAdmin = false
 }: AudioProcessorProps) => {
-  const [lastTranscription, setLastTranscription] = useState<string>('')
-  const [lastUserInput, setLastUserInput] = useState<string>('')
-  const [isProcessing, setIsProcessing] = useState(false)
-  const { user, userProfile } = useAuth()
+  // Choose the appropriate processor based on user type
+  const regularProcessor = useRegularUserProcessor({
+    selectedVoice,
+    playAudio,
+    setChatHistory
+  })
 
-  const getUserLevel = () => {
-    // Determine user level based on userProfile or default to beginner
-    // This checks if the userProfile has a role property set to 'trader' or 'admin'
-    if (userProfile?.role === 'trader' || userProfile?.role === 'admin') {
-      return 'advanced'
-    }
-    return 'beginner'
-  }
+  const superAdminProcessor = useSuperAdminProcessor({
+    selectedVoice,
+    playAudio,
+    setChatHistory
+  })
 
-  const processAudio = async (audioUrl: string) => {
-    if (!audioUrl) return
+  // Select the appropriate processor based on user type
+  const processor = isSuperAdmin ? superAdminProcessor : regularProcessor
 
-    setIsProcessing(true)
-    try {
-      // First step: Process voice to get transcription
-      const { data: transcriptionData, error: transcriptionError } = await supabase.functions.invoke('process-voice', {
-        body: { audioUrl }
-      })
-
-      if (transcriptionError) {
-        console.error('Error processing voice:', transcriptionError)
-        setIsProcessing(false)
-        return
-      }
-
-      const transcription = transcriptionData?.transcription
-      if (!transcription) {
-        console.error('No transcription returned from service')
-        setIsProcessing(false)
-        return
-      }
-
-      console.log('Got transcription:', transcription)
-      setLastTranscription(transcription)
-      setLastUserInput(transcription)
-      
-      // Add user message to chat history
-      const userMessage: ChatMessage = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: transcription,
-        timestamp: new Date()
-      }
-      
-      setChatHistory(prev => [...prev, userMessage])
-
-      // Get previous messages for context
-      let previousMessages: any[] = []
-      setChatHistory(prev => {
-        // Take the last 10 messages
-        previousMessages = prev.slice(-10).map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        }))
-        return prev
-      })
-
-      // Use Grok3 API for super admin or regular trading advice for others
-      if (isSuperAdmin) {
-        await generateGrok3Response(transcription, previousMessages)
-      } else {
-        // Generate trading-specific advice
-        const { data: adviceData, error: adviceError } = await supabase.functions.invoke('generate-trading-advice', {
-          body: { 
-            message: transcription, 
-            userId: user?.id,
-            userLevel: getUserLevel()
-          }
-        })
-
-        if (adviceError) {
-          console.error('Error generating trading advice:', adviceError)
-          // Fall back to regular AI response
-          await generateRegularAIResponse(transcription)
-          return
-        }
-
-        const advice = adviceData?.advice
-        if (!advice) {
-          console.error('No advice returned from trading service')
-          await generateRegularAIResponse(transcription)
-          return
-        }
-
-        // Add AI response to chat history
-        const aiMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: advice,
-          timestamp: new Date()
-        }
-        
-        setChatHistory(prev => [...prev, aiMessage])
-
-        // Convert AI response to speech
-        await generateSpeech(advice)
-      }
-    } catch (error) {
-      console.error('Error in audio processing flow:', error)
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
-  const generateGrok3Response = async (userInput: string, context: any[] = []) => {
-    try {
-      console.log('Generating response with Grok3 API for super admin...')
-      
-      const { data, error } = await supabase.functions.invoke('grok3-response', {
-        body: {
-          message: userInput,
-          context: context
-        }
-      })
-
-      if (error) {
-        console.error('Error calling Grok3 API:', error)
-        // Fall back to regular AI response
-        await generateRegularAIResponse(userInput)
-        return
-      }
-
-      const aiResponse = data?.response
-      if (!aiResponse) {
-        console.error('No response returned from Grok3 API')
-        await generateRegularAIResponse(userInput)
-        return
-      }
-
-      console.log('Got Grok3 response:', aiResponse.substring(0, 100) + '...')
-
-      // Add AI response to chat history
-      const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: aiResponse,
-        timestamp: new Date()
-      }
-      
-      setChatHistory(prev => [...prev, aiMessage])
-
-      // Convert AI response to speech
-      await generateSpeech(aiResponse)
-    } catch (error) {
-      console.error('Error generating Grok3 response:', error)
-      // Fall back to regular AI response
-      await generateRegularAIResponse(userInput)
-    }
-  }
-
-  const generateRegularAIResponse = async (userInput: string) => {
-    try {
-      // Fallback to regular AI response if trading advice fails
-      const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
-        body: { prompt: userInput }
-      })
-
-      if (aiError) {
-        console.error('Error generating AI response:', aiError)
-        return
-      }
-
-      const aiResponse = aiData?.response
-      if (!aiResponse) {
-        console.error('No response returned from AI service')
-        return
-      }
-
-      // Add AI response to chat history
-      const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: aiResponse,
-        timestamp: new Date()
-      }
-      
-      setChatHistory(prev => [...prev, aiMessage])
-
-      // Convert AI response to speech
-      await generateSpeech(aiResponse)
-    } catch (error) {
-      console.error('Error generating regular AI response:', error)
-    }
-  }
-
-  const generateSpeech = async (text: string) => {
-    try {
-      const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
-        body: { 
-          text, 
-          voiceId: selectedVoice.id 
-        }
-      })
-
-      if (speechError) {
-        console.error('Error generating speech:', speechError)
-        return
-      }
-
-      const audioUrl = speechData?.audioUrl
-      if (!audioUrl) {
-        console.error('No audio URL returned from speech service')
-        return
-      }
-
-      // Play the generated audio
-      playAudio(audioUrl)
-    } catch (error) {
-      console.error('Error in text-to-speech flow:', error)
-    }
-  }
-
-  const processDirectText = async (text: string) => {
-    if (!text.trim()) return
-
-    setIsProcessing(true)
-    setLastUserInput(text)
-
-    try {
-      // Add user message to chat history
-      const userMessage: ChatMessage = {
-        id: Date.now().toString(),
-        role: 'user',
-        content: text,
-        timestamp: new Date()
-      }
-      
-      setChatHistory(prev => [...prev, userMessage])
-
-      // Get previous messages for context
-      let previousMessages: any[] = []
-      setChatHistory(prev => {
-        // Take the last 10 messages
-        previousMessages = prev.slice(-10).map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        }))
-        return prev
-      })
-
-      // Use Grok3 API for super admin or regular trading advice for others
-      if (isSuperAdmin) {
-        await generateGrok3Response(text, previousMessages)
-      } else {
-        // Generate trading-specific advice for text input
-        const { data: adviceData, error: adviceError } = await supabase.functions.invoke('generate-trading-advice', {
-          body: { 
-            message: text,
-            userId: user?.id,
-            userLevel: getUserLevel()
-          }
-        })
-
-        if (adviceError) {
-          console.error('Error generating trading advice:', adviceError)
-          // Fall back to regular AI response
-          await generateRegularAIResponse(text)
-          return
-        }
-
-        const advice = adviceData?.advice
-        if (!advice) {
-          console.error('No advice returned from trading service')
-          await generateRegularAIResponse(text)
-          return
-        }
-
-        // Add AI response to chat history
-        const aiMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: advice,
-          timestamp: new Date()
-        }
-        
-        setChatHistory(prev => [...prev, aiMessage])
-
-        // Convert AI response to speech
-        await generateSpeech(advice)
-      }
-    } catch (error) {
-      console.error('Error processing direct text:', error)
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-
+  // Return the selected processor's methods and state
   return {
-    lastTranscription,
-    lastUserInput,
-    setLastUserInput,
-    isProcessing,
-    processAudio,
-    processDirectText
+    lastTranscription: processor.lastTranscription,
+    lastUserInput: processor.lastUserInput,
+    setLastUserInput: processor.setLastUserInput,
+    isProcessing: processor.isProcessing,
+    processAudio: processor.processAudio,
+    processDirectText: processor.processDirectText
   }
 }
