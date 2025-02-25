@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mail, Shield, ShieldAlert } from "lucide-react"
+import { Mail, Shield, ShieldAlert, Loader2 } from "lucide-react"
 import { useAuth } from './AuthProvider'
 import { useToast } from "@/hooks/use-toast"
 import { supabase } from '@/lib/supabase'
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export const LoginComponent = () => {
   const [email, setEmail] = useState('')
@@ -20,23 +21,48 @@ export const LoginComponent = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
   const [selectedRole, setSelectedRole] = useState<'viewer' | 'trader' | 'admin' | 'super_admin'>('viewer')
+  const [formError, setFormError] = useState<string | null>(null)
   const { signIn } = useAuth()
   const { toast } = useToast()
 
+  const validateForm = () => {
+    if (!email || !email.includes('@')) {
+      setFormError('Please enter a valid email address')
+      return false
+    }
+    if (!password || password.length < 6) {
+      setFormError('Password must be at least 6 characters')
+      return false
+    }
+    setFormError(null)
+    return true
+  }
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!validateForm()) return
+    
     setIsLoading(true)
     try {
-      await signIn.email(email, password)
+      console.log('Attempting login with email:', email)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      
+      if (error) throw error
+      
+      console.log('Login successful:', data)
       toast({
-        title: "Succesvol ingelogd",
-        description: "Welkom terug!",
+        title: "Login Successful",
+        description: "Welcome back!",
       })
     } catch (error: any) {
       console.error('Login error:', error)
+      setFormError(error.message || "Check your email and password")
       toast({
-        title: "Login mislukt",
-        description: error.message || "Controleer uw email en wachtwoord",
+        title: "Login Failed",
+        description: error.message || "Check your email and password",
         variant: "destructive",
       })
     } finally {
@@ -46,18 +72,22 @@ export const LoginComponent = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!validateForm()) return
+    
     setIsLoading(true)
     try {
-      // Eerst de gebruiker aanmaken
+      console.log('Attempting to register with email:', email)
+      // First create the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
       })
       
       if (authError) throw authError
+      console.log('User created:', authData)
 
       if (authData.user) {
-        // Voeg de gebruikersrol toe
+        // Add the user role
         const { error: roleError } = await supabase
           .from('user_roles')
           .insert({
@@ -65,19 +95,25 @@ export const LoginComponent = () => {
             role: selectedRole
           })
 
-        if (roleError) throw roleError
+        if (roleError) {
+          console.error('Error setting user role:', roleError)
+          throw roleError
+        }
+        
+        console.log('User role added:', selectedRole)
       }
       
       toast({
-        title: "Registratie succesvol",
-        description: "Je kunt nu inloggen met je account",
+        title: "Registration Successful",
+        description: "You can now login with your account",
       })
       setIsRegistering(false)
     } catch (error: any) {
       console.error('Signup error:', error)
+      setFormError(error.message || "Registration failed")
       toast({
-        title: "Registratie mislukt",
-        description: error.message || "Probeer het opnieuw",
+        title: "Registration Failed",
+        description: error.message || "Please try again",
         variant: "destructive",
       })
     } finally {
@@ -87,27 +123,41 @@ export const LoginComponent = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
-      <div className="w-full max-w-md space-y-8 p-8 bg-card rounded-lg shadow-lg border">
+      <div className="w-full max-w-md space-y-6 p-8 bg-card rounded-lg shadow-lg border">
         <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-bold">{isRegistering ? 'Registreren' : 'Login'}</h1>
+          <h1 className="text-2xl font-bold">{isRegistering ? 'Register' : 'Login'}</h1>
           <p className="text-muted-foreground">
-            {isRegistering ? 'Maak een nieuw account aan' : 'Log in met je email'}
+            {isRegistering ? 'Create a new account' : 'Log in with your email'}
           </p>
         </div>
+        
+        {formError && (
+          <Alert variant="destructive" className="my-4">
+            <AlertDescription>{formError}</AlertDescription>
+          </Alert>
+        )}
         
         <form onSubmit={isRegistering ? handleSignUp : handleEmailLogin} className="space-y-4">
           <Input
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value)
+              setFormError(null)
+            }}
+            disabled={isLoading}
             required
           />
           <Input
             type="password"
-            placeholder="Wachtwoord"
+            placeholder="Password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              setFormError(null)
+            }}
+            disabled={isLoading}
             required
           />
           
@@ -115,9 +165,10 @@ export const LoginComponent = () => {
             <Select
               value={selectedRole}
               onValueChange={(value: 'viewer' | 'trader' | 'admin' | 'super_admin') => setSelectedRole(value)}
+              disabled={isLoading}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecteer een rol" />
+                <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="viewer">
@@ -148,22 +199,37 @@ export const LoginComponent = () => {
             </Select>
           )}
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            <Mail className="mr-2 h-4 w-4" />
-            {isLoading 
-              ? "Even geduld..." 
-              : (isRegistering ? "Registreren" : "Login")}
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isRegistering ? "Registering..." : "Logging in..."}
+              </>
+            ) : (
+              <>
+                <Mail className="mr-2 h-4 w-4" />
+                {isRegistering ? "Register" : "Login"}
+              </>
+            )}
           </Button>
         </form>
 
         <Button
           variant="ghost"
           className="w-full"
-          onClick={() => setIsRegistering(!isRegistering)}
+          onClick={() => {
+            setIsRegistering(!isRegistering)
+            setFormError(null)
+          }}
+          disabled={isLoading}
         >
           {isRegistering 
-            ? "Al een account? Login hier" 
-            : "Nog geen account? Registreer hier"}
+            ? "Already have an account? Login here" 
+            : "No account? Register here"}
         </Button>
       </div>
     </div>

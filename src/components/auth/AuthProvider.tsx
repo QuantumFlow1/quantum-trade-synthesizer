@@ -28,18 +28,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Haal de huidige sessie op bij het laden
+    // Get the current session on load
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session check:", session)
       setSession(session)
       setUser(session?.user ?? null)
       setIsLoading(false)
     })
 
-    // Luister naar auth status veranderingen
+    // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log("Auth state changed:", _event, session)
+      console.log("Auth state changed:", _event, session?.user?.email)
       setSession(session)
       setUser(session?.user ?? null)
     })
@@ -57,13 +58,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return
       }
 
+      console.log("Fetching profile for user:", user.id)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single()
 
-      if (!error && data) {
+      if (error) {
+        console.error("Error fetching user profile:", error)
+        return
+      }
+
+      if (data) {
+        console.log("User profile retrieved:", data)
         setUserProfile(data as UserProfile)
       }
     }
@@ -71,12 +79,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     fetchUserProfile()
   }, [user])
 
-  const isAdmin = userProfile?.role === 'admin'
+  const isAdmin = userProfile?.role === 'admin' || userProfile?.role === 'super_admin'
   const isTrader = userProfile?.role === 'trader'
 
   const checkPermission = (requiredRole: UserRole): boolean => {
     if (!userProfile) return false
-    if (userProfile.role === 'admin') return true
+    if (userProfile.role === 'super_admin') return true
+    if (userProfile.role === 'admin') return requiredRole !== 'super_admin'
     return userProfile.role === requiredRole
   }
 
@@ -115,23 +124,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
+      console.log("Signing out...")
       await supabase.auth.signOut()
       
-      // Reset state na succesvolle uitlog
+      // Reset state after successful signout
       setUser(null)
       setSession(null)
       setUserProfile(null)
       
-      // Verwijder alle Supabase gerelateerde items uit localStorage
+      // Remove any Supabase related items from localStorage
       const items = { ...localStorage }
       Object.keys(items).forEach(key => {
         if (key.startsWith('sb-')) {
           localStorage.removeItem(key)
         }
       })
+      console.log("Sign out complete")
     } catch (error) {
-      console.error('Uitlog error:', error)
-      // Bij een error alsnog state resetten voor een clean slate
+      console.error('Sign out error:', error)
+      // Reset state anyway on error for a clean slate
       setUser(null)
       setSession(null)
       setUserProfile(null)
@@ -161,7 +172,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth moet binnen een AuthProvider gebruikt worden')
+    throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
 }
