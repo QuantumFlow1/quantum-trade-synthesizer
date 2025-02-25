@@ -2,6 +2,7 @@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Send } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
 
 type DirectTextInputProps = {
   directText: string
@@ -16,6 +17,15 @@ export const DirectTextInput = ({
   onTextChange,
   onSubmit
 }: DirectTextInputProps) => {
+  const inputRef = useRef<HTMLInputElement>(null)
+  
+  // Focus the input when the component mounts
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus()
+    }
+  }, [])
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && directText.trim()) {
       e.preventDefault()
@@ -27,6 +37,7 @@ export const DirectTextInput = ({
     <div className="flex items-center space-x-2">
       <div className="flex-1">
         <Input
+          ref={inputRef}
           placeholder="Type je bericht..."
           value={directText}
           onChange={(e) => onTextChange(e.target.value)}
