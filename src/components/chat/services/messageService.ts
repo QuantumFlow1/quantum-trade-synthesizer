@@ -1,7 +1,8 @@
 
-import { supabase } from '@/lib/supabase';
 import { ChatMessage } from '../types/chat';
 import { v4 as uuidv4 } from 'uuid';
+import { generateGrok3Response } from './grok3Service';
+import { generateFallbackResponse } from './fallbackService';
 
 export const generateAIResponse = async (
   inputMessage: string,
@@ -12,36 +13,20 @@ export const generateAIResponse = async (
   let error = null;
   
   if (apiAvailable) {
-    console.log('Using Grok3 API...');
-    const grokResult = await supabase.functions.invoke('grok3-response', {
-      body: { 
-        message: inputMessage,
-        context: conversationHistory
-      }
-    });
-    
-    if (!grokResult.error && grokResult.data?.response) {
-      response = grokResult.data.response;
-    } else {
-      console.error('Grok3 API error:', grokResult.error);
-      error = grokResult.error;
+    try {
+      response = await generateGrok3Response(inputMessage, conversationHistory);
+    } catch (grokError) {
+      console.error('Grok3 service error:', grokError);
+      error = grokError;
     }
   }
   
   if (!response) {
-    console.log('Using fallback AI service...');
-    const fallbackResult = await supabase.functions.invoke('generate-ai-response', {
-      body: { 
-        message: inputMessage,
-        history: conversationHistory
-      }
-    });
-    
-    if (!fallbackResult.error && fallbackResult.data?.response) {
-      response = fallbackResult.data.response;
-    } else {
-      console.error('Fallback AI error:', fallbackResult.error);
-      if (!error) error = fallbackResult.error;
+    try {
+      response = await generateFallbackResponse(inputMessage, conversationHistory);
+    } catch (fallbackError) {
+      console.error('Fallback service error:', fallbackError);
+      if (!error) error = fallbackError;
     }
   }
   
