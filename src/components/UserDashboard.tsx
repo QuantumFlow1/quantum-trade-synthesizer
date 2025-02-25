@@ -123,3 +123,9 @@ const UserDashboard = () => {
             Uitloggen
           </Button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+export default UserDashboard;
