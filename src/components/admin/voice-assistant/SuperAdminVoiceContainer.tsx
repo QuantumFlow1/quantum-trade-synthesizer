@@ -31,6 +31,7 @@ interface SuperAdminVoiceContainerProps {
   grok3Available: boolean;
   checkGrok3Availability: () => Promise<boolean>;
   resetGrok3Connection: () => void;
+  processAudio: (url: string) => Promise<void>;
 }
 
 export const SuperAdminVoiceContainer = ({
@@ -55,7 +56,8 @@ export const SuperAdminVoiceContainer = ({
   setChatHistory,
   grok3Available,
   checkGrok3Availability,
-  resetGrok3Connection
+  resetGrok3Connection,
+  processAudio
 }: SuperAdminVoiceContainerProps) => {
   return (
     <Tabs defaultValue="voice" className="w-full">
@@ -85,6 +87,7 @@ export const SuperAdminVoiceContainer = ({
           stopPreview={stopPreview}
           setIsPreviewPlaying={setIsPreviewPlaying}
           processingError={processingError}
+          processAudio={processAudio}
         />
       </TabsContent>
       

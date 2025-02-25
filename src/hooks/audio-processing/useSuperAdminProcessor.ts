@@ -64,11 +64,10 @@ export const useSuperAdminProcessor = ({
     );
   }
 
-  const recheckGrok3Availability = async () => {
+  const recheckGrok3Availability = async (): Promise<void> => {
     console.log('Manually rechecking Grok3 API availability...')
-    const isAvailable = await checkGrok3Availability()
-    console.log('Grok3 availability check result:', isAvailable)
-    return isAvailable
+    await checkGrok3Availability()
+    console.log('Grok3 availability check complete')
   }
 
   const processAudio = async (audioUrl: string): Promise<void> => {
