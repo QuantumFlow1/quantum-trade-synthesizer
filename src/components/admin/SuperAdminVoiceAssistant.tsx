@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { VoiceAssistantLayout } from './voice-assistant/VoiceAssistantLayout'
+import VoiceAssistantLayout from './voice-assistant/VoiceAssistantLayout'
 import { AudioSection } from './voice-assistant/AudioSection'
 import { ChatHistorySection } from './voice-assistant/ChatHistorySection'
 import { WelcomeMessage } from './voice-assistant/SuperAdminGreeting'

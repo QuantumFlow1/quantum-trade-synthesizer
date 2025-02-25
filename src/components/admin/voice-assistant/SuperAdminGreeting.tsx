@@ -6,12 +6,6 @@ import { Button } from '@/components/ui/button';
 import { VoiceTemplate } from '@/lib/types';
 import { UserProfile } from '@/types/auth';
 
-interface WelcomeMessageProps {
-  selectedVoice: VoiceTemplate;
-  userProfile: UserProfile | null;
-  onConnectionTestClick: () => void;
-}
-
 export const SuperAdminGreeting: React.FC = () => {
   return (
     <Card className="w-full bg-gradient-to-br from-slate-100 to-slate-200">
@@ -30,6 +24,12 @@ export const SuperAdminGreeting: React.FC = () => {
     </Card>
   );
 };
+
+interface WelcomeMessageProps {
+  selectedVoice: VoiceTemplate;
+  userProfile: UserProfile | null;
+  onConnectionTestClick: () => void;
+}
 
 export const WelcomeMessage: React.FC<WelcomeMessageProps> = ({ 
   selectedVoice, 

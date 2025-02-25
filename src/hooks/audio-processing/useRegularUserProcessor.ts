@@ -37,7 +37,7 @@ export const useRegularUserProcessor = ({
   })
 
   // Function to generate a standard AI response
-  const generateStandardAIResponse = async (userInput: string, context: ChatMessage[]) => {
+  const generateStandardAIResponse = async (userInput: string) => {
     try {
       setProcessingStage('Generating standard AI response')
       console.log('Generating standard AI response for input:', userInput)
@@ -62,14 +62,14 @@ export const useRegularUserProcessor = ({
   // Wrapper function to process audio with standard AI
   const processAudio = async (audioUrl: string) => {
     await baseProcessAudio(audioUrl, async (text) => {
-      await generateStandardAIResponse(text, [])
+      await generateStandardAIResponse(text)
     })
   }
 
   // Wrapper function to process direct text input with standard AI
   const processDirectText = async (text: string) => {
     await baseProcessDirectText(text, async (text) => {
-      await generateStandardAIResponse(text, [])
+      await generateStandardAIResponse(text)
     })
   }
 

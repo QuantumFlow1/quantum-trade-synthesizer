@@ -27,7 +27,7 @@ export interface VoiceAssistantLayoutProps {
   children?: React.ReactNode;
 }
 
-export const VoiceAssistantLayout: React.FC<VoiceAssistantLayoutProps> = ({
+export default function VoiceAssistantLayout({
   title,
   selectedVoiceId,
   onVoiceChange,
@@ -48,7 +48,7 @@ export const VoiceAssistantLayout: React.FC<VoiceAssistantLayoutProps> = ({
   processingError,
   processingStage,
   children
-}) => {
+}: VoiceAssistantLayoutProps) {
   return (
     <Card className="bg-card w-full max-w-4xl mx-auto shadow-lg">
       <CardContent className="p-6">
@@ -84,4 +84,4 @@ export const VoiceAssistantLayout: React.FC<VoiceAssistantLayoutProps> = ({
       </CardContent>
     </Card>
   );
-};
+}

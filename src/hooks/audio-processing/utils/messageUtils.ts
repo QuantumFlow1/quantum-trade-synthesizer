@@ -3,13 +3,13 @@ import { ChatMessage } from '@/components/admin/types/chat-types';
 
 export const createChatMessage = (
   content: string, 
-  role: 'user' | 'assistant' | 'system'
+  role: 'user' | 'assistant'
 ): ChatMessage => {
   return {
     id: Date.now().toString(),
     content,
     role,
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(),
   };
 };
 

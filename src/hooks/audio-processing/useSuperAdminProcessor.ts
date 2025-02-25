@@ -69,14 +69,7 @@ export const useSuperAdminProcessor = ({
       // Try to ensure we have the latest availability status
       await recheckGrok3Availability()
       
-      await generateGrok3Response(
-        text, 
-        [], 
-        checkGrok3Availability, 
-        grok3Available, 
-        shouldRetryGrok3,
-        setGrok3Available
-      )
+      await generateGrok3Response(text)
     })
   }
 
@@ -86,14 +79,7 @@ export const useSuperAdminProcessor = ({
       // Try to ensure we have the latest availability status
       await recheckGrok3Availability()
       
-      await generateGrok3Response(
-        text, 
-        [], 
-        checkGrok3Availability, 
-        grok3Available, 
-        shouldRetryGrok3,
-        setGrok3Available
-      )
+      await generateGrok3Response(text)
     })
   }
 
