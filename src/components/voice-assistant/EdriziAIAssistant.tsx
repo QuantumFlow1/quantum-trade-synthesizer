@@ -12,15 +12,19 @@ import { VOICE_TEMPLATES } from '@/lib/voice-templates'
 import { ChatHistory } from '@/components/admin/voice-assistant/ChatHistory'
 import { ChatMessage } from '@/components/admin/types/chat-types'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/components/auth/AuthProvider'
 
 export const EdriziAIAssistant = () => {
   const { toast } = useToast()
+  const { user } = useAuth() // Use Auth provider to get current user
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
   const { isPlaying, playAudio } = useAudioPlayback()
   const [directText, setDirectText] = useState<string>('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
-  const STORAGE_KEY = 'edriziAIChatHistory'
+  
+  // Create a user-specific storage key
+  const STORAGE_KEY = user ? `edriziAIChatHistory_${user.id}` : 'edriziAIChatHistory_guest'
 
   // Get the EdriziAI voice template
   // Changed from const to let to allow reassignment
@@ -54,7 +58,7 @@ export const EdriziAIAssistant = () => {
     setChatHistory
   })
 
-  // Load chat history from localStorage on component mount
+  // Load chat history from localStorage on component mount or when user changes
   useEffect(() => {
     const savedHistory = localStorage.getItem(STORAGE_KEY)
     if (savedHistory) {
@@ -69,7 +73,7 @@ export const EdriziAIAssistant = () => {
     }
     
     // Add a greeting message if no history exists
-    if (!savedHistory || JSON.parse(savedHistory).length === 0) {
+    if (!savedHistory || JSON.parse(savedHistory || '[]').length === 0) {
       const greetingMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
@@ -78,12 +82,12 @@ export const EdriziAIAssistant = () => {
       }
       setChatHistory([greetingMessage])
     }
-  }, [])
+  }, [STORAGE_KEY, user]) // Re-run when STORAGE_KEY or user changes
 
   // Save chat history to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(chatHistory))
-  }, [chatHistory])
+  }, [chatHistory, STORAGE_KEY])
 
   const handleStopRecording = async () => {
     const audioUrl = await stopRecording()
