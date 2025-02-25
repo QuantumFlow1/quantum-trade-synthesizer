@@ -87,18 +87,17 @@ export const useBaseAudioProcessor = ({
       
       // Create a controller for fetch request - will enable cancellation later if needed
       const controller = new AbortController()
-      const signal = controller.signal
       
       // More detailed request logging
       console.log('Sending request to text-to-speech function with voice ID:', selectedVoice.id)
       
       const startTime = performance.now()
+      // Remove the signal property from function options
       const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
         body: { 
           text, 
           voiceId: selectedVoice.id 
-        },
-        signal
+        }
       })
       const requestTime = performance.now() - startTime
       console.log(`TTS request completed in ${requestTime.toFixed(0)}ms`)

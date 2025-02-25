@@ -62,9 +62,9 @@ export const useRegularUserProcessor = ({
       
       // Fallback to regular AI response if trading advice fails
       const startTime = performance.now()
+      // Remove the signal property from Supabase function options
       const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
-        body: { prompt: userInput },
-        signal: controller.signal
+        body: { prompt: userInput }
       })
       console.log(`AI response generated in ${performance.now() - startTime}ms`)
 
@@ -133,14 +133,14 @@ export const useRegularUserProcessor = ({
       
       // Generate trading-specific advice
       const startTime = performance.now()
+      // Remove the signal property from Supabase function options
       const { data: adviceData, error: adviceError } = await supabase.functions.invoke('generate-trading-advice', {
         body: { 
           message, 
           userId: user?.id,
           userLevel: getUserLevel(),
           previousMessages
-        },
-        signal: controller.signal
+        }
       })
       console.log(`Trading advice generated in ${performance.now() - startTime}ms`)
 
