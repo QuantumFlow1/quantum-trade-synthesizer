@@ -402,5 +402,22 @@ export const EdriziAIAssistant = () => {
             </div>
           </TabsContent>
         </Tabs>
-        
-        {/*
+      </CardContent>
+      
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        accept="audio/*"
+        onChange={handleFileUpload}
+      />
+
+      <audio 
+        ref={previewAudioRef}
+        src={previewAudioUrl || undefined}
+        onEnded={() => stopPreview()}
+        className="hidden"
+      />
+    </Card>
+  )
+}
