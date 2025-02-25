@@ -48,6 +48,9 @@ export const useAudioPlayback = () => {
         }
       }
       
+      // Log the request to text-to-speech function
+      console.log(`Sending to text-to-speech: ${textToSpeak.substring(0, 100)}...`)
+      
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: { 
           text: textToSpeak,
@@ -57,41 +60,88 @@ export const useAudioPlayback = () => {
 
       if (error) {
         console.error('Supabase function error:', error)
-        throw error
+        toast({
+          title: "Speech Generation Error",
+          description: "Failed to generate speech. Please try again.",
+          variant: "destructive",
+        })
+        setIsPlaying(false)
+        return
       }
 
       if (!data?.audioContent) {
-        console.error('No audio content returned from API')
-        throw new Error('Geen audio ontvangen van de server')
+        console.error('No audio content returned from API:', data)
+        toast({
+          title: "Speech Generation Error",
+          description: "No audio received from the server",
+          variant: "destructive",
+        })
+        setIsPlaying(false)
+        return
       }
 
-      console.log('Audio content received successfully')
-      const audioBlob = await fetch(`data:audio/mp3;base64,${data.audioContent}`).then(r => r.blob())
-      const audioUrl = URL.createObjectURL(audioBlob)
+      console.log('Audio content received successfully, creating blob URL')
       
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl
-        audioRef.current.onended = () => {
-          setIsPlaying(false)
-          URL.revokeObjectURL(audioUrl)
+      try {
+        const audioBlob = await fetch(`data:audio/mp3;base64,${data.audioContent}`).then(r => r.blob())
+        const audioUrl = URL.createObjectURL(audioBlob)
+        
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl
+          audioRef.current.onended = () => {
+            setIsPlaying(false)
+            URL.revokeObjectURL(audioUrl)
+          }
+          
+          console.log('Playing audio...')
+          try {
+            await audioRef.current.play()
+          } catch (playError) {
+            console.error('Error playing audio:', playError)
+            toast({
+              title: "Playback Error",
+              description: "Could not play the audio. Please try again.",
+              variant: "destructive",
+            })
+            setIsPlaying(false)
+          }
+        } else {
+          const audio = new Audio(audioUrl)
+          audioRef.current = audio
+          audio.onended = () => {
+            setIsPlaying(false)
+            URL.revokeObjectURL(audioUrl)
+          }
+          
+          console.log('Playing audio with new Audio element...')
+          try {
+            await audio.play()
+          } catch (playError) {
+            console.error('Error playing audio with new Audio element:', playError)
+            toast({
+              title: "Playback Error",
+              description: "Could not play the audio. Please try again.",
+              variant: "destructive",
+            })
+            setIsPlaying(false)
+          }
         }
-        await audioRef.current.play()
-      } else {
-        const audio = new Audio(audioUrl)
-        audioRef.current = audio
-        audio.onended = () => {
-          setIsPlaying(false)
-          URL.revokeObjectURL(audioUrl)
-        }
-        await audio.play()
-      }
 
-      toast({
-        title: `${voiceName} spreekt`,
-        description: textToSpeak.length > 60 ? `${textToSpeak.substring(0, 60)}...` : textToSpeak,
-      })
+        toast({
+          title: `${voiceName} spreekt`,
+          description: textToSpeak.length > 60 ? `${textToSpeak.substring(0, 60)}...` : textToSpeak,
+        })
+      } catch (blobError) {
+        console.error('Error creating audio blob:', blobError)
+        toast({
+          title: "Audio Processing Error",
+          description: "Could not process the audio data.",
+          variant: "destructive",
+        })
+        setIsPlaying(false)
+      }
     } catch (error) {
-      console.error('Error playing audio:', error)
+      console.error('Error in audio playback flow:', error)
       toast({
         title: "Fout",
         description: "Kon de tekst niet afspelen",

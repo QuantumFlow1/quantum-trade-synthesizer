@@ -21,11 +21,18 @@ export const useBaseAudioProcessor = ({
   const [lastUserInput, setLastUserInput] = useState<string>('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingError, setProcessingError] = useState<string | null>(null)
+  const [processingStage, setProcessingStage] = useState<string>('')
 
   // Common function to generate speech from text
   const generateSpeech = async (text: string) => {
     try {
+      console.log('Starting speech generation with text:', text.substring(0, 100) + '...')
+      setProcessingStage('Generating speech')
       setProcessingError(null)
+      
+      // More detailed request logging
+      console.log('Sending request to text-to-speech function with voice ID:', selectedVoice.id)
+      
       const { data: speechData, error: speechError } = await supabase.functions.invoke('text-to-speech', {
         body: { 
           text, 
@@ -34,36 +41,53 @@ export const useBaseAudioProcessor = ({
       })
 
       if (speechError) {
-        console.error('Error generating speech:', speechError)
+        console.error('Error from text-to-speech function:', speechError)
         setProcessingError('Failed to generate speech. Please try again.')
         toast({
-          title: "Error",
-          description: "Failed to generate speech response",
+          title: "Speech Generation Error",
+          description: "Failed to generate speech response. Please try again.",
           variant: "destructive",
         })
         return
       }
 
-      const audioUrl = speechData?.audioUrl
-      if (!audioUrl) {
-        console.error('No audio URL returned from speech service')
+      // Verify we have the audioContent in the response
+      if (!speechData?.audioContent) {
+        console.error('No audioContent in response:', speechData)
         setProcessingError('No audio response received. Please try again.')
         toast({
-          title: "Error",
-          description: "No audio URL received from text-to-speech service",
+          title: "Speech Generation Error",
+          description: "No audio content received from speech service. Please try again.",
           variant: "destructive",
         })
         return
       }
 
-      // Play the generated audio
-      playAudio(audioUrl)
+      console.log('Received audioContent, converting to URL')
+      
+      // Convert the base64 audio content to a playable URL
+      try {
+        const audioBlob = await fetch(`data:audio/mp3;base64,${speechData.audioContent}`).then(r => r.blob())
+        const audioUrl = URL.createObjectURL(audioBlob)
+        
+        // Play the generated audio
+        console.log('Playing audio with URL:', audioUrl)
+        playAudio(audioUrl)
+      } catch (conversionError) {
+        console.error('Error converting audio content to URL:', conversionError)
+        setProcessingError('Error processing audio data. Please try again.')
+        toast({
+          title: "Audio Processing Error",
+          description: "Failed to process audio data. Please try again.",
+          variant: "destructive",
+        })
+      }
     } catch (error) {
-      console.error('Error in text-to-speech flow:', error)
+      console.error('Unexpected error in text-to-speech flow:', error)
       setProcessingError('An unexpected error occurred while generating speech.')
       toast({
-        title: "Error",
-        description: "Failed to process text-to-speech request",
+        title: "Speech Generation Error",
+        description: "An unexpected error occurred. Please try again later.",
         variant: "destructive",
       })
     }
@@ -75,8 +99,11 @@ export const useBaseAudioProcessor = ({
 
     setIsProcessing(true)
     setProcessingError(null)
+    setProcessingStage('Processing audio')
+    
     try {
       // First step: Process voice to get transcription
+      console.log('Starting audio transcription')
       toast({
         title: "Processing",
         description: "Transcribing your audio...",
@@ -100,7 +127,7 @@ export const useBaseAudioProcessor = ({
 
       const transcription = transcriptionData?.transcription
       if (!transcription) {
-        console.error('No transcription returned from service')
+        console.error('No transcription returned from service:', transcriptionData)
         setProcessingError('No transcription could be generated from your audio.')
         toast({
           title: "Transcription Error",
@@ -142,6 +169,7 @@ export const useBaseAudioProcessor = ({
       })
 
       // Process with the provided function
+      setProcessingStage('Generating AI response')
       await processingFn(transcription, previousMessages)
     } catch (error) {
       console.error('Error in audio processing flow:', error)
@@ -161,6 +189,7 @@ export const useBaseAudioProcessor = ({
     if (!text.trim()) return
 
     setIsProcessing(true)
+    setProcessingStage('Processing text input')
     setProcessingError(null)
     setLastUserInput(text)
 
@@ -192,6 +221,7 @@ export const useBaseAudioProcessor = ({
       })
 
       // Process with the provided function
+      setProcessingStage('Generating AI response')
       await processingFn(text, previousMessages)
     } catch (error) {
       console.error('Error processing direct text:', error)
@@ -224,6 +254,7 @@ export const useBaseAudioProcessor = ({
     setLastUserInput,
     isProcessing,
     processingError,
+    processingStage,
     generateSpeech,
     processAudio,
     processDirectText,
