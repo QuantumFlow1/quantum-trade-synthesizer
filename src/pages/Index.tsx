@@ -46,6 +46,10 @@ const Index = () => {
   }
 
   const isSuperAdmin = userProfile.role === 'super_admin';
+  
+  // For debugging
+  console.log("User role:", userProfile.role);
+  console.log("Is super admin:", isSuperAdmin);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-background via-background/95 to-background/90">
@@ -75,7 +79,12 @@ const Index = () => {
           >
             <Suspense fallback={<div>Loading...</div>}>
               {/* Show SuperAdminVoiceAssistant for super admins */}
-              {isSuperAdmin && <SuperAdminVoiceAssistant />}
+              {isSuperAdmin && (
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold mb-4">Super Admin Tools</h2>
+                  <SuperAdminVoiceAssistant />
+                </div>
+              )}
               
               {/* Regular voice assistant for everyone */}
               <VoiceAssistant />
