@@ -6,7 +6,7 @@ import { useAudioRecorder } from '@/hooks/use-audio-recorder'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
 import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useDirectTextInput } from '@/hooks/use-direct-text-input'
-import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
+import { useSuperAdminProcessor } from '@/hooks/audio-processing/useSuperAdminProcessor'
 import { VoiceAssistantLayout } from './VoiceAssistantLayout'
 import { ChatHistorySection } from './ChatHistorySection'
 import { AudioSection } from './AudioSection'
@@ -19,6 +19,7 @@ type SuperAdminVoiceContainerProps = {
 export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContainerProps) => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const previewAudioRef = useRef<HTMLAudioElement | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const STORAGE_KEY = 'superAdminChatHistory'
   
   // Audio recorder
@@ -50,11 +51,10 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
     processingStage,
     processAudio,
     processDirectText
-  } = useEdriziAudioProcessor({
+  } = useSuperAdminProcessor({
     selectedVoice: edriziVoice,
-    playAudio: (url: string) => playAudio(lastTranscription, edriziVoice.id, edriziVoice.name),
-    setChatHistory: setChatHistory,
-    isSuperAdmin: true
+    playAudio: (url: string) => playAudio(url),
+    setChatHistory: setChatHistory
   })
 
   // Stop recording
@@ -69,6 +69,18 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
   const handleDirectTextSubmit = () => {
     processDirectText(directText)
     setDirectText('')
+  }
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('audio/')) {
+      return
+    }
+
+    const audioUrl = URL.createObjectURL(file)
+    processAudio(audioUrl)
   }
 
   return (

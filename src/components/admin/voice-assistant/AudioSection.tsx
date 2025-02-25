@@ -1,6 +1,5 @@
 
 import { useRef } from 'react'
-import { Input } from '@/components/ui/input'
 import { VoiceTemplate } from '@/lib/types'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { DirectTextInputSection } from './audio-sections/DirectTextInputSection'
@@ -58,10 +57,7 @@ export const AudioSection = ({
     }
 
     const audioUrl = URL.createObjectURL(file)
-    // Set the audio URL in the parent component
-    if (processAudio) {
-      setTimeout(() => processAudio(audioUrl), 200)
-    }
+    processAudio(audioUrl)
   }
 
   const handleTriggerFileUpload = () => {
