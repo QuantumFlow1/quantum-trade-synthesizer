@@ -12,6 +12,7 @@ import Users from "./pages/admin/dashboard/Users";
 import System from "./pages/admin/dashboard/System";
 import Finance from "./pages/admin/dashboard/Finance";
 import AdminPanel from "./components/AdminPanel";
+import ChatPage from "./pages/chat";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/chat" element={<ChatPage />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/dashboard/overview" element={<Overview />} />
             <Route path="/admin/dashboard/users" element={<Users />} />
