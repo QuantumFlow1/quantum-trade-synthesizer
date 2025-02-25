@@ -6,12 +6,14 @@ import { supabase } from '@/lib/supabase'
 export const useAudioPlayback = () => {
   const { toast } = useToast()
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   const playAudio = async (text: string, voiceId: string, voiceName: string) => {
-    if (!text || isPlaying) return
+    if (!text || isPlaying || isProcessing) return
     
     setIsPlaying(true)
+    setIsProcessing(true)
     console.log(`Attempting to play audio with voice ID: ${voiceId}, name: ${voiceName}`)
     console.log(`Text to speak: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`)
     
@@ -101,6 +103,7 @@ export const useAudioPlayback = () => {
           variant: "destructive",
         })
         setIsPlaying(false)
+        setIsProcessing(false)
         return
       }
 
@@ -112,6 +115,7 @@ export const useAudioPlayback = () => {
           variant: "destructive",
         })
         setIsPlaying(false)
+        setIsProcessing(false)
         return
       }
 
@@ -125,6 +129,7 @@ export const useAudioPlayback = () => {
           audioRef.current.src = audioUrl
           audioRef.current.onended = () => {
             setIsPlaying(false)
+            setIsProcessing(false)
             URL.revokeObjectURL(audioUrl)
           }
           
@@ -139,12 +144,14 @@ export const useAudioPlayback = () => {
               variant: "destructive",
             })
             setIsPlaying(false)
+            setIsProcessing(false)
           }
         } else {
           const audio = new Audio(audioUrl)
           audioRef.current = audio
           audio.onended = () => {
             setIsPlaying(false)
+            setIsProcessing(false)
             URL.revokeObjectURL(audioUrl)
           }
           
@@ -159,6 +166,7 @@ export const useAudioPlayback = () => {
               variant: "destructive",
             })
             setIsPlaying(false)
+            setIsProcessing(false)
           }
         }
 
@@ -174,6 +182,7 @@ export const useAudioPlayback = () => {
           variant: "destructive",
         })
         setIsPlaying(false)
+        setIsProcessing(false)
       }
     } catch (error) {
       console.error('Error in audio playback flow:', error)
@@ -183,11 +192,13 @@ export const useAudioPlayback = () => {
         variant: "destructive",
       })
       setIsPlaying(false)
+      setIsProcessing(false)
     }
   }
 
   return {
     isPlaying,
+    isProcessing,
     playAudio
   }
 }

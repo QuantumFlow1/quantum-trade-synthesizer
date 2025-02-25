@@ -34,16 +34,23 @@ export const DirectTextInput = ({
     }
   }
 
+  // Added console logs to debug the input field behavior
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Input change detected:', e.target.value)
+    onTextChange(e.target.value)
+  }
+
   return (
     <div className="flex items-center space-x-2 mb-4">
       <Input
         ref={inputRef}
         value={directText}
-        onChange={(e) => onTextChange(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder="Type your question here..."
         disabled={isPlaying || isProcessing}
         className="flex-1"
+        data-testid="text-input"
       />
       <Button
         onClick={onSubmit}

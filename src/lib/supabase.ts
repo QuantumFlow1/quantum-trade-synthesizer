@@ -18,7 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-// Enhanced connection check function with graceful error handling
+// Enhanced connection check function with improved error handling and debugging
 export const checkSupabaseConnection = async () => {
   console.log('Starting Supabase connection check...');
   const results = {
@@ -53,25 +53,35 @@ export const checkSupabaseConnection = async () => {
       results.database = true;
     }
 
-    // Test Grok3 API access through edge function - with improved error handling
+    // Test Grok3 API access through edge function with detailed error handling
     console.log('Testing Grok3 API connection...');
     try {
-      const { data: grokData, error: grokError } = await supabase.functions.invoke('grok3-response', {
+      const grokTestParams = {
         body: {
           message: "Simple test message",
           context: []
         }
-      });
+      };
+      
+      console.log('Grok3 API test parameters:', JSON.stringify(grokTestParams));
+      
+      const { data: grokData, error: grokError } = await supabase.functions.invoke('grok3-response', grokTestParams);
       
       if (grokError) {
-        // Provide more detailed logging about the specific error
-        console.error('Grok3 API connection error:', grokError);
+        // More detailed error information for debugging
+        console.error('Grok3 API connection error details:', grokError);
         
         // Check if it's an API key issue specifically
         if (typeof grokError === 'object' && grokError !== null) {
           const errorMsg = JSON.stringify(grokError);
           if (errorMsg.includes('API Key') || errorMsg.includes('Invalid API')) {
             console.error('Detected API key issue with Grok3 API. Please check if GROK3_API_KEY is properly set in Supabase Edge Function secrets.');
+          } 
+          else if (errorMsg.includes('timeout') || errorMsg.includes('timed out')) {
+            console.error('Detected timeout issue with Grok3 API. The server may be overloaded or not responding.');
+          }
+          else if (errorMsg.includes('Edge Function')) {
+            console.error('Edge Function error. The Grok3 Edge Function might need to be redeployed or updated.');
           }
         }
       } else {
@@ -79,7 +89,7 @@ export const checkSupabaseConnection = async () => {
         results.grok3API = !!grokData;
       }
     } catch (grokException) {
-      console.error('Grok3 API exception:', grokException);
+      console.error('Grok3 API exception details:', grokException);
       // Don't fail the entire connection check for just the Grok3 API
     }
 
@@ -89,7 +99,7 @@ export const checkSupabaseConnection = async () => {
     console.log('Connection check results:', results);
     return essentialServicesWorking;
   } catch (error) {
-    console.error('Supabase connection check failed:', error);
+    console.error('Supabase connection check failed with details:', error);
     console.log('Connection check results:', results);
     return false;
   }
