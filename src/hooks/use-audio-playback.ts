@@ -16,9 +16,34 @@ export const useAudioPlayback = () => {
     console.log(`Text to speak: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`)
     
     try {
+      // For EdriziAI, process the text through the AI first
+      let textToSpeak = text;
+      
+      if (voiceId === 'EdriziAI-info' && !text.startsWith('EdriziAI:')) {
+        console.log('Processing text with AI before speaking for EdriziAI')
+        
+        try {
+          const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
+            body: {
+              prompt: text,
+              voiceId: voiceId
+            }
+          })
+          
+          if (aiError) {
+            console.error('AI processing error:', aiError)
+          } else if (aiData?.response) {
+            console.log(`AI generated response: ${aiData.response}`)
+            textToSpeak = aiData.response
+          }
+        } catch (aiError) {
+          console.error('Failed to process with AI, using original text:', aiError)
+        }
+      }
+      
       const { data, error } = await supabase.functions.invoke('text-to-speech', {
         body: { 
-          text,
+          text: textToSpeak,
           voiceId
         }
       })
@@ -56,7 +81,7 @@ export const useAudioPlayback = () => {
 
       toast({
         title: `${voiceName} spreekt`,
-        description: text.length > 60 ? `${text.substring(0, 60)}...` : text,
+        description: textToSpeak.length > 60 ? `${textToSpeak.substring(0, 60)}...` : textToSpeak,
       })
     } catch (error) {
       console.error('Error playing audio:', error)

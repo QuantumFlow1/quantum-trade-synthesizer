@@ -1,5 +1,5 @@
 
-import { Bot, Loader2, Volume2 } from 'lucide-react'
+import { Bot, Loader2, Volume2, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 type TranscriptionDisplayProps = {
@@ -9,6 +9,7 @@ type TranscriptionDisplayProps = {
   isPlaying: boolean
   onPlay: () => void
   isRecording: boolean
+  lastUserInput?: string
 }
 
 export const TranscriptionDisplay = ({
@@ -17,7 +18,8 @@ export const TranscriptionDisplay = ({
   voiceName,
   isPlaying,
   onPlay,
-  isRecording
+  isRecording,
+  lastUserInput
 }: TranscriptionDisplayProps) => {
   return (
     <>
@@ -27,6 +29,16 @@ export const TranscriptionDisplay = ({
           <p className="text-sm text-muted-foreground">
             Audio wordt verwerkt...
           </p>
+        </div>
+      )}
+
+      {lastUserInput && (
+        <div className="p-4 bg-secondary/50 rounded-lg mb-2">
+          <div className="flex items-center space-x-2 mb-2">
+            <User className="w-4 h-4" />
+            <p className="text-sm font-medium">Jij</p>
+          </div>
+          <p className="text-sm">{lastUserInput}</p>
         </div>
       )}
 

@@ -27,27 +27,63 @@ export const useAudioProcessing = (
         // Log which voice template is being used
         console.log(`Processing audio with voice template: ${selectedVoice.name} (${selectedVoice.id})`)
         
-        const { data, error } = await supabase.functions.invoke('process-voice', {
+        // First get the transcription of what the user said
+        const { data: transcriptionData, error: transcriptionError } = await supabase.functions.invoke('process-voice', {
           body: { 
             audioData: base64Data,
             voiceTemplate: selectedVoice.prompt
           }
         })
 
-        if (error) throw error
+        if (transcriptionError) throw transcriptionError
 
-        if (!data?.transcription) {
+        if (!transcriptionData?.transcription) {
           throw new Error('Geen transcriptie ontvangen')
         }
 
         // Log the transcription that was received
-        console.log(`Transcription received: ${data.transcription}`)
+        console.log(`Transcription received: ${transcriptionData.transcription}`)
         
-        setLastTranscription(data.transcription)
+        // For EdriziAI model, process through the AI response generator
+        if (selectedVoice.id === 'EdriziAI-info') {
+          console.log('Using AI response generator for EdriziAI')
+          
+          try {
+            const { data: aiData, error: aiError } = await supabase.functions.invoke('generate-ai-response', {
+              body: {
+                prompt: transcriptionData.transcription,
+                voiceId: selectedVoice.id
+              }
+            })
+            
+            if (aiError) {
+              console.error('AI response error:', aiError)
+              throw aiError
+            }
+            
+            if (aiData?.response) {
+              console.log(`AI response: ${aiData.response}`)
+              setLastTranscription(aiData.response)
+              
+              toast({
+                title: `${selectedVoice.name} heeft geantwoord`,
+                description: aiData.response.substring(0, 100) + (aiData.response.length > 100 ? '...' : ''),
+              })
+              
+              return
+            }
+          } catch (aiProcessingError) {
+            console.error('Error processing with AI:', aiProcessingError)
+            // Fall back to regular transcription if AI processing fails
+          }
+        }
+        
+        // For other voice models, or if AI processing failed, just use the transcription
+        setLastTranscription(transcriptionData.transcription)
         
         toast({
           title: `${selectedVoice.name} heeft geantwoord`,
-          description: data.transcription.substring(0, 100) + (data.transcription.length > 100 ? '...' : ''),
+          description: transcriptionData.transcription.substring(0, 100) + (transcriptionData.transcription.length > 100 ? '...' : ''),
         })
       }
       
