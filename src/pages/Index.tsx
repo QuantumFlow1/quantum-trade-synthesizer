@@ -35,4 +35,61 @@ const Index = () => {
           setConnectionStatus('connected');
           toast({
             title: "Verbinding geslaagd",
-            description: "
+            description: "Verbinding met Supabase is succesvol tot stand gebracht."
+          });
+        } else {
+          setConnectionStatus('error');
+          toast({
+            title: "Verbinding mislukt",
+            description: "Kan geen verbinding maken met Supabase, probeer het later opnieuw.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error("Fout bij het controleren van de verbinding:", error);
+        setConnectionStatus('error');
+        toast({
+          title: "Verbinding mislukt",
+          description: "Er is een fout opgetreden bij het controleren van de verbinding.",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    checkConnection();
+  }, [toast]);
+
+  // Show loading screen while fetching profile
+  if (user && !userProfile) {
+    return <LoadingProfile />;
+  }
+
+  return (
+    <div className="w-full min-h-screen bg-background">
+      {!user ? (
+        <LoginComponent />
+      ) : (
+        <div style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}>
+          {userProfile?.role === "admin" || userProfile?.role === "super_admin" ? (
+            <>
+              <AdminPanel />
+              <SuperAdminVoiceAssistant />
+            </>
+          ) : (
+            <>
+              <UserDashboard />
+              <EdriziAIAssistant />
+            </>
+          )}
+          {!isMobile && <ZoomControls
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onResetZoom={handleResetZoom}
+          />}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Index;
