@@ -9,26 +9,28 @@ export const useGrok3Availability = () => {
   const [retryCount, setRetryCount] = useState<number>(0)
   const [lastRetryTime, setLastRetryTime] = useState<number>(0)
   const MAX_RETRIES = 3
-  const RETRY_COOLDOWN = 60000 // 1 minute cooldown between retry attempts
+  const RETRY_COOLDOWN = 60000 // 1 minuut cooldown tussen hertestpogingen
 
-  // Check Grok3 API availability on mount
+  // Controleer Grok3 API beschikbaarheid bij het laden
   useEffect(() => {
+    console.log('Initiële controle van Grok3 API beschikbaarheid starten...')
     checkGrok3Availability()
   }, [])
 
-  // Function to check if Grok3 API is available
+  // Functie om te controleren of Grok3 API beschikbaar is
   const checkGrok3Availability = useCallback(async () => {
     try {
-      console.log('Checking Grok3 API availability...')
+      console.log('Controleren of Grok3 API beschikbaar is...')
       
-      // First check API keys to ensure they're properly configured
-      console.log('Invoking check-api-keys function...')
+      // Eerst API-sleutels controleren om te zorgen dat ze correct zijn geconfigureerd
+      console.log('check-api-keys functie aanroepen...')
       const { data: keyData, error: keyError } = await supabase.functions.invoke('check-api-keys', {
         body: { check: 'grok3' }
       })
       
       if (keyError) {
-        console.error('API key check failed:', keyError)
+        console.error('API-sleutelcontrole mislukt:', keyError)
+        console.error('Details van fout:', JSON.stringify(keyError))
         toast({
           title: "API Configuratie Fout",
           description: "Kon de API-sleutels niet controleren. Controleer de Supabase-functielogs.",
@@ -38,10 +40,11 @@ export const useGrok3Availability = () => {
         return false
       }
       
-      console.log('API key check response:', keyData)
+      console.log('API-sleutelcontrole response:', keyData)
       
       if (!keyData?.apiKeyValid) {
-        console.warn('Grok3 API key is not valid or not configured')
+        console.warn('Grok3 API-sleutel is niet geldig of niet geconfigureerd')
+        console.warn('Details van API-sleutelcontrole:', JSON.stringify(keyData))
         toast({
           title: "Grok3 API Sleutel Ontbreekt",
           description: "De Grok3 API-sleutel is niet geconfigureerd. Controleer de functiegeheimen in Supabase.",
@@ -51,14 +54,15 @@ export const useGrok3Availability = () => {
         return false
       }
       
-      // Now test the Grok3 API connection
-      console.log('Testing Grok3 API connection...')
+      // Nu testen we de Grok3 API-verbinding
+      console.log('Grok3 API-verbinding testen...')
       const { data, error } = await supabase.functions.invoke('grok3-response', {
         body: { message: "system: ping test", context: [] }
       })
       
       if (error) {
-        console.error('Grok3 API check failed:', error)
+        console.error('Grok3 API-controle mislukt:', error)
+        console.error('Details van fout:', JSON.stringify(error))
         setGrok3Available(false)
         toast({
           title: "Grok3 API Niet Beschikbaar",
@@ -67,12 +71,13 @@ export const useGrok3Availability = () => {
         })
         return false
       } else if (data?.response === "pong" && data?.status === "available") {
-        console.log('Grok3 API is available')
+        console.log('Grok3 API is beschikbaar')
         setGrok3Available(true)
-        setRetryCount(0) // Reset retry count on successful connection
+        setRetryCount(0) // Reset retryCount bij succesvolle verbinding
         return true
       } else {
-        console.warn('Unexpected response from Grok3 API check:', data)
+        console.warn('Onverwachte response van Grok3 API-controle:', data)
+        console.warn('Details van response:', JSON.stringify(data))
         setGrok3Available(false)
         toast({
           title: "Grok3 API Niet Beschikbaar",
@@ -82,7 +87,8 @@ export const useGrok3Availability = () => {
         return false
       }
     } catch (error) {
-      console.error('Error checking Grok3 API:', error)
+      console.error('Fout bij het controleren van Grok3 API:', error)
+      console.error('Details van fout:', JSON.stringify(error))
       setGrok3Available(false)
       toast({
         title: "Grok3 API Fout",
@@ -98,10 +104,12 @@ export const useGrok3Availability = () => {
     const shouldRetry = lastRetryTime === 0 || (currentTime - lastRetryTime > RETRY_COOLDOWN)
     
     if (retryCount >= MAX_RETRIES && !shouldRetry) {
+      console.log(`Maximum aantal pogingen (${MAX_RETRIES}) bereikt en cooldown periode is nog niet verstreken.`)
       return false
     }
     
     if (shouldRetry) {
+      console.log(`Nieuwe poging toegestaan. Poging ${retryCount + 1} van ${MAX_RETRIES}.`)
       setLastRetryTime(currentTime)
       
       if (retryCount < MAX_RETRIES) {
@@ -110,6 +118,7 @@ export const useGrok3Availability = () => {
       return true
     }
     
+    console.log(`Geen nieuwe poging toegestaan. Wacht nog ${Math.ceil((RETRY_COOLDOWN - (currentTime - lastRetryTime)) / 1000)} seconden.`)
     return false
   }, [retryCount, lastRetryTime])
 
