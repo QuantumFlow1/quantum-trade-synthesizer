@@ -1,6 +1,6 @@
 
 import { Button } from '@/components/ui/button'
-import { Mic, Square, Upload } from 'lucide-react'
+import { Mic, Square, Upload, Loader2 } from 'lucide-react'
 
 type AudioControlsProps = {
   isRecording: boolean
@@ -28,15 +28,20 @@ export const AudioControls = ({
         <Button
           onClick={onStartRecording}
           disabled={isProcessing}
-          className="bg-blue-500 hover:bg-blue-600"
+          className={`bg-blue-500 hover:bg-blue-600 ${isProcessing ? 'opacity-50' : ''}`}
         >
-          <Mic className="w-6 h-6 mr-2" />
-          Start Opname
+          {isProcessing ? (
+            <Loader2 className="w-6 h-6 mr-2 animate-spin" />
+          ) : (
+            <Mic className="w-6 h-6 mr-2" />
+          )}
+          {isProcessing ? "Processing..." : "Start Opname"}
         </Button>
       ) : (
         <Button
           onClick={onStopRecording}
           variant="destructive"
+          className="animate-pulse"
         >
           <Square className="w-6 h-6 mr-2" />
           Stop Opname
@@ -47,6 +52,7 @@ export const AudioControls = ({
         onClick={onTriggerFileUpload}
         disabled={isProcessing || isRecording}
         variant="outline"
+        className={isProcessing ? 'opacity-50' : ''}
       >
         <Upload className="w-6 h-6 mr-2" />
         Upload Audio

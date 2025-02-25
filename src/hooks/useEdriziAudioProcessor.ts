@@ -39,6 +39,8 @@ export const useEdriziAudioProcessor = ({
     lastUserInput: processor.lastUserInput,
     setLastUserInput: processor.setLastUserInput,
     isProcessing: processor.isProcessing,
+    processingError: processor.processingError,
+    processingStage: processor.processingStage,
     processAudio: processor.processAudio,
     processDirectText: processor.processDirectText
   }

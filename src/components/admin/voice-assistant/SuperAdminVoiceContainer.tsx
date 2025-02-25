@@ -1,115 +1,103 @@
-
-import { useState } from 'react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { useState, useRef } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { VoiceTemplate } from '@/lib/types'
 import { useAudioRecorder } from '@/hooks/use-audio-recorder'
-import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
 import { useStopRecording } from '@/hooks/use-stop-recording'
+import { useAudioPlayback } from '@/hooks/use-audio-playback'
+import { useDirectTextInput } from '@/hooks/use-direct-text-input'
+import { VoiceAssistantLayout } from './VoiceAssistantLayout'
 import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
-import { Bot } from 'lucide-react'
-import { VoiceTemplate } from '@/lib/types'
-import { useAuth } from '@/components/auth/AuthProvider'
-import { ConnectionTest } from './ConnectionTest'
 import { ChatHistorySection } from './ChatHistorySection'
 import { AudioSection } from './AudioSection'
-import { useAdminChatHistory } from './useAdminChatHistory'
 
 type SuperAdminVoiceContainerProps = {
   edriziVoice: VoiceTemplate
 }
 
 export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContainerProps) => {
-  const { user } = useAuth()
-  // Create a user-specific storage key for super admin
-  const CHAT_HISTORY_STORAGE_KEY = user ? `edriziAISuperAdminChatHistory_${user.id}` : 'edriziAISuperAdminChatHistory'
+  const [chatHistory, setChatHistory] = useState([])
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
   
+  // Audio recorder
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
-  const { isPlaying, playAudio: originalPlayAudio } = useAudioPlayback()
-  const [directText, setDirectText] = useState<string>('')
-  const [selectedVoice, setSelectedVoice] = useState(edriziVoice)
   
-  // Use the extracted hook for chat history management
-  const { chatHistory, setChatHistory } = useAdminChatHistory(CHAT_HISTORY_STORAGE_KEY)
-
-  const {
-    previewAudioUrl,
-    setPreviewAudioUrl,
-    isPreviewPlaying,
-    setIsPreviewPlaying,
-    previewAudioRef,
-    playPreview,
-    stopPreview
+  // Audio preview
+  const { 
+    previewAudioUrl, 
+    setPreviewAudioUrl, 
+    isPreviewPlaying, 
+    setIsPreviewPlaying, 
+    playPreview, 
+    stopPreview 
   } = useAudioPreview()
+  
+  // Audio playback
+  const { isPlaying, playAudio } = useAudioPlayback()
+  
+  // Direct text input
+  const { directText, setDirectText } = useDirectTextInput()
 
-  const playAudioWrapper = (url: string) => {
-    originalPlayAudio(url, selectedVoice.id, selectedVoice.name)
-  }
-
-  const {
+  // Audio processing
+  const { 
+    lastTranscription,
     lastUserInput,
     setLastUserInput,
     isProcessing,
+    processingError,
+    processingStage,
     processAudio,
     processDirectText
   } = useEdriziAudioProcessor({
-    selectedVoice,
-    playAudio: playAudioWrapper,
-    setChatHistory,
-    isSuperAdmin: true // Set this to true for super admin features
+    selectedVoice: edriziVoice,
+    playAudio: (url: string) => playAudio(lastTranscription, edriziVoice.id, edriziVoice.name),
+    setChatHistory: setChatHistory,
+    isSuperAdmin: true
   })
 
+  // Stop recording
   const { handleStopRecording } = useStopRecording({
     stopRecording,
     setPreviewAudioUrl,
-    processAudio: () => processAudio(previewAudioUrl),
-    selectedVoice,
+    processAudio,
+    selectedVoice: edriziVoice,
     setLastUserInput
   })
 
   const handleDirectTextSubmit = () => {
-    if (directText.trim()) {
-      processDirectText(directText)
-      setDirectText('')
-    }
+    processDirectText(directText)
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-center flex items-center justify-center gap-2">
-          <Bot className="h-5 w-5 text-primary" />
-          EdriziAI Super Admin Assistant
-        </CardTitle>
-        <div className="flex justify-end">
-          <ConnectionTest />
-        </div>
-      </CardHeader>
-      <CardContent className="flex flex-col space-y-4">
-        <ChatHistorySection 
-          chatHistory={chatHistory}
-          setChatHistory={setChatHistory}
-          storageKey={CHAT_HISTORY_STORAGE_KEY}
-        />
+    <VoiceAssistantLayout>
+      <Card>
+        <CardHeader>
+          <CardTitle>EdriziAI Super Admin Voice Assistant</CardTitle>
+        </CardHeader>
+        <CardContent className="pl-4 pb-4 relative">
+          <ChatHistorySection chatHistory={chatHistory} />
 
-        <AudioSection
-          isRecording={isRecording}
-          isProcessing={isProcessing}
-          isPlaying={isPlaying}
-          directText={directText}
-          previewAudioUrl={previewAudioUrl}
-          isPreviewPlaying={isPreviewPlaying}
-          previewAudioRef={previewAudioRef}
-          selectedVoice={selectedVoice}
-          setDirectText={setDirectText}
-          startRecording={startRecording}
-          handleStopRecording={handleStopRecording}
-          playPreview={playPreview}
-          stopPreview={stopPreview}
-          processAudio={processAudio}
-          handleDirectTextSubmit={handleDirectTextSubmit}
-          setIsPreviewPlaying={setIsPreviewPlaying}
-        />
-      </CardContent>
-    </Card>
+          <AudioSection
+            isRecording={isRecording}
+            isProcessing={isProcessing}
+            isPlaying={isPlaying}
+            directText={directText}
+            previewAudioUrl={previewAudioUrl}
+            isPreviewPlaying={isPreviewPlaying}
+            previewAudioRef={previewAudioRef}
+            selectedVoice={edriziVoice}
+            processingError={processingError}
+            setDirectText={setDirectText}
+            startRecording={startRecording}
+            handleStopRecording={handleStopRecording}
+            playPreview={playPreview}
+            stopPreview={stopPreview}
+            processAudio={processAudio}
+            handleDirectTextSubmit={handleDirectTextSubmit}
+            setIsPreviewPlaying={setIsPreviewPlaying}
+          />
+        </CardContent>
+      </Card>
+    </VoiceAssistantLayout>
   )
 }

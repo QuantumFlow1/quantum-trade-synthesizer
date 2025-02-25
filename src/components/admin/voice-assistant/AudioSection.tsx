@@ -5,6 +5,7 @@ import { DirectTextInput } from '@/components/voice-assistant/audio/DirectTextIn
 import { AudioControls } from '@/components/voice-assistant/audio/AudioControls'
 import { AudioPreview } from './AudioPreview'
 import { VoiceTemplate } from '@/lib/types'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 type AudioSectionProps = {
   isRecording: boolean
@@ -15,6 +16,7 @@ type AudioSectionProps = {
   isPreviewPlaying: boolean
   previewAudioRef: React.RefObject<HTMLAudioElement>
   selectedVoice: VoiceTemplate
+  processingError: string | null
   setDirectText: (text: string) => void
   startRecording: () => void
   handleStopRecording: () => void
@@ -34,6 +36,7 @@ export const AudioSection = ({
   isPreviewPlaying,
   previewAudioRef,
   selectedVoice,
+  processingError,
   setDirectText,
   startRecording,
   handleStopRecording,
@@ -67,11 +70,18 @@ export const AudioSection = ({
         isPlaying={isPlaying}
         onTextChange={setDirectText}
         onSubmit={handleDirectTextSubmit}
+        isProcessing={isProcessing}
       />
 
       <div className="relative">
         <div className="absolute inset-0 w-full h-0.5 bg-border -top-2" />
       </div>
+
+      {processingError && (
+        <Alert variant="destructive" className="mt-4 mb-2 animate-fade-in">
+          <AlertDescription>{processingError}</AlertDescription>
+        </Alert>
+      )}
 
       <AudioControls
         isRecording={isRecording}
@@ -93,6 +103,7 @@ export const AudioSection = ({
         onStopPreview={stopPreview}
         onProcessAudio={() => previewAudioUrl && processAudio(previewAudioUrl)}
         isProcessing={isProcessing}
+        processingError={processingError}
       />
       
       <Input
