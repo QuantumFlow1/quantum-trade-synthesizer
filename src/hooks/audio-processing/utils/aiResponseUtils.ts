@@ -1,9 +1,10 @@
 
 import { supabase } from "@/lib/supabase"
+import { ChatMessage } from '@/components/admin/types/chat-types'
 
 export const generateRegularAIResponse = async (
   userInput: string,
-  addAIResponseToChatHistory: (response: string) => void,
+  addAIResponseToChatHistory: (response: string | ChatMessage) => void,
   generateSpeech: (text: string) => Promise<void>,
   setProcessingError: (error: string | null) => void,
   controller: AbortController
@@ -38,7 +39,7 @@ export const generateTradingAdvice = async (
   userId: string | undefined,
   userLevel: string,
   previousMessages: any[],
-  addAIResponseToChatHistory: (response: string) => void,
+  addAIResponseToChatHistory: (response: string | ChatMessage) => void,
   generateSpeech: (text: string) => Promise<void>,
   setProcessingError: (error: string | null) => void,
   fallbackHandler: (message: string) => Promise<void>,
