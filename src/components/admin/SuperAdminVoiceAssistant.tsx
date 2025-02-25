@@ -22,7 +22,7 @@ export const SuperAdminVoiceAssistant = () => {
   const [selectedVoice, setSelectedVoice] = useState(VOICE_TEMPLATES[0])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // If not super admin, don't render
+  // Early return if not super admin
   if (userProfile?.role !== 'super_admin') {
     return null
   }
@@ -55,8 +55,8 @@ export const SuperAdminVoiceAssistant = () => {
     if (!file) return
 
     if (!file.type.startsWith('audio/')) {
-      sonnerToast.error("Only audio files are allowed", {
-        description: "Please select a valid audio file"
+      sonnerToast.error('Only audio files are allowed', {
+        description: 'Please select a valid audio file'
       })
       return
     }
@@ -144,4 +144,3 @@ export const SuperAdminVoiceAssistant = () => {
     </Card>
   )
 }
-
