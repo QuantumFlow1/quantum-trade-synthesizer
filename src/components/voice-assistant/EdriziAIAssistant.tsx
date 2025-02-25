@@ -145,14 +145,14 @@ export const EdriziAIAssistant = () => {
   }
   
   // Process the direct text input
-  const handleDirectTextSubmit = (text: string) => {
-    if (!text.trim()) return
+  const handleDirectTextSubmit = () => {
+    if (!lastUserInput.trim()) return
     
     // Add the message to the chat history
-    addMessage(text, 'user')
+    addMessage(lastUserInput, 'user')
     
     // Process the direct text input
-    processDirectText(text)
+    processDirectText(lastUserInput)
   }
 
   // Handler for text change
