@@ -15,6 +15,7 @@ export function useGrokChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
 
   // Check API availability on mount
   useEffect(() => {
@@ -46,20 +47,45 @@ export function useGrokChat() {
 
   // Function to check if Grok API is available
   const checkGrokAvailability = async () => {
+    setIsLoading(true);
     try {
+      console.log('Checking Grok3 API availability...');
       const { data, error } = await supabase.functions.invoke('check-api-keys', {
         body: { service: 'grok3' }
       });
       
-      if (error || !data?.available) {
+      if (error) {
+        console.error('Error checking Grok API:', error);
+        setApiAvailable(false);
         toast({
-          title: "Grok API Status",
-          description: "De Grok API is momenteel niet beschikbaar. Sommige functies werken mogelijk niet.",
-          variant: "destructive"
+          title: "API Status",
+          description: "De Grok API is momenteel niet beschikbaar. We gebruiken een alternatieve AI-service.",
+          variant: "destructive",
+          duration: 7000
+        });
+        return false;
+      }
+      
+      const isAvailable = data?.available || false;
+      setApiAvailable(isAvailable);
+      
+      if (!isAvailable) {
+        toast({
+          title: "API Status",
+          description: "De Grok API is momenteel niet beschikbaar. We gebruiken een alternatieve AI-service.",
+          variant: "destructive",
+          duration: 7000
         });
       }
+      
+      console.log('Grok3 API available:', isAvailable);
+      return isAvailable;
     } catch (error) {
-      console.error('Error checking Grok API:', error);
+      console.error('Failed to check API availability:', error);
+      setApiAvailable(false);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -79,48 +105,72 @@ export function useGrokChat() {
     setIsLoading(true);
 
     try {
-      console.log('Calling Grok3 API via Edge Function...');
+      // If Grok3 API availability is unknown, check it
+      if (apiAvailable === null) {
+        await checkGrokAvailability();
+      }
       
-      // Create conversation history in the format expected by Grok API
+      console.log('Generating AI response...');
+      
+      // Create conversation history in the format expected by API
       const conversationHistory = messages.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
       
-      // Call the Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('grok3-response', {
-        body: { 
-          message: inputMessage,
-          context: conversationHistory
+      let response;
+      let error = null;
+      
+      // Try Grok3 API first if it's available
+      if (apiAvailable) {
+        console.log('Using Grok3 API...');
+        const grokResult = await supabase.functions.invoke('grok3-response', {
+          body: { 
+            message: inputMessage,
+            context: conversationHistory
+          }
+        });
+        
+        if (!grokResult.error && grokResult.data?.response) {
+          response = grokResult.data.response;
+        } else {
+          console.error('Grok3 API error:', grokResult.error);
+          error = grokResult.error;
         }
-      });
-      
-      if (error) {
-        console.error('Error calling Grok3 API:', error);
-        throw new Error(`API error: ${error.message}`);
       }
       
-      if (!data || !data.response) {
-        throw new Error('Invalid response from Grok3 API');
+      // Fallback to OpenAI if Grok3 is unavailable or failed
+      if (!response) {
+        console.log('Using fallback AI service...');
+        const fallbackResult = await supabase.functions.invoke('generate-ai-response', {
+          body: { 
+            message: inputMessage,
+            history: conversationHistory
+          }
+        });
+        
+        if (!fallbackResult.error && fallbackResult.data?.response) {
+          response = fallbackResult.data.response;
+        } else {
+          console.error('Fallback AI error:', fallbackResult.error);
+          if (!error) error = fallbackResult.error;
+        }
       }
       
-      console.log('Grok3 response received:', data);
+      if (!response) {
+        throw new Error(error?.message || 'Geen antwoord van AI services');
+      }
       
       // Add assistant response to chat
       const assistantMessage: ChatMessage = {
         id: uuidv4(),
         role: 'assistant',
-        content: data.response,
+        content: response,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, assistantMessage]);
       
-      // Show success toast
-      toast({
-        title: "Antwoord ontvangen",
-        description: "Grok heeft je vraag beantwoord.",
-      });
     } catch (error) {
       console.error('Error in chat process:', error);
       
@@ -137,7 +187,7 @@ export function useGrokChat() {
       // Show error toast
       toast({
         title: "Er is een fout opgetreden",
-        description: "Kon geen verbinding maken met de Grok API. Controleer je internetverbinding en probeer het opnieuw.",
+        description: error instanceof Error ? error.message : "Kon geen antwoord genereren. Probeer het later opnieuw.",
         variant: "destructive"
       });
     } finally {
@@ -150,13 +200,27 @@ export function useGrokChat() {
     localStorage.removeItem('grokChatHistory');
   };
 
+  const retryApiConnection = async () => {
+    const isAvailable = await checkGrokAvailability();
+    if (isAvailable) {
+      toast({
+        title: "Verbinding hersteld",
+        description: "De Grok API is nu beschikbaar.",
+        duration: 3000,
+      });
+    }
+    return isAvailable;
+  };
+
   return {
     messages,
     inputMessage,
     setInputMessage,
     isLoading,
     sendMessage,
-    clearChat
+    clearChat,
+    apiAvailable,
+    retryApiConnection
   };
 }
 
