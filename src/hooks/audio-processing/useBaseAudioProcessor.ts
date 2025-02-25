@@ -30,4 +30,20 @@ export const useBaseAudioProcessor = ({
       // Check if the response is already a ChatMessage or just a string
       const message = typeof response === 'string' 
         ? createChatMessage(response, 'assistant')
-        :
+        : response
+      return [...prevHistory, message]
+    })
+  }, [setChatHistory])
+
+  return {
+    lastTranscription,
+    setLastTranscription,
+    lastUserInput,
+    setLastUserInput,
+    isProcessing,
+    setIsProcessing,
+    processingError,
+    setProcessingError,
+    addAIResponseToChatHistory
+  }
+}
