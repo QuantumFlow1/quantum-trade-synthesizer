@@ -10,6 +10,7 @@ type DirectTextInputProps = {
   onSubmit: () => void
   disabled?: boolean
   placeholder?: string
+  isPlaying?: boolean
 }
 
 export const DirectTextInput = ({
@@ -17,7 +18,8 @@ export const DirectTextInput = ({
   onTextChange,
   onSubmit,
   disabled = false,
-  placeholder = 'Typ je bericht...'
+  placeholder = 'Typ je bericht...',
+  isPlaying
 }: DirectTextInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -45,13 +47,13 @@ export const DirectTextInput = ({
         onChange={(e) => onTextChange(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        disabled={disabled}
+        disabled={disabled || isPlaying}
         className="flex-1"
       />
       <Button
         type="submit"
         size="icon"
-        disabled={disabled || !directText.trim()}
+        disabled={disabled || !directText.trim() || isPlaying}
         onClick={onSubmit}
         className={`transition-all ${directText.trim() ? 'opacity-100' : 'opacity-50'}`}
       >

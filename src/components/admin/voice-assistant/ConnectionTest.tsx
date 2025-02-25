@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 interface ConnectionTestProps {
   grok3Available: boolean
   manuallyDisabled?: boolean
-  checkGrok3Availability: () => Promise<boolean>
+  checkGrok3Availability: () => Promise<void>
   resetGrok3Connection: () => Promise<void>
   disableGrok3Connection?: () => void
 }
