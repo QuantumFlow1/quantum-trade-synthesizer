@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { VoiceSelector } from '../voice-assistant/audio/VoiceSelector'
@@ -11,6 +11,7 @@ import { useAudioPlayback } from '@/hooks/use-audio-playback'
 import { useAudioPreview } from '@/hooks/use-audio-preview'
 import { useAudioProcessing } from '@/hooks/use-audio-processing'
 import { VOICE_TEMPLATES } from '@/lib/voice-templates'
+import { toast } from 'sonner'
 
 export const SuperAdminVoiceAssistant = () => {
   const { userProfile } = useAuth()
@@ -39,8 +40,7 @@ export const SuperAdminVoiceAssistant = () => {
   const { isProcessing, processAudio } = useAudioProcessing(
     selectedVoice,
     previewAudioUrl,
-    setLastTranscription,
-    'EdriziAI-info' // Set the agent ID to use the specific configuration
+    setLastTranscription
   )
 
   const handleStopRecording = async () => {
@@ -146,3 +146,4 @@ export const SuperAdminVoiceAssistant = () => {
     </Card>
   )
 }
+
