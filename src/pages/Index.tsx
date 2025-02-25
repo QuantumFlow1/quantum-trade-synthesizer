@@ -14,6 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 import { EdriziAIAssistant } from "@/components/voice-assistant/EdriziAIAssistant";
 import { SuperAdminVoiceAssistant } from "@/components/admin/SuperAdminVoiceAssistant";
+import { Link } from "react-router-dom";
+import { Bot } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
@@ -73,6 +76,18 @@ const Index = () => {
         <LoginComponent />
       ) : (
         <div style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}>
+          {/* Grok Chat Link - shown to authenticated users */}
+          {user && (
+            <div className="fixed top-4 right-4 z-50">
+              <Link to="/chat">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Bot className="h-4 w-4" />
+                  <span>Grok Chat</span>
+                </Button>
+              </Link>
+            </div>
+          )}
+          
           {isSuperAdmin ? (
             <>
               <AdminPanel />
@@ -98,4 +113,3 @@ const Index = () => {
 };
 
 export default Index;
-

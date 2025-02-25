@@ -3,9 +3,11 @@ import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { SendIcon, Bot, User, Loader2 } from 'lucide-react'
+import { SendIcon, Bot, User, Loader2, ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { v4 as uuidv4 } from 'uuid'
+import { Link } from 'react-router-dom'
+import { toast } from '@/components/ui/use-toast'
 
 interface ChatMessage {
   id: string;
@@ -20,11 +22,58 @@ export function GrokChat() {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // Check API availability on mount
+  useEffect(() => {
+    checkGrokAvailability()
+  }, [])
+
+  // Function to check if Grok API is available
+  const checkGrokAvailability = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-api-keys', {
+        body: { service: 'grok3' }
+      })
+      
+      if (error || !data?.available) {
+        toast({
+          title: "Grok API Status",
+          description: "De Grok API is momenteel niet beschikbaar. Sommige functies werken mogelijk niet.",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      console.error('Error checking Grok API:', error)
+    }
+  }
+
   // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
     }
+  }, [messages])
+
+  // Load chat history from localStorage when component mounts
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('grokChatHistory')
+    if (savedMessages) {
+      try {
+        const parsedMessages = JSON.parse(savedMessages)
+        // Convert string timestamps back to Date objects
+        const messagesWithDateObjects = parsedMessages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
+        setMessages(messagesWithDateObjects)
+      } catch (error) {
+        console.error('Error parsing saved chat history:', error)
+      }
+    }
+  }, [])
+
+  // Save chat history to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('grokChatHistory', JSON.stringify(messages))
   }, [messages])
 
   const sendMessage = async () => {
@@ -79,6 +128,12 @@ export function GrokChat() {
       }
       
       setMessages(prev => [...prev, assistantMessage])
+      
+      // Show success toast
+      toast({
+        title: "Antwoord ontvangen",
+        description: "Grok heeft je vraag beantwoord.",
+      })
     } catch (error) {
       console.error('Error in chat process:', error)
       
@@ -91,6 +146,13 @@ export function GrokChat() {
       }
       
       setMessages(prev => [...prev, errorMessage])
+      
+      // Show error toast
+      toast({
+        title: "Er is een fout opgetreden",
+        description: "Kon geen verbinding maken met de Grok API. Controleer je internetverbinding en probeer het opnieuw.",
+        variant: "destructive"
+      })
     } finally {
       setIsLoading(false)
     }
@@ -101,13 +163,35 @@ export function GrokChat() {
       sendMessage()
     }
   }
+  
+  const clearChat = () => {
+    setMessages([])
+    localStorage.removeItem('grokChatHistory')
+    toast({
+      title: "Chat geschiedenis gewist",
+      description: "Alle berichten zijn verwijderd."
+    })
+  }
 
   return (
     <Card className="w-full max-w-3xl mx-auto shadow-lg">
       <CardHeader className="border-b px-4 py-3">
-        <div className="flex items-center">
-          <Bot className="mr-2 h-5 w-5 text-primary" />
-          <h2 className="text-lg font-medium">Grok Chat</h2>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Bot className="mr-2 h-5 w-5 text-primary" />
+            <h2 className="text-lg font-medium">Grok Chat</h2>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={clearChat}>
+              Wis chat
+            </Button>
+            <Link to="/">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Terug
+              </Button>
+            </Link>
+          </div>
         </div>
       </CardHeader>
       
