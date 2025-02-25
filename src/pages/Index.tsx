@@ -12,8 +12,8 @@ import { LoadingProfile } from "@/components/LoadingProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
-import { EdriziAIAssistant } from "@/components/voice-assistant/EdriziAIAssistant";
-import { SuperAdminVoiceAssistant } from "@/components/admin/SuperAdminVoiceAssistant";
+// import { EdriziAIAssistant } from "@/components/voice-assistant/EdriziAIAssistant";
+// import { SuperAdminVoiceAssistant } from "@/components/admin/SuperAdminVoiceAssistant";
 import { Link } from "react-router-dom";
 import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -91,14 +91,16 @@ const Index = () => {
           {isSuperAdmin ? (
             <>
               <AdminPanel />
-              <SuperAdminVoiceAssistant />
+              {/* Voice assistant temporarily disabled */}
+              {/* <SuperAdminVoiceAssistant /> */}
             </>
           ) : userProfile?.role === "admin" ? (
             <AdminPanel />
           ) : (
             <>
               <UserDashboard />
-              <EdriziAIAssistant />
+              {/* Voice assistant temporarily disabled */}
+              {/* <EdriziAIAssistant /> */}
             </>
           )}
           {!isMobile && <ZoomControls
