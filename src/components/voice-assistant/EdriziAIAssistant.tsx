@@ -371,4 +371,36 @@ export const EdriziAIAssistant = () => {
             
             <div className="mt-4">
               <h3 className="font-medium mb-2">Stel een Gerichte Trading Vraag</h3>
-              <form onSubmit={handleDirectTextSubmit} className="flex space-x-2
+              <form onSubmit={handleDirectTextSubmit} className="flex space-x-2">
+                <Input
+                  type="text"
+                  placeholder="Stel je trading vraag hier..."
+                  value={directText}
+                  onChange={(e) => setDirectText(e.target.value)}
+                  disabled={isProcessing || isRecording || isPlaying}
+                  className="flex-1"
+                />
+                <Button 
+                  type="submit" 
+                  disabled={!directText.trim() || isProcessing || isRecording || isPlaying}
+                  size="icon"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </form>
+            </div>
+          </TabsContent>
+        </Tabs>
+        
+        {/* Hidden file input for audio upload */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          style={{ display: 'none' }}
+          accept="audio/*"
+          onChange={handleFileUpload}
+        />
+      </CardContent>
+    </Card>
+  );
+};
