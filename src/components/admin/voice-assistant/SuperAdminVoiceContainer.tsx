@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -12,16 +13,19 @@ import { ChatHistory } from './ChatHistory'
 import { ChatMessage } from '../types/chat-types'
 import { useEdriziAudioProcessor } from '@/hooks/useEdriziAudioProcessor'
 import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Bot } from 'lucide-react'
 import { VoiceTemplate } from '@/lib/types'
-
-const CHAT_HISTORY_STORAGE_KEY = 'edriziAIChatHistory'
+import { useAuth } from '@/components/auth/AuthProvider'
 
 type SuperAdminVoiceContainerProps = {
   edriziVoice: VoiceTemplate
 }
 
 export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContainerProps) => {
+  const { user } = useAuth()
+  // Create a user-specific storage key for super admin
+  const CHAT_HISTORY_STORAGE_KEY = user ? `edriziAISuperAdminChatHistory_${user.id}` : 'edriziAISuperAdminChatHistory'
+  
   const { isRecording, startRecording, stopRecording } = useAudioRecorder()
   const { isPlaying, playAudio: originalPlayAudio } = useAudioPlayback()
   const [directText, setDirectText] = useState<string>('')
@@ -42,12 +46,18 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
         return []
       }
     }
-    return []
+    // Add a welcome message if no chat history
+    return [{
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: "Welcome to the EdriziAI Super Admin Assistant. I'm here to provide comprehensive insights and support for your advanced requirements. How can I assist you today?",
+      timestamp: new Date()
+    }]
   })
 
   useEffect(() => {
     localStorage.setItem(CHAT_HISTORY_STORAGE_KEY, JSON.stringify(chatHistory))
-  }, [chatHistory])
+  }, [chatHistory, CHAT_HISTORY_STORAGE_KEY])
 
   const {
     previewAudioUrl,
@@ -72,7 +82,8 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
   } = useEdriziAudioProcessor({
     selectedVoice,
     playAudio: playAudioWrapper,
-    setChatHistory
+    setChatHistory,
+    isSuperAdmin: true // Set this to true for super admin features
   })
 
   const { handleStopRecording } = useStopRecording({
@@ -104,20 +115,28 @@ export const SuperAdminVoiceContainer = ({ edriziVoice }: SuperAdminVoiceContain
   }
 
   const clearChatHistory = () => {
-    setChatHistory([])
+    setChatHistory([{
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: "Welcome to the EdriziAI Super Admin Assistant. I'm here to provide comprehensive insights and support for your advanced requirements. How can I assist you today?",
+      timestamp: new Date()
+    }])
     localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY)
   }
 
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle className="text-center">EdriziAI Super Admin Assistant</CardTitle>
+        <CardTitle className="text-center flex items-center justify-center gap-2">
+          <Bot className="h-5 w-5 text-primary" />
+          EdriziAI Super Admin Assistant
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col space-y-4">
         <div className="flex flex-col space-y-2">
           <div className="flex justify-between items-center">
             <h3 className="text-sm font-medium">Chat History</h3>
-            {chatHistory.length > 0 && (
+            {chatHistory.length > 1 && (
               <Button 
                 variant="destructive" 
                 size="sm" 

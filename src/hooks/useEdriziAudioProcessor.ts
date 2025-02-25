@@ -10,19 +10,21 @@ type VoiceTemplate = {
   id: string;
   name: string;
   description: string;
-  prompt?: string;
+  prompt: string;
 }
 
 interface AudioProcessorProps {
   selectedVoice: VoiceTemplate
   playAudio: (url: string) => void
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>
+  isSuperAdmin?: boolean
 }
 
 export const useEdriziAudioProcessor = ({ 
   selectedVoice, 
   playAudio, 
-  setChatHistory 
+  setChatHistory,
+  isSuperAdmin = false
 }: AudioProcessorProps) => {
   const [lastTranscription, setLastTranscription] = useState<string>('')
   const [lastUserInput, setLastUserInput] = useState<string>('')
@@ -75,45 +77,107 @@ export const useEdriziAudioProcessor = ({
       
       setChatHistory(prev => [...prev, userMessage])
 
-      // Generate trading-specific advice
-      const { data: adviceData, error: adviceError } = await supabase.functions.invoke('generate-trading-advice', {
-        body: { 
-          message: transcription, 
-          userId: user?.id,
-          userLevel: getUserLevel()
+      // Get previous messages for context
+      let previousMessages: any[] = []
+      setChatHistory(prev => {
+        // Take the last 10 messages
+        previousMessages = prev.slice(-10).map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }))
+        return prev
+      })
+
+      // Use Grok3 API for super admin or regular trading advice for others
+      if (isSuperAdmin) {
+        await generateGrok3Response(transcription, previousMessages)
+      } else {
+        // Generate trading-specific advice
+        const { data: adviceData, error: adviceError } = await supabase.functions.invoke('generate-trading-advice', {
+          body: { 
+            message: transcription, 
+            userId: user?.id,
+            userLevel: getUserLevel()
+          }
+        })
+
+        if (adviceError) {
+          console.error('Error generating trading advice:', adviceError)
+          // Fall back to regular AI response
+          await generateRegularAIResponse(transcription)
+          return
+        }
+
+        const advice = adviceData?.advice
+        if (!advice) {
+          console.error('No advice returned from trading service')
+          await generateRegularAIResponse(transcription)
+          return
+        }
+
+        // Add AI response to chat history
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: advice,
+          timestamp: new Date()
+        }
+        
+        setChatHistory(prev => [...prev, aiMessage])
+
+        // Convert AI response to speech
+        await generateSpeech(advice)
+      }
+    } catch (error) {
+      console.error('Error in audio processing flow:', error)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const generateGrok3Response = async (userInput: string, context: any[] = []) => {
+    try {
+      console.log('Generating response with Grok3 API for super admin...')
+      
+      const { data, error } = await supabase.functions.invoke('grok3-response', {
+        body: {
+          message: userInput,
+          context: context
         }
       })
 
-      if (adviceError) {
-        console.error('Error generating trading advice:', adviceError)
+      if (error) {
+        console.error('Error calling Grok3 API:', error)
         // Fall back to regular AI response
-        await generateRegularAIResponse(transcription)
+        await generateRegularAIResponse(userInput)
         return
       }
 
-      const advice = adviceData?.advice
-      if (!advice) {
-        console.error('No advice returned from trading service')
-        await generateRegularAIResponse(transcription)
+      const aiResponse = data?.response
+      if (!aiResponse) {
+        console.error('No response returned from Grok3 API')
+        await generateRegularAIResponse(userInput)
         return
       }
+
+      console.log('Got Grok3 response:', aiResponse.substring(0, 100) + '...')
 
       // Add AI response to chat history
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: advice,
+        content: aiResponse,
         timestamp: new Date()
       }
       
       setChatHistory(prev => [...prev, aiMessage])
 
       // Convert AI response to speech
-      await generateSpeech(advice)
+      await generateSpeech(aiResponse)
     } catch (error) {
-      console.error('Error in audio processing flow:', error)
-    } finally {
-      setIsProcessing(false)
+      console.error('Error generating Grok3 response:', error)
+      // Fall back to regular AI response
+      await generateRegularAIResponse(userInput)
     }
   }
 
@@ -196,41 +260,57 @@ export const useEdriziAudioProcessor = ({
       
       setChatHistory(prev => [...prev, userMessage])
 
-      // Generate trading-specific advice for text input
-      const { data: adviceData, error: adviceError } = await supabase.functions.invoke('generate-trading-advice', {
-        body: { 
-          message: text,
-          userId: user?.id,
-          userLevel: getUserLevel()
-        }
+      // Get previous messages for context
+      let previousMessages: any[] = []
+      setChatHistory(prev => {
+        // Take the last 10 messages
+        previousMessages = prev.slice(-10).map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }))
+        return prev
       })
 
-      if (adviceError) {
-        console.error('Error generating trading advice:', adviceError)
-        // Fall back to regular AI response
-        await generateRegularAIResponse(text)
-        return
-      }
+      // Use Grok3 API for super admin or regular trading advice for others
+      if (isSuperAdmin) {
+        await generateGrok3Response(text, previousMessages)
+      } else {
+        // Generate trading-specific advice for text input
+        const { data: adviceData, error: adviceError } = await supabase.functions.invoke('generate-trading-advice', {
+          body: { 
+            message: text,
+            userId: user?.id,
+            userLevel: getUserLevel()
+          }
+        })
 
-      const advice = adviceData?.advice
-      if (!advice) {
-        console.error('No advice returned from trading service')
-        await generateRegularAIResponse(text)
-        return
-      }
+        if (adviceError) {
+          console.error('Error generating trading advice:', adviceError)
+          // Fall back to regular AI response
+          await generateRegularAIResponse(text)
+          return
+        }
 
-      // Add AI response to chat history
-      const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: advice,
-        timestamp: new Date()
-      }
-      
-      setChatHistory(prev => [...prev, aiMessage])
+        const advice = adviceData?.advice
+        if (!advice) {
+          console.error('No advice returned from trading service')
+          await generateRegularAIResponse(text)
+          return
+        }
 
-      // Convert AI response to speech
-      await generateSpeech(advice)
+        // Add AI response to chat history
+        const aiMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: advice,
+          timestamp: new Date()
+        }
+        
+        setChatHistory(prev => [...prev, aiMessage])
+
+        // Convert AI response to speech
+        await generateSpeech(advice)
+      }
     } catch (error) {
       console.error('Error processing direct text:', error)
     } finally {
