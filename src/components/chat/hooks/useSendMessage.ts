@@ -1,0 +1,139 @@
+
+import { useCallback } from 'react';
+import { toast } from '@/components/ui/use-toast';
+import { ChatMessage } from '../types/chat';
+import { createChatMessage, generateAIResponse } from '../services/messageService';
+import { GrokSettings } from '../types/GrokSettings';
+
+interface UseSendMessageProps {
+  isAdminContext: boolean;
+  messages: ChatMessage[];
+  setMessages: (messages: ChatMessage[]) => void;
+  inputMessage: string;
+  setInputMessage: (input: string) => void;
+  setIsProcessing: (isProcessing: boolean) => void;
+  apiAvailable: boolean | null;
+  checkGrokAvailability: () => Promise<void>;
+  grokSettings: GrokSettings;
+}
+
+export function useSendMessage({
+  isAdminContext,
+  messages,
+  setMessages,
+  inputMessage,
+  setInputMessage,
+  setIsProcessing,
+  apiAvailable,
+  checkGrokAvailability,
+  grokSettings
+}: UseSendMessageProps) {
+  
+  const sendMessage = useCallback(async (messageContent = inputMessage) => {
+    if (!messageContent.trim()) return;
+    
+    if (isAdminContext) {
+      console.log('sendMessage blocked in admin context');
+      return;
+    }
+    
+    console.log('sendMessage called with content:', messageContent);
+    setIsProcessing(true);
+
+    try {
+      // Create and add user message
+      const userMessage = createChatMessage('user', messageContent);
+      console.log('Adding user message:', userMessage);
+      
+      const updatedMessages = [...messages, userMessage];
+      
+      // Immediately update messages state with user message
+      setMessages(updatedMessages);
+      console.log('Updated messages after adding user message:', updatedMessages);
+      
+      setInputMessage('');
+
+      // If Grok3 API availability is unknown, check it
+      if (apiAvailable === null) {
+        await checkGrokAvailability();
+      }
+      
+      console.log('Generating AI response with model:', grokSettings.selectedModel);
+      
+      // Create conversation history in the format expected by API
+      const conversationHistory = updatedMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
+      console.log('Conversation history for API:', conversationHistory);
+      
+      try {
+        const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable !== false, grokSettings);
+        console.log('Received AI response:', response);
+        
+        if (!response) {
+          console.error('Empty response received from AI');
+          throw new Error('Empty response received from AI');
+        }
+        
+        // Add assistant response to chat
+        const assistantMessage = createChatMessage('assistant', response);
+        console.log('Adding assistant message:', assistantMessage);
+        
+        // Update messages state with both user and assistant messages
+        const finalMessages = [...updatedMessages, assistantMessage];
+        console.log('Final messages state:', finalMessages);
+        setMessages(finalMessages);
+        
+        toast({
+          title: "Response received",
+          description: "The AI has responded to your message.",
+          duration: 3000
+        });
+      } catch (apiError) {
+        console.error('Error getting AI response:', apiError);
+        
+        // Add error message to chat
+        const errorMessage = createChatMessage(
+          'assistant',
+          'Er is een fout opgetreden bij het genereren van een antwoord. Probeer het later opnieuw.'
+        );
+        
+        setMessages([...updatedMessages, errorMessage]);
+        
+        toast({
+          title: "Error generating response",
+          description: apiError instanceof Error ? apiError.message : "Failed to generate a response",
+          variant: "destructive",
+          duration: 5000
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error in chat process:', error);
+      
+      // Add error message
+      const errorMessage = createChatMessage(
+        'assistant',
+        'Er is een fout opgetreden bij het genereren van een antwoord. Probeer het later opnieuw.'
+      );
+      
+      console.log('Adding error message to chat:', errorMessage);
+      
+      setMessages(prev => [...prev, errorMessage]);
+      
+      // Show error toast
+      toast({
+        title: "Er is een fout opgetreden",
+        description: error instanceof Error ? error.message : "Kon geen antwoord genereren. Probeer het later opnieuw.",
+        variant: "destructive",
+        duration: 5000
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [inputMessage, messages, apiAvailable, checkGrokAvailability, grokSettings, isAdminContext, setInputMessage, setIsProcessing, setMessages]);
+
+  return { sendMessage };
+}

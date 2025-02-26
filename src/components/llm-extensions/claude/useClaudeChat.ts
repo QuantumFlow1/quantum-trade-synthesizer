@@ -1,23 +1,28 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Message } from '../deepseek/types';
 import { generateClaudeResponse } from '@/components/chat/services/claudeService';
+import { GrokSettings } from '@/components/chat/types/GrokSettings';
 
 export function useClaudeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState<string>('');
   
-  // Load saved API key and messages from localStorage
+  // Load API key from localStorage
   useEffect(() => {
     const savedApiKey = localStorage.getItem('claudeApiKey');
     if (savedApiKey) {
       setApiKey(savedApiKey);
+      console.log('Claude API key loaded from localStorage');
     }
-    
+  }, []);
+  
+  // Load saved messages from localStorage when component mounts
+  useEffect(() => {
     const savedMessages = localStorage.getItem('claudeChatMessages');
     if (savedMessages) {
       try {
@@ -35,67 +40,79 @@ export function useClaudeChat() {
     }
   }, [messages]);
 
-  // Save API key to localStorage when it changes
-  useEffect(() => {
-    if (apiKey) {
-      localStorage.setItem('claudeApiKey', apiKey);
-    }
-  }, [apiKey]);
-
   // Generate a unique ID for messages
   const generateId = () => {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
+  };
+
+  const saveApiKey = (key: string) => {
+    localStorage.setItem('claudeApiKey', key);
+    setApiKey(key);
+    setShowSettings(false);
+    toast({
+      title: "API Key Saved",
+      description: "Your Claude API key has been saved.",
+      duration: 3000,
+    });
   };
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
     if (!apiKey) {
       toast({
-        title: "API key required",
-        description: "Please set your Claude API key in settings.",
+        title: "API Key Required",
+        description: "Please add your Claude API key in settings.",
         variant: "destructive",
+        duration: 5000,
       });
       setShowSettings(true);
       return;
     }
 
-    // Add user message to chat
-    const userMessage: Message = {
-      id: generateId(),
-      role: 'user',
-      content: inputMessage,
-      timestamp: new Date(),
-    };
-    
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    setInputMessage('');
-    setIsLoading(true);
-
     try {
-      // Convert messages to the format expected by the Claude API
-      const conversationHistory = newMessages.map(msg => ({
+      // Add user message to chat
+      const userMessage: Message = {
+        id: generateId(),
+        role: 'user',
+        content: inputMessage,
+        timestamp: new Date(),
+      };
+      
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+      setInputMessage('');
+      setIsLoading(true);
+
+      // Create message history for Claude API
+      const messageHistory = newMessages.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
 
-      // Call the Claude API with the chat history
+      // Create settings object for Claude
+      const claudeSettings: GrokSettings = {
+        selectedModel: "claude",
+        apiKeys: {
+          claudeApiKey: apiKey
+        },
+        temperature: 0.7,
+        maxTokens: 1024,
+        deepSearchEnabled: false,
+        thinkEnabled: false
+      };
+
+      // Call Claude API
       const response = await generateClaudeResponse(
-        inputMessage, 
-        conversationHistory,
-        { 
-          selectedModel: 'claude', 
-          apiKeys: { claudeApiKey: apiKey },
-          temperature: 0.7,
-          maxTokens: 1000
-        }
+        inputMessage,
+        messageHistory,
+        claudeSettings
       );
 
-      // Add assistant response to chat
+      // Add Claude's response to chat
       const assistantMessage: Message = {
         id: generateId(),
         role: 'assistant',
-        content: response,
+        content: response || "Sorry, I couldn't generate a response. Please try again.",
         timestamp: new Date(),
       };
 
@@ -107,21 +124,25 @@ export function useClaudeChat() {
         duration: 3000,
       });
     } catch (error) {
-      console.error("Claude API error:", error);
+      console.error('Error with Claude API:', error);
       
       // Add error message to chat
       const errorMessage: Message = {
         id: generateId(),
         role: 'assistant',
-        content: `Error: ${error instanceof Error ? error.message : "Failed to get response from Claude API"}`,
+        content: error instanceof Error 
+          ? `Error: ${error.message}` 
+          : "Sorry, an unexpected error occurred. Please check your API key and try again.",
         timestamp: new Date(),
       };
       
-      setMessages([...newMessages, errorMessage]);
+      setMessages([...messages, errorMessage]);
       
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get response from Claude API",
+        title: "Claude API Error",
+        description: error instanceof Error 
+          ? error.message 
+          : "Failed to get a response from Claude",
         variant: "destructive",
         duration: 5000,
       });
@@ -150,11 +171,11 @@ export function useClaudeChat() {
     isLoading,
     showSettings,
     apiKey,
-    setApiKey,
     setInputMessage,
     sendMessage,
     clearChat,
     toggleSettings,
-    setShowSettings
+    setShowSettings,
+    saveApiKey,
   };
 }
