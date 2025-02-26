@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from '@/components/ui/card'
 import { GrokChatHeader } from './GrokChatHeader'
 import { ChatMessages } from './ChatMessages'
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { GrokChatSettings } from './GrokChatSettings'
 import { AI_MODELS } from './types/GrokSettings'
 import { useNavigate } from 'react-router-dom'
-import AdvancedLLMInterface from './AdvancedLLMInterface'
+import AdvancedLLMInterface from './advanced/AdvancedLLMInterface'
 
 export function GrokChat() {
   const navigate = useNavigate();

@@ -2,13 +2,7 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AI_MODELS } from '../types/GrokSettings';
-
-interface TaskAndModelSectionProps {
-  task: string;
-  setTask: (task: string) => void;
-  selectedModel: string;
-  onModelChange: (model: string) => void;
-}
+import { TaskAndModelSectionProps } from './types';
 
 const TaskAndModelSection: React.FC<TaskAndModelSectionProps> = ({
   task,

@@ -4,15 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-interface ParametersSectionProps {
-  temperature: number;
-  setTemperature: (value: number) => void;
-  maxTokens: number;
-  setMaxTokens: (value: number) => void;
-  handleGenerate: () => void;
-  isLoading: boolean;
-}
+import { Loader2 } from 'lucide-react';
+import { ParametersSectionProps } from './types';
 
 const ParametersSection: React.FC<ParametersSectionProps> = ({
   temperature,
@@ -59,7 +52,14 @@ const ParametersSection: React.FC<ParametersSectionProps> = ({
         className="w-full mt-4"
         disabled={isLoading}
       >
-        {isLoading ? 'Bezig met genereren...' : 'Genereren'}
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Bezig met genereren...
+          </>
+        ) : (
+          'Genereren'
+        )}
       </Button>
     </div>
   );

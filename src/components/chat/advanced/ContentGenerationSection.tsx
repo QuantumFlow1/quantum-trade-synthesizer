@@ -1,18 +1,7 @@
 
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
-
-interface Message {
-  role: string;
-  content: string;
-}
-
-interface ContentGenerationSectionProps {
-  inputMessage: string;
-  setInputMessage: (message: string) => void;
-  messages: Message[];
-  selectedModelName: string;
-}
+import { ContentGenerationSectionProps } from './types';
 
 const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
   inputMessage,

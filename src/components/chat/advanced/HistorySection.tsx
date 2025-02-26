@@ -1,14 +1,6 @@
 
 import React from 'react';
-
-interface HistoryItem {
-  task: string;
-  output: string;
-}
-
-interface HistorySectionProps {
-  history: HistoryItem[];
-}
+import { HistorySectionProps } from './types';
 
 const HistorySection: React.FC<HistorySectionProps> = ({ history }) => {
   return (
