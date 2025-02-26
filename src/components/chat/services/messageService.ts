@@ -10,8 +10,25 @@ import { generateFallbackResponse } from './fallbackService';
 import { GrokSettings, ModelId } from '../types/GrokSettings';
 import { toast } from '@/components/ui/use-toast';
 
+// Check if we're in admin context
+const isAdminContext = () => {
+  return typeof window !== 'undefined' && 
+    (window.location.pathname.includes('/admin') || 
+     window.sessionStorage.getItem('disable-chat-services') === 'true');
+};
+
 // Create a properly formatted chat message
 export const createChatMessage = (role: 'user' | 'assistant', content: string): ChatMessage => {
+  // Skip intensive operations in admin context
+  if (isAdminContext()) {
+    return {
+      id: 'admin-context-disabled',
+      role,
+      content: content || "Chat disabled in admin context",
+      timestamp: new Date(),
+    };
+  }
+
   const newMessage = {
     id: uuidv4(),
     role,
@@ -24,6 +41,11 @@ export const createChatMessage = (role: 'user' | 'assistant', content: string): 
 
 // Check if the required API key is available for a given model
 const hasRequiredApiKey = (modelId: ModelId, settings: GrokSettings): boolean => {
+  // Early return if in admin context
+  if (isAdminContext()) {
+    return false;
+  }
+
   const { apiKeys } = settings;
   
   // Log the available API keys (masked for security)
@@ -79,6 +101,12 @@ export const generateAIResponse = async (
   isGrok3Available: boolean,
   settings: GrokSettings
 ): Promise<string> => {
+  // Early return if in admin context
+  if (isAdminContext()) {
+    console.log('Skipping AI response generation in admin context');
+    return "Chat functionality is disabled in admin context";
+  }
+
   console.log('Generating AI response with:', {
     model: settings.selectedModel,
     temperature: settings.temperature,

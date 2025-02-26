@@ -7,20 +7,33 @@ import { useApiAvailability } from './hooks/useApiAvailability';
 import { generateAIResponse, createChatMessage } from './services/messageService';
 import { GrokSettings, DEFAULT_SETTINGS } from './types/GrokSettings';
 
-export function useGrokChat() {
+export function useGrokChat(skipInitialization = false) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [grokSettings, setGrokSettings] = useState<GrokSettings>(DEFAULT_SETTINGS);
   const [isProcessing, setIsProcessing] = useState(false);
   const { apiAvailable, isLoading, checkGrokAvailability, retryApiConnection } = useApiAvailability();
 
-  // Check API availability on mount
+  // Check if we're in the admin context by examining the URL
+  const isAdminContext = typeof window !== 'undefined' && 
+    (window.location.pathname.includes('/admin') || skipInitialization);
+  
+  // Only run effects if not in admin context
   useEffect(() => {
+    if (isAdminContext) {
+      console.log('Skip Grok API availability check in admin context');
+      return;
+    }
     checkGrokAvailability();
-  }, []);
+  }, [isAdminContext, checkGrokAvailability]);
 
   // Load chat history from localStorage when component mounts
   useEffect(() => {
+    if (isAdminContext) {
+      console.log('Skip loading chat history in admin context');
+      return;
+    }
+    
     const savedMessages = loadChatHistory();
     console.log('Loaded saved messages:', savedMessages);
     if (savedMessages && savedMessages.length > 0) {
@@ -36,23 +49,34 @@ export function useGrokChat() {
         console.error('Error parsing saved Grok settings:', e);
       }
     }
-  }, []);
+  }, [isAdminContext]);
 
   // Save chat history to localStorage when it changes
   useEffect(() => {
-    console.log('Saving messages to localStorage:', messages);
-    if (messages.length > 0) {
-      saveChatHistory(messages);
+    if (isAdminContext || messages.length === 0) {
+      return;
     }
-  }, [messages]);
+    
+    console.log('Saving messages to localStorage:', messages);
+    saveChatHistory(messages);
+  }, [messages, isAdminContext]);
   
   // Save settings to localStorage when they change
   useEffect(() => {
+    if (isAdminContext) {
+      return;
+    }
+    
     localStorage.setItem('grokSettings', JSON.stringify(grokSettings));
-  }, [grokSettings]);
+  }, [grokSettings, isAdminContext]);
 
   const sendMessage = useCallback(async (messageContent = inputMessage) => {
     if (!messageContent.trim()) return;
+    
+    if (isAdminContext) {
+      console.log('sendMessage blocked in admin context');
+      return;
+    }
     
     console.log('sendMessage called with content:', messageContent);
     setIsProcessing(true);
@@ -150,9 +174,14 @@ export function useGrokChat() {
     } finally {
       setIsProcessing(false);
     }
-  }, [inputMessage, messages, apiAvailable, checkGrokAvailability, grokSettings]);
+  }, [inputMessage, messages, apiAvailable, checkGrokAvailability, grokSettings, isAdminContext]);
 
   const clearChat = useCallback(() => {
+    if (isAdminContext) {
+      console.log('clearChat blocked in admin context');
+      return;
+    }
+    
     setMessages([]);
     localStorage.removeItem('grokChatHistory');
     toast({
@@ -160,7 +189,7 @@ export function useGrokChat() {
       description: "All messages have been removed.",
       duration: 3000
     });
-  }, []);
+  }, [isAdminContext]);
 
   return {
     messages,

@@ -15,6 +15,11 @@ const AdminPanel = () => {
   const [showAccountManagement, setShowAccountManagement] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
 
+  // Force disable any chat functionality
+  if (typeof window !== 'undefined') {
+    window.sessionStorage.setItem('disable-chat-services', 'true');
+  }
+
   const handleDashboardClick = () => {
     setShowUserDashboard(true);
     setShowAccountManagement(false);

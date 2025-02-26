@@ -8,9 +8,17 @@ import { supabase } from '@/lib/supabase';
 export const useApiAvailability = () => {
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  
+  // Check if we're in the admin context
+  const isAdminContext = typeof window !== 'undefined' && window.location.pathname.includes('/admin');
 
   // Check if Grok3 API is available
   const checkGrokAvailability = useCallback(async () => {
+    if (isAdminContext) {
+      console.log('Skipping Grok3 API availability check in admin context');
+      return false;
+    }
+    
     console.log('Checking Grok3 API availability...');
     setIsLoading(true);
     
@@ -31,10 +39,15 @@ export const useApiAvailability = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isAdminContext]);
   
   // Check if OpenAI API is available
   const checkOpenAIAvailability = useCallback(async () => {
+    if (isAdminContext) {
+      console.log('Skipping OpenAI API availability check in admin context');
+      return false;
+    }
+    
     console.log('Checking OpenAI API availability...');
     setIsLoading(true);
     
@@ -55,10 +68,15 @@ export const useApiAvailability = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isAdminContext]);
 
   // Retry API connection
   const retryApiConnection = useCallback(async () => {
+    if (isAdminContext) {
+      console.log('Skipping API connection retry in admin context');
+      return;
+    }
+    
     setIsLoading(true);
     
     try {
@@ -72,11 +90,11 @@ export const useApiAvailability = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [checkGrokAvailability, checkOpenAIAvailability]);
+  }, [checkGrokAvailability, checkOpenAIAvailability, isAdminContext]);
 
   return {
-    apiAvailable,
-    isLoading,
+    apiAvailable: isAdminContext ? false : apiAvailable,
+    isLoading: isAdminContext ? false : isLoading,
     checkGrokAvailability,
     checkOpenAIAvailability,
     retryApiConnection
