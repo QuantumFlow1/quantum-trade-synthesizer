@@ -13,6 +13,7 @@ import { OverviewPage } from "./dashboard/pages/OverviewPage";
 import { MarketPage } from "./dashboard/pages/MarketPage";
 import { TradingPage } from "./dashboard/pages/TradingPage";
 import { AnalyticsPage } from "./dashboard/pages/AnalyticsPage";
+import { WalletPage } from "./dashboard/pages/WalletPage";
 import { RiskPage } from "./dashboard/pages/RiskPage";
 import { AIToolsPage } from "./dashboard/pages/AIToolsPage";
 import { SettingsPage } from "./dashboard/pages/SettingsPage";
@@ -71,6 +72,8 @@ const UserDashboard = () => {
         return <TradingPage />;
       case "analytics":
         return <AnalyticsPage />;
+      case "wallet":
+        return <WalletPage />;
       case "risk":
         return <RiskPage />;
       case "ai":

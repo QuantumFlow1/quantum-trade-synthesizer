@@ -7,7 +7,8 @@ import {
   TrendingUp, 
   AlertCircle, 
   Settings, 
-  BrainCircuit
+  BrainCircuit,
+  Wallet
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ export const DashboardNavigation = ({ activePage, onChangePage }: DashboardNavig
     { name: "Market", icon: <LineChart className="w-4 h-4" />, value: "market" },
     { name: "Trading", icon: <TrendingUp className="w-4 h-4" />, value: "trading" },
     { name: "Analytics", icon: <PieChart className="w-4 h-4" />, value: "analytics" },
+    { name: "Wallet", icon: <Wallet className="w-4 h-4" />, value: "wallet" },
     { name: "Risk", icon: <AlertCircle className="w-4 h-4" />, value: "risk" },
     { name: "AI Tools", icon: <BrainCircuit className="w-4 h-4" />, value: "ai" },
     { name: "Settings", icon: <Settings className="w-4 h-4" />, value: "settings" },
