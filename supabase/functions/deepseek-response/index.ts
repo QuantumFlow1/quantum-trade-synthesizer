@@ -1,6 +1,6 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,86 +14,73 @@ serve(async (req) => {
   }
 
   try {
-    const { message, context, model, maxTokens, temperature, apiKey } = await req.json();
+    const { message, context = [], model = 'deepseek-coder', maxTokens = 1024, temperature = 0.7, apiKey } = await req.json();
     
-    // Check if the API key is provided, otherwise use the environment variable
-    const deepSeekApiKey = apiKey || Deno.env.get('DEEPSEEK_API_KEY');
+    // Use the provided API key or fallback to environment variable
+    const deepseekApiKey = apiKey || Deno.env.get('DEEPSEEK_API_KEY');
     
-    if (!deepSeekApiKey) {
-      console.error('DeepSeek API key not provided');
+    if (!deepseekApiKey) {
+      console.error('DeepSeek API key is missing');
       return new Response(
-        JSON.stringify({ error: 'DeepSeek API key not provided' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({ error: 'DeepSeek API key is required. Please provide it in your settings.' }), 
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Log request details (without sensitive info)
-    console.log(`DeepSeek request: model=${model}, temperature=${temperature}, maxTokens=${maxTokens}`);
+    console.log(`Processing DeepSeek request with model: ${model}`);
     
-    // Convert the conversation context to DeepSeek format
-    const messages = context.map((msg: { role: string; content: string }) => ({
-      role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.content,
-    }));
-    
-    // Add the new message from the user
-    messages.push({ role: 'user', content: message });
+    // Format the messages for DeepSeek API format
+    const messages = [
+      ...context.map((msg: { role: string; content: string }) => ({
+        role: msg.role === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      })),
+      { role: 'user', content: message }
+    ];
 
-    // Select the model to use (DeepSeek-Coder is the default)
-    const modelToUse = model === 'deepseek-chat' ? 'deepseek-chat' : 'deepseek-coder';
-    
-    console.log(`Using DeepSeek model: ${modelToUse}`);
+    // DeepSeek API endpoint
+    const endpoint = model.includes('chat') 
+      ? 'https://api.deepseek.com/v1/chat/completions' 
+      : 'https://api.deepseek.com/v1/completions';
 
-    // Make the request to DeepSeek API
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+    console.log(`Using DeepSeek endpoint: ${endpoint}`);
+    
+    // Make request to DeepSeek API
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${deepSeekApiKey}`,
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${deepseekApiKey}`
       },
       body: JSON.stringify({
-        model: modelToUse,
-        messages: messages,
-        max_tokens: maxTokens || 1000,
-        temperature: temperature || 0.7,
+        model: model.includes('chat') ? 'deepseek-chat' : 'deepseek-coder',
+        messages,
+        max_tokens: maxTokens,
+        temperature,
       }),
     });
 
-    // Handle API errors
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('DeepSeek API error:', errorData);
-      return new Response(
-        JSON.stringify({ 
-          error: `DeepSeek API Error: ${errorData.error?.message || 'Unknown error'}` 
-        }),
-        { 
-          status: response.status, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
+      console.error('DeepSeek API Error:', errorData);
+      throw new Error(`DeepSeek API error: ${errorData.error?.message || 'Unknown error'}`);
     }
 
     const data = await response.json();
-    const generatedText = data.choices[0].message.content;
+    console.log('DeepSeek response received', data);
     
-    console.log(`DeepSeek response generated (${generatedText.length} chars)`);
-
+    // Extract the response text
+    const responseText = data.choices[0]?.message?.content || data.choices[0]?.text || '';
+    
     return new Response(
-      JSON.stringify({ response: generatedText }),
+      JSON.stringify({ response: responseText }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error in DeepSeek response function:', error);
+    console.error('Error in DeepSeek function:', error);
     return new Response(
-      JSON.stringify({ error: `Error processing request: ${error.message}` }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ error: error.message || 'An error occurred while processing your request' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

@@ -1,26 +1,17 @@
 
-# This is the project configuration for Supabase
-project_id = 'your-project-id'
+project_id = "tfmlretexydslgowlkid"
 
 [api]
-# Port to use for the API URL.
+enabled = true
 port = 54321
+schemas = ["public", "storage"]
 
-[functions]
-[functions.grok3-response]
-source = "supabase/functions/grok3-response"
+[db]
+port = 54322
 
-[functions.generate-ai-response]
-source = "supabase/functions/generate-ai-response"
+[studio]
+port = 54323
 
-[functions.openai-response]
-source = "supabase/functions/openai-response"
-
-[functions.claude-response]
-source = "supabase/functions/claude-response"
-
-[functions.gemini-response]
-source = "supabase/functions/gemini-response"
-
-[functions.deepseek-response]
-source = "supabase/functions/deepseek-response"
+[[functions]]
+name = "deepseek-response"
+verify_jwt = false
