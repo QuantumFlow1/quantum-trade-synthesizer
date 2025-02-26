@@ -10,6 +10,7 @@ export function useDeepSeekChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<'available' | 'unavailable' | 'unknown'>('unknown');
 
   // Load saved API key from localStorage
   useEffect(() => {
@@ -17,7 +18,47 @@ export function useDeepSeekChat() {
     if (savedApiKey) {
       setApiKey(savedApiKey);
     }
+    
+    // Check edge function status on mount
+    checkEdgeFunctionStatus();
   }, []);
+
+  // Function to check if the DeepSeek edge function is available
+  const checkEdgeFunctionStatus = async () => {
+    try {
+      console.log('Checking DeepSeek edge function status...');
+      const { error } = await supabase.functions.invoke('deepseek-response', {
+        body: { 
+          message: "system: ping",
+          context: [],
+          model: "deepseek-chat",
+          maxTokens: 10,
+          temperature: 0.7,
+          apiKey: apiKey || "test-key" // Just for checking if the function exists
+        }
+      });
+      
+      // We don't care about the API key error, just that the function responds
+      if (error && !error.message.includes('API key')) {
+        console.error('DeepSeek edge function is unavailable:', error);
+        setEdgeFunctionStatus('unavailable');
+        
+        // Show toast with information about the unavailable service
+        toast({
+          title: "DeepSeek Service Unavailable",
+          description: "The DeepSeek AI service is currently unavailable. Please try again later or use another AI model.",
+          variant: "warning",
+          duration: 5000
+        });
+      } else {
+        console.log('DeepSeek edge function is available');
+        setEdgeFunctionStatus('available');
+      }
+    } catch (error) {
+      console.error('Error checking DeepSeek edge function status:', error);
+      setEdgeFunctionStatus('unavailable');
+    }
+  };
 
   // Generate a unique ID for messages
   const generateId = () => {
@@ -39,9 +80,30 @@ export function useDeepSeekChat() {
     });
   };
 
+  // Save API key to localStorage when it changes
+  const updateApiKey = (newKey: string) => {
+    setApiKey(newKey);
+    localStorage.setItem('deepseekApiKey', newKey);
+    toast({
+      title: "API Key Saved",
+      description: "Your DeepSeek API key has been saved.",
+      duration: 3000,
+    });
+  };
+
   // Send message to DeepSeek API
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
+    
+    if (edgeFunctionStatus === 'unavailable') {
+      toast({
+        title: "Service Unavailable",
+        description: "The DeepSeek service is currently unavailable. Please try again later or use another AI model.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!apiKey) {
       toast({
         title: "API key required",
@@ -106,6 +168,11 @@ export function useDeepSeekChat() {
     } catch (error) {
       console.error('DeepSeek chat error:', error);
       
+      // Check if the error might be due to the edge function being unavailable
+      if (error instanceof Error && error.message.includes('non-2xx status code')) {
+        setEdgeFunctionStatus('unavailable');
+      }
+      
       // Add error message to chat
       const errorMessage: Message = {
         id: generateId(),
@@ -133,10 +200,14 @@ export function useDeepSeekChat() {
     inputMessage,
     isLoading,
     showSettings,
+    apiKey,
+    edgeFunctionStatus,
     setInputMessage,
     sendMessage,
     clearChat,
     toggleSettings,
-    setShowSettings
+    setShowSettings,
+    updateApiKey,
+    checkEdgeFunctionStatus
   };
 }

@@ -1,12 +1,35 @@
 
-import { Bot } from 'lucide-react';
+import { Bot, AlertTriangle } from 'lucide-react';
 
-export function DeepSeekEmptyState() {
+interface DeepSeekEmptyStateProps {
+  edgeFunctionStatus?: 'available' | 'unavailable' | 'unknown';
+}
+
+export function DeepSeekEmptyState({ edgeFunctionStatus = 'unknown' }: DeepSeekEmptyStateProps) {
   return (
-    <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-      <Bot className="w-16 h-16 mb-6 opacity-20" />
-      <p className="text-lg">Ask DeepSeek something</p>
-      <p className="text-sm mt-2">Specialized in code and technical questions</p>
+    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-500">
+      {edgeFunctionStatus === 'unavailable' ? (
+        <>
+          <AlertTriangle className="h-16 w-16 text-yellow-500 mb-4" />
+          <h3 className="text-lg font-medium mb-2">DeepSeek Service Unavailable</h3>
+          <p className="max-w-md">
+            The DeepSeek AI service is currently unavailable. This might be due to a temporary outage
+            or deployment issue. Please try again later or use a different AI model.
+          </p>
+        </>
+      ) : (
+        <>
+          <Bot className="h-16 w-16 text-blue-500 mb-4" />
+          <h3 className="text-lg font-medium mb-2">DeepSeek AI Chat</h3>
+          <p className="max-w-md">
+            This is a DeepSeek AI chat interface. DeepSeek is specialized for code generation and
+            technical assistance.
+          </p>
+          <p className="mt-2 text-sm">
+            Send a message to start a conversation. You'll need to provide your API key in settings.
+          </p>
+        </>
+      )}
     </div>
   );
 }

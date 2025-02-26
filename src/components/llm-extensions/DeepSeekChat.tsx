@@ -3,11 +3,12 @@ import { useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, SendIcon, Loader2, Settings, Trash2 } from 'lucide-react';
+import { Bot, SendIcon, Loader2, Settings, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { DeepSeekMessage } from './deepseek/DeepSeekMessage';
 import { DeepSeekSettings } from './deepseek/DeepSeekSettings';
 import { DeepSeekEmptyState } from './deepseek/DeepSeekEmptyState';
 import { useDeepSeekChat } from './deepseek/useDeepSeekChat';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export function DeepSeekChat() {
   const {
@@ -15,11 +16,13 @@ export function DeepSeekChat() {
     inputMessage,
     isLoading,
     showSettings,
+    edgeFunctionStatus,
     setInputMessage,
     sendMessage,
     clearChat,
     toggleSettings,
-    setShowSettings
+    setShowSettings,
+    checkEdgeFunctionStatus
   } = useDeepSeekChat();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -39,6 +42,17 @@ export function DeepSeekChat() {
           DeepSeek Chat
         </CardTitle>
         <div className="flex gap-2">
+          {edgeFunctionStatus === 'unavailable' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={checkEdgeFunctionStatus}
+              title="Retry connection"
+              className="text-yellow-600"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="sm"
@@ -59,10 +73,21 @@ export function DeepSeekChat() {
       </CardHeader>
       
       <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4">
+        {edgeFunctionStatus === 'unavailable' && (
+          <Alert variant="destructive" className="mb-2">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Service Unavailable</AlertTitle>
+            <AlertDescription>
+              The DeepSeek API service is currently unavailable. This might be due to a temporary issue or a deployment error. 
+              Please try again later or use a different AI model.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {showSettings ? (
           <DeepSeekSettings onClose={() => setShowSettings(false)} />
         ) : messages.length === 0 ? (
-          <DeepSeekEmptyState />
+          <DeepSeekEmptyState edgeFunctionStatus={edgeFunctionStatus} />
         ) : (
           messages.map((message) => (
             <DeepSeekMessage key={message.id} message={message} />
@@ -76,9 +101,11 @@ export function DeepSeekChat() {
           <Textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message..."
+            placeholder={edgeFunctionStatus === 'unavailable' 
+              ? "DeepSeek service unavailable. Please try again later." 
+              : "Type your message..."}
             className="flex-1 resize-none"
-            disabled={isLoading}
+            disabled={isLoading || edgeFunctionStatus === 'unavailable'}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -88,7 +115,7 @@ export function DeepSeekChat() {
           />
           <Button 
             onClick={sendMessage} 
-            disabled={!inputMessage.trim() || isLoading} 
+            disabled={!inputMessage.trim() || isLoading || edgeFunctionStatus === 'unavailable'} 
             className="h-full"
           >
             {isLoading ? (

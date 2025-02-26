@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage } from '../types/chat';
 import { generateGrok3Response } from './grok3Service';
@@ -94,6 +93,32 @@ const hasRequiredApiKey = (modelId: ModelId, settings: GrokSettings): boolean =>
   }
 };
 
+// Helper function to check if a service might be temporarily unavailable
+const checkServiceAvailability = async (serviceName: string): Promise<boolean> => {
+  if (serviceName === 'deepseek') {
+    try {
+      const { error } = await supabase.functions.invoke('deepseek-response', {
+        body: { 
+          message: "system: ping test",
+          context: [],
+          model: "deepseek-chat",
+          maxTokens: 10,
+          temperature: 0.7,
+          apiKey: "test-key" // Just for checking if the function exists
+        }
+      });
+      
+      // We expect an API key error, but not a function unavailable error
+      return !error || error.message.includes('API key');
+    } catch {
+      return false;
+    }
+  }
+  
+  // Default to assuming the service is available for other services
+  return true;
+};
+
 // Main function to generate AI response based on available services and selected model
 export const generateAIResponse = async (
   inputMessage: string,
@@ -141,6 +166,34 @@ export const generateAIResponse = async (
         });
       } else {
         return "Om dit model te gebruiken, moet u een API-sleutel instellen in de instellingen. Klik op het instellingenpictogram en voer uw API-sleutel in.";
+      }
+    }
+    
+    // Special handling for DeepSeek - check if it's available
+    if (settings.selectedModel === 'deepseek' || settings.selectedModel === 'deepseek-chat') {
+      const isDeepSeekAvailable = await checkServiceAvailability('deepseek');
+      
+      if (!isDeepSeekAvailable) {
+        console.warn('DeepSeek service is unavailable, switching to fallback model');
+        toast({
+          title: "DeepSeek Service Unavailable",
+          description: "Switching to OpenAI model as fallback.",
+          variant: "warning",
+          duration: 5000
+        });
+        
+        // Switch to OpenAI if we have a key
+        if (settings.apiKeys.openaiApiKey || localStorage.getItem('openaiApiKey')) {
+          settings.selectedModel = 'openai';
+        } 
+        // Otherwise switch to Grok3 if available
+        else if (isGrok3Available) {
+          settings.selectedModel = 'grok3';
+        } 
+        // If all else fails, use fallback service
+        else {
+          return generateFallbackResponse(inputMessage, conversationHistory);
+        }
       }
     }
     
@@ -285,6 +338,13 @@ export const generateAIResponse = async (
             description: "Switching to backup AI service",
             duration: 3000,
           });
+          
+          // If the error message suggests the edge function is down, mark it as unavailable
+          if (deepseekError instanceof Error && 
+              deepseekError.message.includes('non-2xx status code')) {
+            await localStorage.setItem('deepseekServiceUnavailable', 'true');
+          }
+          
           // If DeepSeek fails and we have an OpenAI key, try OpenAI
           if (settings.apiKeys.openaiApiKey || localStorage.getItem('openaiApiKey')) {
             // Update apiKeys from localStorage if necessary
@@ -294,6 +354,9 @@ export const generateAIResponse = async (
             
             attemptedServices.push('openai');
             response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+          } else if (isGrok3Available) {
+            attemptedServices.push('grok3');
+            response = await generateGrok3Response(inputMessage, conversationHistory, settings);
           } else {
             throw new Error("DeepSeek service unavailable and no backup API key is set");
           }
