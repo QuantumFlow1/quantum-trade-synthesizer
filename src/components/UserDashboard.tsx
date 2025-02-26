@@ -17,7 +17,7 @@ const UserDashboard = () => {
   const { visibleWidgets, setVisibleWidgets, apiStatus, setApiStatus } = useDashboard();
 
   useEffect(() => {
-    // Controleer of de API beschikbaar is
+    // Check if API is available
     const checkApiStatus = async () => {
       try {
         setApiStatus('checking');
@@ -41,7 +41,7 @@ const UserDashboard = () => {
       }
     };
     
-    // Alleen API status controleren als de gebruiker een lov_trader is
+    // Only check API status if user is a lov_trader
     if (isLovTrader) {
       checkApiStatus();
       setVisibleWidgets(prev => ({ ...prev, apiAccess: true }));
