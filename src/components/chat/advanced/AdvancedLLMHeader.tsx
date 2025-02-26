@@ -15,10 +15,10 @@ export default function AdvancedLLMHeader({ selectedModelName, onExit }: Advance
       console.log("Updated document title to:", `${modelDisplayName} Assistant`);
     }, 100);
     
-    // Restore original title when component unmounts
+    // No need to restore to "Grok AI Assistant" anymore
     return () => {
       clearTimeout(titleTimeout);
-      document.title = "Grok AI Assistant";
+      // Just clear the timeout, but don't set a static title
     };
   }, [selectedModelName, modelDisplayName]);
 
