@@ -18,6 +18,7 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
 
   // Scroll to bottom when messages change
   useEffect(() => {
+    console.log("Messages updated:", messages);
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -38,7 +39,7 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
       {messages.map((message) => (
         <div 
           key={message.id} 
-          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4 chat-message`}
         >
           <div 
             className={`rounded-lg px-5 py-3 max-w-[85%] flex ${

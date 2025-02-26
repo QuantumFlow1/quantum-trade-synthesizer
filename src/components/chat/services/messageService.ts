@@ -19,10 +19,14 @@ export const generateAIResponse = async (
   let error = null;
   const selectedModel = settings?.selectedModel || 'grok3';
   
+  console.log(`Attempting to generate response with model: ${selectedModel}`);
+  console.log(`API available: ${apiAvailable}`);
+  
   // First try with the selected model
   if (apiAvailable) {
     try {
       response = await generateResponseWithModel(selectedModel, inputMessage, conversationHistory, settings);
+      console.log(`Got response from ${selectedModel}:`, response ? response.substring(0, 50) + '...' : 'No response');
     } catch (primaryError) {
       console.error(`${selectedModel} service error:`, primaryError);
       error = primaryError;
@@ -31,6 +35,7 @@ export const generateAIResponse = async (
   
   // If the selected model fails, try other models in sequence
   if (!response) {
+    console.log(`Primary model ${selectedModel} failed or unavailable, trying fallbacks`);
     // Define fallback models with explicit ModelId values to satisfy TypeScript
     const fallbackModels: ModelId[] = (['openai', 'claude', 'gemini', 'deepseek', 'grok3'] as const)
       .filter(model => model !== selectedModel) as ModelId[];
@@ -41,6 +46,9 @@ export const generateAIResponse = async (
       try {
         console.log(`Trying fallback model: ${model}`);
         response = await generateResponseWithModel(model, inputMessage, conversationHistory, settings);
+        if (response) {
+          console.log(`Got response from fallback model ${model}`);
+        }
       } catch (fallbackError) {
         console.error(`Fallback model ${model} error:`, fallbackError);
         // Continue to the next model
@@ -53,6 +61,7 @@ export const generateAIResponse = async (
     try {
       console.log('All AI models failed, using simple fallback service');
       response = await generateFallbackResponse(inputMessage, conversationHistory);
+      console.log('Got response from fallback service');
     } catch (fallbackError) {
       console.error('Fallback service error:', fallbackError);
       if (!error) error = fallbackError;
@@ -60,6 +69,7 @@ export const generateAIResponse = async (
   }
   
   if (!response) {
+    console.error('All response generation attempts failed');
     throw new Error(error?.message || 'Geen antwoord van AI services');
   }
   
@@ -72,13 +82,15 @@ const generateResponseWithModel = async (
   conversationHistory: Array<{ role: string; content: string }>,
   settings?: GrokSettings
 ): Promise<string> => {
+  console.log(`Generating response with model: ${model}`);
+  
   switch (model) {
     case 'grok3':
       return await generateGrok3Response(inputMessage, conversationHistory, settings);
     case 'openai':
       return await generateOpenAIResponse(inputMessage, conversationHistory, {
         temperature: settings?.temperature,
-        maxTokens: 1024 // Using a default since maxTokens is not in GrokSettings
+        maxTokens: settings?.maxTokens || 1024
       });
     case 'claude':
       return await generateClaudeResponse(inputMessage, conversationHistory);
@@ -94,9 +106,13 @@ const generateResponseWithModel = async (
 export const createChatMessage = (
   role: 'user' | 'assistant',
   content: string
-): ChatMessage => ({
-  id: uuidv4(),
-  role,
-  content,
-  timestamp: new Date()
-});
+): ChatMessage => {
+  const message = {
+    id: uuidv4(),
+    role,
+    content,
+    timestamp: new Date()
+  };
+  console.log(`Created ${role} message:`, message);
+  return message;
+};

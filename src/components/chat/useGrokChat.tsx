@@ -21,6 +21,7 @@ export function useGrokChat() {
   // Load chat history from localStorage when component mounts
   useEffect(() => {
     const savedMessages = loadChatHistory();
+    console.log('Loaded saved messages:', savedMessages);
     setMessages(savedMessages);
     
     // Load saved Grok settings if available
@@ -36,6 +37,7 @@ export function useGrokChat() {
 
   // Save chat history to localStorage when it changes
   useEffect(() => {
+    console.log('Saving messages to localStorage:', messages);
     saveChatHistory(messages);
   }, [messages]);
   
@@ -49,6 +51,7 @@ export function useGrokChat() {
 
     // Create and add user message
     const userMessage = createChatMessage('user', messageContent);
+    console.log('Adding user message:', userMessage);
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
 
@@ -58,7 +61,7 @@ export function useGrokChat() {
         await checkGrokAvailability();
       }
       
-      console.log('Generating AI response...');
+      console.log('Generating AI response with model:', grokSettings.selectedModel);
       
       // Create conversation history in the format expected by API
       const conversationHistory = messages.map(msg => ({
@@ -66,10 +69,12 @@ export function useGrokChat() {
         content: msg.content
       }));
       
-      const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable, grokSettings);
+      const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable !== false, grokSettings);
+      console.log('Received AI response:', response);
       
       // Add assistant response to chat
       const assistantMessage = createChatMessage('assistant', response);
+      console.log('Adding assistant message:', assistantMessage);
       setMessages(prev => [...prev, assistantMessage]);
       
     } catch (error) {

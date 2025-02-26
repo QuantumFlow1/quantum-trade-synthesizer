@@ -37,7 +37,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
                 message.role === 'user' 
                   ? 'bg-blue-100 text-blue-900 ml-auto' 
                   : 'bg-white border border-gray-200 mr-auto'
-              }`}
+              } chat-message`}
             >
               <div className="flex items-center mb-1">
                 <span className="font-semibold text-xs">

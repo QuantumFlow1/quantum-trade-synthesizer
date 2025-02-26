@@ -15,6 +15,8 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
 }) => {
   // Get the display name for the selected model
   const modelDisplayName = getModelDisplayName(selectedModelName);
+  
+  console.log("ContentGenerationSection rendering with messages:", messages);
 
   return (
     <div className="flex-1 p-4 flex flex-col">
