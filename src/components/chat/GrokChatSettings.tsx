@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AI_MODELS, GrokSettings } from './types/GrokSettings';
 import { Search, Brain, Cpu } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 
 interface GrokChatSettingsProps {
   settings: GrokSettings;
@@ -29,6 +30,13 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
     onSettingsChange({
       ...settings,
       selectedModel: modelId as any
+    });
+  };
+  
+  const handleTemperatureChange = (value: number[]) => {
+    onSettingsChange({
+      ...settings,
+      temperature: value[0]
     });
   };
 
@@ -60,6 +68,22 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
             ))}
           </SelectContent>
         </Select>
+      </div>
+      
+      {/* Temperatuur slider */}
+      <div className="space-y-2">
+        <div className="flex justify-between">
+          <Label htmlFor="temperature" className="text-sm text-gray-700">Temperatuur</Label>
+          <span className="text-sm font-medium text-primary">{settings.temperature?.toFixed(1) || '0.7'}</span>
+        </div>
+        <Slider
+          id="temperature"
+          min={0}
+          max={1}
+          step={0.1}
+          value={[settings.temperature || 0.7]}
+          onValueChange={handleTemperatureChange}
+        />
       </div>
       
       <h3 className="text-sm font-medium text-gray-700 mt-4 mb-3 pb-1 border-b">Grok Turbo Functies</h3>

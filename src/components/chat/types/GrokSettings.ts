@@ -1,22 +1,30 @@
 
-export type AIModelType = 'grok3' | 'openai' | 'claude' | 'gemini' | 'deepseek';
+export type ModelId = 'grok3' | 'openai' | 'gemini' | 'claude' | 'deepseek';
 
-export interface GrokSettings {
-  deepSearchEnabled: boolean;
-  thinkEnabled: boolean;
-  selectedModel: AIModelType;
+export interface ModelInfo {
+  id: ModelId;
+  name: string;
+  description?: string;
 }
 
-export const defaultGrokSettings: GrokSettings = {
-  deepSearchEnabled: true,
-  thinkEnabled: true,
-  selectedModel: 'grok3',
-};
-
-export const AI_MODELS = [
-  { id: 'grok3', name: 'Grok 3' },
-  { id: 'openai', name: 'OpenAI GPT-4o' },
-  { id: 'claude', name: 'Anthropic Claude' },
-  { id: 'gemini', name: 'Google Gemini' },
-  { id: 'deepseek', name: 'DeepSeek AI' },
+export const AI_MODELS: ModelInfo[] = [
+  { id: 'grok3', name: 'Grok 3', description: 'Snelle en krachtige AI van xAI' },
+  { id: 'openai', name: 'GPT-4o', description: 'Nieuwste multimodale AI van OpenAI' },
+  { id: 'claude', name: 'Claude 3', description: 'Uitstekend voor nuancering en logica' },
+  { id: 'gemini', name: 'Gemini Pro', description: 'Geavanceerde AI van Google' },
+  { id: 'deepseek', name: 'DeepSeek Coder', description: 'Gespecialiseerd in code en technische analyses' },
 ];
+
+export interface GrokSettings {
+  selectedModel: ModelId;
+  deepSearchEnabled: boolean;
+  thinkEnabled: boolean;
+  temperature?: number;
+}
+
+export const DEFAULT_SETTINGS: GrokSettings = {
+  selectedModel: 'grok3',
+  deepSearchEnabled: false,
+  thinkEnabled: false,
+  temperature: 0.7
+};

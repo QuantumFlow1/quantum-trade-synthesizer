@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from '@/components/ui/card'
 import { GrokChatHeader } from './GrokChatHeader'
 import { ChatMessages } from './ChatMessages'
@@ -12,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { GrokChatSettings } from './GrokChatSettings'
 import { AI_MODELS } from './types/GrokSettings'
 import { useNavigate } from 'react-router-dom'
+import AdvancedLLMInterface from './AdvancedLLMInterface'
 
 export function GrokChat() {
   const navigate = useNavigate();
@@ -28,8 +28,11 @@ export function GrokChat() {
     setGrokSettings
   } = useGrokChat();
 
+  // Use the advanced interface instead of the standard chat interface
+  const [useAdvancedInterface, setUseAdvancedInterface] = useState(true);
+  
   // Instellingen standaard zichtbaar maken
-  const [showSettings, setShowSettings] = useState(true);
+  const [showSettings, setShowSettings] = useState(false);
   
   // Haal de volledige naam van het geselecteerde model op
   const selectedModel = AI_MODELS.find(m => m.id === grokSettings.selectedModel);
@@ -38,7 +41,7 @@ export function GrokChat() {
   // Display an info message when component mounts
   useEffect(() => {
     toast({
-      title: "Multi-Model AI Chat",
+      title: "Multi-Model AI Interface",
       description: `Chat met verschillende AI modellen. Standaard model is ${selectedModelName}.`,
       duration: 5000,
     });
@@ -50,6 +53,15 @@ export function GrokChat() {
 
   const toggleSettings = () => {
     setShowSettings(!showSettings);
+  };
+  
+  const toggleInterface = () => {
+    setUseAdvancedInterface(!useAdvancedInterface);
+    toast({
+      title: `${useAdvancedInterface ? 'Standaard' : 'Geavanceerde'} interface geactiveerd`,
+      description: `Je gebruikt nu de ${useAdvancedInterface ? 'standaard' : 'geavanceerde'} AI interface.`,
+      duration: 3000,
+    });
   };
   
   const handleExit = () => {
@@ -64,6 +76,12 @@ export function GrokChat() {
     });
   };
 
+  // Render the advanced interface if enabled
+  if (useAdvancedInterface) {
+    return <AdvancedLLMInterface />;
+  }
+
+  // Otherwise render the standard chat interface
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg bg-white">
       <GrokChatHeader 
@@ -71,6 +89,7 @@ export function GrokChat() {
         onToggleSettings={toggleSettings}
         onExit={handleExit}
         modelName={selectedModelName}
+        onToggleInterface={toggleInterface}
       />
       
       <CardContent className="p-0 flex flex-col h-[600px]">
@@ -101,13 +120,15 @@ export function GrokChat() {
           </Alert>
         )}
         
-        {/* Settings Panel - altijd zichtbaar */}
-        <div className="mx-4 mt-4">
-          <GrokChatSettings 
-            settings={grokSettings}
-            onSettingsChange={setGrokSettings}
-          />
-        </div>
+        {/* Settings Panel - toon alleen als showSettings true is */}
+        {showSettings && (
+          <div className="mx-4 mt-4">
+            <GrokChatSettings 
+              settings={grokSettings}
+              onSettingsChange={setGrokSettings}
+            />
+          </div>
+        )}
         
         {/* Chat Messages */}
         <div className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50 pt-3">
@@ -123,5 +144,5 @@ export function GrokChat() {
         />
       </CardContent>
     </Card>
-  )
+  );
 }
