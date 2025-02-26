@@ -1,4 +1,5 @@
 
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
@@ -53,34 +54,32 @@ serve(async (req) => {
     const { message, context } = await req.json();
     console.log('Received request for Gemini:', { message, contextLength: context?.length });
 
-    // Convert chat history to Gemini format
-    const contents = [];
-    if (context && context.length) {
-      for (const msg of context) {
-        contents.push({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.content }]
-        });
-      }
-    }
-    
+    // Format conversation history for Gemini
+    const formattedContext = context?.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    })) || [];
+
     // Add the current message
-    contents.push({
-      role: 'user',
-      parts: [{ text: message }]
-    });
+    const contents = [
+      ...formattedContext,
+      {
+        role: 'user',
+        parts: [{ text: message }]
+      }
+    ];
 
     // Make request to Gemini API
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        contents: contents,
+        contents,
         generationConfig: {
+          maxOutputTokens: 500,
           temperature: 0.7,
-          maxOutputTokens: 500
         }
       })
     });
@@ -105,10 +104,13 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log('Gemini API response received');
+    
+    // Extract the response text
+    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from Gemini";
 
     return new Response(
       JSON.stringify({
-        response: data.candidates[0].content.parts[0].text,
+        response: responseText,
         status: 'success'
       }),
       { headers: corsHeaders }

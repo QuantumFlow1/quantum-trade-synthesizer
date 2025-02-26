@@ -1,7 +1,8 @@
 
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,11 +26,11 @@ serve(async (req) => {
       );
     }
 
-    if (!ANTHROPIC_API_KEY) {
-      console.error('ANTHROPIC_API_KEY not configured');
+    if (!CLAUDE_API_KEY) {
+      console.error('CLAUDE_API_KEY not configured');
       return new Response(
         JSON.stringify({ 
-          error: 'ANTHROPIC_API_KEY not configured',
+          error: 'CLAUDE_API_KEY not configured',
           status: 'error' 
         }),
         { 
@@ -53,35 +54,27 @@ serve(async (req) => {
     const { message, context } = await req.json();
     console.log('Received request for Claude:', { message, contextLength: context?.length });
 
-    // Prepare messages in Claude format
-    const messages = [];
-    if (context && context.length) {
-      for (const msg of context) {
-        messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        });
-      }
-    }
-    
-    // Add the current message
-    messages.push({
-      role: 'user',
-      content: message
-    });
+    // Format messages for Claude API
+    const messages = [
+      ...(context || []).map(msg => ({
+        role: msg.role,
+        content: msg.content
+      })),
+      { role: 'user', content: message }
+    ];
 
     // Make request to Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': CLAUDE_API_KEY,
         'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 500,
-        messages: messages
+        model: 'claude-3-sonnet-20240229',
+        messages: messages,
+        max_tokens: 500
       })
     });
 
@@ -108,7 +101,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        response: data.content[0].text,
+        response: data.content?.[0]?.text || "No response from Claude",
         status: 'success'
       }),
       { headers: corsHeaders }

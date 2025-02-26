@@ -30,9 +30,10 @@ export const generateAIResponse = async (
   
   // If the selected model fails, try other models in sequence
   if (!response) {
+    // Define fallback models with the correct type
     const fallbackModels: AIModelType[] = ['openai', 'claude', 'gemini', 'grok3'].filter(
       model => model !== selectedModel
-    );
+    ) as AIModelType[];
     
     for (const model of fallbackModels) {
       if (response) break; // Stop if we got a response
