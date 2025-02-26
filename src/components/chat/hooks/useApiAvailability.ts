@@ -20,7 +20,7 @@ export const useApiAvailability = () => {
         setApiAvailable(false);
         toast({
           title: "API Status",
-          description: "De Grok API is momenteel niet beschikbaar. We gebruiken een alternatieve AI-service.",
+          description: "De Grok API is momenteel onbereikbaar. Dit is een probleem bij de Grok dienst zelf, niet met uw systeem. We schakelen automatisch over naar een alternatieve AI-service.",
           variant: "destructive",
           duration: 7000
         });
@@ -33,7 +33,7 @@ export const useApiAvailability = () => {
       if (!isAvailable) {
         toast({
           title: "API Status",
-          description: "De Grok API is momenteel niet beschikbaar. We gebruiken een alternatieve AI-service.",
+          description: "De Grok API is momenteel onbereikbaar. Dit is een probleem bij de Grok dienst zelf, niet met uw systeem. We schakelen automatisch over naar een alternatieve AI-service.",
           variant: "destructive",
           duration: 7000
         });
@@ -60,7 +60,7 @@ export const useApiAvailability = () => {
     if (isAvailable) {
       toast({
         title: "Verbinding hersteld",
-        description: "De Grok API is nu beschikbaar.",
+        description: "De Grok API is nu beschikbaar en actief.",
         duration: 3000,
       });
     }

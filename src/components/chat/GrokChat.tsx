@@ -46,7 +46,7 @@ export function GrokChat() {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>AI Service Status</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
-              <p>Our primary AI service (Grok) is currently unavailable. We have automatically switched to our backup AI service to ensure uninterrupted assistance.</p>
+              <p>De Grok AI-service is momenteel niet beschikbaar. Dit is een probleem aan de kant van Grok zelf, niet met uw systeem of verbinding. We hebben automatisch overgeschakeld naar onze reserve AI-service om u zonder onderbreking te blijven helpen.</p>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -57,10 +57,10 @@ export function GrokChat() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Checking connection...
+                    Verbinding controleren...
                   </>
                 ) : (
-                  'Try reconnecting'
+                  'Probeer opnieuw te verbinden'
                 )}
               </Button>
             </AlertDescription>
@@ -83,4 +83,3 @@ export function GrokChat() {
     </Card>
   )
 }
-
