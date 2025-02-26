@@ -10,7 +10,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 const AdminPanel = () => {
-  const { userProfile } = useAuth();
+  const { userProfile, signOut } = useAuth();
   const [showUserDashboard, setShowUserDashboard] = useState(false);
   const [showAccountManagement, setShowAccountManagement] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -29,8 +29,13 @@ const AdminPanel = () => {
     console.log("Add agent clicked");
   };
 
-  const handleSignOut = () => {
-    console.log("Sign out clicked");
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      console.log("User signed out");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   const handleBackToAdmin = () => {

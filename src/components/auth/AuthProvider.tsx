@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
 import { UserProfile, UserRole } from '@/types/auth'
+import { useToast } from '@/hooks/use-toast'
 
 type AuthContextType = {
   session: Session | null
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const { toast } = useToast()
 
   useEffect(() => {
     // Get the current session on load
@@ -159,9 +161,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.removeItem(key)
         }
       })
+      
+      // Show a success toast
+      toast({
+        title: "Signed out successfully",
+        description: "You have been signed out of your account"
+      })
+      
       console.log("Sign out complete")
+      
+      // Force refresh the page to ensure clean state
+      window.location.href = '/'
     } catch (error) {
       console.error('Sign out error:', error)
+      // Show an error toast
+      toast({
+        title: "Sign out error",
+        description: "An error occurred while signing out",
+        variant: "destructive"
+      })
+      
       // Reset state anyway on error for a clean slate
       setUser(null)
       setSession(null)
