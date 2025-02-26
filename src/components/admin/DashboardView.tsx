@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, TrendingUp, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface DashboardViewProps {
   userCount: number;
@@ -16,67 +17,10 @@ const DashboardView = ({
   systemLoad,
   errorRate
 }: DashboardViewProps) => {
-  const { data: marketData, isLoading: marketLoading } = useQuery({
-    queryKey: ['marketData'],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('agent_collected_data')
-          .select('*')
-          .eq('data_type', 'market_data')
-          .order('collected_at', { ascending: false })
-          .limit(24);
-        
-        if (error) throw error;
-        
-        // Transform data to ensure it's properly formatted for charts
-        const formattedData = data?.map(item => ({
-          ...item,
-          content: typeof item.content === 'string' 
-            ? JSON.parse(item.content) 
-            : item.content
-        })) || [];
-        
-        console.log('Formatted Market Data:', formattedData);
-        return formattedData;
-      } catch (err) {
-        console.error('Error fetching market data:', err);
-        return [];
-      }
-    }
-  });
+  const [formattedMarketData, setFormattedMarketData] = useState<any[]>([]);
+  const [formattedSentimentData, setFormattedSentimentData] = useState<any[]>([]);
 
-  const { data: sentimentData, isLoading: sentimentLoading } = useQuery({
-    queryKey: ['sentimentData'],
-    queryFn: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('agent_collected_data')
-          .select('*')
-          .eq('data_type', 'social_sentiment')
-          .order('collected_at', { ascending: false })
-          .limit(24);
-        
-        if (error) throw error;
-        
-        // Transform data to ensure it's properly formatted for charts
-        const formattedData = data?.map(item => ({
-          ...item,
-          content: typeof item.content === 'string' 
-            ? JSON.parse(item.content) 
-            : item.content
-        })) || [];
-        
-        console.log('Formatted Sentiment Data:', formattedData);
-        return formattedData;
-      } catch (err) {
-        console.error('Error fetching sentiment data:', err);
-        return [];
-      }
-    }
-  });
-
-  // Create mock data if real data is not available
+  // Create mock data to use if real data is not available
   const mockMarketData = Array.from({ length: 24 }, (_, i) => ({
     id: `mock-market-${i}`,
     collected_at: new Date(Date.now() - (i * 3600000)).toISOString(),
@@ -97,13 +41,153 @@ const DashboardView = ({
     }
   }));
 
-  // Use mock data if real data is empty
-  const displayMarketData = (marketData && marketData.length > 0) ? marketData : mockMarketData;
-  const displaySentimentData = (sentimentData && sentimentData.length > 0) ? sentimentData : mockSentimentData;
+  const { data: marketData, isLoading: marketLoading, error: marketError } = useQuery({
+    queryKey: ['marketData'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('agent_collected_data')
+          .select('*')
+          .eq('data_type', 'market_data')
+          .order('collected_at', { ascending: false })
+          .limit(24);
+        
+        if (error) throw error;
+        return data || [];
+      } catch (err) {
+        console.error('Error fetching market data:', err);
+        return [];
+      }
+    }
+  });
 
-  // Add console logs for debugging
-  console.log('Market Data to display:', displayMarketData);
-  console.log('Sentiment Data to display:', displaySentimentData);
+  const { data: sentimentData, isLoading: sentimentLoading, error: sentimentError } = useQuery({
+    queryKey: ['sentimentData'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('agent_collected_data')
+          .select('*')
+          .eq('data_type', 'social_sentiment')
+          .order('collected_at', { ascending: false })
+          .limit(24);
+        
+        if (error) throw error;
+        return data || [];
+      } catch (err) {
+        console.error('Error fetching sentiment data:', err);
+        return [];
+      }
+    }
+  });
+
+  // Process the data once it's loaded
+  useEffect(() => {
+    // Process market data
+    if (marketData && marketData.length > 0) {
+      const processed = marketData.map(item => {
+        try {
+          // Handle both string and object content formats
+          const contentData = typeof item.content === 'string' 
+            ? JSON.parse(item.content) 
+            : item.content;
+          
+          // Extract first item from content array if it's an array
+          const firstItem = Array.isArray(contentData) ? contentData[0] : contentData;
+          
+          // Create a simplified structure for the chart
+          return {
+            ...item,
+            collected_at: item.collected_at,
+            content: {
+              // If content has a pair property with price, use that, otherwise use direct price
+              price: firstItem.price || firstItem.pair?.price || 0,
+              volume: firstItem.volume || 0
+            }
+          };
+        } catch (err) {
+          console.error('Error processing market data item:', err, item);
+          return {
+            ...item,
+            content: { price: 0, volume: 0 }
+          };
+        }
+      });
+      
+      setFormattedMarketData(processed);
+    } else {
+      setFormattedMarketData(mockMarketData);
+    }
+
+    // Process sentiment data
+    if (sentimentData && sentimentData.length > 0) {
+      const processed = sentimentData.map(item => {
+        try {
+          // Handle both string and object content formats
+          const contentData = typeof item.content === 'string' 
+            ? JSON.parse(item.content) 
+            : item.content;
+
+          return {
+            ...item,
+            collected_at: item.collected_at,
+            content: {
+              sentiment: contentData.sentiment || 0,
+              confidence: contentData.confidence || 0
+            }
+          };
+        } catch (err) {
+          console.error('Error processing sentiment data item:', err, item);
+          return {
+            ...item,
+            content: { sentiment: 0, confidence: 0 }
+          };
+        }
+      });
+      
+      setFormattedSentimentData(processed);
+    } else {
+      setFormattedSentimentData(mockSentimentData);
+    }
+  }, [marketData, sentimentData]);
+
+  // Log data for debugging
+  useEffect(() => {
+    console.log('Market Data to display:', formattedMarketData);
+    console.log('Sentiment Data to display:', formattedSentimentData);
+  }, [formattedMarketData, formattedSentimentData]);
+
+  // Display mock data if real data is not available or empty
+  const displayMarketData = formattedMarketData.length > 0 ? formattedMarketData : mockMarketData;
+  const displaySentimentData = formattedSentimentData.length > 0 ? formattedSentimentData : mockSentimentData;
+
+  // Format time for display
+  const formatTime = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleTimeString();
+    } catch (e) {
+      console.error('Error formatting time:', e, dateString);
+      return '';
+    }
+  };
+
+  // Format date for tooltip
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleString();
+    } catch (e) {
+      console.error('Error formatting date:', e, dateString);
+      return '';
+    }
+  };
+
+  if (marketError) {
+    console.error('Market data error:', marketError);
+  }
+
+  if (sentimentError) {
+    console.error('Sentiment data error:', sentimentError);
+  }
 
   return (
     <div className="space-y-6">
@@ -158,25 +242,11 @@ const DashboardView = ({
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="collected_at" 
-                      tickFormatter={(value) => {
-                        try {
-                          return new Date(value).toLocaleTimeString();
-                        } catch (e) {
-                          console.error('Error formatting time:', e, value);
-                          return '';
-                        }
-                      }}
+                      tickFormatter={formatTime}
                     />
                     <YAxis />
                     <Tooltip 
-                      labelFormatter={(value) => {
-                        try {
-                          return new Date(value).toLocaleString();
-                        } catch (e) {
-                          console.error('Error formatting date:', e, value);
-                          return '';
-                        }
-                      }}
+                      labelFormatter={formatDate}
                       contentStyle={{
                         backgroundColor: "rgba(0,0,0,0.8)",
                         border: "none",
@@ -222,25 +292,11 @@ const DashboardView = ({
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="collected_at"
-                      tickFormatter={(value) => {
-                        try {
-                          return new Date(value).toLocaleTimeString();
-                        } catch (e) {
-                          console.error('Error formatting time:', e, value);
-                          return '';
-                        }
-                      }}
+                      tickFormatter={formatTime}
                     />
                     <YAxis />
                     <Tooltip 
-                      labelFormatter={(value) => {
-                        try {
-                          return new Date(value).toLocaleString();
-                        } catch (e) {
-                          console.error('Error formatting date:', e, value);
-                          return '';
-                        }
-                      }}
+                      labelFormatter={formatDate}
                       contentStyle={{
                         backgroundColor: "rgba(0,0,0,0.8)",
                         border: "none",
