@@ -23,9 +23,11 @@ export const useApiAvailability = () => {
       
       setApiAvailable(data?.status === 'available');
       console.log('Grok3 API status:', data?.status);
+      return data?.status === 'available';
     } catch (error) {
       console.error('Error checking Grok API:', error);
       setApiAvailable(false);
+      return false;
     } finally {
       setIsLoading(false);
     }

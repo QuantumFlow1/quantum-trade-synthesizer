@@ -78,7 +78,7 @@ const generateResponseWithModel = async (
     case 'openai':
       return await generateOpenAIResponse(inputMessage, conversationHistory, {
         temperature: settings?.temperature,
-        maxTokens: settings?.maxTokens || 1024
+        maxTokens: 1024 // Using a default since maxTokens is not in GrokSettings
       });
     case 'claude':
       return await generateClaudeResponse(inputMessage, conversationHistory);
