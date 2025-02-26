@@ -16,9 +16,20 @@ export function ClaudeMessage({ message }: ClaudeMessageProps) {
     timestamp = message.timestamp;
   } else if (typeof message.timestamp === 'string') {
     timestamp = new Date(message.timestamp);
-  } else if (typeof message.timestamp === 'object' && message.timestamp?._type === 'Date') {
-    // Handle the special case seen in logs where timestamp is an object
-    timestamp = new Date(message.timestamp.value?.iso || message.timestamp.value?.local || Date.now());
+  } else if (typeof message.timestamp === 'object' && message.timestamp !== null) {
+    // Check if it's a custom Date object with _type property
+    const customDate = message.timestamp as any;
+    if (customDate._type === 'Date') {
+      // Handle the special case seen in logs where timestamp is an object
+      timestamp = new Date(
+        customDate.value?.iso || 
+        customDate.value?.local || 
+        Date.now()
+      );
+    } else {
+      // Fallback
+      timestamp = new Date();
+    }
   } else {
     // Fallback
     timestamp = new Date();

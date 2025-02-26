@@ -59,6 +59,9 @@ export const isLLMActive = (llm: 'claude' | 'openai' | 'grok' | 'deepseek'): boo
 export const useLLMChangeListener = (
   callback: (activeLLM: string | null) => void
 ) => {
+  // Need to import useEffect from React
+  const { useEffect } = require('react');
+  
   useEffect(() => {
     const handleLLMChange = (event: CustomEvent) => {
       callback(event.detail.active);
