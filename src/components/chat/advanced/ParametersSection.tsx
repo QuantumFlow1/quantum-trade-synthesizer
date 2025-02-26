@@ -1,68 +1,76 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
-import { ParametersSectionProps } from './types';
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
+import { ParametersSectionProps } from "./types";
+import { formatTemperature, formatTokens, isTemperatureValid, isMaxTokensValid } from "./utils";
 
-const ParametersSection: React.FC<ParametersSectionProps> = ({
+export default function ParametersSection({
   temperature,
   setTemperature,
   maxTokens,
   setMaxTokens,
   handleGenerate,
   isLoading
-}) => {
+}: ParametersSectionProps) {
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-bold mb-4">Parameters</h2>
+    <div className="w-full space-y-4 mt-6">
       <div className="space-y-2">
         <div className="flex justify-between">
-          <Label htmlFor="temperature">Temperatuur</Label>
-          <span className="text-sm">{temperature.toFixed(1)}</span>
+          <span className="text-sm font-medium">Temperature</span>
+          <span className="text-sm text-muted-foreground">
+            {formatTemperature(temperature)}
+          </span>
         </div>
         <Slider
-          id="temperature"
+          value={[temperature]}
           min={0}
           max={1}
-          step={0.1}
-          value={[temperature]}
-          onValueChange={(value) => setTemperature(value[0])}
+          step={0.01}
+          onValueChange={(value) => {
+            if (isTemperatureValid(value[0])) {
+              setTemperature(value[0]);
+            }
+          }}
+          className="w-full"
         />
       </div>
       
       <div className="space-y-2">
         <div className="flex justify-between">
-          <Label htmlFor="max-tokens">Max Tokens</Label>
+          <span className="text-sm font-medium">Max Tokens</span>
+          <span className="text-sm text-muted-foreground">
+            {formatTokens(maxTokens)}
+          </span>
         </div>
-        <Input
-          id="max-tokens"
-          type="number"
-          value={maxTokens}
-          onChange={(e) => setMaxTokens(parseInt(e.target.value))}
-          min={10}
-          max={2000}
+        <Slider
+          value={[maxTokens]}
+          min={1}
+          max={4096}
+          step={1}
+          onValueChange={(value) => {
+            if (isMaxTokensValid(value[0])) {
+              setMaxTokens(value[0]);
+            }
+          }}
+          className="w-full"
         />
       </div>
       
-      <Button
+      <Button 
+        className="w-full mt-6" 
         onClick={handleGenerate}
-        className="w-full mt-4"
         disabled={isLoading}
       >
         {isLoading ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Bezig met genereren...
+            Generating...
           </>
         ) : (
-          'Genereren'
+          "Generate Response"
         )}
       </Button>
     </div>
   );
-};
-
-export default ParametersSection;
+}

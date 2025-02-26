@@ -1,125 +1,138 @@
 
-import React, { useState } from 'react';
-import AdvancedLLMHeader from './AdvancedLLMHeader';
-import TaskAndModelSection from './TaskAndModelSection';
-import ParametersSection from './ParametersSection';
-import ContentGenerationSection from './ContentGenerationSection';
-import HistorySection from './HistorySection';
-import { useGrokChat } from '../useGrokChat';
-import { useNavigate } from 'react-router-dom';
-import { toast } from '@/components/ui/use-toast';
-import { AI_MODELS } from '../types/GrokSettings';
-import { HistoryItem } from './types';
+import { useState } from "react";
+import { AI_MODELS, ModelId } from "../types/GrokSettings";
+import { HistoryItem } from "./types";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
+import { useGrokChat } from "../useGrokChat";
+import AdvancedLLMHeader from "./AdvancedLLMHeader";
+import TaskAndModelSection from "./TaskAndModelSection";
+import ParametersSection from "./ParametersSection";
+import ContentGenerationSection from "./ContentGenerationSection";
+import HistorySection from "./HistorySection";
+import { isInputValid } from "./utils";
 
-const AdvancedLLMInterface: React.FC = () => {
+export default function AdvancedLLMInterface() {
   const navigate = useNavigate();
-  const {
-    messages,
-    inputMessage,
-    setInputMessage,
-    isLoading,
-    sendMessage,
-    grokSettings,
-    setGrokSettings
-  } = useGrokChat();
-
-  // Convert messages to the format expected by ContentGenerationSection
-  const formattedMessages = messages.map((msg) => ({
-    role: msg.role,
-    content: msg.content
-  }));
-
-  // State for task selection
-  const [task, setTask] = useState('educational-content');
-
-  // State for advanced parameters
-  const [temperature, setTemperature] = useState(grokSettings.temperature || 0.7);
-  const [maxTokens, setMaxTokens] = useState(1000);
-
-  // Mock history data (can be replaced with actual history later)
+  
+  // Retrieve services from the hook
+  const { isLoading, grokSettings, setGrokSettings } = useGrokChat();
+  
+  // State for the advanced interface
+  const [selectedModel, setSelectedModel] = useState<ModelId>(grokSettings.selectedModel);
+  const [temperature, setTemperature] = useState(0.7);
+  const [maxTokens, setMaxTokens] = useState(1024);
+  const [inputMessage, setInputMessage] = useState("");
+  const [messages, setMessages] = useState<Array<{role: string; content: string}>>([]);
+  const [task, setTask] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
-
-  const handleGenerate = () => {
-    if (!inputMessage.trim()) {
-      toast({
-        title: "Lege prompt",
-        description: "Voer een prompt in om te genereren.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Update grokSettings with the current temperature
-    setGrokSettings({ ...grokSettings, temperature });
-
-    // Send the message
-    sendMessage();
-
-    // Add to history
-    if (inputMessage.trim()) {
-      setHistory(prev => [...prev, {
-        task,
-        output: "Generatie is gestart..." // Will be updated with actual output later
-      }]);
-    }
-  };
-
-  const handleExit = () => {
-    navigate('/');
+  
+  // Handle model selection changes
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model as ModelId);
+    setGrokSettings({
+      ...grokSettings,
+      selectedModel: model as ModelId,
+    });
+    
     toast({
-      title: "Advanced interface verlaten",
-      description: "Je hebt de geavanceerde interface verlaten.",
+      title: "Model Changed",
+      description: `Now using ${model} as the AI model.`,
       duration: 3000,
     });
   };
-
-  // Get the full name of the selected model
-  const selectedModel = AI_MODELS.find(m => m.id === grokSettings.selectedModel);
-  const selectedModelName = selectedModel?.name || 'AI';
-
-  const handleModelChange = (modelId: string) => {
-    setGrokSettings({ ...grokSettings, selectedModel: modelId as any });
+  
+  // Handle content generation
+  const handleGenerate = () => {
+    if (!isInputValid(inputMessage, task)) {
+      toast({
+        title: "Input Required",
+        description: "Please enter a message or task description.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Add user message to conversation
+    setMessages((prev) => [
+      ...prev, 
+      { role: "user", content: inputMessage || task }
+    ]);
+    
+    // Simulate AI response for demonstration
+    setTimeout(() => {
+      const responseText = "This is a simulated AI response. In a real implementation, this would come from the AI model API based on your input message and parameters.";
+      
+      // Add AI response to conversation
+      setMessages((prev) => [
+        ...prev, 
+        { role: "assistant", content: responseText }
+      ]);
+      
+      // Add to history
+      setHistory((prev) => [
+        { task: task || inputMessage, output: responseText },
+        ...prev,
+      ]);
+      
+      // Clear input
+      setInputMessage("");
+    }, 1500);
   };
-
+  
+  // Handle exit to main chat
+  const handleExit = () => {
+    navigate('/chat');
+    
+    toast({
+      title: "Returned to Standard Interface",
+      description: "You are now using the standard chat interface.",
+      duration: 3000,
+    });
+  };
+  
+  // Get the currently selected model's name
+  const selectedModelName = selectedModel;
+  
   return (
-    <div className="w-full max-w-7xl mx-auto shadow-lg bg-white rounded-lg overflow-hidden">
+    <div className="w-full max-w-6xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
       <AdvancedLLMHeader 
         selectedModelName={selectedModelName} 
         onExit={handleExit} 
       />
       
-      <div className="flex flex-col md:flex-row">
-        <div className="w-full md:w-1/4 p-4 border-r">
+      <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left column - Task & Parameters */}
+        <div className="lg:col-span-1 space-y-6">
           <TaskAndModelSection 
             task={task}
             setTask={setTask}
-            selectedModel={grokSettings.selectedModel}
+            selectedModel={selectedModel}
             onModelChange={handleModelChange}
           />
           
-          <div className="mt-8">
-            <ParametersSection 
-              temperature={temperature}
-              setTemperature={setTemperature}
-              maxTokens={maxTokens}
-              setMaxTokens={setMaxTokens}
-              handleGenerate={handleGenerate}
-              isLoading={isLoading}
-            />
-          </div>
+          <ParametersSection 
+            temperature={temperature}
+            setTemperature={setTemperature}
+            maxTokens={maxTokens}
+            setMaxTokens={setMaxTokens}
+            handleGenerate={handleGenerate}
+            isLoading={isLoading}
+          />
         </div>
         
-        <ContentGenerationSection 
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          messages={formattedMessages}
-          selectedModelName={selectedModelName}
-        />
-        
-        <HistorySection history={history} />
+        {/* Right column - Content Generation & History */}
+        <div className="lg:col-span-2 space-y-6">
+          <ContentGenerationSection 
+            inputMessage={inputMessage}
+            setInputMessage={setInputMessage}
+            messages={messages}
+            selectedModelName={selectedModelName}
+          />
+          
+          <HistorySection history={history} />
+        </div>
       </div>
     </div>
   );
-};
-
-export default AdvancedLLMInterface;
+}

@@ -1,29 +1,33 @@
 
-import React from 'react';
-import { HistorySectionProps } from './types';
+import { HistorySectionProps } from "./types";
+import { formatTaskForHistory, truncateMessage } from "./utils";
 
-const HistorySection: React.FC<HistorySectionProps> = ({ history }) => {
+export default function HistorySection({ history }: HistorySectionProps) {
+  if (history.length === 0) {
+    return (
+      <div className="border rounded-md p-4 bg-gray-50 h-full flex items-center justify-center">
+        <p className="text-gray-500 text-center">Your generation history will appear here</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full md:w-1/4 p-4 border-l">
-      <h2 className="text-lg font-bold mb-4">Geschiedenis</h2>
-      {history.length > 0 ? (
-        <ul className="space-y-4">
-          {history.map((item, index) => (
-            <li key={index} className="p-3 bg-gray-50 rounded-md">
-              <div className="font-medium text-blue-600 mb-1">{item.task}</div>
-              <div className="text-sm text-gray-700">
-                {item.output.length > 100 
-                  ? `${item.output.slice(0, 100)}...` 
-                  : item.output}
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500 italic">Nog geen geschiedenis beschikbaar</p>
-      )}
+    <div className="border rounded-md overflow-y-auto h-full max-h-[400px]">
+      <div className="p-2 bg-gray-100 border-b sticky top-0">
+        <h3 className="font-medium text-sm">Generation History</h3>
+      </div>
+      <div className="divide-y">
+        {history.map((item, index) => (
+          <div key={index} className="p-3 hover:bg-gray-50">
+            <p className="text-sm font-medium truncate">
+              {formatTaskForHistory(item.task)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {truncateMessage(item.output, 120)}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
-};
-
-export default HistorySection;
+}

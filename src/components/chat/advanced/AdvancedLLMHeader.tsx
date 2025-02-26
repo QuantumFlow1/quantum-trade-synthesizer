@@ -1,19 +1,19 @@
 
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import { AdvancedLLMHeaderProps } from './types';
+import { X } from "lucide-react";
+import { AdvancedLLMHeaderProps } from "./types";
+import { getModelDisplayName } from "./utils";
 
-const AdvancedLLMHeader: React.FC<AdvancedLLMHeaderProps> = ({ selectedModelName, onExit }) => {
+export default function AdvancedLLMHeader({ selectedModelName, onExit }: AdvancedLLMHeaderProps) {
   return (
-    <div className="bg-indigo-700 text-white p-4 flex justify-between items-center">
-      <Button variant="ghost" size="icon" className="text-white hover:bg-indigo-600" onClick={onExit}>
-        <ArrowLeft className="h-5 w-5" />
-      </Button>
-      <h1 className="text-xl font-bold">{selectedModelName} Geavanceerde Interface</h1>
-      <div className="w-9"></div> {/* Spacer for alignment */}
+    <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+      <h2 className="text-xl font-semibold">{getModelDisplayName(selectedModelName)} Advanced Interface</h2>
+      <button 
+        onClick={onExit}
+        className="p-1 rounded-full hover:bg-gray-200 transition-colors"
+        aria-label="Exit"
+      >
+        <X className="h-5 w-5" />
+      </button>
     </div>
   );
-};
-
-export default AdvancedLLMHeader;
+}
