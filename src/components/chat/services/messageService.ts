@@ -114,6 +114,6 @@ export const createChatMessage = (
     content,
     timestamp: new Date()
   };
-  console.log(`Created ${role} message:`, message);
+  console.log(`Created ${role} message with ID: ${message.id}`);
   return message;
 };

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { ChatMessage } from './types/chat';
 import { loadChatHistory, saveChatHistory } from './utils/storage';
@@ -11,6 +11,7 @@ export function useGrokChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [grokSettings, setGrokSettings] = useState<GrokSettings>(DEFAULT_SETTINGS);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { apiAvailable, isLoading, checkGrokAvailability, retryApiConnection } = useApiAvailability();
 
   // Check API availability on mount
@@ -46,16 +47,18 @@ export function useGrokChat() {
     localStorage.setItem('grokSettings', JSON.stringify(grokSettings));
   }, [grokSettings]);
 
-  const sendMessage = async (messageContent = inputMessage) => {
+  const sendMessage = useCallback(async (messageContent = inputMessage) => {
     if (!messageContent.trim()) return;
-
-    // Create and add user message
-    const userMessage = createChatMessage('user', messageContent);
-    console.log('Adding user message:', userMessage);
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
+    
+    setIsProcessing(true);
 
     try {
+      // Create and add user message
+      const userMessage = createChatMessage('user', messageContent);
+      console.log('Adding user message:', userMessage);
+      setMessages(prev => [...prev, userMessage]);
+      setInputMessage('');
+
       // If Grok3 API availability is unknown, check it
       if (apiAvailable === null) {
         await checkGrokAvailability();
@@ -77,6 +80,12 @@ export function useGrokChat() {
       console.log('Adding assistant message:', assistantMessage);
       setMessages(prev => [...prev, assistantMessage]);
       
+      toast({
+        title: "Response received",
+        description: "The AI has responded to your message.",
+        duration: 3000
+      });
+      
     } catch (error) {
       console.error('Error in chat process:', error);
       
@@ -94,19 +103,26 @@ export function useGrokChat() {
         description: error instanceof Error ? error.message : "Kon geen antwoord genereren. Probeer het later opnieuw.",
         variant: "destructive"
       });
+    } finally {
+      setIsProcessing(false);
     }
-  };
+  }, [inputMessage, messages, apiAvailable, checkGrokAvailability, grokSettings]);
 
-  const clearChat = () => {
+  const clearChat = useCallback(() => {
     setMessages([]);
     localStorage.removeItem('grokChatHistory');
-  };
+    toast({
+      title: "Chat cleared",
+      description: "All messages have been removed.",
+      duration: 3000
+    });
+  }, []);
 
   return {
     messages,
     inputMessage,
     setInputMessage,
-    isLoading,
+    isLoading: isLoading || isProcessing,
     sendMessage,
     clearChat,
     apiAvailable,

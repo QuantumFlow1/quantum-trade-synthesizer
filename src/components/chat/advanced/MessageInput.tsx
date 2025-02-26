@@ -22,8 +22,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputMessage.trim()) {
-      console.log("Sending message:", inputMessage);
+    if (inputMessage.trim() && !isGenerating) {
+      console.log("Sending message via form submit:", inputMessage);
       onSendMessage();
     }
   };
@@ -32,8 +32,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey && !isGenerating && inputMessage.trim()) {
       e.preventDefault();
-      onSendMessage();
       console.log("Message sent using Enter key");
+      onSendMessage();
     }
   };
 

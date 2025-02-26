@@ -32,7 +32,12 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
           className="flex-1 min-h-[60px] resize-none border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
         />
         <Button
-          onClick={sendMessage}
+          onClick={() => {
+            if (inputMessage.trim() && !isLoading) {
+              console.log("Sending message with button click");
+              sendMessage();
+            }
+          }}
           disabled={!inputMessage.trim() || isLoading}
           variant="default"
           size="icon"

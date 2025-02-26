@@ -18,6 +18,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
   
   // Scroll to bottom when messages change
   useEffect(() => {
+    console.log("Advanced interface - Messages updated:", messages.length);
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -38,6 +39,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
                   ? 'bg-blue-100 text-blue-900 ml-auto' 
                   : 'bg-white border border-gray-200 mr-auto'
               } chat-message`}
+              data-message-index={index}
             >
               <div className="flex items-center mb-1">
                 <span className="font-semibold text-xs">

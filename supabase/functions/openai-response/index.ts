@@ -16,47 +16,45 @@ serve(async (req) => {
   }
 
   try {
+    console.log('OpenAI response function called');
+    
     if (!openAIApiKey) {
-      throw new Error('OpenAI API key is not configured. Please set the OPENAI_API_KEY environment variable.');
+      console.error('OpenAI API key not found');
+      throw new Error('OPENAI_API_KEY is not set in the environment variables');
     }
 
-    const requestData = await req.json();
-    const { message, context = [], options = {} } = requestData;
+    // Parse the request body
+    const { message, context, options } = await req.json();
     
-    const temperature = options.temperature || 0.7;
-    const maxTokens = options.maxTokens || 1024;
-    
-    console.log('OpenAI Request:', {
-      messageLength: message?.length,
-      contextLength: context?.length,
-      temperature,
-      maxTokens,
+    console.log('Request received:', { 
+      message: message?.substring(0, 50) + '...',  
+      contextLength: context?.length || 0,
+      options
     });
 
-    // Format the conversation history and user message
+    // Prepare messages for OpenAI API
     let messages = [];
     
-    // Add system message for context
+    // Add system message
     messages.push({
       role: 'system',
-      content: 'You are a helpful AI assistant that provides clear, accurate, and useful information.'
+      content: 'You are a helpful AI assistant that provides clear, concise, and accurate information.',
     });
-    
-    // Add conversation history if it exists
-    if (Array.isArray(context) && context.length > 0) {
+
+    // Add conversation history if available
+    if (context && Array.isArray(context)) {
       messages = [...messages, ...context];
     }
-    
-    // Add the user's current message if not already in context
-    if (message && (context.length === 0 || context[context.length - 1]?.role !== 'user')) {
-      messages.push({
-        role: 'user',
-        content: message
-      });
-    }
 
-    console.log(`Making request to OpenAI API with ${messages.length} messages`);
-    
+    // Add the current user message
+    messages.push({
+      role: 'user',
+      content: message,
+    });
+
+    console.log('Sending request to OpenAI API with messages:', messages.length);
+
+    // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -66,41 +64,46 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: messages,
-        temperature: temperature,
-        max_tokens: maxTokens,
+        temperature: options?.temperature || 0.7,
+        max_tokens: options?.maxTokens || 1024,
       }),
     });
 
-    const result = await response.json();
-    
     if (!response.ok) {
-      console.error('OpenAI API error:', result);
-      throw new Error(`OpenAI API error: ${result.error?.message || JSON.stringify(result)}`);
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API error: ${errorData.error?.message || response.statusText}`);
     }
-    
-    if (!result.choices || result.choices.length === 0) {
-      throw new Error('No response from OpenAI API');
-    }
-    
-    const generatedText = result.choices[0].message.content;
-    console.log('OpenAI response received, length:', generatedText.length);
 
-    return new Response(JSON.stringify({ 
-      generatedText,
-      model: result.model,
-      usage: result.usage,
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-    
+    const data = await response.json();
+    console.log('OpenAI API response:', data);
+
+    if (!data.choices || data.choices.length === 0) {
+      throw new Error('No response choices returned from OpenAI API');
+    }
+
+    const responseContent = data.choices[0].message.content;
+    console.log('Response content:', responseContent?.substring(0, 100) + '...');
+
+    return new Response(
+      JSON.stringify({
+        response: responseContent,
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   } catch (error) {
     console.error('Error in openai-response function:', error);
-    return new Response(JSON.stringify({ 
-      error: error.message || 'An unknown error occurred',
-      stack: error.stack
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    
+    return new Response(
+      JSON.stringify({
+        error: error.message || 'An error occurred while processing your request',
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
