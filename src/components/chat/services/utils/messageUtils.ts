@@ -32,3 +32,11 @@ export const formatConversationHistory = (conversationHistory: Array<{ role: str
     content: msg.content
   }));
 };
+
+// Process message text to ensure proper line breaks and formatting
+export const processMessageText = (text: string): string => {
+  if (!text) return '';
+  
+  // Ensure we have proper line breaks
+  return text.replace(/\\n/g, '\n');
+};
