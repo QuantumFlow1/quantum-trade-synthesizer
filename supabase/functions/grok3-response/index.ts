@@ -1,117 +1,82 @@
 
-import { serve } from 'https://deno.fresh.dev/std@0.177.0/http/server.ts'
-
-const GROK_API_URL = 'https://api.x.ai/v1/chat/completions'
-const GROK_API_KEY = Deno.env.get('GROK3_API_KEY')
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/json'
-}
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  // For health checks
+  if (req.method === 'GET') {
+    return new Response(
+      JSON.stringify({ status: 'available', message: 'Grok3 API is ready' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   try {
-    // For availability checks, return a simple pong
-    if (req.method === 'GET') {
-      console.log('Availability check received')
+    const { message, context = [] } = await req.json();
+    
+    // Get the API key from the environment variable
+    const apiKey = Deno.env.get('GROK3_API_KEY');
+    
+    if (!apiKey) {
+      console.error('Grok3 API key is not set in the environment variables');
       return new Response(
-        JSON.stringify({ response: 'pong', status: 'available' }),
-        { headers: corsHeaders }
-      )
+        JSON.stringify({ error: 'API key is missing. Please configure GROK3_API_KEY in the Supabase dashboard.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    if (!GROK_API_KEY) {
-      console.error('GROK3_API_KEY not configured')
-      return new Response(
-        JSON.stringify({ 
-          error: 'GROK3_API_KEY not configured',
-          status: 'error' 
-        }),
-        { 
-          status: 500,
-          headers: corsHeaders 
-        }
-      )
-    }
+    console.log('Processing Grok3 request with context length:', context.length);
+    
+    // Format messages for Grok3 API
+    const formattedMessages = [
+      ...context,
+      { role: 'user', content: message }
+    ];
 
-    if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { 
-          status: 405,
-          headers: corsHeaders 
-        }
-      )
-    }
-
-    // Parse request body
-    const { message, context } = await req.json()
-    console.log('Received request:', { message, contextLength: context?.length })
-
-    // Make request to Grok API
-    const response = await fetch(GROK_API_URL, {
+    // Call the Grok3 API
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${GROK_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'grok-3',
-        messages: [
-          ...(context || []),
-          { role: 'user', content: message }
-        ],
-        max_tokens: 500,
-        temperature: 0.7
+        model: 'mixtral-8x7b-32768', // Using Mixtral model via Groq
+        messages: formattedMessages,
+        temperature: 0.7,
+        max_tokens: 1024
       })
-    })
+    });
 
     if (!response.ok) {
-      console.error('Grok API error:', response.status, response.statusText)
-      const errorData = await response.text()
-      console.error('Error details:', errorData)
-      
-      return new Response(
-        JSON.stringify({ 
-          error: `Grok API request failed: ${response.status} ${response.statusText}`,
-          details: errorData,
-          status: 'error'
-        }),
-        { 
-          status: response.status,
-          headers: corsHeaders 
-        }
-      )
+      const errorData = await response.json();
+      console.error('Error from Grok3 API:', errorData);
+      throw new Error(`API error: ${errorData.error?.message || 'Unknown error'}`);
     }
 
-    const data = await response.json()
-    console.log('Grok API response received:', data)
-
+    const data = await response.json();
+    console.log('Grok3 API response received:', data);
+    
+    const responseText = data.choices[0]?.message?.content || '';
+    
     return new Response(
-      JSON.stringify({
-        response: data.choices[0].message.content,
-        status: 'success'
-      }),
-      { headers: corsHeaders }
-    )
-
+      JSON.stringify({ response: responseText }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
-    console.error('Error in grok3-response function:', error)
+    console.error('Error in Grok3 function:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        status: 'error'
-      }),
-      { 
-        status: 500,
-        headers: corsHeaders 
-      }
-    )
+      JSON.stringify({ error: error.message || 'An error occurred while processing your request' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
-})
+});
