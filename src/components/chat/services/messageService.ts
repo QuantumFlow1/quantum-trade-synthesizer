@@ -5,7 +5,7 @@ import { generateGrok3Response } from './grok3Service';
 import { generateOpenAIResponse } from './openaiService';
 import { generateClaudeResponse } from './claudeService';
 import { generateGeminiResponse } from './geminiService';
-import { generateDeepseekResponse } from './deepseekService';
+import { generateDeepSeekResponse } from './deepseekService';
 import { generateFallbackResponse } from './fallbackService';
 import { GrokSettings, ModelId } from '../types/GrokSettings';
 
@@ -53,6 +53,7 @@ export const generateAIResponse = async (
         
       case 'gpt-4':
       case 'gpt-3.5-turbo':
+      case 'openai':
         console.log(`Generating OpenAI response with ${settings.selectedModel}...`);
         response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
         break;
@@ -60,18 +61,21 @@ export const generateAIResponse = async (
       case 'claude-3-haiku':
       case 'claude-3-sonnet':
       case 'claude-3-opus':
+      case 'claude':
         console.log(`Generating Claude response with ${settings.selectedModel}...`);
         response = await generateClaudeResponse(inputMessage, conversationHistory, settings);
         break;
         
       case 'gemini-pro':
+      case 'gemini':
         console.log('Generating Gemini response...');
-        response = await generateGeminiResponse(inputMessage, conversationHistory, settings);
+        response = await generateGeminiResponse(inputMessage, conversationHistory);
         break;
         
       case 'deepseek-chat':
+      case 'deepseek':
         console.log('Generating DeepSeek response...');
-        response = await generateDeepseekResponse(inputMessage, conversationHistory, settings);
+        response = await generateDeepSeekResponse(inputMessage, conversationHistory);
         break;
         
       default:

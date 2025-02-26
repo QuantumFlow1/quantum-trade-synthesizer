@@ -1,5 +1,17 @@
 
-export type ModelId = 'grok3' | 'openai' | 'gemini' | 'claude' | 'deepseek';
+export type ModelId = 
+  | 'grok3' 
+  | 'gpt-4' 
+  | 'gpt-3.5-turbo' 
+  | 'claude-3-haiku' 
+  | 'claude-3-sonnet' 
+  | 'claude-3-opus' 
+  | 'gemini-pro' 
+  | 'deepseek-chat'
+  | 'openai'
+  | 'gemini'
+  | 'claude'
+  | 'deepseek';
 
 // Add this type alias for the messageService to use
 export type AIModelType = ModelId;
