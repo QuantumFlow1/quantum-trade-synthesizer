@@ -10,6 +10,8 @@ import { AIAdvicePanel } from "./dashboard/AIAdvicePanel";
 import { LLMExtensions } from "./llm-extensions/LLMExtensions";
 import { MainContent } from "./dashboard/MainContent";
 import { useDashboard } from "@/contexts/DashboardContext";
+import MarketOverview from "./MarketOverview";
+import UserSentimentAnalysis from "./user/UserSentimentAnalysis";
 
 const UserDashboard = () => {
   const { userProfile, isLovTrader } = useAuth();
@@ -58,6 +60,16 @@ const UserDashboard = () => {
       
       {/* LLM Extensions Section */}
       {visibleWidgets.llmExtensions && <LLMExtensions />}
+
+      {/* Market Overview Section */}
+      <div className="w-full mb-6">
+        <MarketOverview />
+      </div>
+
+      {/* Social Sentiment Analysis */}
+      <div className="w-full mb-6">
+        <UserSentimentAnalysis />
+      </div>
 
       {/* Main Dashboard Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
