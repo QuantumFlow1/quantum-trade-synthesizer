@@ -17,6 +17,7 @@ export interface MarketData {
   change24h?: number;
   high24h?: number;
   low24h?: number;
+  symbol: string; // Added the missing symbol property
 }
 
 export interface TradeOrder {
@@ -55,4 +56,14 @@ export interface SecureTransaction {
   gasPrice?: string;
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
+}
+
+// Add missing ChartData interface
+export interface ChartData {
+  name: string;
+  price: number;
+  volume: number;
+  change?: number;
+  high: number;
+  low: number;
 }
