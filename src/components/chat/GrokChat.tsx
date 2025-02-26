@@ -26,7 +26,8 @@ export function GrokChat() {
     setGrokSettings
   } = useGrokChat();
 
-  const [showSettings, setShowSettings] = useState(false);
+  // Instellingen standaard zichtbaar maken
+  const [showSettings, setShowSettings] = useState(true);
   const selectedModelName = AI_MODELS.find(m => m.id === grokSettings.selectedModel)?.name || 'AI';
 
   // Display an info message when component mounts
@@ -82,18 +83,16 @@ export function GrokChat() {
           </Alert>
         )}
         
-        {/* Settings Panel */}
-        {showSettings && (
-          <div className="m-4 mb-0">
-            <GrokChatSettings 
-              settings={grokSettings}
-              onSettingsChange={setGrokSettings}
-            />
-          </div>
-        )}
+        {/* Settings Panel - altijd zichtbaar */}
+        <div className="mx-4 mt-4">
+          <GrokChatSettings 
+            settings={grokSettings}
+            onSettingsChange={setGrokSettings}
+          />
+        </div>
         
         {/* Chat Messages */}
-        <div className={`flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50 ${(apiAvailable === false && grokSettings.selectedModel === 'grok3') || showSettings ? 'pt-0' : ''}`}>
+        <div className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50 pt-3">
           <ChatMessages messages={messages} />
         </div>
         
