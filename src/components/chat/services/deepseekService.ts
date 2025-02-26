@@ -23,4 +23,11 @@ export const generateDeepSeekResponse = async (
     }
   });
   
-  if (!deepseekResult.error && deepseek
+  if (!deepseekResult.error && deepseekResult.data?.response) {
+    console.log('DeepSeek response received:', deepseekResult.data.response.substring(0, 100) + '...');
+    return deepseekResult.data.response;
+  } else {
+    console.error('DeepSeek API error:', deepseekResult.error);
+    throw deepseekResult.error || new Error('Geen antwoord van DeepSeek API');
+  }
+};
