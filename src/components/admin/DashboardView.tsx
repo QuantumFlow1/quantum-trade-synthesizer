@@ -53,7 +53,7 @@ const DashboardView = ({
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-background/80 border border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Totale Gebruikers</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -63,7 +63,7 @@ const DashboardView = ({
             <p className="text-xs text-muted-foreground">Actieve accounts</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-background/80 border border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Systeem Load</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
@@ -73,7 +73,7 @@ const DashboardView = ({
             <p className="text-xs text-muted-foreground">Huidige belasting</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-background/80 border border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Error Rate</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -86,7 +86,7 @@ const DashboardView = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="bg-background/80 border border-border/50">
           <CardHeader>
             <CardTitle>Market Data Trend</CardTitle>
             <CardDescription>24-uurs markt activiteit</CardDescription>
@@ -138,7 +138,7 @@ const DashboardView = ({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-background/80 border border-border/50">
           <CardHeader>
             <CardTitle>Social Sentiment Analysis</CardTitle>
             <CardDescription>Sentiment trend van sociale media</CardDescription>
@@ -168,12 +168,12 @@ const DashboardView = ({
                       }}
                     />
                     <Bar 
-                      dataKey="sentiment" 
+                      dataKey="content.sentiment" 
                       fill="#8884d8" 
                       name="Sentiment Score"
                     />
                     <Bar 
-                      dataKey="confidence" 
+                      dataKey="content.confidence" 
                       fill="#82ca9d" 
                       name="Confidence"
                     />

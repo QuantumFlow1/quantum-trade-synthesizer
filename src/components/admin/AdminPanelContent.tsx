@@ -88,6 +88,7 @@ const AdminPanelContent = ({
     });
   };
 
+  // Fixed dashboard chapters with proper paths
   const dashboardChapters = [
     {
       title: "Platform Overzicht",
@@ -116,9 +117,9 @@ const AdminPanelContent = ({
   ];
 
   return (
-    <div className="space-y-6 animate-in">
+    <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start">
+        <TabsList className="w-full justify-start bg-background/80 backdrop-blur-sm">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="agents">AI Agents</TabsTrigger>
@@ -127,6 +128,13 @@ const AdminPanelContent = ({
 
         <div className="mt-6">
           <TabsContent value="dashboard" className="space-y-6">
+            <DashboardView 
+              userCount={userCount}
+              systemLoad={systemLoad}
+              errorRate={errorRate}
+            />
+            
+            <h2 className="text-xl font-bold mt-8 mb-4">Dashboard Secties</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {dashboardChapters.map((chapter) => (
                 <Button
@@ -143,7 +151,7 @@ const AdminPanelContent = ({
           </TabsContent>
 
           <TabsContent value="accounts">
-            <Accordion type="single" collapsible>
+            <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="management">
                 <AccordionTrigger>Account Beheer</AccordionTrigger>
                 <AccordionContent>
@@ -154,7 +162,7 @@ const AdminPanelContent = ({
           </TabsContent>
 
           <TabsContent value="agents">
-            <Accordion type="single" collapsible>
+            <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="ai-agents">
                 <AccordionTrigger>AI Assistenten</AccordionTrigger>
                 <AccordionContent>
@@ -168,7 +176,7 @@ const AdminPanelContent = ({
           </TabsContent>
 
           <TabsContent value="models">
-            <Accordion type="single" collapsible>
+            <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="advice-models">
                 <AccordionTrigger>Adviesmodellen</AccordionTrigger>
                 <AccordionContent>
