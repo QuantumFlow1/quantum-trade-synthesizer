@@ -22,10 +22,12 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !isLoading && inputMessage.trim()) {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
       e.preventDefault();
       console.log("Sending message with Enter key:", inputMessage);
-      sendMessage();
+      if (inputMessage.trim()) {
+        sendMessage();
+      }
     }
   };
 
@@ -42,7 +44,10 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
         <Textarea
           ref={textareaRef}
           value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
+          onChange={(e) => {
+            console.log("Input changed:", e.target.value);
+            setInputMessage(e.target.value);
+          }}
           onKeyDown={handleKeyDown}
           placeholder={isLoading ? "Even geduld..." : "Typ je bericht... (Enter om te versturen)"}
           disabled={isLoading}
@@ -54,6 +59,7 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
           variant="default"
           size="icon"
           className={`bg-indigo-600 hover:bg-indigo-700 h-[60px] w-[60px] ${isLoading ? "animate-pulse" : ""}`}
+          aria-label="Send message"
         >
           {isLoading ? (
             <Loader2 className="h-5 w-5 animate-spin" />

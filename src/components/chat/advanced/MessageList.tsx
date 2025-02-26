@@ -19,7 +19,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
   // Scroll to bottom when messages change
   useEffect(() => {
     console.log("Advanced interface - Messages updated:", messages.length);
-    console.log("Messages content:", messages);
+    console.log("Advanced messages content:", messages);
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -32,24 +32,35 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
     <div className="p-4 border rounded-md bg-gray-50 mb-4 h-[300px] overflow-y-auto flex flex-col">
       {messages.length > 0 ? (
         <div className="space-y-4 w-full">
-          {messages.map((message, index) => (
-            <div 
-              key={index} 
-              className={`p-3 rounded-lg max-w-[85%] ${
-                message.role === 'user' 
-                  ? 'bg-blue-100 text-blue-900 ml-auto' 
-                  : 'bg-white border border-gray-200 mr-auto'
-              } chat-message`}
-              data-message-index={index}
-            >
-              <div className="flex items-center mb-1">
-                <span className="font-semibold text-xs">
-                  {message.role === 'user' ? 'You' : modelDisplayName}
-                </span>
+          {messages.map((message, index) => {
+            console.log(`Rendering advanced message ${index}, role: ${message.role}, content:`, message.content);
+            
+            if (!message.content) {
+              console.warn(`Advanced message at index ${index} has empty content!`);
+            }
+            
+            return (
+              <div 
+                key={index} 
+                className={`p-3 rounded-lg max-w-[85%] ${
+                  message.role === 'user' 
+                    ? 'bg-blue-100 text-blue-900 ml-auto' 
+                    : 'bg-white border border-gray-200 mr-auto'
+                } chat-message`}
+                data-message-index={index}
+                data-message-role={message.role}
+              >
+                <div className="flex items-center mb-1">
+                  <span className="font-semibold text-xs">
+                    {message.role === 'user' ? 'You' : modelDisplayName}
+                  </span>
+                </div>
+                <p className="text-sm whitespace-pre-wrap">
+                  {message.content || "Error: Empty message content"}
+                </p>
               </div>
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-            </div>
-          ))}
+            );
+          })}
           <div ref={messagesEndRef} />
         </div>
       ) : (

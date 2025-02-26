@@ -50,6 +50,7 @@ export function useGrokChat() {
   const sendMessage = useCallback(async (messageContent = inputMessage) => {
     if (!messageContent.trim()) return;
     
+    console.log('sendMessage called with content:', messageContent);
     setIsProcessing(true);
 
     try {
@@ -58,7 +59,12 @@ export function useGrokChat() {
       console.log('Adding user message:', userMessage);
       
       // Update messages state with user message
-      setMessages(prevMessages => [...prevMessages, userMessage]);
+      setMessages(prevMessages => {
+        console.log('Previous messages:', prevMessages);
+        const newMessages = [...prevMessages, userMessage];
+        console.log('New messages after adding user message:', newMessages);
+        return newMessages;
+      });
       setInputMessage('');
 
       // If Grok3 API availability is unknown, check it
@@ -74,13 +80,26 @@ export function useGrokChat() {
         content: msg.content
       }));
       
+      console.log('Conversation history for API:', conversationHistory);
+      
       const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable !== false, grokSettings);
       console.log('Received AI response:', response);
+      
+      if (!response) {
+        console.error('Empty response received from AI');
+        throw new Error('Empty response received from AI');
+      }
       
       // Add assistant response to chat
       const assistantMessage = createChatMessage('assistant', response);
       console.log('Adding assistant message:', assistantMessage);
-      setMessages(prevMessages => [...prevMessages, assistantMessage]);
+      
+      setMessages(prevMessages => {
+        console.log('Previous messages before adding AI response:', prevMessages);
+        const newMessages = [...prevMessages, assistantMessage];
+        console.log('New messages after adding AI response:', newMessages);
+        return newMessages;
+      });
       
       toast({
         title: "Response received",
@@ -97,13 +116,20 @@ export function useGrokChat() {
         'Er is een fout opgetreden bij het genereren van een antwoord. Probeer het later opnieuw.'
       );
       
-      setMessages(prev => [...prev, errorMessage]);
+      console.log('Adding error message to chat:', errorMessage);
+      
+      setMessages(prev => {
+        const newMessages = [...prev, errorMessage];
+        console.log('Messages after adding error message:', newMessages);
+        return newMessages;
+      });
       
       // Show error toast
       toast({
         title: "Er is een fout opgetreden",
         description: error instanceof Error ? error.message : "Kon geen antwoord genereren. Probeer het later opnieuw.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000
       });
     } finally {
       setIsProcessing(false);

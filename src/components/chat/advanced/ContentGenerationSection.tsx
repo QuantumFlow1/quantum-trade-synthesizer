@@ -22,6 +22,11 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
     <div className="flex-1 p-4 flex flex-col">
       <h2 className="text-lg font-bold mb-4">Content Generation</h2>
       
+      {/* Debug info */}
+      <div className="text-xs text-gray-500 mb-2">
+        Messages in state: {messages.length}
+      </div>
+      
       {/* Messages display area */}
       <MessageList 
         messages={messages} 

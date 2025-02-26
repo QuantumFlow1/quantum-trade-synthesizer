@@ -4,7 +4,7 @@ import { GrokChatHeader } from './GrokChatHeader'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
 import { useGrokChat } from './useGrokChat'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { toast } from '@/components/ui/use-toast'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { AlertTriangle, Loader2 } from 'lucide-react'
@@ -29,6 +29,8 @@ export function GrokChat() {
     setGrokSettings
   } = useGrokChat();
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   // Use the advanced interface instead of the standard chat interface
   const [useAdvancedInterface, setUseAdvancedInterface] = useState(true);
   
@@ -46,7 +48,15 @@ export function GrokChat() {
       description: `Chat with various AI models. The default model is ${selectedModelName}.`,
       duration: 5000,
     });
+    
+    // Log the current state of messages for debugging
+    console.log('Initial messages in GrokChat:', messages);
   }, [selectedModelName]);
+
+  // Extra debug logging when messages change
+  useEffect(() => {
+    console.log('Messages changed in GrokChat component:', messages);
+  }, [messages]);
 
   const handleRetryConnection = async () => {
     await retryApiConnection();
@@ -75,6 +85,14 @@ export function GrokChat() {
       description: "You've left the chat.",
       duration: 3000,
     });
+  };
+
+  // Handle manual send message
+  const handleSendMessage = () => {
+    console.log('Manual send button clicked with message:', inputMessage);
+    if (inputMessage.trim()) {
+      sendMessage();
+    }
   };
 
   // Render the advanced interface if enabled
@@ -131,8 +149,16 @@ export function GrokChat() {
           </div>
         )}
         
+        {/* Debug info - display message count */}
+        <div className="mx-4 mt-2 text-xs text-gray-500">
+          Messages in state: {messages.length}
+        </div>
+        
         {/* Chat Messages */}
-        <div className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50 pt-3">
+        <div 
+          ref={messagesContainerRef} 
+          className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50 pt-3"
+        >
           <ChatMessages messages={messages} />
         </div>
         
@@ -140,7 +166,7 @@ export function GrokChat() {
         <ChatInput 
           inputMessage={inputMessage}
           setInputMessage={setInputMessage}
-          sendMessage={sendMessage}
+          sendMessage={handleSendMessage}
           isLoading={isLoading}
         />
       </CardContent>

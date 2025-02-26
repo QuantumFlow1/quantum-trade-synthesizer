@@ -1,20 +1,14 @@
-
 import { supabase } from '@/lib/supabase';
-import { GrokSettings, ModelId } from '../types/GrokSettings';
-
-interface OpenAIOptions {
-  temperature?: number;
-  maxTokens?: number;
-}
+import { GrokSettings } from '../types/GrokSettings';
 
 export const generateOpenAIResponse = async (
   inputMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  options?: OpenAIOptions
-) => {
-  console.log('Using OpenAI API...', { 
+  settings: GrokSettings
+): Promise<string> => {
+  console.log('Generating OpenAI response with:', {
     message: inputMessage,
-    options: options,
+    settings: settings,
     conversationHistoryLength: conversationHistory.length
   });
   
@@ -22,8 +16,8 @@ export const generateOpenAIResponse = async (
     // Log request to help with debugging
     console.log('Sending request to OpenAI API with:', {
       message: inputMessage.substring(0, 50) + '...',
-      temperature: options?.temperature || 0.7,
-      maxTokens: options?.maxTokens || 1024,
+      temperature: settings.temperature || 0.7,
+      maxTokens: settings.maxTokens || 1024,
       historyLength: conversationHistory.length
     });
     
@@ -32,8 +26,8 @@ export const generateOpenAIResponse = async (
         message: inputMessage,
         context: conversationHistory,
         options: {
-          temperature: options?.temperature || 0.7,
-          maxTokens: options?.maxTokens || 1024
+          temperature: settings.temperature || 0.7,
+          maxTokens: settings.maxTokens || 1024
         }
       }
     });

@@ -18,7 +18,9 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    console.log("Messages updated, current count:", messages.length);
+    console.log("Messages updated in ChatMessages component, count:", messages.length);
+    console.log("Message details:", messages.map(m => ({id: m.id, role: m.role, contentLength: m.content?.length || 0})));
+    
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -37,18 +39,23 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
   return (
     <>
       {messages.map((message) => {
-        // Convert timestamp to Date object if it's not already
+        // Make sure timestamp is a Date object
         const timestamp = message.timestamp instanceof Date 
           ? message.timestamp 
           : new Date(message.timestamp);
           
-        console.log(`Rendering message: ${message.id}, role: ${message.role}, content length: ${message.content?.length || 0}`);
+        console.log(`Rendering message: ${message.id}, role: ${message.role}, content:`, message.content);
+        
+        if (!message.content) {
+          console.warn(`Message ${message.id} has empty content!`);
+        }
         
         return (
           <div 
             key={message.id} 
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4 chat-message`}
             data-message-id={message.id}
+            data-message-role={message.role}
           >
             <div 
               className={`rounded-lg px-5 py-3 max-w-[85%] flex ${
@@ -65,7 +72,7 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
                 )}
               </div>
               <div className="flex-1">
-                <p className="whitespace-pre-line">{message.content}</p>
+                <p className="whitespace-pre-line">{message.content || "Error: Empty message content"}</p>
                 <p className={`text-xs mt-2 ${message.role === 'user' ? 'text-indigo-200' : 'text-gray-400'}`}>
                   {timestamp.toLocaleTimeString()} - {timestamp.toLocaleDateString()}
                 </p>
