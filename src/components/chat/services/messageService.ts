@@ -12,30 +12,25 @@ import { ModelId, GrokSettings } from '../types/GrokSettings';
 export const generateAIResponse = async (
   inputMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  apiAvailable: boolean | null,
+  apiAvailable: boolean,
   settings?: GrokSettings
 ) => {
   let response;
   let error = null;
   const selectedModel = settings?.selectedModel || 'grok3';
   
-  console.log(`Selected model: ${selectedModel}`);
-  console.log(`API available: ${apiAvailable}`);
-  console.log('Conversation history:', conversationHistory);
-  
   // First try with the selected model
-  try {
-    console.log(`Attempting to generate response with ${selectedModel}`);
-    response = await generateResponseWithModel(selectedModel, inputMessage, conversationHistory, settings);
-    console.log(`${selectedModel} response:`, response);
-  } catch (primaryError) {
-    console.error(`${selectedModel} service error:`, primaryError);
-    error = primaryError;
+  if (apiAvailable) {
+    try {
+      response = await generateResponseWithModel(selectedModel, inputMessage, conversationHistory, settings);
+    } catch (primaryError) {
+      console.error(`${selectedModel} service error:`, primaryError);
+      error = primaryError;
+    }
   }
   
   // If the selected model fails, try other models in sequence
   if (!response) {
-    console.log("Primary model failed, trying fallbacks");
     // Define fallback models with explicit ModelId values to satisfy TypeScript
     const fallbackModels: ModelId[] = (['openai', 'claude', 'gemini', 'deepseek', 'grok3'] as const)
       .filter(model => model !== selectedModel) as ModelId[];
@@ -46,7 +41,6 @@ export const generateAIResponse = async (
       try {
         console.log(`Trying fallback model: ${model}`);
         response = await generateResponseWithModel(model, inputMessage, conversationHistory, settings);
-        console.log(`Fallback ${model} response:`, response);
       } catch (fallbackError) {
         console.error(`Fallback model ${model} error:`, fallbackError);
         // Continue to the next model
@@ -59,7 +53,6 @@ export const generateAIResponse = async (
     try {
       console.log('All AI models failed, using simple fallback service');
       response = await generateFallbackResponse(inputMessage, conversationHistory);
-      console.log('Fallback service response:', response);
     } catch (fallbackError) {
       console.error('Fallback service error:', fallbackError);
       if (!error) error = fallbackError;
@@ -67,7 +60,6 @@ export const generateAIResponse = async (
   }
   
   if (!response) {
-    console.error('No valid response from any AI service. Last error:', error);
     throw new Error(error?.message || 'Geen antwoord van AI services');
   }
   
@@ -80,37 +72,23 @@ const generateResponseWithModel = async (
   conversationHistory: Array<{ role: string; content: string }>,
   settings?: GrokSettings
 ): Promise<string> => {
-  console.log(`Generating response with model: ${model}`, {
-    inputMessage,
-    settings
-  });
-  
-  let result: string;
   switch (model) {
     case 'grok3':
-      result = await generateGrok3Response(inputMessage, conversationHistory, settings);
-      break;
+      return await generateGrok3Response(inputMessage, conversationHistory, settings);
     case 'openai':
-      result = await generateOpenAIResponse(inputMessage, conversationHistory, {
+      return await generateOpenAIResponse(inputMessage, conversationHistory, {
         temperature: settings?.temperature,
-        maxTokens: settings?.maxTokens
+        maxTokens: settings?.maxTokens || 1024
       });
-      break;
     case 'claude':
-      result = await generateClaudeResponse(inputMessage, conversationHistory);
-      break;
+      return await generateClaudeResponse(inputMessage, conversationHistory);
     case 'gemini':
-      result = await generateGeminiResponse(inputMessage, conversationHistory);
-      break;
+      return await generateGeminiResponse(inputMessage, conversationHistory);
     case 'deepseek':
-      result = await generateDeepSeekResponse(inputMessage, conversationHistory);
-      break;
+      return await generateDeepSeekResponse(inputMessage, conversationHistory);
     default:
       throw new Error(`Onbekend model: ${model}`);
   }
-  
-  console.log(`Response from ${model}:`, result);
-  return result;
 };
 
 export const createChatMessage = (

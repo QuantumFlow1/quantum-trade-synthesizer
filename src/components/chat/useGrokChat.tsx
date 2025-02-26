@@ -10,36 +10,24 @@ import { GrokSettings, DEFAULT_SETTINGS } from './types/GrokSettings';
 export function useGrokChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [grokSettings, setGrokSettings] = useState<GrokSettings>(DEFAULT_SETTINGS);
-  const { apiAvailable, isLoading: apiIsLoading, checkGrokAvailability, checkOpenAIAvailability, retryApiConnection } = useApiAvailability();
+  const { apiAvailable, isLoading, checkGrokAvailability, retryApiConnection } = useApiAvailability();
 
   // Check API availability on mount
   useEffect(() => {
-    if (grokSettings.selectedModel === 'grok3') {
-      checkGrokAvailability();
-    } else if (grokSettings.selectedModel === 'openai') {
-      checkOpenAIAvailability();
-    } else {
-      checkGrokAvailability();
-    }
-  }, [grokSettings.selectedModel, checkGrokAvailability, checkOpenAIAvailability]);
+    checkGrokAvailability();
+  }, []);
 
   // Load chat history from localStorage when component mounts
   useEffect(() => {
     const savedMessages = loadChatHistory();
-    if (savedMessages && savedMessages.length > 0) {
-      console.log('Loaded saved messages:', savedMessages);
-      setMessages(savedMessages);
-    }
+    setMessages(savedMessages);
     
     // Load saved Grok settings if available
     const savedSettings = localStorage.getItem('grokSettings');
     if (savedSettings) {
       try {
-        const parsedSettings = JSON.parse(savedSettings);
-        console.log('Loaded saved settings:', parsedSettings);
-        setGrokSettings(parsedSettings);
+        setGrokSettings(JSON.parse(savedSettings));
       } catch (e) {
         console.error('Error parsing saved Grok settings:', e);
       }
@@ -48,10 +36,7 @@ export function useGrokChat() {
 
   // Save chat history to localStorage when it changes
   useEffect(() => {
-    if (messages.length > 0) {
-      console.log('Saving messages to localStorage:', messages);
-      saveChatHistory(messages);
-    }
+    saveChatHistory(messages);
   }, [messages]);
   
   // Save settings to localStorage when they change
@@ -61,9 +46,6 @@ export function useGrokChat() {
 
   const sendMessage = async (messageContent = inputMessage) => {
     if (!messageContent.trim()) return;
-    
-    console.log('Sending message:', messageContent);
-    setIsLoading(true);
 
     // Create and add user message
     const userMessage = createChatMessage('user', messageContent);
@@ -71,13 +53,9 @@ export function useGrokChat() {
     setInputMessage('');
 
     try {
-      // If API availability is unknown, check it based on selected model
+      // If Grok3 API availability is unknown, check it
       if (apiAvailable === null) {
-        if (grokSettings.selectedModel === 'grok3') {
-          await checkGrokAvailability();
-        } else if (grokSettings.selectedModel === 'openai') {
-          await checkOpenAIAvailability();
-        }
+        await checkGrokAvailability();
       }
       
       console.log('Generating AI response...');
@@ -89,12 +67,6 @@ export function useGrokChat() {
       }));
       
       const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable, grokSettings);
-      
-      console.log('Received AI response:', response);
-      
-      if (!response) {
-        throw new Error('Geen antwoord ontvangen van de AI service');
-      }
       
       // Add assistant response to chat
       const assistantMessage = createChatMessage('assistant', response);
@@ -117,25 +89,19 @@ export function useGrokChat() {
         description: error instanceof Error ? error.message : "Kon geen antwoord genereren. Probeer het later opnieuw.",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const clearChat = () => {
     setMessages([]);
     localStorage.removeItem('grokChatHistory');
-    toast({
-      title: "Chat gewist",
-      description: "De chatgeschiedenis is gewist.",
-    });
   };
 
   return {
     messages,
     inputMessage,
     setInputMessage,
-    isLoading: isLoading || apiIsLoading,
+    isLoading,
     sendMessage,
     clearChat,
     apiAvailable,
