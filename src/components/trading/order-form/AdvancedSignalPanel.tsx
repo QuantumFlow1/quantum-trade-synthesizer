@@ -2,12 +2,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Zap } from "lucide-react";
+import { Zap, AlertTriangle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 
 interface AdvancedSignalPanelProps {
   apiEnabled: boolean;
+  apiAvailable?: boolean;
   currentPrice: number;
   advancedSignal: any;
   setAdvancedSignal: (signal: any) => void;
@@ -16,14 +17,26 @@ interface AdvancedSignalPanelProps {
 
 export const AdvancedSignalPanel = ({ 
   apiEnabled, 
+  apiAvailable = false,
   currentPrice, 
   advancedSignal, 
   setAdvancedSignal,
   onSignalApplied
 }: AdvancedSignalPanelProps) => {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   
   const fetchAdvancedSignal = async () => {
+    if (!apiAvailable) {
+      toast({
+        title: "API niet beschikbaar",
+        description: "De AI service is momenteel offline. Controleer uw API sleutel instellingen.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('grok3-response', {
         body: {
@@ -72,6 +85,23 @@ export const AdvancedSignalPanel = ({
         description: "Kon geen geavanceerd signaal ophalen",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleApplySignal = () => {
+    if (advancedSignal) {
+      onSignalApplied(
+        advancedSignal.direction, 
+        advancedSignal.stop_loss?.toString() || "", 
+        advancedSignal.take_profit?.toString() || ""
+      );
+      
+      toast({
+        title: "Signaal toegepast",
+        description: `${advancedSignal.direction} signaal toegepast op uw order`,
+      });
     }
   };
 
@@ -81,24 +111,50 @@ export const AdvancedSignalPanel = ({
     <div className="mt-4 pt-4 border-t border-white/10">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-primary" />
+          <Zap className={`w-4 h-4 ${apiAvailable ? 'text-primary' : 'text-muted-foreground'}`} />
           <span className="font-medium">Geavanceerde API-functies</span>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex items-center gap-1 text-xs"
-          onClick={fetchAdvancedSignal}
-        >
-          <Zap className="w-3 h-3" />
-          Genereer Signaal
-        </Button>
+        <div className="flex items-center gap-2">
+          {!apiAvailable && (
+            <div className="flex items-center text-xs text-red-400 gap-1 mr-2">
+              <AlertTriangle className="w-3 h-3" />
+              <span>Offline</span>
+            </div>
+          )}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1 text-xs"
+            onClick={fetchAdvancedSignal}
+            disabled={isLoading || !apiAvailable}
+          >
+            <Zap className={`w-3 h-3 ${isLoading ? 'animate-pulse' : ''}`} />
+            {isLoading ? 'Genereren...' : 'Genereer Signaal'}
+          </Button>
+        </div>
       </div>
+      
+      {!apiAvailable && (
+        <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-lg mt-2 text-xs text-muted-foreground">
+          AI trading signaal service is momenteel niet beschikbaar. 
+          Controleer of uw API sleutel correct is ingesteld in het instellingenmenu.
+        </div>
+      )}
       
       {advancedSignal && (
         <div className="p-3 bg-primary/10 rounded-lg mt-2">
-          <div className="text-sm font-medium mb-1">
-            {advancedSignal.direction} Signaal ({advancedSignal.confidence}% vertrouwen)
+          <div className="text-sm font-medium mb-1 flex justify-between">
+            <span>{advancedSignal.direction} Signaal ({advancedSignal.confidence}% vertrouwen)</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={handleApplySignal}
+              disabled={!apiAvailable}
+            >
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Toepassen
+            </Button>
           </div>
           <div className="text-xs text-muted-foreground">
             Redenering: {advancedSignal.reasoning}

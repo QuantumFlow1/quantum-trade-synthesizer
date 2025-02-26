@@ -1,136 +1,83 @@
 
-import { Card } from "@/components/ui/card";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { OrderParameters } from "../OrderParameters";
-import { Zap, Lock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { AdvancedSignalPanel } from "./AdvancedSignalPanel";
+import { AIAnalysisPanel } from "./AIAnalysisPanel";
 
 interface AdvancedOrderFormProps {
-  apiEnabled: boolean;
+  currentPrice: number;
   advancedSignal: any;
-  fetchAdvancedSignal: () => Promise<void>;
-  amount: string;
-  orderExecutionType: "market" | "limit" | "stop" | "stop_limit";
-  limitPrice: string;
-  stopPrice: string;
-  stopLoss: string;
-  takeProfit: string;
-  isSubmitting: boolean;
-  orderType: "buy" | "sell";
-  onAmountChange: (value: string) => void;
-  onLimitPriceChange: (value: string) => void;
-  onStopPriceChange: (value: string) => void;
-  onStopLossChange: (value: string) => void;
-  onTakeProfitChange: (value: string) => void;
-  onApplySignal: () => void;
+  setAdvancedSignal: (signal: any) => void;
+  apiEnabled: boolean;
+  apiAvailable?: boolean;
+  onSignalApplied: (direction: string, stopLoss: string, takeProfit: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
-export const AdvancedOrderForm = ({
+export const AdvancedOrderForm = ({ 
+  currentPrice, 
+  advancedSignal, 
+  setAdvancedSignal,
   apiEnabled,
-  advancedSignal,
-  fetchAdvancedSignal,
-  amount,
-  orderExecutionType,
-  limitPrice,
-  stopPrice,
-  stopLoss,
-  takeProfit,
-  isSubmitting,
-  orderType,
-  onAmountChange,
-  onLimitPriceChange,
-  onStopPriceChange,
-  onStopLossChange,
-  onTakeProfitChange,
-  onApplySignal,
-  onSubmit
+  apiAvailable = false,
+  onSignalApplied,
+  onSubmit 
 }: AdvancedOrderFormProps) => {
-  const { toast } = useToast();
-
-  if (!apiEnabled) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
-        <Lock className="w-12 h-12 mb-4 text-muted-foreground" />
-        <h3 className="text-lg font-medium mb-2">API Toegang Vergrendeld</h3>
-        <p className="text-muted-foreground text-center max-w-md mb-6">
-          Je huidige rol geeft geen toegang tot API-gebaseerde handelsfuncties. Neem contact op met een beheerder om toegang te krijgen.
-        </p>
-      </div>
-    );
-  }
+  // Dummy AI analyse data
+  const aiAnalysis = {
+    confidence: advancedSignal ? advancedSignal.confidence || 65 : 65,
+    riskLevel: advancedSignal ? (advancedSignal.confidence > 70 ? "Laag" : "Gemiddeld") : "Gemiddeld",
+    recommendation: advancedSignal ? 
+      `${advancedSignal.direction} op huidige prijs` : 
+      "Wacht op AI signaal",
+    expectedProfit: advancedSignal ? 
+      `${Math.round((Math.abs(advancedSignal.take_profit - advancedSignal.entry_price) / advancedSignal.entry_price) * 1000) / 10}%` : 
+      "Onbekend",
+    stopLossRecommendation: advancedSignal ? advancedSignal.stop_loss : 0,
+    takeProfitRecommendation: advancedSignal ? advancedSignal.take_profit : 0,
+    collaboratingAgents: ["Grok3 AI", "TrendAnalyzer", "SignalGenerator"]
+  };
 
   return (
-    <div className="space-y-6 p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
-      <div className="flex items-center gap-2 mb-4">
-        <Zap className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-medium">API-gebaseerde Trading</h3>
-      </div>
+    <div className="space-y-4">
+      <AIAnalysisPanel 
+        aiAnalysis={aiAnalysis} 
+        isOnline={apiAvailable}
+      />
       
-      <div className="grid grid-cols-1 gap-4">
-        <Button 
-          variant="outline" 
-          onClick={fetchAdvancedSignal}
-          className="bg-primary/20 hover:bg-primary/30 border-primary/30"
-        >
-          <Zap className="w-4 h-4 mr-2" />
-          Genereer Geavanceerd Signaal
-        </Button>
+      <div className="p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
+        <div className="mb-4 text-center">
+          <h3 className="text-lg font-medium">AI Trading Assistant</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Gebruik geavanceerde AI om trading signalen te genereren en orderparameters te optimaliseren
+          </p>
+        </div>
         
-        {advancedSignal && (
-          <Card className="p-4 bg-primary/10 border-primary/20">
-            <h4 className="text-md font-medium mb-2">Geavanceerd Trading Signaal</h4>
-            <div className="space-y-2 text-sm">
-              <div><strong>Richting:</strong> {advancedSignal.direction}</div>
-              <div><strong>Entry Prijs:</strong> {advancedSignal.entry_price}</div>
-              <div><strong>Stop Loss:</strong> {advancedSignal.stop_loss}</div>
-              <div><strong>Take Profit:</strong> {advancedSignal.take_profit}</div>
-              <div><strong>Vertrouwen:</strong> {advancedSignal.confidence}%</div>
-              <div className="pt-2 border-t border-primary/20">
-                <strong>Redenering:</strong><br/>
-                <p className="text-muted-foreground">{advancedSignal.reasoning}</p>
-              </div>
-            </div>
-            
-            <div className="mt-4 pt-4 border-t border-primary/20">
-              <Button
-                onClick={onApplySignal}
-                className="w-full"
-              >
-                Pas dit Signaal Toe op Order Formulier
-              </Button>
-            </div>
-          </Card>
-        )}
-      </div>
-      
-      <form onSubmit={onSubmit} className="space-y-4 mt-4 pt-4 border-t border-white/10">
-        <OrderParameters
-          amount={amount}
-          orderExecutionType={orderExecutionType}
-          limitPrice={limitPrice}
-          stopPrice={stopPrice}
-          stopLoss={stopLoss}
-          takeProfit={takeProfit}
-          onAmountChange={onAmountChange}
-          onLimitPriceChange={onLimitPriceChange}
-          onStopPriceChange={onStopPriceChange}
-          onStopLossChange={onStopLossChange}
-          onTakeProfitChange={onTakeProfitChange}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="col-span-2 flex justify-between items-center p-3 bg-secondary/30 rounded-lg">
+            <span>Huidige BTC Prijs:</span>
+            <span className="text-lg font-bold">${currentPrice.toLocaleString()}</span>
+          </div>
+        </div>
+        
+        <AdvancedSignalPanel
+          apiEnabled={apiEnabled}
+          apiAvailable={apiAvailable} 
+          currentPrice={currentPrice}
+          advancedSignal={advancedSignal}
+          setAdvancedSignal={setAdvancedSignal}
+          onSignalApplied={onSignalApplied}
         />
-
+        
         <Button 
           type="submit" 
-          className={`w-full ${
-            orderType === "buy" 
-              ? "bg-green-500 hover:bg-green-600" 
-              : "bg-red-500 hover:bg-red-600"
-          }`}
-          disabled={isSubmitting}
+          className="w-full mt-4 bg-primary hover:bg-primary/90" 
+          onClick={onSubmit}
+          disabled={!advancedSignal}
         >
-          {isSubmitting ? "Verwerken..." : `Plaats API ${orderType.toUpperCase()} Order`}
+          {advancedSignal ? `Plaats ${advancedSignal.direction} Order` : "Wacht op signaal..."}
         </Button>
-      </form>
+      </div>
     </div>
   );
 };

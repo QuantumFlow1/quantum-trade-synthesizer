@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { LineChart, Sparkles } from "lucide-react";
 import { AIInsights } from "@/components/financial-advice/AIInsights";
 import { supabase } from "@/lib/supabase";
+import { TradeOrderForm } from "@/components/trading/TradeOrderForm";
+import { PositionsList } from "@/components/trading/PositionsList";
 
 export const TradingPage = () => {
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
@@ -17,6 +19,7 @@ export const TradingPage = () => {
 
   const checkApiStatus = async () => {
     try {
+      setApiStatus('checking');
       const { data, error } = await supabase.functions.invoke('grok3-response', {
         body: { message: "ping", context: [] }
       });
@@ -55,10 +58,20 @@ export const TradingPage = () => {
         <TradingChart />
       </Card>
 
-      <Card className="col-span-full backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-        <h2 className="text-xl font-bold mb-4 flex items-center"><Sparkles className="w-5 h-5 mr-2" /> AI Trading Inzichten</h2>
-        <AIInsights isOnline={apiStatus === 'available'} aiAdvice={aiAdvice} />
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2">
+          <TradeOrderForm apiStatus={apiStatus} />
+        </div>
+        
+        <div className="space-y-6">
+          <Card className="backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
+            <h2 className="text-xl font-bold mb-4 flex items-center"><Sparkles className="w-5 h-5 mr-2" /> AI Trading Inzichten</h2>
+            <AIInsights isOnline={apiStatus === 'available'} aiAdvice={aiAdvice} />
+          </Card>
+          
+          <PositionsList />
+        </div>
+      </div>
     </div>
   );
 };

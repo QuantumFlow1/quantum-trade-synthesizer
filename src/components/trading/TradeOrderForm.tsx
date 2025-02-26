@@ -1,232 +1,93 @@
 
 import { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/components/auth/AuthProvider";
-import { submitTrade } from "@/services/tradeService";
-import { TradeOrder } from "./types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Lock, Unlock } from "lucide-react";
-import { AIAnalysisPanel } from "./order-form/AIAnalysisPanel";
-import { AdvancedSignalPanel } from "./order-form/AdvancedSignalPanel";
 import { StandardOrderForm } from "./order-form/StandardOrderForm";
 import { AdvancedOrderForm } from "./order-form/AdvancedOrderForm";
-import { supabase } from "@/lib/supabase";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TradeOrderFormProps {
-  currentPrice: number;
-  onSubmitOrder: (order: TradeOrder) => void;
+  apiStatus?: 'checking' | 'available' | 'unavailable';
 }
 
-export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormProps) => {
-  const { toast } = useToast();
-  const { user, userProfile } = useAuth();
+export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProps) => {
+  const [orderMode, setOrderMode] = useState<string>("standard");
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy");
   const [orderExecutionType, setOrderExecutionType] = useState<"market" | "limit" | "stop" | "stop_limit">("market");
-  const [amount, setAmount] = useState<string>("");
+  const [amount, setAmount] = useState<string>("0.01");
   const [limitPrice, setLimitPrice] = useState<string>("");
   const [stopPrice, setStopPrice] = useState<string>("");
   const [stopLoss, setStopLoss] = useState<string>("");
   const [takeProfit, setTakeProfit] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("standard");
-  const [apiEnabled, setApiEnabled] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [currentPrice, setCurrentPrice] = useState<number>(42000);
   const [advancedSignal, setAdvancedSignal] = useState<any>(null);
 
-  // Check if trader has API access
+  const { toast } = useToast();
+
+  // Simuleer het ophalen van de huidige prijs
   useEffect(() => {
-    if (userProfile?.api_access || userProfile?.role === 'lov_trader') {
-      setApiEnabled(true);
-    }
-  }, [userProfile]);
+    const interval = setInterval(() => {
+      // Simuleer kleine prijsschommelingen
+      const newPrice = currentPrice + (Math.random() * 200 - 100);
+      setCurrentPrice(Math.round(newPrice * 100) / 100);
+    }, 5000);
 
-  // Gesimuleerde AI agent analyse
-  const aiAnalysis = {
-    confidence: 85,
-    riskLevel: "medium",
-    recommendation: "long",
-    expectedProfit: "2.3%",
-    stopLossRecommendation: currentPrice * 0.98,
-    takeProfitRecommendation: currentPrice * 1.035,
-    collaboratingAgents: ["Trading AI", "Risk Manager", "Market Analyzer"]
-  };
+    return () => clearInterval(interval);
+  }, [currentPrice]);
 
-  // Functie om geavanceerde signalen op te halen
-  const fetchAdvancedSignal = async () => {
-    try {
-      if (!user) return;
-      
-      const { data, error } = await supabase.functions.invoke('grok3-response', {
-        body: {
-          message: `Generate a trading signal for the current market conditions. Current price: ${currentPrice}. Format the response as JSON with fields: direction (LONG/SHORT), entry_price, stop_loss, take_profit, confidence (0-100), reasoning`,
-          context: []
-        }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Parse the response to extract JSON
-      if (data && data.response) {
-        try {
-          // Look for JSON in the string response
-          const jsonMatch = data.response.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const jsonData = JSON.parse(jsonMatch[0]);
-            setAdvancedSignal(jsonData);
-            
-            // Auto-fill form with signal data
-            if (jsonData.direction) {
-              setOrderType(jsonData.direction.toLowerCase() === 'long' ? 'buy' : 'sell');
-            }
-            if (jsonData.stop_loss) {
-              setStopLoss(jsonData.stop_loss.toString());
-            }
-            if (jsonData.take_profit) {
-              setTakeProfit(jsonData.take_profit.toString());
-            }
-            
-            toast({
-              title: "Geavanceerd signaal ontvangen",
-              description: `${jsonData.direction} signaal met ${jsonData.confidence}% vertrouwen`,
-            });
-          } else {
-            toast({
-              title: "Signaal verwerking mislukt",
-              description: "Kon het signaal niet extraheren uit de respons",
-              variant: "destructive",
-            });
-          }
-        } catch (parseError) {
-          console.error("Error parsing signal:", parseError);
-          toast({
-            title: "Signaal verwerking mislukt",
-            description: "Kon het signaal niet verwerken",
-            variant: "destructive",
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching advanced signal:", error);
-      toast({
-        title: "API Fout",
-        description: "Kon geen geavanceerd signaal ophalen",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleApplySignal = () => {
-    if (advancedSignal) {
-      setOrderType(advancedSignal.direction.toLowerCase() === 'long' ? 'buy' : 'sell');
-      setStopLoss(advancedSignal.stop_loss.toString());
-      setTakeProfit(advancedSignal.take_profit.toString());
-      setActiveTab("standard");
-      
-      toast({
-        title: "Signaal Toegepast",
-        description: "De signaalinstellingen zijn naar het formulier gekopieerd",
-      });
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!user) {
-      toast({
-        title: "Authenticatie Vereist",
-        description: "Log in om te kunnen handelen",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!amount || isNaN(Number(amount))) {
-      toast({
-        title: "Ongeldig Bedrag",
-        description: "Voer een geldig handelsvolume in",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
 
-    try {
-      await submitTrade(
-        user.id, 
-        orderType, 
-        orderExecutionType,
-        Number(amount), 
-        currentPrice,
-        limitPrice ? Number(limitPrice) : undefined,
-        stopPrice ? Number(stopPrice) : undefined
-      );
-
-      const order: TradeOrder = {
-        type: orderType,
-        orderType: orderExecutionType,
-        amount: Number(amount),
-        price: currentPrice,
-        limitPrice: limitPrice ? Number(limitPrice) : undefined,
-        stopPrice: stopPrice ? Number(stopPrice) : undefined,
-        stopLoss: stopLoss ? Number(stopLoss) : Number(aiAnalysis.stopLossRecommendation),
-        takeProfit: takeProfit ? Number(takeProfit) : Number(aiAnalysis.takeProfitRecommendation)
-      };
-
-      onSubmitOrder(order);
+    // Simuleer API vertraging
+    setTimeout(() => {
       toast({
-        title: "Order Geplaatst",
-        description: `${orderType.toUpperCase()} ${orderExecutionType} order geplaatst voor ${amount} eenheden`,
+        title: "Order geplaatst",
+        description: `Uw ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} order voor ${amount} BTC is succesvol geplaatst.`,
       });
-
-      // Reset formulier
-      setAmount("");
-      setLimitPrice("");
-      setStopPrice("");
-      setStopLoss("");
-      setTakeProfit("");
-    } catch (error) {
-      console.error("Error submitting order:", error);
-      toast({
-        title: "Fout",
-        description: "Kon order niet plaatsen. Probeer het opnieuw.",
-        variant: "destructive",
-      });
-    } finally {
       setIsSubmitting(false);
-    }
+    }, 1500);
+  };
+
+  const handleSignalApplied = (direction: string, stopLossValue: string, takeProfitValue: string) => {
+    setOrderType(direction.toLowerCase() as "buy" | "sell");
+    setStopLoss(stopLossValue);
+    setTakeProfit(takeProfitValue);
+  };
+
+  // Genereer aanbevolen stop loss en take profit waarden
+  const stopLossPercentage = orderType === "buy" ? 5 : 7;
+  const takeProfitPercentage = orderType === "buy" ? 10 : 12;
+  const stopLossRecommendation = orderType === "buy" 
+    ? currentPrice * (1 - stopLossPercentage/100) 
+    : currentPrice * (1 + stopLossPercentage/100);
+  const takeProfitRecommendation = orderType === "buy" 
+    ? currentPrice * (1 + takeProfitPercentage/100) 
+    : currentPrice * (1 - takeProfitPercentage/100);
+
+  // Dummy AI analyse data
+  const aiAnalysis = {
+    confidence: 78,
+    riskLevel: "Gemiddeld",
+    recommendation: orderType === "buy" ? "Koop met stop-loss" : "Verkoop met limiet",
+    expectedProfit: `${takeProfitPercentage}% bij correcte uitvoering`,
+    stopLossRecommendation: Math.round(stopLossRecommendation * 100) / 100,
+    takeProfitRecommendation: Math.round(takeProfitRecommendation * 100) / 100,
+    collaboratingAgents: ["TrendAnalyzer", "RiskProfiler", "VolatilityMonitor"]
   };
 
   return (
-    <div className="space-y-6">
-      {/* AI Analysis Panel */}
-      <AIAnalysisPanel aiAnalysis={aiAnalysis} />
-      
-      {/* Advanced Signal Panel (conditionally rendered) */}
-      <AdvancedSignalPanel 
-        apiEnabled={apiEnabled} 
-        currentPrice={currentPrice}
-        advancedSignal={advancedSignal}
-        setAdvancedSignal={setAdvancedSignal}
-        onSignalApplied={handleApplySignal}
-      />
+    <Card className="backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
+      <Tabs defaultValue="standard" onValueChange={setOrderMode}>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Order Formulier</h2>
+          <TabsList>
+            <TabsTrigger value="standard">Standaard</TabsTrigger>
+            <TabsTrigger value="advanced">Geavanceerd</TabsTrigger>
+          </TabsList>
+        </div>
 
-      {/* Order Form Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-2 mb-4">
-          <TabsTrigger value="standard">
-            Standaard Trading
-          </TabsTrigger>
-          <TabsTrigger value="advanced" disabled={!apiEnabled}>
-            <div className="flex items-center gap-1">
-              {apiEnabled ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-              <span>API Trading</span>
-            </div>
-          </TabsTrigger>
-        </TabsList>
-        
         <TabsContent value="standard">
           <StandardOrderForm
             orderType={orderType}
@@ -237,8 +98,10 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
             stopLoss={stopLoss}
             takeProfit={takeProfit}
             isSubmitting={isSubmitting}
-            stopLossRecommendation={aiAnalysis.stopLossRecommendation}
-            takeProfitRecommendation={aiAnalysis.takeProfitRecommendation}
+            stopLossRecommendation={stopLossRecommendation}
+            takeProfitRecommendation={takeProfitRecommendation}
+            apiStatus={apiStatus}
+            aiAnalysis={aiAnalysis}
             onOrderTypeChange={setOrderType}
             onOrderExecutionTypeChange={setOrderExecutionType}
             onAmountChange={setAmount}
@@ -249,30 +112,19 @@ export const TradeOrderForm = ({ currentPrice, onSubmitOrder }: TradeOrderFormPr
             onSubmit={handleSubmit}
           />
         </TabsContent>
-        
+
         <TabsContent value="advanced">
           <AdvancedOrderForm
-            apiEnabled={apiEnabled}
+            currentPrice={currentPrice}
             advancedSignal={advancedSignal}
-            fetchAdvancedSignal={fetchAdvancedSignal}
-            amount={amount}
-            orderExecutionType={orderExecutionType}
-            limitPrice={limitPrice}
-            stopPrice={stopPrice}
-            stopLoss={stopLoss}
-            takeProfit={takeProfit}
-            isSubmitting={isSubmitting}
-            orderType={orderType}
-            onAmountChange={setAmount}
-            onLimitPriceChange={setLimitPrice}
-            onStopPriceChange={setStopPrice}
-            onStopLossChange={setStopLoss}
-            onTakeProfitChange={setTakeProfit}
-            onApplySignal={handleApplySignal}
+            setAdvancedSignal={setAdvancedSignal}
+            apiEnabled={true}
+            apiAvailable={apiStatus === 'available'}
+            onSignalApplied={handleSignalApplied}
             onSubmit={handleSubmit}
           />
         </TabsContent>
       </Tabs>
-    </div>
+    </Card>
   );
 };
