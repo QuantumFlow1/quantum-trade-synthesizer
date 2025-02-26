@@ -1,9 +1,10 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Message } from '../deepseek/types';
 import { generateClaudeResponse } from '@/components/chat/services/claudeService';
 import { GrokSettings } from '@/components/chat/types/GrokSettings';
+import { isLLMActive, useLLMChangeListener } from '../utils/llmManager';
 
 export function useClaudeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -11,6 +12,13 @@ export function useClaudeChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState<string>('');
+  const [isActive, setIsActive] = useState(isLLMActive('claude'));
+  
+  // Listen for LLM changes
+  useLLMChangeListener(useCallback((activeLLM) => {
+    setIsActive(activeLLM === 'claude');
+    console.log(`Claude is now ${activeLLM === 'claude' ? 'active' : 'inactive'}`);
+  }, []));
   
   // Load API key from localStorage
   useEffect(() => {
@@ -58,6 +66,18 @@ export function useClaudeChat() {
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
+    
+    // Check if Claude is the active LLM
+    if (!isActive) {
+      toast({
+        title: "Claude is not active",
+        description: "Please activate Claude first by selecting its tab.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      return;
+    }
+    
     if (!apiKey) {
       toast({
         title: "API Key Required",
@@ -171,6 +191,7 @@ export function useClaudeChat() {
     isLoading,
     showSettings,
     apiKey,
+    isActive,
     setInputMessage,
     sendMessage,
     clearChat,
