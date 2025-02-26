@@ -16,7 +16,7 @@ export function ClaudeChat() {
     isLoading,
     showSettings,
     apiKey,
-    setApiKey,
+    saveApiKey, // Changed from setApiKey to saveApiKey to match the hook's return value
     setInputMessage,
     sendMessage,
     clearChat,
@@ -76,7 +76,7 @@ export function ClaudeChat() {
         {showSettings ? (
           <ClaudeSettings 
             apiKey={apiKey} 
-            setApiKey={setApiKey} 
+            setApiKey={saveApiKey} // Changed to use saveApiKey here too
             onClose={() => setShowSettings(false)} 
           />
         ) : messages.length === 0 ? (
