@@ -19,11 +19,11 @@ export function ClaudeMessage({ message }: ClaudeMessageProps) {
     
   return (
     <div 
-      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}
+      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} w-full fade-in`}
       data-message-id={message.id}
     >
       <div 
-        className={`rounded-lg px-4 py-2 max-w-[85%] flex ${
+        className={`rounded-lg px-4 py-2 max-w-[85%] flex hover-lift ${
           message.role === 'user' 
             ? 'bg-green-600 text-white border-0' 
             : 'bg-secondary border-0'

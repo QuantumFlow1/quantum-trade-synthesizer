@@ -29,16 +29,16 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
   if (!messages || messages.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-        <Bot className="w-16 h-16 mb-6 opacity-20" />
-        <p className="text-lg">Begin een gesprek met AI.</p>
-        <p className="text-sm mt-2">Stel een vraag in het tekstvak hieronder.</p>
+        <Bot className="w-16 h-16 mb-6 opacity-20 animate-float" />
+        <p className="text-lg fade-in">Begin een gesprek met AI.</p>
+        <p className="text-sm mt-2 slide-up">Stel een vraag in het tekstvak hieronder.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {messages.map((message) => {
+      {messages.map((message, index) => {
         if (!message || !message.id) {
           console.error("Invalid message object:", message);
           return null;
@@ -54,15 +54,16 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
         return (
           <div 
             key={message.id} 
-            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4 chat-message`}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4 chat-message staggered-item`}
             data-message-id={message.id}
             data-message-role={message.role}
+            style={{ animationDelay: `${index * 0.1}s` }}
           >
             <div 
               className={`rounded-lg px-5 py-3 max-w-[85%] flex ${
                 message.role === 'user' 
-                  ? 'bg-indigo-600 text-white border-0' 
-                  : 'bg-secondary border-0 shadow-sm'
+                  ? 'bg-indigo-600 text-white border-0 hover-lift' 
+                  : 'bg-secondary border-0 shadow-sm hover-lift'
               }`}
             >
               <div className={`mr-3 mt-1 ${message.role === 'user' ? 'text-white' : 'text-indigo-600'}`}>
