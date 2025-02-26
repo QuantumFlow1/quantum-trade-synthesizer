@@ -3,7 +3,10 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DeepSeekChat } from './DeepSeekChat';
-import { Bot, Code, Sparkles, Terminal } from 'lucide-react';
+import { Bot, Code, Sparkles, Terminal, Zap, MessageSquare } from 'lucide-react';
+import { OpenAIChat } from './OpenAIChat';
+import { ClaudeChat } from './ClaudeChat';
+import { GrokChat } from './GrokChat';
 
 export function LLMExtensions() {
   const [activeTab, setActiveTab] = useState('deepseek');
@@ -17,18 +20,22 @@ export function LLMExtensions() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="deepseek" className="w-full" onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 mb-4">
+          <TabsList className="grid grid-cols-4 mb-4">
             <TabsTrigger value="deepseek" className="flex items-center">
               <Code className="w-4 h-4 mr-2" />
               DeepSeek
             </TabsTrigger>
-            <TabsTrigger value="openai" className="flex items-center" disabled>
+            <TabsTrigger value="openai" className="flex items-center">
               <Sparkles className="w-4 h-4 mr-2" />
-              OpenAI (Coming Soon)
+              OpenAI
             </TabsTrigger>
-            <TabsTrigger value="claude" className="flex items-center" disabled>
-              <Terminal className="w-4 h-4 mr-2" />
-              Claude (Coming Soon)
+            <TabsTrigger value="grok" className="flex items-center">
+              <Zap className="w-4 h-4 mr-2" />
+              Grok
+            </TabsTrigger>
+            <TabsTrigger value="claude" className="flex items-center">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Claude
             </TabsTrigger>
           </TabsList>
           
@@ -37,27 +44,15 @@ export function LLMExtensions() {
           </TabsContent>
           
           <TabsContent value="openai">
-            <div className="h-[500px] flex items-center justify-center bg-gray-50 rounded-lg border">
-              <div className="text-center p-6">
-                <Sparkles className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium mb-2">OpenAI Integration Coming Soon</h3>
-                <p className="text-gray-500">
-                  The OpenAI chat extension will be available in a future update.
-                </p>
-              </div>
-            </div>
+            <OpenAIChat />
+          </TabsContent>
+          
+          <TabsContent value="grok">
+            <GrokChat />
           </TabsContent>
           
           <TabsContent value="claude">
-            <div className="h-[500px] flex items-center justify-center bg-gray-50 rounded-lg border">
-              <div className="text-center p-6">
-                <Terminal className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium mb-2">Claude Integration Coming Soon</h3>
-                <p className="text-gray-500">
-                  The Claude chat extension will be available in a future update.
-                </p>
-              </div>
-            </div>
+            <ClaudeChat />
           </TabsContent>
         </Tabs>
       </CardContent>
