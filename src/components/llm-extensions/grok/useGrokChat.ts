@@ -35,6 +35,21 @@ export function useGrokChat() {
 
   const sendMessage = () => {
     if (!inputMessage.trim()) return;
+    
+    // Check if this LLM is enabled
+    const enabledLLMs = localStorage.getItem('enabledLLMs');
+    if (enabledLLMs) {
+      const parsedEnabledLLMs = JSON.parse(enabledLLMs);
+      if (!parsedEnabledLLMs.grok) {
+        toast({
+          title: "Grok is disabled",
+          description: "Please enable Grok before sending messages.",
+          variant: "destructive",
+          duration: 3000
+        });
+        return;
+      }
+    }
 
     // Add user message to chat
     const userMessage: Message = {

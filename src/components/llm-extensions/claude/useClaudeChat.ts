@@ -58,6 +58,22 @@ export function useClaudeChat() {
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
+    
+    // Check if this LLM is enabled
+    const enabledLLMs = localStorage.getItem('enabledLLMs');
+    if (enabledLLMs) {
+      const parsedEnabledLLMs = JSON.parse(enabledLLMs);
+      if (!parsedEnabledLLMs.claude) {
+        toast({
+          title: "Claude is disabled",
+          description: "Please enable Claude before sending messages.",
+          variant: "destructive",
+          duration: 3000
+        });
+        return;
+      }
+    }
+    
     if (!apiKey) {
       toast({
         title: "API Key Required",

@@ -95,6 +95,21 @@ export function useDeepSeekChat() {
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
     
+    // Check if this LLM is enabled
+    const enabledLLMs = localStorage.getItem('enabledLLMs');
+    if (enabledLLMs) {
+      const parsedEnabledLLMs = JSON.parse(enabledLLMs);
+      if (!parsedEnabledLLMs.deepseek) {
+        toast({
+          title: "DeepSeek is disabled",
+          description: "Please enable DeepSeek before sending messages.",
+          variant: "destructive",
+          duration: 3000
+        });
+        return;
+      }
+    }
+    
     if (edgeFunctionStatus === 'unavailable') {
       toast({
         title: "Service Unavailable",
