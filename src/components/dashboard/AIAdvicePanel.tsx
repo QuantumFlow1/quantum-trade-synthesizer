@@ -1,101 +1,88 @@
 
 import { useState, useEffect } from "react";
-import { AIInsights } from "../financial-advice/AIInsights";
-import { AdviceHeader } from "../financial-advice/AdviceHeader";
-import { PortfolioDiversification } from "../financial-advice/PortfolioDiversification";
-import { RiskReturnAnalysis } from "../financial-advice/RiskReturnAnalysis";
-import { Recommendations } from "../financial-advice/Recommendations";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/lib/supabase";
+import { Sparkles, AlertCircle } from "lucide-react";
+import { AIInsights } from "@/components/financial-advice/AIInsights";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 interface AIAdvicePanelProps {
   apiStatus: 'checking' | 'available' | 'unavailable';
 }
 
 export const AIAdvicePanel = ({ apiStatus }: AIAdvicePanelProps) => {
-  const [aiAdvice, setAiAdvice] = useState<string>("");
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [localApiStatus, setLocalApiStatus] = useState<'checking' | 'available' | 'unavailable'>(apiStatus);
+  const [advice, setAdvice] = useState<string>("");
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const { toast } = useToast();
-
-  // Effect to check API availability on mount
+  
+  // Automatisch advies ophalen bij het laden van de component als API beschikbaar is
   useEffect(() => {
-    setLocalApiStatus(apiStatus);
-    
-    // Check if we need to verify API status
-    if (apiStatus === 'checking') {
-      checkApiAvailability();
+    if (apiStatus === 'available' && !advice) {
+      generateAdvice();
     }
   }, [apiStatus]);
 
-  const checkApiAvailability = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('grok3-response', {
-        body: { message: "ping", context: [] }
-      });
-      
-      if (error) throw error;
-      setLocalApiStatus('available');
-    } catch (error) {
-      console.error("API availability check failed:", error);
-      setLocalApiStatus('unavailable');
-    }
-  };
-
-  const generateAIAdvice = async () => {
-    setIsLoadingAI(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('grok3-response', {
-        body: {
-          message: "Generate financial trading advice based on current market conditions. Include specific recommendations on asset allocation, risk management strategies, and market timing. Keep it under 400 characters.",
-          context: []
-        }
-      });
-      
-      if (error) throw error;
-      
-      setAiAdvice(data?.response || "Geen advies beschikbaar op dit moment");
-      
+  const generateAdvice = async () => {
+    if (apiStatus !== 'available') {
       toast({
-        title: "AI Advies Gegenereerd",
-        description: "Financieel advies is succesvol gegenereerd",
-        variant: "default",
-      });
-    } catch (error) {
-      console.error("Error generating AI advice:", error);
-      setAiAdvice("Er is een fout opgetreden bij het genereren van advies. Probeer het later opnieuw.");
-      toast({
-        title: "AI Advies Fout",
-        description: "Kon geen AI advies genereren",
+        title: "AI Service Offline",
+        description: "De AI service is momenteel niet beschikbaar. Probeer het later opnieuw.",
         variant: "destructive",
       });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-trading-advice', {
+        body: { market: "crypto", timeframe: "short" }
+      });
       
-      // If we get an error, the API might be unavailable
-      setLocalApiStatus('unavailable');
+      if (error) throw error;
+      
+      if (data && data.advice) {
+        setAdvice(data.advice);
+      }
+    } catch (error) {
+      console.error("Error generating advice:", error);
+      toast({
+        title: "Generatie Mislukt",
+        description: "Kon geen AI analyse genereren. Probeer het later opnieuw.",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoadingAI(false);
+      setIsGenerating(false);
     }
   };
 
   return (
-    <Card className="col-span-full backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-      <AdviceHeader 
-        isOnline={localApiStatus === 'available'} 
-        isLoadingAI={isLoadingAI} 
-        onGenerateAdvice={generateAIAdvice} 
-      />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-        <PortfolioDiversification />
-        <RiskReturnAnalysis />
+    <Card className="backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
+      <h2 className="text-xl font-bold mb-4 flex items-center">
+        <Sparkles className="w-5 h-5 mr-2" /> AI Trading Advies
+      </h2>
+      
+      {apiStatus === 'checking' ? (
+        <div className="flex justify-center items-center h-40">
+          <div className="animate-pulse text-muted-foreground">
+            Verbinding met AI service controleren...
+          </div>
+        </div>
+      ) : (
         <AIInsights 
-          isOnline={localApiStatus === 'available'} 
-          aiAdvice={aiAdvice} 
+          isOnline={apiStatus === 'available'} 
+          aiAdvice={advice} 
         />
-      </div>
-      <div className="mt-4">
-        <Recommendations />
-      </div>
+      )}
+      
+      {apiStatus === 'unavailable' && (
+        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-md flex items-center text-sm">
+          <AlertCircle className="w-4 h-4 text-red-400 mr-2 flex-shrink-0" />
+          <span>
+            AI service is momenteel niet beschikbaar. Controleer uw API sleutel of probeer het later opnieuw.
+          </span>
+        </div>
+      )}
     </Card>
   );
 };
