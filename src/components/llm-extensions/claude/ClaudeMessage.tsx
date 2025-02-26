@@ -12,6 +12,8 @@ export function ClaudeMessage({ message }: ClaudeMessageProps) {
     ? message.timestamp 
     : new Date(message.timestamp);
     
+  console.log('Rendering Claude message:', message);
+    
   return (
     <div 
       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}

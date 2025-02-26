@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Message } from '../deepseek/types';
+import { generateClaudeResponse } from '@/components/chat/services/claudeService';
 
 export function useClaudeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -34,12 +35,19 @@ export function useClaudeChat() {
     }
   }, [messages]);
 
+  // Save API key to localStorage when it changes
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem('claudeApiKey', apiKey);
+    }
+  }, [apiKey]);
+
   // Generate a unique ID for messages
   const generateId = () => {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
   };
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!inputMessage.trim()) return;
     if (!apiKey) {
       toast({
@@ -64,25 +72,62 @@ export function useClaudeChat() {
     setInputMessage('');
     setIsLoading(true);
 
-    // Simulate API call with timeout
-    setTimeout(() => {
-      // Add assistant response indicating functionality is coming soon
+    try {
+      // Convert messages to the format expected by the Claude API
+      const conversationHistory = newMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      // Call the Claude API with the chat history
+      const response = await generateClaudeResponse(
+        inputMessage, 
+        conversationHistory,
+        { 
+          selectedModel: 'claude', 
+          apiKeys: { claudeApiKey: apiKey },
+          temperature: 0.7,
+          maxTokens: 1000
+        }
+      );
+
+      // Add assistant response to chat
       const assistantMessage: Message = {
         id: generateId(),
         role: 'assistant',
-        content: "Claude integration is coming soon! This is a placeholder response. The actual API integration is under development.",
+        content: response,
         timestamp: new Date(),
       };
 
       setMessages([...newMessages, assistantMessage]);
-      setIsLoading(false);
       
       toast({
         title: "Response received",
-        description: "Placeholder response from Claude.",
+        description: "Claude has responded to your message.",
         duration: 3000,
       });
-    }, 1000);
+    } catch (error) {
+      console.error("Claude API error:", error);
+      
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: generateId(),
+        role: 'assistant',
+        content: `Error: ${error instanceof Error ? error.message : "Failed to get response from Claude API"}`,
+        timestamp: new Date(),
+      };
+      
+      setMessages([...newMessages, errorMessage]);
+      
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to get response from Claude API",
+        variant: "destructive",
+        duration: 5000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const clearChat = () => {

@@ -1,47 +1,79 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/components/ui/use-toast';
 
 interface ClaudeSettingsProps {
+  apiKey: string;
+  setApiKey: (key: string) => void;
   onClose: () => void;
 }
 
-export function ClaudeSettings({ onClose }: ClaudeSettingsProps) {
-  const [apiKey, setApiKey] = useState(() => {
-    const savedApiKey = localStorage.getItem('claudeApiKey');
-    return savedApiKey || '';
-  });
+export function ClaudeSettings({ apiKey, setApiKey, onClose }: ClaudeSettingsProps) {
+  const [inputKey, setInputKey] = useState(apiKey);
 
   const saveSettings = () => {
-    localStorage.setItem('claudeApiKey', apiKey);
-    onClose();
+    if (!inputKey.trim()) {
+      toast({
+        title: "API key required",
+        description: "Please enter your Claude API key",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setApiKey(inputKey);
+    localStorage.setItem('claudeApiKey', inputKey);
     
-    // Show success message
-    console.log("Claude API key saved");
+    toast({
+      title: "Settings saved",
+      description: "Your Claude API key has been saved",
+      duration: 3000,
+    });
+    
+    onClose();
   };
 
   return (
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <h3 className="text-sm font-medium mb-2">Claude API Settings</h3>
-      <div className="space-y-4">
-        <div>
-          <label className="text-sm text-gray-700 block mb-1">API Key</label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="w-full p-2 border rounded"
-            placeholder="Enter your Claude API key"
-          />
-        </div>
-        <div className="flex justify-end space-x-2">
-          <Button onClick={onClose} variant="outline" size="sm">
-            Cancel
-          </Button>
-          <Button onClick={saveSettings} size="sm">
-            Save Settings
-          </Button>
-        </div>
+    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+      <div>
+        <h3 className="text-lg font-medium mb-2">Claude API Settings</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Enter your Claude API key to use the Claude assistant. You can get an API key from 
+          <a 
+            href="https://claude.ai/console" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-green-600 hover:underline ml-1"
+          >
+            Claude Console
+          </a>.
+        </p>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="claude-api-key">Claude API Key</Label>
+        <Input
+          id="claude-api-key"
+          type="password"
+          placeholder="Enter your Claude API key"
+          value={inputKey}
+          onChange={(e) => setInputKey(e.target.value)}
+        />
+      </div>
+      
+      <div className="flex justify-end space-x-2 pt-2">
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button 
+          onClick={saveSettings}
+          className="bg-green-600 hover:bg-green-700"
+        >
+          Save Settings
+        </Button>
       </div>
     </div>
   );

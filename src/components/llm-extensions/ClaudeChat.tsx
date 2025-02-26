@@ -15,6 +15,8 @@ export function ClaudeChat() {
     inputMessage,
     isLoading,
     showSettings,
+    apiKey,
+    setApiKey,
     setInputMessage,
     sendMessage,
     clearChat,
@@ -30,6 +32,18 @@ export function ClaudeChat() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  // Log messages for debugging
+  useEffect(() => {
+    console.log('Claude chat messages:', messages);
+  }, [messages]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
   return (
     <Card className="w-full h-[500px] flex flex-col shadow-lg">
@@ -60,7 +74,11 @@ export function ClaudeChat() {
       
       <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4">
         {showSettings ? (
-          <ClaudeSettings onClose={() => setShowSettings(false)} />
+          <ClaudeSettings 
+            apiKey={apiKey} 
+            setApiKey={setApiKey} 
+            onClose={() => setShowSettings(false)} 
+          />
         ) : messages.length === 0 ? (
           <ClaudeEmptyState />
         ) : (
@@ -79,12 +97,7 @@ export function ClaudeChat() {
             placeholder="Type your message..."
             className="flex-1 resize-none"
             disabled={isLoading}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
+            onKeyDown={handleKeyDown}
           />
           <Button 
             onClick={sendMessage} 
