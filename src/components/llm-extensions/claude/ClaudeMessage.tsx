@@ -22,8 +22,8 @@ export function ClaudeMessage({ message }: ClaudeMessageProps) {
       <div 
         className={`rounded-lg px-4 py-2 max-w-[85%] flex ${
           message.role === 'user' 
-            ? 'bg-green-600 text-white' 
-            : 'bg-gray-100 border border-gray-200'
+            ? 'bg-green-600 text-white border-0' 
+            : 'bg-secondary border-0'
         }`}
       >
         <div className={`mr-2 mt-1 ${message.role === 'user' ? 'text-white' : 'text-green-600'}`}>

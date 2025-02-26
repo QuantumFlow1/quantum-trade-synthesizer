@@ -61,8 +61,8 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
             <div 
               className={`rounded-lg px-5 py-3 max-w-[85%] flex ${
                 message.role === 'user' 
-                  ? 'bg-indigo-600 text-white' 
-                  : 'bg-white border border-gray-200 shadow-sm'
+                  ? 'bg-indigo-600 text-white border-0' 
+                  : 'bg-secondary border-0 shadow-sm'
               }`}
             >
               <div className={`mr-3 mt-1 ${message.role === 'user' ? 'text-white' : 'text-indigo-600'}`}>
