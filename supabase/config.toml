@@ -12,6 +12,17 @@ port = 54322
 [studio]
 port = 54323
 
-[[functions]]
-name = "deepseek-response"
+[functions.deepseek-response]
+verify_jwt = false
+
+[functions.openai-response]
+verify_jwt = false
+
+[functions.claude-response]
+verify_jwt = false
+
+[functions.gemini-response]
+verify_jwt = false
+
+[functions.grok3-response]
 verify_jwt = false
