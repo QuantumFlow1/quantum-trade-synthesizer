@@ -56,7 +56,9 @@ export function useGrokChat() {
       // Create and add user message
       const userMessage = createChatMessage('user', messageContent);
       console.log('Adding user message:', userMessage);
-      setMessages(prev => [...prev, userMessage]);
+      
+      // Update messages state with user message
+      setMessages(prevMessages => [...prevMessages, userMessage]);
       setInputMessage('');
 
       // If Grok3 API availability is unknown, check it
@@ -78,7 +80,7 @@ export function useGrokChat() {
       // Add assistant response to chat
       const assistantMessage = createChatMessage('assistant', response);
       console.log('Adding assistant message:', assistantMessage);
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prevMessages => [...prevMessages, assistantMessage]);
       
       toast({
         title: "Response received",

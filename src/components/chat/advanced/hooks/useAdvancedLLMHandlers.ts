@@ -49,11 +49,14 @@ export const createAdvancedLLMHandlers = (
     
     state.setIsGenerating(true);
     
-    // Add user message to conversation
-    const userMessage = { role: "user", content };
-    state.setMessages(prev => [...prev, userMessage]);
-    
     try {
+      // Add user message to conversation immediately
+      const userMessage = { role: "user", content };
+      state.setMessages(prev => [...prev, userMessage]);
+      
+      // Clear input field right away
+      state.setInputMessage("");
+      
       // Update settings before sending message
       const updatedSettings = {
         ...state.grokSettings,
@@ -61,12 +64,6 @@ export const createAdvancedLLMHandlers = (
         temperature: state.temperature,
         maxTokens: state.maxTokens
       };
-      
-      // Prepare the conversation history for the API
-      const conversationHistory = state.messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
       
       console.log("Generating response with model:", state.selectedModel);
       console.log("Temperature:", state.temperature);
@@ -78,24 +75,8 @@ export const createAdvancedLLMHandlers = (
       // Use the API integration from useGrokChat
       await state.sendGrokMessage(content);
       
-      // Get the last message - should be the AI response
-      // This is a workaround since sendGrokMessage doesn't return the response directly
-      setTimeout(() => {
-        const messages = document.querySelectorAll('.chat-message');
-        if (messages.length > 0) {
-          const lastMessage = messages[messages.length - 1];
-          const responseText = lastMessage.textContent || "Response received from AI";
-          
-          // Add to history
-          state.setHistory(prev => [
-            { task: content, output: responseText },
-            ...prev
-          ]);
-        }
-      }, 500);
-      
-      // Clear input if it was successful
-      state.setInputMessage("");
+      // Note: The actual AI response will be added to the messages array 
+      // by the useGrokChat hook, so we don't need to manually add it here
       
       toast({
         title: "Response Generated",
