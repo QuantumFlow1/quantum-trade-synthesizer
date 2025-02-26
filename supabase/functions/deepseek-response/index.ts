@@ -1,95 +1,141 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
+// Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
+
+// Deepseek API URL
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions'
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    console.log('Handling CORS preflight request')
+    return new Response(null, { headers: corsHeaders })
   }
 
-  // Basic health check
   if (req.method === 'GET') {
-    console.log('Health check for DeepSeek API');
+    // Simple health check
+    console.log('Health check requested')
     return new Response(
-      JSON.stringify({ status: 'available', message: 'DeepSeek API ready' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      JSON.stringify({ status: 'ok', message: 'DeepSeek Edge Function is running' }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
   }
 
   try {
-    const { message, context = [], model = 'deepseek-coder', maxTokens = 1024, temperature = 0.7, apiKey } = await req.json();
+    // Parse request JSON
+    const { message, context, model, maxTokens, temperature, apiKey } = await req.json()
     
-    // Use the provided API key or fallback to environment variable
-    const deepseekApiKey = apiKey || Deno.env.get('DEEPSEEK_API_KEY');
+    // Log request information (without API key)
+    console.log('DeepSeek request:', { 
+      messageLength: message?.length, 
+      contextLength: context?.length,
+      model, 
+      maxTokens, 
+      temperature
+    })
+
+    // Validate required fields
+    if (!message) {
+      throw new Error('Message is required')
+    }
     
-    if (!deepseekApiKey) {
-      console.error('DeepSeek API key is missing');
-      return new Response(
-        JSON.stringify({ error: 'DeepSeek API key is required. Please provide it in your settings.' }), 
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (!apiKey) {
+      throw new Error('DeepSeek API key is required')
     }
 
-    console.log(`Processing DeepSeek request with model: ${model}`);
+    // Prepare the conversation history in the format DeepSeek expects
+    const messages = context && context.length > 0 
+      ? context
+      : [{ role: 'user', content: message }]
     
-    // Format the messages for DeepSeek API format
-    const messages = [
-      ...context.map((msg: { role: string; content: string }) => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
-        content: msg.content
-      })),
-      { role: 'user', content: message }
-    ];
+    // If the last message isn't the current message, add it
+    const lastMsg = messages[messages.length - 1]
+    if (lastMsg.role !== 'user' || lastMsg.content !== message) {
+      messages.push({ role: 'user', content: message })
+    }
 
-    // DeepSeek API endpoint
-    const endpoint = model.includes('chat') 
-      ? 'https://api.deepseek.com/v1/chat/completions' 
-      : 'https://api.deepseek.com/v1/completions';
+    // Default to deepseek-coder if model not specified
+    const deepseekModel = model || 'deepseek-coder'
+    
+    // Prepare request to DeepSeek API
+    const deepseekRequest = {
+      model: deepseekModel,
+      messages: messages,
+      max_tokens: maxTokens || 1000,
+      temperature: temperature || 0.7
+    }
 
-    console.log(`Using DeepSeek endpoint: ${endpoint}`);
+    console.log(`Making request to DeepSeek API with model: ${deepseekModel}`)
     
     // Make request to DeepSeek API
-    const response = await fetch(endpoint, {
+    const response = await fetch(DEEPSEEK_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${deepseekApiKey}`
+        'Authorization': `Bearer ${apiKey}`
       },
-      body: JSON.stringify({
-        model: model.includes('chat') ? 'deepseek-chat' : 'deepseek-coder',
-        messages,
-        max_tokens: maxTokens,
-        temperature,
-      }),
-    });
+      body: JSON.stringify(deepseekRequest)
+    })
 
+    // Parse response from DeepSeek
+    const data = await response.json()
+    
+    // Log response status
+    console.log('DeepSeek API response status:', response.status)
+    
+    // Handle errors from the DeepSeek API
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('DeepSeek API Error:', errorData);
-      throw new Error(`DeepSeek API error: ${errorData.error?.message || 'Unknown error'}`);
+      console.error('DeepSeek API error:', data)
+      return new Response(
+        JSON.stringify({ 
+          error: `DeepSeek API error: ${data.error?.message || 'Unknown error'}` 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: response.status 
+        }
+      )
     }
 
-    const data = await response.json();
-    console.log('DeepSeek response received', data);
-    
-    // Extract the response text
-    const responseText = data.choices[0]?.message?.content || data.choices[0]?.text || '';
-    
+    // Extract the response content from DeepSeek's response structure
+    const responseText = data.choices && data.choices[0] 
+      ? data.choices[0].message.content 
+      : null
+
+    if (!responseText) {
+      throw new Error('No response content received from DeepSeek API')
+    }
+
+    // Log success (truncated for brevity)
+    console.log('DeepSeek response received:', responseText.substring(0, 100) + '...')
+
+    // Return the successful response
     return new Response(
       JSON.stringify({ response: responseText }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
+    )
   } catch (error) {
-    console.error('Error in DeepSeek function:', error);
+    // Log and handle any errors that occur
+    console.error('DeepSeek Edge Function error:', error.message)
     return new Response(
-      JSON.stringify({ error: error.message || 'An error occurred while processing your request' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      JSON.stringify({ 
+        error: `Error processing DeepSeek request: ${error.message}` 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500 
+      }
+    )
   }
-});
+})

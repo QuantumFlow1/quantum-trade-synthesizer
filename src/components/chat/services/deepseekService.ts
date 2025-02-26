@@ -18,19 +18,10 @@ export const generateDeepSeekResponse = async (
   console.log(`DeepSeek: Using model ${model}`);
   
   try {
-    // First check if the DeepSeek API is available
-    const healthCheck = await supabase.functions.invoke('deepseek-response', {
-      method: 'GET'
-    });
+    // Skip the health check for now as it might be causing issues
+    // Directly make the request to the DeepSeek Edge Function
+    console.log('Making direct request to DeepSeek Edge Function...');
     
-    if (healthCheck.error) {
-      console.error('DeepSeek API health check failed:', healthCheck.error);
-      throw new Error('DeepSeek service is currently unavailable. Please try again later.');
-    }
-    
-    console.log('DeepSeek API health check:', healthCheck.data);
-    
-    // Now make the actual request
     const deepseekResult = await supabase.functions.invoke('deepseek-response', {
       body: { 
         message: inputMessage,
@@ -42,15 +33,30 @@ export const generateDeepSeekResponse = async (
       }
     });
     
+    console.log('DeepSeek response status:', deepseekResult.error ? 'Error' : 'Success');
+    
     if (!deepseekResult.error && deepseekResult.data?.response) {
       console.log('DeepSeek response received:', deepseekResult.data.response.substring(0, 100) + '...');
       return deepseekResult.data.response;
     } else {
-      console.error('DeepSeek API error:', deepseekResult.error || deepseekResult.data?.error);
-      throw deepseekResult.error || new Error(deepseekResult.data?.error || 'Geen antwoord van DeepSeek API');
+      // Log detailed error information
+      console.error('DeepSeek API error details:', {
+        error: deepseekResult.error,
+        data: deepseekResult.data,
+        statusCode: deepseekResult.status
+      });
+      
+      throw new Error(
+        deepseekResult.error?.message || 
+        deepseekResult.data?.error || 
+        'Geen antwoord van DeepSeek API. Controleer of uw API-sleutel correct is.'
+      );
     }
   } catch (error) {
     console.error('Exception calling DeepSeek:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', error.message, error.stack);
+    }
     throw error;
   }
 };
