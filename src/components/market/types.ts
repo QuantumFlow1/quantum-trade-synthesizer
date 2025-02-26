@@ -17,7 +17,7 @@ export interface MarketData {
   change24h?: number;
   high24h?: number;
   low24h?: number;
-  symbol: string; // Added the missing symbol property
+  symbol: string; // Ensuring symbol property is here
 }
 
 export interface TradeOrder {
@@ -58,7 +58,7 @@ export interface SecureTransaction {
   maxPriorityFeePerGas?: string;
 }
 
-// Add missing ChartData interface
+// ChartData interface definition
 export interface ChartData {
   name: string;
   price: number;
