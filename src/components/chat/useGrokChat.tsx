@@ -58,13 +58,7 @@ export function useGrokChat() {
       const userMessage = createChatMessage('user', messageContent);
       console.log('Adding user message:', userMessage);
       
-      // Update messages state with user message
-      setMessages(prevMessages => {
-        console.log('Previous messages:', prevMessages);
-        const newMessages = [...prevMessages, userMessage];
-        console.log('New messages after adding user message:', newMessages);
-        return newMessages;
-      });
+      setMessages(prevMessages => [...prevMessages, userMessage]);
       setInputMessage('');
 
       // If Grok3 API availability is unknown, check it
@@ -82,30 +76,44 @@ export function useGrokChat() {
       
       console.log('Conversation history for API:', conversationHistory);
       
-      const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable !== false, grokSettings);
-      console.log('Received AI response:', response);
-      
-      if (!response) {
-        console.error('Empty response received from AI');
-        throw new Error('Empty response received from AI');
+      try {
+        const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable !== false, grokSettings);
+        console.log('Received AI response:', response);
+        
+        if (!response) {
+          console.error('Empty response received from AI');
+          throw new Error('Empty response received from AI');
+        }
+        
+        // Add assistant response to chat
+        const assistantMessage = createChatMessage('assistant', response);
+        console.log('Adding assistant message:', assistantMessage);
+        
+        setMessages(prevMessages => [...prevMessages, assistantMessage]);
+        
+        toast({
+          title: "Response received",
+          description: "The AI has responded to your message.",
+          duration: 3000
+        });
+      } catch (apiError) {
+        console.error('Error getting AI response:', apiError);
+        
+        // Add error message to chat
+        const errorMessage = createChatMessage(
+          'assistant',
+          'Er is een fout opgetreden bij het genereren van een antwoord. Probeer het later opnieuw.'
+        );
+        
+        setMessages(prevMessages => [...prevMessages, errorMessage]);
+        
+        toast({
+          title: "Error generating response",
+          description: apiError instanceof Error ? apiError.message : "Failed to generate a response",
+          variant: "destructive",
+          duration: 5000
+        });
       }
-      
-      // Add assistant response to chat
-      const assistantMessage = createChatMessage('assistant', response);
-      console.log('Adding assistant message:', assistantMessage);
-      
-      setMessages(prevMessages => {
-        console.log('Previous messages before adding AI response:', prevMessages);
-        const newMessages = [...prevMessages, assistantMessage];
-        console.log('New messages after adding AI response:', newMessages);
-        return newMessages;
-      });
-      
-      toast({
-        title: "Response received",
-        description: "The AI has responded to your message.",
-        duration: 3000
-      });
       
     } catch (error) {
       console.error('Error in chat process:', error);
@@ -118,11 +126,7 @@ export function useGrokChat() {
       
       console.log('Adding error message to chat:', errorMessage);
       
-      setMessages(prev => {
-        const newMessages = [...prev, errorMessage];
-        console.log('Messages after adding error message:', newMessages);
-        return newMessages;
-      });
+      setMessages(prev => [...prev, errorMessage]);
       
       // Show error toast
       toast({

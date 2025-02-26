@@ -18,8 +18,7 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    console.log("Messages updated in ChatMessages component, count:", messages.length);
-    console.log("Message details:", messages.map(m => ({id: m.id, role: m.role, contentLength: m.content?.length || 0})));
+    console.log("Messages updated in ChatMessages component:", messages);
     
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -37,18 +36,14 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
   }
 
   return (
-    <>
+    <div className="space-y-4">
       {messages.map((message) => {
         // Make sure timestamp is a Date object
         const timestamp = message.timestamp instanceof Date 
           ? message.timestamp 
           : new Date(message.timestamp);
           
-        console.log(`Rendering message: ${message.id}, role: ${message.role}, content:`, message.content);
-        
-        if (!message.content) {
-          console.warn(`Message ${message.id} has empty content!`);
-        }
+        console.log(`Rendering message: ${message.id}, role: ${message.role}, content length:`, message.content?.length);
         
         return (
           <div 
@@ -82,6 +77,6 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
         );
       })}
       <div ref={messagesEndRef} />
-    </>
+    </div>
   );
 }

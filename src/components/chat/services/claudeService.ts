@@ -7,7 +7,7 @@ export const generateClaudeResponse = async (
   conversationHistory: Array<{ role: string; content: string }>,
   settings?: GrokSettings
 ) => {
-  console.log('Using Claude API...');
+  console.log('Using Claude API...', { inputMessage, settings });
   const claudeResult = await supabase.functions.invoke('claude-response', {
     body: { 
       message: inputMessage,
@@ -19,6 +19,7 @@ export const generateClaudeResponse = async (
   });
   
   if (!claudeResult.error && claudeResult.data?.response) {
+    console.log('Claude response received:', claudeResult.data.response.substring(0, 100) + '...');
     return claudeResult.data.response;
   } else {
     console.error('Claude API error:', claudeResult.error);

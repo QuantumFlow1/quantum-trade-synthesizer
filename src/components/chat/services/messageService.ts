@@ -11,12 +11,14 @@ import { GrokSettings, ModelId } from '../types/GrokSettings';
 
 // Create a properly formatted chat message
 export const createChatMessage = (role: 'user' | 'assistant', content: string): ChatMessage => {
-  return {
+  const newMessage = {
     id: uuidv4(),
     role,
     content: content || "Error: Empty message content",
     timestamp: new Date(),
   };
+  console.log(`Created new ${role} message:`, newMessage);
+  return newMessage;
 };
 
 // Main function to generate AI response based on available services and selected model

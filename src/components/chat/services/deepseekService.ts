@@ -7,7 +7,7 @@ export const generateDeepSeekResponse = async (
   conversationHistory: Array<{ role: string; content: string }>,
   settings?: GrokSettings
 ) => {
-  console.log('Using DeepSeek API...');
+  console.log('Using DeepSeek API...', { inputMessage, settings });
   const deepseekResult = await supabase.functions.invoke('deepseek-response', {
     body: { 
       message: inputMessage,
@@ -19,6 +19,7 @@ export const generateDeepSeekResponse = async (
   });
   
   if (!deepseekResult.error && deepseekResult.data?.response) {
+    console.log('DeepSeek response received:', deepseekResult.data.response.substring(0, 100) + '...');
     return deepseekResult.data.response;
   } else {
     console.error('DeepSeek API error:', deepseekResult.error);

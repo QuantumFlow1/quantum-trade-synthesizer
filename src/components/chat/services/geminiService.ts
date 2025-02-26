@@ -7,7 +7,7 @@ export const generateGeminiResponse = async (
   conversationHistory: Array<{ role: string; content: string }>,
   settings?: GrokSettings
 ) => {
-  console.log('Using Gemini API...');
+  console.log('Using Gemini API...', { inputMessage, settings });
   const geminiResult = await supabase.functions.invoke('gemini-response', {
     body: { 
       message: inputMessage,
@@ -19,6 +19,7 @@ export const generateGeminiResponse = async (
   });
   
   if (!geminiResult.error && geminiResult.data?.response) {
+    console.log('Gemini response received:', geminiResult.data.response.substring(0, 100) + '...');
     return geminiResult.data.response;
   } else {
     console.error('Gemini API error:', geminiResult.error);

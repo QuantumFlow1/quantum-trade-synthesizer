@@ -24,7 +24,7 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
       e.preventDefault();
-      console.log("Sending message with Enter key:", inputMessage);
+      console.log("Enter key pressed, sending message:", inputMessage);
       if (inputMessage.trim()) {
         sendMessage();
       }
@@ -33,7 +33,7 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
 
   const handleSendClick = () => {
     if (inputMessage.trim() && !isLoading) {
-      console.log("Sending message with button click:", inputMessage);
+      console.log("Send button clicked, sending message:", inputMessage);
       sendMessage();
     }
   };
