@@ -9,35 +9,59 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
   inputMessage,
   setInputMessage,
   messages,
-  selectedModelName
+  selectedModelName,
+  onSendMessage
 }) => {
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputMessage.trim()) {
+      onSendMessage();
+    }
+  };
+
   return (
     <div className="flex-1 p-4 flex flex-col">
       <h2 className="text-lg font-bold mb-4">Content Generation</h2>
-      <Textarea
-        className="w-full flex-grow mb-4 min-h-[100px]"
-        value={inputMessage}
-        onChange={(e) => setInputMessage(e.target.value)}
-        placeholder="Enter your prompt here..."
-      />
-      <div className="flex justify-end mb-4">
-        <Button className="flex items-center gap-2">
-          <Send className="h-4 w-4" />
-          <span>Send</span>
-        </Button>
-      </div>
+      <form onSubmit={handleSubmit} className="flex-grow flex flex-col">
+        <Textarea
+          className="w-full flex-grow mb-4 min-h-[100px]"
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
+          placeholder="Enter your prompt here..."
+        />
+        <div className="flex justify-end mb-4">
+          <Button 
+            type="submit" 
+            className="flex items-center gap-2"
+            disabled={!inputMessage.trim()}
+          >
+            <Send className="h-4 w-4" />
+            <span>Send</span>
+          </Button>
+        </div>
+      </form>
       <div className="p-4 border rounded-md bg-gray-50 min-h-[200px] max-h-[400px] overflow-y-auto">
         {messages.length > 0 ? (
-          <div>
+          <div className="space-y-4">
             {messages.map((message, index) => (
-              <div key={index} className={`mb-4 ${message.role === 'user' ? 'text-blue-600' : 'text-gray-800'}`}>
-                <strong>{message.role === 'user' ? 'You: ' : `${selectedModelName}: `}</strong>
-                <span>{message.content}</span>
+              <div 
+                key={index} 
+                className={`p-3 rounded-lg ${
+                  message.role === 'user' 
+                    ? 'bg-blue-100 ml-auto mr-0 max-w-[80%]' 
+                    : 'bg-gray-100 ml-0 mr-auto max-w-[80%]'
+                }`}
+              >
+                <p className="font-semibold text-sm">
+                  {message.role === 'user' ? 'You' : selectedModelName}
+                </p>
+                <p className="text-sm">{message.content}</p>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 italic">Results will be displayed here...</p>
+          <p className="text-gray-500 italic text-center">Results will be displayed here...</p>
         )}
       </div>
     </div>

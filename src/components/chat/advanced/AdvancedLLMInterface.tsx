@@ -26,6 +26,7 @@ export default function AdvancedLLMInterface() {
   const [messages, setMessages] = useState<Array<{role: string; content: string}>>([]);
   const [task, setTask] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   // Handle model selection changes
   const handleModelChange = (model: string) => {
@@ -53,15 +54,40 @@ export default function AdvancedLLMInterface() {
       return;
     }
     
+    generateResponse();
+  };
+  
+  // Handle send message
+  const handleSendMessage = () => {
+    if (!inputMessage.trim()) return;
+    
     // Add user message to conversation
     setMessages((prev) => [
       ...prev, 
-      { role: "user", content: inputMessage || task }
+      { role: "user", content: inputMessage }
     ]);
+    
+    generateResponse();
+  };
+  
+  // Generate AI response
+  const generateResponse = () => {
+    setIsGenerating(true);
+    
+    // Use the input message or task as the prompt
+    const prompt = inputMessage || task;
+    
+    // If we're using the task, add it to messages
+    if (!inputMessage && task) {
+      setMessages((prev) => [
+        ...prev, 
+        { role: "user", content: task }
+      ]);
+    }
     
     // Simulate AI response for demonstration
     setTimeout(() => {
-      const responseText = "This is a simulated AI response. In a real implementation, this would come from the AI model API based on your input message and parameters.";
+      const responseText = `This is a simulated response from ${selectedModel} using temperature ${temperature} and max tokens ${maxTokens}. In a real implementation, this would come from the AI model API based on your input message and parameters.`;
       
       // Add AI response to conversation
       setMessages((prev) => [
@@ -71,12 +97,13 @@ export default function AdvancedLLMInterface() {
       
       // Add to history
       setHistory((prev) => [
-        { task: task || inputMessage, output: responseText },
+        { task: prompt, output: responseText },
         ...prev,
       ]);
       
       // Clear input
       setInputMessage("");
+      setIsGenerating(false);
     }, 1500);
   };
   
@@ -117,7 +144,7 @@ export default function AdvancedLLMInterface() {
             maxTokens={maxTokens}
             setMaxTokens={setMaxTokens}
             handleGenerate={handleGenerate}
-            isLoading={isLoading}
+            isLoading={isLoading || isGenerating}
           />
         </div>
         
@@ -128,6 +155,7 @@ export default function AdvancedLLMInterface() {
             setInputMessage={setInputMessage}
             messages={messages}
             selectedModelName={selectedModelName}
+            onSendMessage={handleSendMessage}
           />
           
           <HistorySection history={history} />
