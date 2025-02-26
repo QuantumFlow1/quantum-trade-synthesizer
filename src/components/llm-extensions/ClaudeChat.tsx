@@ -16,7 +16,7 @@ export function ClaudeChat() {
     isLoading,
     showSettings,
     apiKey,
-    saveApiKey, // Changed from setApiKey to saveApiKey to match the hook's return value
+    saveApiKey,
     setInputMessage,
     sendMessage,
     clearChat,
@@ -26,16 +26,16 @@ export function ClaudeChat() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Debug logging for messages
+  useEffect(() => {
+    console.log('Claude chat current messages:', messages);
+  }, [messages]);
+
   // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages]);
-
-  // Log messages for debugging
-  useEffect(() => {
-    console.log('Claude chat messages:', messages);
   }, [messages]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -72,19 +72,26 @@ export function ClaudeChat() {
         </div>
       </CardHeader>
       
-      <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4">
+      <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4 relative">
         {showSettings ? (
           <ClaudeSettings 
             apiKey={apiKey} 
-            setApiKey={saveApiKey} // Changed to use saveApiKey here too
+            setApiKey={saveApiKey}
             onClose={() => setShowSettings(false)} 
           />
         ) : messages.length === 0 ? (
           <ClaudeEmptyState />
         ) : (
-          messages.map((message) => (
-            <ClaudeMessage key={message.id} message={message} />
-          ))
+          <>
+            {messages.map((message) => (
+              <ClaudeMessage key={message.id} message={message} />
+            ))}
+            {isLoading && (
+              <div className="flex justify-center items-center py-2">
+                <Loader2 className="h-6 w-6 animate-spin text-green-500" />
+              </div>
+            )}
+          </>
         )}
         <div ref={messagesEndRef} />
       </CardContent>
