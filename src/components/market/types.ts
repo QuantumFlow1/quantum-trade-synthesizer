@@ -36,4 +36,23 @@ export interface TokenData {
   balance: string;
   network: string;
   address: string;
+  verified: boolean;  // Indicates if token is verified/trusted
+  decimals: number;   // Token decimals for accurate calculations
+  tokenType?: 'ERC20' | 'ERC721' | 'ERC1155' | 'BEP20' | 'Other';
+}
+
+export interface SecureTransaction {
+  hash: string;
+  nonce: number;
+  from: string;
+  to: string;
+  value: string;
+  data?: string;
+  signature?: string;
+  status: 'pending' | 'confirmed' | 'failed';
+  timestamp: number;
+  gasLimit?: string;
+  gasPrice?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
 }
