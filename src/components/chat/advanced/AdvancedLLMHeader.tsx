@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getModelDisplayName } from './utils';
@@ -15,6 +15,21 @@ const AdvancedLLMHeader: React.FC<AdvancedLLMHeaderProps> = ({
 }) => {
   // Get the display name for the model
   const modelDisplayName = getModelDisplayName(selectedModelName);
+  
+  // Update document title to show the model name
+  useEffect(() => {
+    // Store the original title to restore later
+    const originalTitle = document.title;
+    
+    // Set the document title with the model name
+    document.title = `${modelDisplayName} Interface`;
+    console.log("Updated document title to:", document.title);
+    
+    // Restore original title when component unmounts
+    return () => {
+      document.title = originalTitle;
+    };
+  }, [modelDisplayName]);
   
   return (
     <div className="flex items-center justify-between px-6 py-4 bg-primary text-primary-foreground">
