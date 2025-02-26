@@ -7,10 +7,20 @@ export const generateClaudeResponse = async (
   conversationHistory: Array<{ role: string; content: string }>,
   settings?: GrokSettings
 ) => {
-  console.log('Using Claude API...', { inputMessage, settings });
+  console.log('Starting Claude API request...', { 
+    messageLength: inputMessage.length,
+    historyLength: conversationHistory.length
+  });
   
-  // Extract the Claude API key from settings if available
-  const apiKey = settings?.apiKeys?.claudeApiKey;
+  // Check for API key in both settings and localStorage
+  const apiKey = settings?.apiKeys?.claudeApiKey || localStorage.getItem('claudeApiKey');
+  
+  if (!apiKey) {
+    console.error('Claude API key not found in settings or localStorage');
+    throw new Error('Claude API key not found');
+  }
+  
+  console.log('Calling Claude API with key:', apiKey ? 'present' : 'not found');
   
   const claudeResult = await supabase.functions.invoke('claude-response', {
     body: { 
@@ -19,7 +29,7 @@ export const generateClaudeResponse = async (
       model: settings?.selectedModel,
       maxTokens: settings?.maxTokens,
       temperature: settings?.temperature,
-      apiKey: apiKey // Pass the API key to the function
+      apiKey: apiKey
     }
   });
   
@@ -31,3 +41,4 @@ export const generateClaudeResponse = async (
     throw claudeResult.error || new Error('Geen antwoord van Claude API');
   }
 };
+
