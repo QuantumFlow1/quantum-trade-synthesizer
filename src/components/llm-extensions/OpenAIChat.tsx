@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, SendIcon, Loader2, User, Settings, Trash2 } from 'lucide-react';
+import { Bot, SendIcon, Loader2, User, Settings, Trash2, Sparkles } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
 
