@@ -1,15 +1,20 @@
 
 import { supabase } from '@/lib/supabase';
+import { GrokSettings } from '../types/GrokSettings';
 
 export const generateGeminiResponse = async (
   inputMessage: string,
-  conversationHistory: Array<{ role: string; content: string }>
+  conversationHistory: Array<{ role: string; content: string }>,
+  settings?: GrokSettings
 ) => {
   console.log('Using Gemini API...');
   const geminiResult = await supabase.functions.invoke('gemini-response', {
     body: { 
       message: inputMessage,
-      context: conversationHistory
+      context: conversationHistory,
+      model: settings?.selectedModel,
+      maxTokens: settings?.maxTokens,
+      temperature: settings?.temperature
     }
   });
   
