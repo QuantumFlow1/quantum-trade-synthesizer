@@ -9,31 +9,10 @@ interface ClaudeMessageProps {
 export function ClaudeMessage({ message }: ClaudeMessageProps) {
   console.log('Rendering Claude message:', message);
 
-  // Handle different timestamp formats (either Date object or custom object from logs)
-  let timestamp: Date;
-  
-  if (message.timestamp instanceof Date) {
-    timestamp = message.timestamp;
-  } else if (typeof message.timestamp === 'string') {
-    timestamp = new Date(message.timestamp);
-  } else if (typeof message.timestamp === 'object' && message.timestamp !== null) {
-    // Check if it's a custom Date object with _type property
-    const customDate = message.timestamp as any;
-    if (customDate._type === 'Date') {
-      // Handle the special case seen in logs where timestamp is an object
-      timestamp = new Date(
-        customDate.value?.iso || 
-        customDate.value?.local || 
-        Date.now()
-      );
-    } else {
-      // Fallback
-      timestamp = new Date();
-    }
-  } else {
-    // Fallback
-    timestamp = new Date();
-  }
+  // Make sure timestamp is a Date object
+  const timestamp = message.timestamp instanceof Date 
+    ? message.timestamp 
+    : new Date(message.timestamp);
     
   return (
     <div 
