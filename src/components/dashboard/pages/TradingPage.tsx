@@ -6,7 +6,7 @@ import { LineChart, Sparkles } from "lucide-react";
 import { AIInsights } from "@/components/financial-advice/AIInsights";
 import { supabase } from "@/lib/supabase";
 import { TradeOrderForm } from "@/components/trading/TradeOrderForm";
-import { PositionsList } from "@/components/trading/PositionsList";
+import PositionsList from "@/components/trading/PositionsList";
 
 export const TradingPage = () => {
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
@@ -74,4 +74,4 @@ export const TradingPage = () => {
       </div>
     </div>
   );
-};
+}
