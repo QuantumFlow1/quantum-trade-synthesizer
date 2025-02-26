@@ -38,6 +38,13 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
     }
   };
 
+  // If input is disabled during loading, show a different style
+  const textareaClasses = `
+    flex-1 min-h-[60px] resize-none 
+    border-gray-300 focus:border-indigo-500 focus:ring-indigo-500
+    ${isLoading ? 'bg-gray-100' : ''}
+  `;
+
   return (
     <div className="p-4 border-t bg-white">
       <div className="flex space-x-2">
@@ -45,20 +52,19 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
           ref={textareaRef}
           value={inputMessage}
           onChange={(e) => {
-            console.log("Input changed:", e.target.value);
             setInputMessage(e.target.value);
           }}
           onKeyDown={handleKeyDown}
           placeholder={isLoading ? "Even geduld..." : "Typ je bericht... (Enter om te versturen)"}
           disabled={isLoading}
-          className="flex-1 min-h-[60px] resize-none border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
+          className={textareaClasses}
         />
         <Button
           onClick={handleSendClick}
           disabled={!inputMessage.trim() || isLoading}
           variant="default"
           size="icon"
-          className={`bg-indigo-600 hover:bg-indigo-700 h-[60px] w-[60px] ${isLoading ? "animate-pulse" : ""}`}
+          className={`bg-indigo-600 hover:bg-indigo-700 h-[60px] w-[60px] ${isLoading ? "opacity-70" : ""}`}
           aria-label="Send message"
         >
           {isLoading ? (

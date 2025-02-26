@@ -32,7 +32,7 @@ export function GrokChat() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Use the advanced interface instead of the standard chat interface
-  const [useAdvancedInterface, setUseAdvancedInterface] = useState(true);
+  const [useAdvancedInterface, setUseAdvancedInterface] = useState(false);
   
   // Settings default visible
   const [showSettings, setShowSettings] = useState(false);
@@ -53,9 +53,12 @@ export function GrokChat() {
     console.log('Initial messages in GrokChat:', messages);
   }, [selectedModelName]);
 
-  // Extra debug logging when messages change
+  // Auto-scroll to bottom when messages update
   useEffect(() => {
-    console.log('Messages changed in GrokChat component:', messages);
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+    console.log('Messages updated in GrokChat component, new count:', messages.length);
   }, [messages]);
 
   const handleRetryConnection = async () => {

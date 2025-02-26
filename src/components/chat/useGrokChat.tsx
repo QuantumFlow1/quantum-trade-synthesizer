@@ -14,6 +14,9 @@ export function useGrokChat() {
   const [isProcessing, setIsProcessing] = useState(false);
   const { apiAvailable, isLoading, checkGrokAvailability, retryApiConnection } = useApiAvailability();
 
+  // For tracking multiple state updates to ensure they complete correctly
+  const [messagesUpdated, setMessagesUpdated] = useState(false);
+
   // Check API availability on mount
   useEffect(() => {
     checkGrokAvailability();
@@ -23,7 +26,10 @@ export function useGrokChat() {
   useEffect(() => {
     const savedMessages = loadChatHistory();
     console.log('Loaded saved messages:', savedMessages);
-    setMessages(savedMessages);
+    if (savedMessages && savedMessages.length > 0) {
+      setMessages(savedMessages);
+      setMessagesUpdated(true);
+    }
     
     // Load saved Grok settings if available
     const savedSettings = localStorage.getItem('grokSettings');
@@ -39,7 +45,9 @@ export function useGrokChat() {
   // Save chat history to localStorage when it changes
   useEffect(() => {
     console.log('Saving messages to localStorage:', messages);
-    saveChatHistory(messages);
+    if (messages.length > 0) {
+      saveChatHistory(messages);
+    }
   }, [messages]);
   
   // Save settings to localStorage when they change
@@ -47,18 +55,27 @@ export function useGrokChat() {
     localStorage.setItem('grokSettings', JSON.stringify(grokSettings));
   }, [grokSettings]);
 
+  // Helper function to safely update messages
+  const updateMessages = useCallback((newMessages: ChatMessage[]) => {
+    console.log('Updating messages state with:', newMessages);
+    setMessages(newMessages);
+    setMessagesUpdated(true);
+  }, []);
+
   const sendMessage = useCallback(async (messageContent = inputMessage) => {
     if (!messageContent.trim()) return;
     
     console.log('sendMessage called with content:', messageContent);
     setIsProcessing(true);
+    setMessagesUpdated(false);
 
     try {
       // Create and add user message
       const userMessage = createChatMessage('user', messageContent);
       console.log('Adding user message:', userMessage);
       
-      setMessages(prevMessages => [...prevMessages, userMessage]);
+      const updatedMessages = [...messages, userMessage];
+      updateMessages(updatedMessages);
       setInputMessage('');
 
       // If Grok3 API availability is unknown, check it
@@ -69,7 +86,7 @@ export function useGrokChat() {
       console.log('Generating AI response with model:', grokSettings.selectedModel);
       
       // Create conversation history in the format expected by API
-      const conversationHistory = messages.map(msg => ({
+      const conversationHistory = updatedMessages.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
@@ -89,7 +106,8 @@ export function useGrokChat() {
         const assistantMessage = createChatMessage('assistant', response);
         console.log('Adding assistant message:', assistantMessage);
         
-        setMessages(prevMessages => [...prevMessages, assistantMessage]);
+        // Make sure we use the most recent updatedMessages, not the possibly stale messages state
+        updateMessages([...updatedMessages, assistantMessage]);
         
         toast({
           title: "Response received",
@@ -105,7 +123,7 @@ export function useGrokChat() {
           'Er is een fout opgetreden bij het genereren van een antwoord. Probeer het later opnieuw.'
         );
         
-        setMessages(prevMessages => [...prevMessages, errorMessage]);
+        updateMessages([...updatedMessages, errorMessage]);
         
         toast({
           title: "Error generating response",
@@ -138,7 +156,7 @@ export function useGrokChat() {
     } finally {
       setIsProcessing(false);
     }
-  }, [inputMessage, messages, apiAvailable, checkGrokAvailability, grokSettings]);
+  }, [inputMessage, messages, apiAvailable, checkGrokAvailability, grokSettings, updateMessages]);
 
   const clearChat = useCallback(() => {
     setMessages([]);

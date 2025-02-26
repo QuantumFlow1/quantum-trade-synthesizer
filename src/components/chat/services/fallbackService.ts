@@ -7,7 +7,7 @@ export const generateFallbackResponse = async (
   conversationHistory: Array<{ role: string; content: string }>
 ) => {
   console.log('Using fallback AI service with message:', inputMessage);
-  console.log('Conversation history:', conversationHistory);
+  console.log('Conversation history for fallback:', conversationHistory);
   
   try {
     // First try to use the simple edge function if available
@@ -34,7 +34,7 @@ export const generateFallbackResponse = async (
     
     // If that fails, generate a simple response locally
     console.log('Edge function failed or returned no data, using local fallback response generator');
-    const localResponse = generateBasicResponse(inputMessage);
+    const localResponse = generateBasicResponse(inputMessage, conversationHistory);
     console.log('Generated local fallback response:', localResponse);
     
     // Show a toast to indicate we're using local fallback
@@ -50,7 +50,7 @@ export const generateFallbackResponse = async (
   } catch (error) {
     console.error('Fallback AI error:', error);
     // Return a very basic response as last resort
-    const errorResponse = generateBasicResponse(inputMessage);
+    const errorResponse = generateBasicResponse(inputMessage, conversationHistory);
     console.log('Error occurred, generated basic response:', errorResponse);
     
     // Show error toast
@@ -65,30 +65,41 @@ export const generateFallbackResponse = async (
   }
 };
 
-// Very simple local response generator as a last resort
-function generateBasicResponse(message: string): string {
+// Enhanced local response generator as a last resort
+function generateBasicResponse(message: string, history: Array<{ role: string; content: string }>): string {
   console.log('Generating basic response for:', message);
   
-  const responses = [
-    "I'm sorry, but I'm having trouble connecting to the AI services right now. Please try again later.",
-    "It seems all our AI models are currently unavailable. Your message has been received, but I cannot generate a proper response at this time.",
-    "I've received your message, but I'm unable to provide a detailed response right now due to connectivity issues.",
-    "Thank you for your message. Our AI services are experiencing difficulties at the moment. Please try again in a few minutes."
-  ];
-  
-  // Simple question detection
+  // Check for conversation context
+  const lastBotMessage = history
+    .filter(msg => msg.role === 'assistant')
+    .pop()?.content;
+
+  // Special handling for common message types
   if (message.toLowerCase().includes("hello") || message.toLowerCase().includes("hi")) {
-    return "Hello! I'm operating in fallback mode right now with limited capabilities. How can I assist you?";
+    return "Hello! I'm currently operating in fallback mode with limited capabilities. How can I assist you today?";
   }
   
   if (message.toLowerCase().includes("help")) {
     return "I'd like to help, but I'm currently in fallback mode with limited functionality. Please try again later when our AI services are fully operational.";
   }
   
-  if (message.trim().length < 10) {
-    return `I received your message "${message}", but I'm currently operating with limited capabilities and cannot generate a detailed response.`;
+  if (message.includes("?")) {
+    return `I understand you're asking about "${message.trim()}", but I'm currently operating with limited capabilities. When our services are restored, I'll be able to provide a more helpful response.`;
   }
   
+  if (lastBotMessage && lastBotMessage.endsWith("?")) {
+    return "Thank you for your response. I've noted your input, but I'm currently operating in a limited capacity. I'll be able to continue our conversation normally once our services are restored.";
+  }
+
+  const genericResponses = [
+    "I'm sorry, but I'm having trouble connecting to the AI services right now. Please try again later.",
+    "It seems all our AI models are currently unavailable. Your message has been received, but I cannot generate a proper response at this time.",
+    "I've received your message, but I'm unable to provide a detailed response right now due to connectivity issues.",
+    "Thank you for your message. Our AI services are experiencing difficulties at the moment. Please try again in a few minutes.",
+    "I understand you're trying to communicate with me, but I'm currently operating in fallback mode with limited capabilities.",
+    "Your input is important to me, but I'm currently experiencing technical limitations that prevent me from giving you a proper response."
+  ];
+  
   // Return a random generic response
-  return responses[Math.floor(Math.random() * responses.length)];
+  return genericResponses[Math.floor(Math.random() * genericResponses.length)];
 }

@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage } from '../types/chat';
 import { generateGrok3Response } from './grok3Service';
@@ -8,6 +7,7 @@ import { generateGeminiResponse } from './geminiService';
 import { generateDeepSeekResponse } from './deepseekService';
 import { generateFallbackResponse } from './fallbackService';
 import { GrokSettings, ModelId } from '../types/GrokSettings';
+import { toast } from '@/components/ui/use-toast';
 
 // Create a properly formatted chat message
 export const createChatMessage = (role: 'user' | 'assistant', content: string): ChatMessage => {
@@ -37,17 +37,33 @@ export const generateAIResponse = async (
     isGrok3Available,
   });
 
+  // Keep track of which services we've tried
+  const attemptedServices: string[] = [];
+
   try {
     // Attempt to generate a response based on the selected model
     let response: string | null = null;
     
     switch (settings.selectedModel) {
       case 'grok3':
+        attemptedServices.push('grok3');
         if (isGrok3Available) {
           console.log('Attempting to generate Grok3 response...');
-          response = await generateGrok3Response(inputMessage, conversationHistory, settings);
-        } else {
-          console.log('Grok3 not available, falling back to OpenAI...');
+          try {
+            response = await generateGrok3Response(inputMessage, conversationHistory, settings);
+          } catch (grokError) {
+            console.error('Grok3 service error:', grokError);
+            toast({
+              title: "Grok3 service unavailable",
+              description: "Switching to backup AI service",
+              duration: 3000,
+            });
+          }
+        }
+        
+        if (!response) {
+          console.log('Grok3 not available or failed, falling back to OpenAI...');
+          attemptedServices.push('openai');
           // Fall back to OpenAI if Grok3 is not available
           response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
         }
@@ -56,6 +72,7 @@ export const generateAIResponse = async (
       case 'gpt-4':
       case 'gpt-3.5-turbo':
       case 'openai':
+        attemptedServices.push('openai');
         console.log(`Generating OpenAI response with ${settings.selectedModel}...`);
         response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
         break;
@@ -64,24 +81,64 @@ export const generateAIResponse = async (
       case 'claude-3-sonnet':
       case 'claude-3-opus':
       case 'claude':
+        attemptedServices.push('claude');
         console.log(`Generating Claude response with ${settings.selectedModel}...`);
-        response = await generateClaudeResponse(inputMessage, conversationHistory, settings);
+        try {
+          response = await generateClaudeResponse(inputMessage, conversationHistory, settings);
+        } catch (claudeError) {
+          console.error('Claude service error:', claudeError);
+          toast({
+            title: "Claude service unavailable",
+            description: "Switching to backup AI service",
+            duration: 3000,
+          });
+          // If Claude fails, try OpenAI
+          attemptedServices.push('openai');
+          response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+        }
         break;
         
       case 'gemini-pro':
       case 'gemini':
+        attemptedServices.push('gemini');
         console.log('Generating Gemini response...');
-        response = await generateGeminiResponse(inputMessage, conversationHistory, settings);
+        try {
+          response = await generateGeminiResponse(inputMessage, conversationHistory, settings);
+        } catch (geminiError) {
+          console.error('Gemini service error:', geminiError);
+          toast({
+            title: "Gemini service unavailable",
+            description: "Switching to backup AI service",
+            duration: 3000,
+          });
+          // If Gemini fails, try OpenAI
+          attemptedServices.push('openai');
+          response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+        }
         break;
         
       case 'deepseek-chat':
       case 'deepseek':
+        attemptedServices.push('deepseek');
         console.log('Generating DeepSeek response...');
-        response = await generateDeepSeekResponse(inputMessage, conversationHistory, settings);
+        try {
+          response = await generateDeepSeekResponse(inputMessage, conversationHistory, settings);
+        } catch (deepseekError) {
+          console.error('DeepSeek service error:', deepseekError);
+          toast({
+            title: "DeepSeek service unavailable",
+            description: "Switching to backup AI service",
+            duration: 3000,
+          });
+          // If DeepSeek fails, try OpenAI
+          attemptedServices.push('openai');
+          response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+        }
         break;
         
       default:
         console.log(`Unknown model ${settings.selectedModel}, falling back to OpenAI...`);
+        attemptedServices.push('openai');
         response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
     }
     
@@ -95,16 +152,22 @@ export const generateAIResponse = async (
     }
   } catch (error) {
     console.error('Error generating AI response:', error);
+    console.log('Services attempted:', attemptedServices.join(', '));
     console.log('Using fallback response generation...');
     
     // If all services fail, use the fallback service
     try {
       const fallbackResponse = await generateFallbackResponse(inputMessage, conversationHistory);
-      console.log('Fallback response generated:', fallbackResponse);
-      return fallbackResponse;
+      if (fallbackResponse && fallbackResponse.trim()) {
+        console.log('Fallback response generated:', fallbackResponse.substring(0, 100) + '...');
+        return fallbackResponse;
+      } else {
+        console.error('Empty fallback response');
+        return "I'm sorry, but I'm unable to generate a meaningful response at this time. Please try again later.";
+      }
     } catch (fallbackError) {
       console.error('Even fallback response generation failed:', fallbackError);
-      return "I'm sorry, but I'm unable to generate a response at this time. Please try again later.";
+      return "I'm sorry, but I'm currently experiencing technical difficulties. Please try again later.";
     }
   }
 };
