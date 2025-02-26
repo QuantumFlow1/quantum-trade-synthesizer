@@ -32,14 +32,20 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
     });
   };
 
+  // Haal de volledige naam van het geselecteerde model op
+  const selectedModelName = AI_MODELS.find(model => model.id === settings.selectedModel)?.name || 'Onbekend model';
+
   return (
     <div className="p-4 bg-white border rounded-lg shadow-sm space-y-4">
       <h3 className="text-sm font-medium text-gray-700 mb-3 pb-2 border-b">LLM Model Instellingen</h3>
       
       <div className="mb-4">
-        <div className="flex items-center space-x-2 mb-2">
-          <Cpu className="h-4 w-4 text-gray-600" />
-          <Label htmlFor="model-select" className="text-sm text-gray-700">AI Model</Label>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-2">
+            <Cpu className="h-4 w-4 text-gray-600" />
+            <Label htmlFor="model-select" className="text-sm text-gray-700">AI Model</Label>
+          </div>
+          <span className="text-sm font-medium text-primary">{selectedModelName}</span>
         </div>
         <Select 
           value={settings.selectedModel} 
