@@ -18,14 +18,14 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    console.log("Messages updated in ChatMessages component:", messages);
+    console.log("ChatMessages component received messages:", messages);
     
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  if (messages.length === 0) {
+  if (!messages || messages.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
         <Bot className="w-16 h-16 mb-6 opacity-20" />
@@ -43,7 +43,7 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
           ? message.timestamp 
           : new Date(message.timestamp);
           
-        console.log(`Rendering message: ${message.id}, role: ${message.role}, content length:`, message.content?.length);
+        console.log(`Rendering message: ${message.id}, role: ${message.role}, content:`, message.content);
         
         return (
           <div 

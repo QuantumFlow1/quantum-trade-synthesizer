@@ -90,9 +90,9 @@ export function GrokChat() {
     });
   };
 
-  // Handle manual send message
+  // Properly handle the send message function
   const handleSendMessage = () => {
-    console.log('Manual send button clicked with message:', inputMessage);
+    console.log('handleSendMessage called with message:', inputMessage);
     if (inputMessage.trim()) {
       sendMessage();
     }

@@ -24,7 +24,7 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
       e.preventDefault();
-      console.log("Enter key pressed, sending message:", inputMessage);
+      console.log("Enter key pressed, input message:", inputMessage);
       if (inputMessage.trim()) {
         sendMessage();
       }
@@ -32,18 +32,11 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
   };
 
   const handleSendClick = () => {
+    console.log("Send button clicked, input message:", inputMessage);
     if (inputMessage.trim() && !isLoading) {
-      console.log("Send button clicked, sending message:", inputMessage);
       sendMessage();
     }
   };
-
-  // If input is disabled during loading, show a different style
-  const textareaClasses = `
-    flex-1 min-h-[60px] resize-none 
-    border-gray-300 focus:border-indigo-500 focus:ring-indigo-500
-    ${isLoading ? 'bg-gray-100' : ''}
-  `;
 
   return (
     <div className="p-4 border-t bg-white">
@@ -53,11 +46,12 @@ export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoadin
           value={inputMessage}
           onChange={(e) => {
             setInputMessage(e.target.value);
+            console.log("Input changed to:", e.target.value);
           }}
           onKeyDown={handleKeyDown}
           placeholder={isLoading ? "Even geduld..." : "Typ je bericht... (Enter om te versturen)"}
           disabled={isLoading}
-          className={textareaClasses}
+          className={`flex-1 min-h-[60px] resize-none border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 ${isLoading ? 'bg-gray-100' : ''}`}
         />
         <Button
           onClick={handleSendClick}
