@@ -122,7 +122,7 @@ export default function AdvancedLLMInterface() {
   return (
     <div className="w-full max-w-6xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
       <AdvancedLLMHeader 
-        selectedModelName={getModelDisplayName(selectedModel)} 
+        selectedModelName={selectedModel} 
         onExit={handleExit} 
       />
       
