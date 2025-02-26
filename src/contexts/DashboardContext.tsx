@@ -1,62 +1,56 @@
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-interface WidgetsState {
-  market: boolean;
-  performance: boolean;
-  trading: boolean;
-  autoTrading: boolean;
-  riskManagement: boolean;
-  transactions: boolean;
-  alerts: boolean;
-  advice: boolean;
-  apiAccess: boolean;
-  llmExtensions: boolean;
-}
-
+// Define the context type
 interface DashboardContextType {
-  visibleWidgets: WidgetsState;
-  setVisibleWidgets: React.Dispatch<React.SetStateAction<WidgetsState>>;
-  apiStatus: 'checking' | 'available' | 'unavailable';
-  setApiStatus: React.Dispatch<React.SetStateAction<'checking' | 'available' | 'unavailable'>>;
+  refreshData: () => void;
+  lastRefreshed: Date | null;
+  isRefreshing: boolean;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
+// Create the context with a default value
+const DashboardContext = createContext<DashboardContextType>({
+  refreshData: () => {},
+  lastRefreshed: null,
+  isRefreshing: false,
+});
 
+// Custom hook to use the Dashboard context
 export const useDashboard = () => {
-  const context = useContext(DashboardContext);
-  if (!context) {
-    throw new Error("useDashboard must be used within a DashboardProvider");
-  }
-  return context;
+  return useContext(DashboardContext);
 };
 
-export const DashboardProvider = ({ children }: { children: ReactNode }) => {
-  const [visibleWidgets, setVisibleWidgets] = useState<WidgetsState>({
-    market: true,
-    performance: true,
-    trading: true,
-    autoTrading: true,
-    riskManagement: true,
-    transactions: true,
-    alerts: true,
-    advice: true,
-    apiAccess: false,
-    llmExtensions: true
-  });
-  
-  const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+// Provider component
+interface DashboardProviderProps {
+  children: ReactNode;
+}
 
-  const value = {
-    visibleWidgets,
-    setVisibleWidgets,
-    apiStatus,
-    setApiStatus
+export const DashboardProvider: React.FC<DashboardProviderProps> = ({ children }) => {
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Function to refresh dashboard data
+  const refreshData = () => {
+    setIsRefreshing(true);
+    
+    // Simulate data refresh
+    setTimeout(() => {
+      setLastRefreshed(new Date());
+      setIsRefreshing(false);
+    }, 1000);
   };
 
   return (
-    <DashboardContext.Provider value={value}>
+    <DashboardContext.Provider
+      value={{
+        refreshData,
+        lastRefreshed,
+        isRefreshing,
+      }}
+    >
       {children}
     </DashboardContext.Provider>
   );
 };
+
+export default DashboardContext;

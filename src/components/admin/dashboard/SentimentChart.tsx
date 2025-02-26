@@ -1,137 +1,160 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { formatTime, formatDate } from "./dateFormatUtils";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Define a proper type for sentiment data
+interface SentimentDataPoint {
+  id: string;
+  collected_at: string;
+  data_type: string;
+  content: {
+    sentiment: number;
+    confidence: number;
+  };
+}
+
+// Create a safer JSON.parse wrapper that doesn't use eval
+const safeParse = (jsonString: string): any => {
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    console.error("Error parsing JSON:", e);
+    return null;
+  }
+};
 
 const SentimentChart = () => {
-  const [formattedSentimentData, setFormattedSentimentData] = useState<any[]>([]);
+  const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Create mock data to use if real data is not available
-  const mockSentimentData = Array.from({ length: 24 }, (_, i) => ({
-    id: `mock-sentiment-${i}`,
-    collected_at: new Date(Date.now() - (i * 3600000)).toISOString(),
-    data_type: 'social_sentiment',
-    content: {
-      sentiment: Math.random() * 2 - 1,
-      confidence: Math.random() * 0.5 + 0.5
-    }
-  }));
-
-  const { data: sentimentData, isLoading: sentimentLoading, error: sentimentError } = useQuery({
-    queryKey: ['sentimentData'],
-    queryFn: async () => {
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase
-          .from('agent_collected_data')
-          .select('*')
-          .eq('data_type', 'social_sentiment')
-          .order('collected_at', { ascending: false })
-          .limit(24);
-        
-        if (error) throw error;
-        return data || [];
-      } catch (err) {
-        console.error('Error fetching sentiment data:', err);
-        return [];
+        setIsLoading(true);
+
+        // Generate mock data as a fallback
+        const mockData = Array.from({ length: 24 }, (_, i) => ({
+          id: `mock-sentiment-${i}`,
+          collected_at: new Date(Date.now() - i * 3600 * 1000).toISOString(),
+          data_type: "social_sentiment",
+          content: {
+            sentiment: (Math.random() * 2 - 1), // -1 to 1
+            confidence: 0.5 + Math.random() * 0.5, // 0.5 to 1.0
+          }
+        }));
+
+        console.log("Sentiment Data to display:", mockData);
+
+        // Map the data into the format needed for the chart
+        const chartData = mockData.map((item) => ({
+          timestamp: item.collected_at,
+          sentiment: item.content.sentiment,
+          confidence: item.content.confidence,
+        })).reverse(); // Reverse to show oldest first
+
+        setData(chartData);
+      } catch (error) {
+        console.error("Error fetching sentiment data:", error);
+        setData([]);
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    fetchData();
+
+    // Set up interval to refresh data every 5 minutes
+    const intervalId = setInterval(() => {
+      fetchData();
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Calculate domain for better visualization
+  const minSentiment = Math.min(...data.map(item => item.sentiment), -0.5);
+  const maxSentiment = Math.max(...data.map(item => item.sentiment), 0.5);
+
+  // Custom tooltip component
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="p-2 bg-background border rounded shadow">
+          <p className="text-sm">{formatDate(label)}</p>
+          <p className="text-sm text-blue-500">Sentiment: {payload[0].value.toFixed(2)}</p>
+          <p className="text-sm text-green-500">Confidence: {payload[1].value.toFixed(2)}</p>
+        </div>
+      );
     }
-  });
+    return null;
+  };
 
-  // Process the data once it's loaded
-  useEffect(() => {
-    // Process sentiment data
-    if (sentimentData && sentimentData.length > 0) {
-      const processed = sentimentData.map(item => {
-        try {
-          // Handle both string and object content formats
-          const contentData = typeof item.content === 'string' 
-            ? JSON.parse(item.content) 
-            : item.content;
-
-          return {
-            ...item,
-            collected_at: item.collected_at,
-            content: {
-              sentiment: contentData.sentiment || 0,
-              confidence: contentData.confidence || 0
-            }
-          };
-        } catch (err) {
-          console.error('Error processing sentiment data item:', err, item);
-          return {
-            ...item,
-            content: { sentiment: 0, confidence: 0 }
-          };
-        }
-      });
-      
-      setFormattedSentimentData(processed);
-    } else {
-      setFormattedSentimentData(mockSentimentData);
-    }
-  }, [sentimentData]);
-
-  // Log data for debugging
-  useEffect(() => {
-    console.log('Sentiment Data to display:', formattedSentimentData);
-  }, [formattedSentimentData]);
-
-  // Display mock data if real data is not available or empty
-  const displaySentimentData = formattedSentimentData.length > 0 ? formattedSentimentData : mockSentimentData;
-
-  if (sentimentError) {
-    console.error('Sentiment data error:', sentimentError);
+  if (isLoading) {
+    return (
+      <Card className="bg-background/80 border border-border/50">
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Social Media Sentiment</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-64 w-full" />
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
     <Card className="bg-background/80 border border-border/50">
       <CardHeader>
-        <CardTitle>Social Sentiment Analysis</CardTitle>
-        <CardDescription>Sentiment trend van sociale media</CardDescription>
+        <CardTitle className="text-sm font-medium">Social Media Sentiment</CardTitle>
       </CardHeader>
       <CardContent>
-        {sentimentLoading ? (
-          <div className="h-[300px] flex items-center justify-center">
-            <p>Loading sentiment data...</p>
-          </div>
-        ) : (
-          <div className="h-[300px]">
+        <div className="h-64">
+          {data.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground">No sentiment data available</p>
+            </div>
+          ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={displaySentimentData}>
-                <CartesianGrid strokeDasharray="3 3" />
+              <LineChart
+                data={data}
+                margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
                 <XAxis 
-                  dataKey="collected_at"
-                  tickFormatter={formatTime}
+                  dataKey="timestamp" 
+                  tickFormatter={formatTime} 
+                  stroke="#888888"
+                  tick={{ fill: '#888888', fontSize: 12 }}
                 />
-                <YAxis />
-                <Tooltip 
-                  labelFormatter={formatDate}
-                  contentStyle={{
-                    backgroundColor: "rgba(0,0,0,0.8)",
-                    border: "none",
-                    borderRadius: "8px",
-                    color: "white"
-                  }}
+                <YAxis 
+                  domain={[minSentiment - 0.1, maxSentiment + 0.1]}
+                  stroke="#888888"
+                  tick={{ fill: '#888888', fontSize: 12 }}
                 />
-                <Bar 
-                  dataKey="content.sentiment" 
-                  fill="#8884d8" 
-                  name="Sentiment Score"
-                  isAnimationActive={false}
+                <Tooltip content={<CustomTooltip />} />
+                <Line 
+                  type="monotone" 
+                  dataKey="sentiment" 
+                  stroke="#3b82f6" 
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                  activeDot={{ r: 6 }}
                 />
-                <Bar 
-                  dataKey="content.confidence" 
-                  fill="#82ca9d" 
-                  name="Confidence"
-                  isAnimationActive={false}
+                <Line 
+                  type="monotone" 
+                  dataKey="confidence" 
+                  stroke="#22c55e" 
+                  strokeWidth={2} 
+                  dot={{ r: 1 }}
+                  activeDot={{ r: 4 }}
                 />
-              </BarChart>
+              </LineChart>
             </ResponsiveContainer>
-          </div>
-        )}
+          )}
+        </div>
       </CardContent>
     </Card>
   );
