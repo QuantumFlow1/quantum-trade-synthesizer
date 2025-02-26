@@ -27,48 +27,52 @@ export default function AdvancedLLMInterface() {
   };
   
   return (
-    <AdvancedLLMContainer>
-      {/* Header with dynamic model name */}
-      <AdvancedLLMHeader 
-        modelName={selectedModelName}
-        onExit={handleExit}
-      />
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 h-[calc(100vh-80px)] overflow-hidden">
-        {/* Left Column: Task and Model Selection */}
-        <div className="col-span-1 space-y-6 overflow-y-auto">
-          <TaskAndModelSection
-            task={advancedLLM.task}
-            setTask={advancedLLM.setTask}
-            selectedModel={advancedLLM.selectedModel}
-            onModelChange={advancedLLM.handleModelChange}
-          />
-          
-          <ParametersSection
-            temperature={advancedLLM.temperature}
-            setTemperature={advancedLLM.setTemperature}
-            maxTokens={advancedLLM.maxTokens}
-            setMaxTokens={advancedLLM.setMaxTokens}
-          />
-          
-          <HistorySection
-            history={advancedLLM.history}
-          />
-        </div>
+    <div>
+      <AdvancedLLMContainer>
+        {/* Header with dynamic model name */}
+        <AdvancedLLMHeader 
+          modelName={selectedModelName}
+          onExit={handleExit}
+        />
         
-        {/* Right Column: Content Generation */}
-        <div className="col-span-1 md:col-span-2 flex flex-col h-full overflow-hidden">
-          <ContentGenerationSection
-            messages={advancedLLM.messages}
-            inputMessage={advancedLLM.inputMessage}
-            setInputMessage={advancedLLM.setInputMessage}
-            handleSendMessage={advancedLLM.handleSendMessage}
-            handleGenerate={advancedLLM.handleGenerate}
-            isGenerating={advancedLLM.isGenerating}
-            selectedModelName={selectedModelName}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 h-[calc(100vh-80px)] overflow-hidden">
+          {/* Left Column: Task and Model Selection */}
+          <div className="col-span-1 space-y-6 overflow-y-auto">
+            <TaskAndModelSection
+              task={advancedLLM.task}
+              setTask={advancedLLM.setTask}
+              selectedModel={advancedLLM.selectedModel}
+              onModelChange={advancedLLM.handleModelChange}
+            />
+            
+            <ParametersSection
+              temperature={advancedLLM.temperature}
+              setTemperature={advancedLLM.setTemperature}
+              maxTokens={advancedLLM.maxTokens}
+              setMaxTokens={advancedLLM.setMaxTokens}
+              handleGenerate={advancedLLM.handleGenerate}
+              isLoading={advancedLLM.isGenerating}
+            />
+            
+            <HistorySection
+              history={advancedLLM.history}
+            />
+          </div>
+          
+          {/* Right Column: Content Generation */}
+          <div className="col-span-1 md:col-span-2 flex flex-col h-full overflow-hidden">
+            <ContentGenerationSection
+              messages={advancedLLM.messages}
+              inputMessage={advancedLLM.inputMessage}
+              setInputMessage={advancedLLM.setInputMessage}
+              onSendMessage={advancedLLM.handleSendMessage}
+              handleGenerate={advancedLLM.handleGenerate}
+              isGenerating={advancedLLM.isGenerating}
+              selectedModelName={selectedModelName}
+            />
+          </div>
         </div>
-      </div>
-    </AdvancedLLMContainer>
+      </AdvancedLLMContainer>
+    </div>
   );
 }
