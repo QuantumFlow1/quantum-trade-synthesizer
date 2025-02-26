@@ -1,16 +1,43 @@
 
 import { Card } from "@/components/ui/card";
-import { Activity, LineChart, AlertCircle, Zap } from "lucide-react";
+import { LineChart, AlertCircle, Zap } from "lucide-react";
 import MarketOverview from "@/components/MarketOverview";
 import PerformanceMetrics from "@/components/PerformanceMetrics";
 import { AIAdvicePanel } from "@/components/dashboard/AIAdvicePanel";
 import UserSentimentAnalysis from "@/components/user/UserSentimentAnalysis";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface OverviewPageProps {
   apiStatus: 'checking' | 'available' | 'unavailable';
 }
 
 export const OverviewPage = ({ apiStatus }: OverviewPageProps) => {
+  const [localApiStatus, setLocalApiStatus] = useState<'checking' | 'available' | 'unavailable'>(apiStatus);
+
+  // Effect to check API availability when component mounts
+  useEffect(() => {
+    if (apiStatus === 'checking') {
+      checkApiStatus();
+    } else {
+      setLocalApiStatus(apiStatus);
+    }
+  }, [apiStatus]);
+
+  const checkApiStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('grok3-response', {
+        body: { message: "ping", context: [] }
+      });
+      
+      if (error) throw error;
+      setLocalApiStatus('available');
+    } catch (error) {
+      console.error("Failed to verify API status:", error);
+      setLocalApiStatus('unavailable');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Market Overview Section */}
@@ -31,7 +58,7 @@ export const OverviewPage = ({ apiStatus }: OverviewPageProps) => {
         </Card>
 
         {/* Financial Advice */}
-        <AIAdvicePanel apiStatus={apiStatus} />
+        <AIAdvicePanel apiStatus={localApiStatus} />
       </div>
     </div>
   );

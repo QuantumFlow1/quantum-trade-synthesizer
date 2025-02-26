@@ -23,23 +23,31 @@ export const AdviceHeader = ({ isOnline, isLoadingAI, onGenerateAdvice }: Advice
             Financieel Advies Dashboard
           </h2>
         </div>
-        <div className="flex items-center gap-2">
-          {isOnline ? (
-            <Wifi className="w-4 h-4 text-green-500 animate-pulse" />
-          ) : (
-            <WifiOff className="w-4 h-4 text-yellow-500 animate-pulse" />
-          )}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {isOnline ? (
+              <div className="flex items-center gap-1">
+                <Wifi className="w-4 h-4 text-green-500 animate-pulse" />
+                <span className="text-xs text-green-500">Online</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <WifiOff className="w-4 h-4 text-yellow-500 animate-pulse" />
+                <span className="text-xs text-yellow-500">Offline</span>
+              </div>
+            )}
+          </div>
           <Button 
             variant="outline" 
             size="sm" 
             onClick={onGenerateAdvice}
-            disabled={isLoadingAI}
+            disabled={isLoadingAI || !isOnline}
             className="backdrop-blur-md bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105 group-hover:translate-y-[-2px] relative overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <Brain className="w-4 h-4 mr-2 relative z-10" />
+            <Brain className={`w-4 h-4 mr-2 relative z-10 ${isLoadingAI ? 'animate-pulse' : ''}`} />
             <span className="relative z-10">
-              {isLoadingAI ? "AI Analyseert..." : isOnline ? "Genereer AI Analyse" : "Genereer Lokaal Advies"}
+              {isLoadingAI ? "AI Analyseert..." : isOnline ? "Genereer AI Analyse" : "Service Offline"}
             </span>
           </Button>
         </div>
