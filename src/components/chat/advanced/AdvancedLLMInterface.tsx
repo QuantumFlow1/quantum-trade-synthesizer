@@ -31,7 +31,7 @@ export default function AdvancedLLMInterface() {
       <AdvancedLLMContainer>
         {/* Header with dynamic model name */}
         <AdvancedLLMHeader 
-          modelName={selectedModelName}
+          selectedModelName={selectedModelName}
           onExit={handleExit}
         />
         
@@ -66,7 +66,6 @@ export default function AdvancedLLMInterface() {
               inputMessage={advancedLLM.inputMessage}
               setInputMessage={advancedLLM.setInputMessage}
               onSendMessage={advancedLLM.handleSendMessage}
-              handleGenerate={advancedLLM.handleGenerate}
               isGenerating={advancedLLM.isGenerating}
               selectedModelName={selectedModelName}
             />
