@@ -7,7 +7,7 @@ import { useGrokChat } from './useGrokChat'
 import { useEffect, useState } from 'react'
 import { toast } from '@/components/ui/use-toast'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { AlertTriangle, Loader2, Settings2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GrokChatSettings } from './GrokChatSettings'
 import { AI_MODELS } from './types/GrokSettings'
@@ -28,7 +28,10 @@ export function GrokChat() {
 
   // Instellingen standaard zichtbaar maken
   const [showSettings, setShowSettings] = useState(true);
-  const selectedModelName = AI_MODELS.find(m => m.id === grokSettings.selectedModel)?.name || 'AI';
+  
+  // Haal de volledige naam van het geselecteerde model op
+  const selectedModel = AI_MODELS.find(m => m.id === grokSettings.selectedModel);
+  const selectedModelName = selectedModel?.name || 'AI';
 
   // Display an info message when component mounts
   useEffect(() => {
@@ -37,7 +40,7 @@ export function GrokChat() {
       description: `Chat met verschillende AI modellen. Standaard model is ${selectedModelName}.`,
       duration: 5000,
     });
-  }, []);
+  }, [selectedModelName]);
 
   const handleRetryConnection = async () => {
     await retryApiConnection();
@@ -52,7 +55,7 @@ export function GrokChat() {
       <GrokChatHeader 
         onClearChat={clearChat} 
         onToggleSettings={toggleSettings}
-        modelName={selectedModelName} 
+        modelName={selectedModelName}
       />
       
       <CardContent className="p-0 flex flex-col h-[600px]">

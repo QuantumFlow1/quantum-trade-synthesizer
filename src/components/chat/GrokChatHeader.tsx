@@ -6,13 +6,13 @@ import { Trash2, Settings2 } from 'lucide-react'
 interface GrokChatHeaderProps {
   onClearChat: () => void;
   onToggleSettings: () => void;
-  modelName?: string;
+  modelName: string;
 }
 
 export function GrokChatHeader({ onClearChat, onToggleSettings, modelName = 'AI' }: GrokChatHeaderProps) {
   return (
     <CardHeader className="border-b py-4 px-6 flex flex-row items-center justify-between">
-      <CardTitle className="text-xl font-semibold">LLM Models Chat</CardTitle>
+      <CardTitle className="text-xl font-semibold">{modelName} Chat</CardTitle>
       <div className="flex gap-2">
         <Button 
           variant="ghost" 
