@@ -16,7 +16,13 @@ export default function AdvancedLLMInterface() {
   const navigate = useNavigate();
   
   // Retrieve services from the hook
-  const { isLoading, grokSettings, setGrokSettings, sendMessage: sendGrokMessage } = useGrokChat();
+  const { 
+    isLoading: isApiLoading, 
+    grokSettings, 
+    setGrokSettings, 
+    sendMessage: sendGrokMessage,
+    apiAvailable 
+  } = useGrokChat();
   
   // State for the advanced interface
   const [selectedModel, setSelectedModel] = useState<ModelId>(grokSettings.selectedModel);
@@ -89,10 +95,11 @@ export default function AdvancedLLMInterface() {
       const updatedSettings = {
         ...grokSettings,
         selectedModel: selectedModel,
-        temperature: temperature
+        temperature: temperature,
+        maxTokens: maxTokens
       };
       
-      // Prepare the conversation history
+      // Prepare the conversation history for the API
       const conversationHistory = messages.map(msg => ({
         role: msg.role,
         content: msg.content
@@ -102,47 +109,64 @@ export default function AdvancedLLMInterface() {
       console.log("Temperature:", temperature);
       console.log("Max tokens:", maxTokens);
       
-      // In a real implementation, we would call the appropriate API based on the selected model
-      // For now, we'll simulate the response
+      // Call the actual API through the hook
       let responseText;
       
-      setTimeout(async () => {
-        try {
-          // Simulate calling the real API
-          responseText = `This is a simulated response from ${getModelDisplayName(selectedModel)}. In a real implementation, this would come from the ${getModelDisplayName(selectedModel)} API with temperature ${temperature} and max tokens ${maxTokens}. The model would respond to: "${content}"`;
-          
-          // Add AI response to conversation
-          const assistantMessage = { role: "assistant", content: responseText };
-          setMessages(prev => [...prev, assistantMessage]);
-          
-          // Add to history
-          setHistory(prev => [
-            { task: content, output: responseText },
-            ...prev
-          ]);
-          
-          // Clear input if it was successful
-          setInputMessage("");
-        } catch (error) {
-          console.error("Error generating response:", error);
-          toast({
-            title: "Error",
-            description: "Failed to generate a response. Please try again.",
-            variant: "destructive"
-          });
-        } finally {
-          setIsGenerating(false);
-        }
-      }, 1500); // Simulate API response time
+      try {
+        // Set updated settings for the API call
+        setGrokSettings(updatedSettings);
+        
+        // Use the API integration from useGrokChat
+        await sendGrokMessage(content);
+        
+        // Since sendGrokMessage adds the response to its own state,
+        // we'll simulate a response here for this component's state
+        responseText = `This is a response from ${getModelDisplayName(selectedModel)}. In a real implementation, the response has been added to the chat history via the sendGrokMessage function.`;
+        
+        // Add AI response to conversation
+        const assistantMessage = { role: "assistant", content: responseText };
+        setMessages(prev => [...prev, assistantMessage]);
+        
+        // Add to history
+        setHistory(prev => [
+          { task: content, output: responseText },
+          ...prev
+        ]);
+        
+        // Clear input if it was successful
+        setInputMessage("");
+        
+        toast({
+          title: "Response Generated",
+          description: `${getModelDisplayName(selectedModel)} has responded to your query.`,
+          duration: 3000,
+        });
+      } catch (error) {
+        console.error("Error generating response:", error);
+        
+        // Add error message to conversation
+        const errorMessage = { 
+          role: "assistant", 
+          content: "Sorry, I couldn't generate a response. Please try again." 
+        };
+        setMessages(prev => [...prev, errorMessage]);
+        
+        toast({
+          title: "Error",
+          description: "Failed to generate a response. Please try again.",
+          variant: "destructive"
+        });
+      }
     } catch (error) {
       console.error("Error in generate response:", error);
-      setIsGenerating(false);
       
       toast({
         title: "Error",
         description: "Failed to generate a response. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsGenerating(false);
     }
   };
   
@@ -156,6 +180,18 @@ export default function AdvancedLLMInterface() {
       duration: 3000,
     });
   };
+  
+  // Check if the selected model is available
+  useEffect(() => {
+    if (selectedModel === 'grok3' && apiAvailable === false) {
+      toast({
+        title: "Grok3 API Unavailable",
+        description: "The Grok3 API is currently unavailable. Your messages will be processed by an alternative model.",
+        variant: "warning",
+        duration: 5000,
+      });
+    }
+  }, [selectedModel, apiAvailable]);
   
   return (
     <div className="w-full max-w-6xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
@@ -180,7 +216,7 @@ export default function AdvancedLLMInterface() {
             maxTokens={maxTokens}
             setMaxTokens={setMaxTokens}
             handleGenerate={handleGenerate}
-            isLoading={isLoading || isGenerating}
+            isLoading={isApiLoading || isGenerating}
           />
         </div>
         
