@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Activity, CandlestickChart, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +15,7 @@ const TradingChart = () => {
   const [data, setData] = useState<TradingDataPoint[]>(generateTradingData());
   const [view, setView] = useState<"price" | "volume" | "indicators">("price");
   const [indicator, setIndicator] = useState<"sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx">("sma");
+  const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('available');
 
   const { positions, isLoading: positionsLoading } = usePositions();
 
@@ -115,10 +117,7 @@ const TradingChart = () => {
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-          <TradeOrderForm 
-            currentPrice={data[data.length - 1].close}
-            onSubmitOrder={handleSubmitOrder}
-          />
+          <TradeOrderForm apiStatus={apiStatus} />
           <div className="space-y-4">
             <h3 className="text-xl font-semibold">Open Positions</h3>
             <PositionsList positions={positions} isLoading={positionsLoading} />

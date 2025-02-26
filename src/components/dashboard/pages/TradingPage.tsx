@@ -7,10 +7,12 @@ import { AIInsights } from "@/components/financial-advice/AIInsights";
 import { supabase } from "@/lib/supabase";
 import { TradeOrderForm } from "@/components/trading/TradeOrderForm";
 import PositionsList from "@/components/trading/PositionsList";
+import { usePositions } from "@/hooks/use-positions";
 
 export const TradingPage = () => {
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const [aiAdvice, setAiAdvice] = useState<string>("");
+  const { positions, isLoading: positionsLoading } = usePositions();
 
   // Check API status when component mounts
   useEffect(() => {
@@ -69,7 +71,7 @@ export const TradingPage = () => {
             <AIInsights isOnline={apiStatus === 'available'} aiAdvice={aiAdvice} />
           </Card>
           
-          <PositionsList />
+          <PositionsList positions={positions} isLoading={positionsLoading} />
         </div>
       </div>
     </div>

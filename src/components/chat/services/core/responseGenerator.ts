@@ -12,6 +12,52 @@ import { GrokSettings, ModelId } from '../../types/GrokSettings';
 import { supabase } from '@/lib/supabase';
 import { isAdminContext, hasRequiredApiKey, checkServiceAvailability } from '../utils/apiHelpers';
 
+const generateAIResponseByModel = async (
+  model: ModelId,
+  inputMessage: string,
+  conversationHistory: Array<{ role: string; content: string }>,
+  settings: GrokSettings,
+  isGrok3Available: boolean,
+  attemptedServices: string[]
+): Promise<string> => {
+  attemptedServices.push(model);
+
+  console.log(`Attempting to generate response using ${model} model`);
+  
+  try {
+    switch (model) {
+      case 'grok3':
+        return await generateGrok3Response(inputMessage, conversationHistory);
+      case 'openai':
+        return await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+      case 'claude':
+        return await generateClaudeResponse(inputMessage, conversationHistory, settings);
+      case 'gemini':
+        return await generateGeminiResponse(inputMessage, conversationHistory, settings);
+      case 'deepseek':
+      case 'deepseek-chat':
+        return await generateDeepSeekResponse(inputMessage, conversationHistory, settings);
+      default:
+        if (isGrok3Available) {
+          console.log('Unknown model type, falling back to Grok3');
+          return await generateGrok3Response(inputMessage, conversationHistory);
+        } else {
+          return generateFallbackResponse(inputMessage, conversationHistory);
+        }
+    }
+  } catch (error) {
+    console.error(`Error generating response with ${model}:`, error);
+    
+    // Try fallback options if available
+    if (model !== 'grok3' && isGrok3Available) {
+      console.log('Falling back to Grok3 after error');
+      return await generateGrok3Response(inputMessage, conversationHistory);
+    }
+    
+    throw error; // Re-throw to be handled by the main function
+  }
+};
+
 export const generateAIResponse = async (
   inputMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
