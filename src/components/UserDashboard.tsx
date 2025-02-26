@@ -1,22 +1,27 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { DashboardLayout } from "./dashboard/DashboardLayout";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
-import { ApiAccessPanel } from "./dashboard/ApiAccessPanel";
-import { AIAdvicePanel } from "./dashboard/AIAdvicePanel";
-import { LLMExtensions } from "./llm-extensions/LLMExtensions";
-import { MainContent } from "./dashboard/MainContent";
 import { useDashboard } from "@/contexts/DashboardContext";
-import MarketOverview from "./MarketOverview";
-import UserSentimentAnalysis from "./user/UserSentimentAnalysis";
+import { DashboardNavigation } from "./dashboard/DashboardNavigation";
+
+// Import all page components
+import { OverviewPage } from "./dashboard/pages/OverviewPage";
+import { MarketPage } from "./dashboard/pages/MarketPage";
+import { TradingPage } from "./dashboard/pages/TradingPage";
+import { AnalyticsPage } from "./dashboard/pages/AnalyticsPage";
+import { RiskPage } from "./dashboard/pages/RiskPage";
+import { AIToolsPage } from "./dashboard/pages/AIToolsPage";
+import { SettingsPage } from "./dashboard/pages/SettingsPage";
 
 const UserDashboard = () => {
   const { userProfile, isLovTrader } = useAuth();
   const { toast } = useToast();
   const { visibleWidgets, setVisibleWidgets, apiStatus, setApiStatus } = useDashboard();
+  const [activePage, setActivePage] = useState<string>("overview");
 
   useEffect(() => {
     // Check if API is available
@@ -50,6 +55,33 @@ const UserDashboard = () => {
     }
   }, [isLovTrader, setApiStatus, setVisibleWidgets]);
 
+  // Handle page navigation
+  const handlePageChange = (page: string) => {
+    setActivePage(page);
+  };
+
+  // Render the correct page based on activePage state
+  const renderActivePage = () => {
+    switch (activePage) {
+      case "overview":
+        return <OverviewPage apiStatus={apiStatus} />;
+      case "market":
+        return <MarketPage />;
+      case "trading":
+        return <TradingPage />;
+      case "analytics":
+        return <AnalyticsPage />;
+      case "risk":
+        return <RiskPage />;
+      case "ai":
+        return <AIToolsPage apiStatus={apiStatus} showApiAccess={visibleWidgets.apiAccess} />;
+      case "settings":
+        return <SettingsPage />;
+      default:
+        return <OverviewPage apiStatus={apiStatus} />;
+    }
+  };
+
   return (
     <DashboardLayout>
       {/* Command Center Header */}
@@ -58,29 +90,14 @@ const UserDashboard = () => {
         isLovTrader={isLovTrader}
       />
       
-      {/* LLM Extensions Section */}
-      {visibleWidgets.llmExtensions && <LLMExtensions />}
-
-      {/* Market Overview Section */}
-      <div className="w-full mb-6">
-        <MarketOverview />
-      </div>
-
-      {/* Social Sentiment Analysis */}
-      <div className="w-full mb-6">
-        <UserSentimentAnalysis />
-      </div>
-
-      {/* Main Dashboard Content */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <MainContent />
-
-        {/* Financial Advice */}
-        {visibleWidgets.advice && <AIAdvicePanel apiStatus={apiStatus} />}
-
-        {/* API Access Section - Only shown for lov_trader */}
-        {visibleWidgets.apiAccess && <ApiAccessPanel apiStatus={apiStatus} />}
-      </div>
+      {/* Navigation Bar */}
+      <DashboardNavigation
+        activePage={activePage}
+        onChangePage={handlePageChange}
+      />
+      
+      {/* Dynamic Page Content */}
+      {renderActivePage()}
     </DashboardLayout>
   );
 };
