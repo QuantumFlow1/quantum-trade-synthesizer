@@ -1,27 +1,33 @@
 
-project_id = "tfmlretexydslgowlkid"
+project_id = 'your-project-id'
 
 [api]
-enabled = true
+# Port to use for the API URL.
 port = 54321
-schemas = []
-extra_search_path = ["extensions"]
-max_rows = 1000
+# Enable JWT verification for API requests.
+verify_jwt = false
 
-[db]
-port = 54322
-shadow_port = 54320
-major_version = 15
+[[edge_functions]]
+name = "grok3-response"
+path = "supabase/functions/grok3-response"
+verify_jwt = false
 
-[studio]
-enabled = true
-port = 54323
-api_url = "http://localhost"
+[[edge_functions]]
+name = "generate-ai-response"
+path = "supabase/functions/generate-ai-response"
+verify_jwt = false
 
-[inbucket]
-enabled = true
-port = 54324
+[[edge_functions]]
+name = "openai-response"
+path = "supabase/functions/openai-response"
+verify_jwt = false
 
-[functions]
-[functions.serve]
-port = 54324
+[[edge_functions]]
+name = "claude-response"
+path = "supabase/functions/claude-response"
+verify_jwt = false
+
+[[edge_functions]]
+name = "gemini-response"
+path = "supabase/functions/gemini-response"
+verify_jwt = false

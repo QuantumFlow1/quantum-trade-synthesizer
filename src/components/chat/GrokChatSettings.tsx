@@ -1,8 +1,9 @@
 
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { GrokSettings } from './types/GrokSettings';
-import { Search, Brain } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AI_MODELS, GrokSettings } from './types/GrokSettings';
+import { Search, Brain, Cpu } from 'lucide-react';
 
 interface GrokChatSettingsProps {
   settings: GrokSettings;
@@ -23,9 +24,36 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
       thinkEnabled: checked
     });
   };
+  
+  const handleModelChange = (modelId: string) => {
+    onSettingsChange({
+      ...settings,
+      selectedModel: modelId as any
+    });
+  };
 
   return (
     <div className="p-4 border-t bg-gray-50 space-y-4">
+      <div className="mb-4">
+        <div className="flex items-center space-x-2 mb-2">
+          <Cpu className="h-4 w-4 text-gray-600" />
+          <Label htmlFor="model-select" className="text-sm text-gray-700">AI Model</Label>
+        </div>
+        <Select 
+          value={settings.selectedModel} 
+          onValueChange={handleModelChange}
+        >
+          <SelectTrigger id="model-select" className="w-full">
+            <SelectValue placeholder="Selecteer AI model" />
+          </SelectTrigger>
+          <SelectContent>
+            {AI_MODELS.map(model => (
+              <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
       <h3 className="text-sm font-medium text-gray-700 mb-3">Grok Turbo Functies</h3>
       
       <div className="flex items-center justify-between">
@@ -37,6 +65,7 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
           id="deep-search"
           checked={settings.deepSearchEnabled}
           onCheckedChange={handleDeepSearchToggle}
+          disabled={settings.selectedModel !== 'grok3'}
         />
       </div>
       
@@ -49,6 +78,7 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
           id="think"
           checked={settings.thinkEnabled}
           onCheckedChange={handleThinkToggle}
+          disabled={settings.selectedModel !== 'grok3'}
         />
       </div>
     </div>
