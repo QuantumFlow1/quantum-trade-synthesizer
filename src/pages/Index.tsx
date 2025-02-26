@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
-import { Bot } from "lucide-react";
+import { Bot, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -67,6 +67,7 @@ const Index = () => {
 
   // Helper function to determine if user is a super admin
   const isSuperAdmin = userProfile?.role === "super_admin" || userProfile?.role === "lov_trader";
+  const isAdmin = userProfile?.role === "admin" || isSuperAdmin;
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -82,17 +83,27 @@ const Index = () => {
             style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
             className="h-full w-full"
           >
-            {/* Grok Chat Link - shown to authenticated users */}
-            {user && (
-              <div className="fixed top-4 right-4 z-50">
+            {/* Quick Links for authenticated users */}
+            <div className="fixed top-4 right-4 z-50 flex gap-2">
+              {user && (
                 <Link to="/chat">
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
                     <Bot className="h-4 w-4" />
                     <span>Grok Chat</span>
                   </Button>
                 </Link>
-              </div>
-            )}
+              )}
+              
+              {/* Users Dashboard Link - Only shown to admins */}
+              {isAdmin && (
+                <Link to="/admin/users">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    <span>Gebruikers</span>
+                  </Button>
+                </Link>
+              )}
+            </div>
             
             {isSuperAdmin ? (
               <AdminPanel key="admin-panel" />

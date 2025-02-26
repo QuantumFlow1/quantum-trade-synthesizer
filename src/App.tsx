@@ -29,6 +29,7 @@ const App = () => (
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/dashboard/overview" element={<Overview />} />
             <Route path="/admin/dashboard/users" element={<Users />} />
+            <Route path="/admin/users" element={<Users />} /> {/* Added a direct route to Users */}
             <Route path="/admin/dashboard/system" element={<System />} />
             <Route path="/admin/dashboard/finance" element={<Finance />} />
             {/* Redirect all auth callback URLs to the main page */}
