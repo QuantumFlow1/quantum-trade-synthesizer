@@ -1,5 +1,5 @@
 
-import { LogOut, Activity, LineChart, AlertCircle, Unlock, Zap, Settings, Code } from "lucide-react";
+import { LogOut, Activity, LineChart, AlertCircle, Unlock, Zap, Settings, Code, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "./auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ import { PortfolioDiversification } from "./financial-advice/PortfolioDiversific
 import { RiskReturnAnalysis } from "./financial-advice/RiskReturnAnalysis";
 import { Recommendations } from "./financial-advice/Recommendations";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LLMExtensions } from "./llm-extensions/LLMExtensions";
 
 const UserDashboard = () => {
   const { signOut, userProfile, isLovTrader } = useAuth();
@@ -35,7 +36,8 @@ const UserDashboard = () => {
     transactions: true,
     alerts: true,
     advice: true,
-    apiAccess: false
+    apiAccess: false,
+    llmExtensions: true
   });
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const [aiAdvice, setAiAdvice] = useState<string>("");
@@ -158,6 +160,9 @@ const UserDashboard = () => {
           </Button>
         </div>
       </div>
+
+      {/* LLM Extensions Section - NEW */}
+      {visibleWidgets.llmExtensions && <LLMExtensions />}
 
       {/* Main Dashboard Content */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
