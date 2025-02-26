@@ -25,7 +25,18 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
     }
   }, [messages]);
 
-  if (!messages || messages.length === 0) {
+  // Force re-render on empty array ([] is different from undefined)
+  const messageArray = Array.isArray(messages) ? messages : [];
+
+  // Debug the message array
+  useEffect(() => {
+    console.log("Message array contents:", messageArray);
+    messageArray.forEach((msg, index) => {
+      console.log(`Message ${index}:`, msg);
+    });
+  }, [messageArray]);
+
+  if (!messageArray || messageArray.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
         <Bot className="w-16 h-16 mb-6 opacity-20" />
@@ -37,7 +48,12 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
 
   return (
     <div className="space-y-4">
-      {messages.map((message) => {
+      {messageArray.map((message) => {
+        if (!message || !message.id) {
+          console.error("Invalid message object:", message);
+          return null;
+        }
+        
         // Make sure timestamp is a Date object
         const timestamp = message.timestamp instanceof Date 
           ? message.timestamp 
