@@ -6,6 +6,7 @@ project_id = 'your-project-id'
 # Port to use for the API URL.
 port = 54321
 
+[functions]
 [functions.grok3-response]
 path = "supabase/functions/grok3-response"
 
