@@ -1,10 +1,11 @@
 
-import { CloudUpload, Database, Filter, Waves } from "lucide-react";
+import { CloudUpload, Coins, Database, Filter, Waves } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarketTabContent } from "./MarketTabContent";
 import { MarketData } from "@/components/market/types";
 import { MarketFilters } from "./MarketFilters";
 import { MarketDataTable } from "./MarketDataTable";
+import { TestnetTokenTab } from "./TestnetTokenTab";
 
 interface MarketTabsProps {
   activeTab: string;
@@ -55,6 +56,10 @@ export const MarketTabs = ({
         <TabsTrigger value="cloud" className="gap-2">
           <CloudUpload className="w-4 h-4" />
           Cloud Storage
+        </TabsTrigger>
+        <TabsTrigger value="testnet" className="gap-2">
+          <Coins className="w-4 h-4" />
+          Testnet Tokens
         </TabsTrigger>
       </TabsList>
 
@@ -134,6 +139,10 @@ export const MarketTabs = ({
           ]}
           buttonText="Configure Cloud Storage"
         />
+      </TabsContent>
+
+      <TabsContent value="testnet" className="space-y-4">
+        <TestnetTokenTab />
       </TabsContent>
     </Tabs>
   );
