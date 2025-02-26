@@ -1,12 +1,25 @@
 
+import React, { useEffect } from "react";
 import { X } from "lucide-react";
 import { AdvancedLLMHeaderProps } from "./types";
 import { getModelDisplayName } from "./utils";
 
 export default function AdvancedLLMHeader({ selectedModelName, onExit }: AdvancedLLMHeaderProps) {
+  const modelDisplayName = getModelDisplayName(selectedModelName);
+  
+  // Update the document title to reflect the selected model
+  useEffect(() => {
+    document.title = `${modelDisplayName} Assistant`;
+    
+    // Restore original title when component unmounts
+    return () => {
+      document.title = "Grok AI Assistant";
+    };
+  }, [selectedModelName, modelDisplayName]);
+
   return (
     <div className="flex justify-between items-center p-4 border-b bg-gray-50">
-      <h2 className="text-xl font-semibold">{getModelDisplayName(selectedModelName)} Advanced Interface</h2>
+      <h2 className="text-xl font-semibold">{modelDisplayName} Advanced Interface</h2>
       <button 
         onClick={onExit}
         className="p-1 rounded-full hover:bg-gray-200 transition-colors"
