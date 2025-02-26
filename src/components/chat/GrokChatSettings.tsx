@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,6 +7,7 @@ import { AI_MODELS, GrokSettings } from './types/GrokSettings';
 import { Search, Brain, Cpu } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { ApiKeyManager } from './ApiKeyManager';
+import { toast } from '@/hooks/use-toast';
 
 interface GrokChatSettingsProps {
   settings: GrokSettings;
@@ -13,6 +15,40 @@ interface GrokChatSettingsProps {
 }
 
 export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSettingsProps) {
+  // On component mount, check if we have keys stored in localStorage
+  useEffect(() => {
+    // Load API keys from localStorage if they exist
+    const openaiKey = localStorage.getItem('openaiApiKey');
+    const claudeKey = localStorage.getItem('claudeApiKey');
+    const geminiKey = localStorage.getItem('geminiApiKey');
+    const deepseekKey = localStorage.getItem('deepseekApiKey');
+    
+    // If we have at least one key in localStorage but not in settings, update settings
+    if ((openaiKey || claudeKey || geminiKey || deepseekKey) && 
+        (!settings.apiKeys.openaiApiKey && !settings.apiKeys.claudeApiKey && 
+         !settings.apiKeys.geminiApiKey && !settings.apiKeys.deepseekApiKey)) {
+      
+      console.log('Found API keys in localStorage, updating settings');
+      
+      onSettingsChange({
+        ...settings,
+        apiKeys: {
+          openaiApiKey: openaiKey || settings.apiKeys.openaiApiKey,
+          claudeApiKey: claudeKey || settings.apiKeys.claudeApiKey,
+          geminiApiKey: geminiKey || settings.apiKeys.geminiApiKey,
+          deepseekApiKey: deepseekKey || settings.apiKeys.deepseekApiKey
+        }
+      });
+      
+      // Show toast notification
+      toast({
+        title: "API Keys Loaded",
+        description: "Your stored API keys have been loaded",
+        duration: 3000
+      });
+    }
+  }, []);
+  
   const handleDeepSearchToggle = (checked: boolean) => {
     onSettingsChange({
       ...settings,
@@ -32,6 +68,44 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
       ...settings,
       selectedModel: modelId as any
     });
+    
+    // Check if the model requires an API key
+    const selectedModelInfo = AI_MODELS.find(model => model.id === modelId);
+    if (selectedModelInfo?.needsApiKey) {
+      // Check if we have the required API key
+      let hasKey = false;
+      switch (modelId) {
+        case 'openai':
+        case 'gpt-4':
+        case 'gpt-3.5-turbo':
+          hasKey = !!settings.apiKeys.openaiApiKey || !!localStorage.getItem('openaiApiKey');
+          break;
+        case 'claude':
+        case 'claude-3-haiku':
+        case 'claude-3-sonnet':
+        case 'claude-3-opus':
+          hasKey = !!settings.apiKeys.claudeApiKey || !!localStorage.getItem('claudeApiKey');
+          break;
+        case 'gemini':
+        case 'gemini-pro':
+          hasKey = !!settings.apiKeys.geminiApiKey || !!localStorage.getItem('geminiApiKey');
+          break;
+        case 'deepseek':
+        case 'deepseek-chat':
+          hasKey = !!settings.apiKeys.deepseekApiKey || !!localStorage.getItem('deepseekApiKey');
+          break;
+      }
+      
+      if (!hasKey) {
+        // Alert the user that they need to set an API key
+        toast({
+          title: "API Key Required",
+          description: `${selectedModelInfo.name} requires an API key. Please set it in the API Keys section.`,
+          variant: "destructive",
+          duration: 5000
+        });
+      }
+    }
   };
   
   const handleTemperatureChange = (value: number[]) => {
@@ -42,6 +116,13 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
   };
   
   const handleApiKeysChange = (apiKeys: any) => {
+    console.log('API keys updated:', {
+      openai: apiKeys.openaiApiKey ? 'present' : 'not set',
+      claude: apiKeys.claudeApiKey ? 'present' : 'not set',
+      gemini: apiKeys.geminiApiKey ? 'present' : 'not set',
+      deepseek: apiKeys.deepseekApiKey ? 'present' : 'not set'
+    });
+    
     onSettingsChange({
       ...settings,
       apiKeys

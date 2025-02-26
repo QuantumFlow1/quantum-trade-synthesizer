@@ -1,83 +1,111 @@
 
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const GROK3_API_KEY = Deno.env.get('GROK3_API_KEY');
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Type': 'application/json'
 };
 
 serve(async (req) => {
-  // Handle CORS preflight request
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { service } = await req.json();
-    console.log('Checking availability for:', service);
-
+    // Parse the request body
+    const { service, checkSecret } = await req.json();
+    
+    console.log(`Checking availability for: ${service}`);
+    let available = false;
+    let secretSet = false;
+    
     if (service === 'grok3') {
-      // Check if GROK3_API_KEY is set
-      const grok3ApiKey = Deno.env.get('GROK3_API_KEY');
+      // First check if the secret is set
+      secretSet = !!GROK3_API_KEY;
       
-      if (!grok3ApiKey) {
-        console.log('GROK3_API_KEY is not set');
+      // If only checking for secret status and not actual API availability
+      if (checkSecret) {
         return new Response(
-          JSON.stringify({ available: false, reason: 'API key not configured' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      // Validate the key by making a simple test request to the Grok3 API
-      try {
-        const testResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${grok3ApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'llama3-8b-8192',
-            messages: [
-              { role: 'system', content: 'You are a helpful assistant.' },
-              { role: 'user', content: 'Hello, are you available?' }
-            ],
-            max_tokens: 10,
+          JSON.stringify({ 
+            available: false,
+            secretSet: secretSet
           }),
-        });
-        
-        if (testResponse.ok) {
-          console.log('Grok3 API key is valid');
-          return new Response(
-            JSON.stringify({ available: true }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        } else {
-          const errorData = await testResponse.json();
-          console.error('Grok3 API key validation failed:', errorData);
-          return new Response(
-            JSON.stringify({ available: false, reason: 'API key validation failed', details: errorData }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } catch (error) {
-        console.error('Error validating Grok3 API key:', error);
-        return new Response(
-          JSON.stringify({ available: false, reason: 'API connection error', details: error.message }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: corsHeaders }
         );
       }
-    } else {
-      return new Response(
-        JSON.stringify({ error: `Unknown service: ${service}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      
+      // If the API key is set, test if it actually works
+      if (secretSet) {
+        try {
+          // Simple test call to check if the API is responsive
+          const testResponse = await fetch('https://api.xai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${GROK3_API_KEY}`
+            },
+            body: JSON.stringify({
+              model: "grok-3",
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a helpful assistant."
+                },
+                {
+                  role: "user",
+                  content: "Say hello, this is an API test"
+                }
+              ],
+              temperature: 0.7,
+              max_tokens: 10
+            })
+          });
+          
+          const responseData = await testResponse.json();
+          
+          // Check if we got a valid response
+          if (responseData && !responseData.error) {
+            available = true;
+            console.log("Grok3 API test successful");
+          } else {
+            console.log("Grok3 API test failed:", responseData.error || "Unknown error");
+          }
+        } catch (apiError) {
+          console.error("Error testing Grok3 API:", apiError);
+          available = false;
+        }
+      } else {
+        console.log("Grok3 API key not set in secrets");
+        available = false;
+      }
+    } else if (service === 'openai') {
+      // Check if OpenAI API key is set
+      secretSet = !!OPENAI_API_KEY;
+      
+      // Perform similar checks for OpenAI if needed
+      // This is a placeholder for future OpenAI API validation
+      available = secretSet;
     }
+    
+    // Return the availability status
+    return new Response(
+      JSON.stringify({ 
+        available,
+        secretSet
+      }),
+      { headers: corsHeaders }
+    );
   } catch (error) {
-    console.error('Error in check-api-keys:', error);
+    console.error(`Error in check-api-keys function:`, error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: corsHeaders }
     );
   }
 });

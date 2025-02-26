@@ -26,22 +26,45 @@ export const createChatMessage = (role: 'user' | 'assistant', content: string): 
 const hasRequiredApiKey = (modelId: ModelId, settings: GrokSettings): boolean => {
   const { apiKeys } = settings;
   
+  // Log the available API keys (masked for security)
+  console.log('Checking for required API key:', {
+    model: modelId,
+    openaiKeyAvailable: apiKeys.openaiApiKey ? 'Yes' : 'No',
+    claudeKeyAvailable: apiKeys.claudeApiKey ? 'Yes' : 'No',
+    geminiKeyAvailable: apiKeys.geminiApiKey ? 'Yes' : 'No',
+    deepseekKeyAvailable: apiKeys.deepseekApiKey ? 'Yes' : 'No'
+  });
+  
+  // Also check localStorage directly as a backup
+  const openaiKeyInStorage = localStorage.getItem('openaiApiKey');
+  const claudeKeyInStorage = localStorage.getItem('claudeApiKey');
+  const geminiKeyInStorage = localStorage.getItem('geminiApiKey');
+  const deepseekKeyInStorage = localStorage.getItem('deepseekApiKey');
+  
+  console.log('API keys in localStorage:', {
+    openai: openaiKeyInStorage ? 'present' : 'not found',
+    claude: claudeKeyInStorage ? 'present' : 'not found',
+    gemini: geminiKeyInStorage ? 'present' : 'not found',
+    deepseek: deepseekKeyInStorage ? 'present' : 'not found'
+  });
+  
+  // Use either the settings object or localStorage as a fallback
   switch (modelId) {
     case 'openai':
     case 'gpt-4':
     case 'gpt-3.5-turbo':
-      return !!apiKeys.openaiApiKey;
+      return !!(apiKeys.openaiApiKey || openaiKeyInStorage);
     case 'claude':
     case 'claude-3-haiku':
     case 'claude-3-sonnet':
     case 'claude-3-opus':
-      return !!apiKeys.claudeApiKey;
+      return !!(apiKeys.claudeApiKey || claudeKeyInStorage);
     case 'gemini':
     case 'gemini-pro':
-      return !!apiKeys.geminiApiKey;
+      return !!(apiKeys.geminiApiKey || geminiKeyInStorage);
     case 'deepseek':
     case 'deepseek-chat':
-      return !!apiKeys.deepseekApiKey;
+      return !!(apiKeys.deepseekApiKey || deepseekKeyInStorage);
     case 'grok3':
       return true; // Grok3 doesn't require an API key in this implementation
     default:
@@ -117,7 +140,12 @@ export const generateAIResponse = async (
           console.log('Grok3 not available or failed, falling back to OpenAI...');
           
           // Check if we have an OpenAI API key before falling back
-          if (settings.apiKeys.openaiApiKey) {
+          if (settings.apiKeys.openaiApiKey || localStorage.getItem('openaiApiKey')) {
+            // Update apiKeys from localStorage if necessary
+            if (!settings.apiKeys.openaiApiKey && localStorage.getItem('openaiApiKey')) {
+              settings.apiKeys.openaiApiKey = localStorage.getItem('openaiApiKey');
+            }
+            
             attemptedServices.push('openai');
             response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
           } else {
@@ -131,6 +159,12 @@ export const generateAIResponse = async (
       case 'openai':
         attemptedServices.push('openai');
         console.log(`Generating OpenAI response with ${settings.selectedModel}...`);
+        
+        // Update apiKeys from localStorage if necessary
+        if (!settings.apiKeys.openaiApiKey && localStorage.getItem('openaiApiKey')) {
+          settings.apiKeys.openaiApiKey = localStorage.getItem('openaiApiKey');
+        }
+        
         response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
         break;
         
@@ -140,6 +174,12 @@ export const generateAIResponse = async (
       case 'claude':
         attemptedServices.push('claude');
         console.log(`Generating Claude response with ${settings.selectedModel}...`);
+        
+        // Update apiKeys from localStorage if necessary
+        if (!settings.apiKeys.claudeApiKey && localStorage.getItem('claudeApiKey')) {
+          settings.apiKeys.claudeApiKey = localStorage.getItem('claudeApiKey');
+        }
+        
         try {
           response = await generateClaudeResponse(inputMessage, conversationHistory, settings);
         } catch (claudeError) {
@@ -150,7 +190,12 @@ export const generateAIResponse = async (
             duration: 3000,
           });
           // If Claude fails and we have an OpenAI key, try OpenAI
-          if (settings.apiKeys.openaiApiKey) {
+          if (settings.apiKeys.openaiApiKey || localStorage.getItem('openaiApiKey')) {
+            // Update apiKeys from localStorage if necessary
+            if (!settings.apiKeys.openaiApiKey && localStorage.getItem('openaiApiKey')) {
+              settings.apiKeys.openaiApiKey = localStorage.getItem('openaiApiKey');
+            }
+            
             attemptedServices.push('openai');
             response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
           } else {
@@ -163,6 +208,12 @@ export const generateAIResponse = async (
       case 'gemini':
         attemptedServices.push('gemini');
         console.log('Generating Gemini response...');
+        
+        // Update apiKeys from localStorage if necessary
+        if (!settings.apiKeys.geminiApiKey && localStorage.getItem('geminiApiKey')) {
+          settings.apiKeys.geminiApiKey = localStorage.getItem('geminiApiKey');
+        }
+        
         try {
           response = await generateGeminiResponse(inputMessage, conversationHistory, settings);
         } catch (geminiError) {
@@ -173,7 +224,12 @@ export const generateAIResponse = async (
             duration: 3000,
           });
           // If Gemini fails and we have an OpenAI key, try OpenAI
-          if (settings.apiKeys.openaiApiKey) {
+          if (settings.apiKeys.openaiApiKey || localStorage.getItem('openaiApiKey')) {
+            // Update apiKeys from localStorage if necessary
+            if (!settings.apiKeys.openaiApiKey && localStorage.getItem('openaiApiKey')) {
+              settings.apiKeys.openaiApiKey = localStorage.getItem('openaiApiKey');
+            }
+            
             attemptedServices.push('openai');
             response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
           } else {
@@ -186,6 +242,12 @@ export const generateAIResponse = async (
       case 'deepseek':
         attemptedServices.push('deepseek');
         console.log('Generating DeepSeek response...');
+        
+        // Update apiKeys from localStorage if necessary
+        if (!settings.apiKeys.deepseekApiKey && localStorage.getItem('deepseekApiKey')) {
+          settings.apiKeys.deepseekApiKey = localStorage.getItem('deepseekApiKey');
+        }
+        
         try {
           response = await generateDeepSeekResponse(inputMessage, conversationHistory, settings);
         } catch (deepseekError) {
@@ -196,7 +258,12 @@ export const generateAIResponse = async (
             duration: 3000,
           });
           // If DeepSeek fails and we have an OpenAI key, try OpenAI
-          if (settings.apiKeys.openaiApiKey) {
+          if (settings.apiKeys.openaiApiKey || localStorage.getItem('openaiApiKey')) {
+            // Update apiKeys from localStorage if necessary
+            if (!settings.apiKeys.openaiApiKey && localStorage.getItem('openaiApiKey')) {
+              settings.apiKeys.openaiApiKey = localStorage.getItem('openaiApiKey');
+            }
+            
             attemptedServices.push('openai');
             response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
           } else {
@@ -207,7 +274,12 @@ export const generateAIResponse = async (
         
       default:
         console.log(`Unknown model ${settings.selectedModel}, falling back to OpenAI...`);
-        if (settings.apiKeys.openaiApiKey) {
+        if (settings.apiKeys.openaiApiKey || localStorage.getItem('openaiApiKey')) {
+          // Update apiKeys from localStorage if necessary
+          if (!settings.apiKeys.openaiApiKey && localStorage.getItem('openaiApiKey')) {
+            settings.apiKeys.openaiApiKey = localStorage.getItem('openaiApiKey');
+          }
+          
           attemptedServices.push('openai');
           response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
         } else if (isGrok3Available) {

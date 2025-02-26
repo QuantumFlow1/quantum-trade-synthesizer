@@ -1,46 +1,76 @@
 
-import { supabase } from '@/lib/supabase';
 import { GrokSettings } from '../types/GrokSettings';
+import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase';
 
 export const generateOpenAIResponse = async (
   inputMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  settings?: GrokSettings
-) => {
-  console.log('Using OpenAI API...', { inputMessage, settings });
-  
-  // Extract the OpenAI API key from settings if available
-  const apiKey = settings?.apiKeys?.openaiApiKey;
-  
-  // Use specific model if provided, otherwise default to model family
-  const model = settings?.selectedModel === 'openai' ? 'gpt-4o' :
-               settings?.selectedModel === 'gpt-4' ? 'gpt-4o' :
-               settings?.selectedModel === 'gpt-3.5-turbo' ? 'gpt-3.5-turbo' :
-               'gpt-3.5-turbo';
-  
-  console.log(`OpenAI: Using model ${model}`);
-  
+  settings: GrokSettings
+): Promise<string> => {
   try {
-    const openaiResult = await supabase.functions.invoke('openai-response', {
-      body: { 
-        message: inputMessage,
-        context: conversationHistory,
-        model: model,
-        maxTokens: settings?.maxTokens,
-        temperature: settings?.temperature,
-        apiKey: apiKey // Pass the API key to the function
+    // Get the API key from settings or localStorage
+    let apiKey = settings.apiKeys.openaiApiKey;
+    
+    // If not found in settings, try localStorage as a fallback
+    if (!apiKey) {
+      apiKey = localStorage.getItem('openaiApiKey');
+      if (apiKey) {
+        console.log('Retrieved OpenAI API key from localStorage');
+      }
+    }
+    
+    if (!apiKey) {
+      console.error('OpenAI API key is missing');
+      toast({
+        title: "Missing API Key",
+        description: "Please set your OpenAI API key in settings",
+        variant: "destructive"
+      });
+      throw new Error('OpenAI API key is missing');
+    }
+    
+    console.log('Calling OpenAI API with model:', settings.selectedModel);
+    
+    // Format conversation history
+    const messages = conversationHistory.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    }));
+    
+    // Add the new user message
+    messages.push({
+      role: 'user',
+      content: inputMessage
+    });
+    
+    // Prepare request
+    const modelName = settings.selectedModel === 'openai' ? 'gpt-4o' : settings.selectedModel;
+    
+    // Call Supabase Edge Function for OpenAI response
+    const { data, error } = await supabase.functions.invoke('openai-response', {
+      body: {
+        messages,
+        model: modelName,
+        temperature: settings.temperature || 0.7,
+        max_tokens: settings.maxTokens || 1024,
+        apiKey: apiKey
       }
     });
     
-    if (!openaiResult.error && openaiResult.data?.response) {
-      console.log('OpenAI response received:', openaiResult.data.response.substring(0, 100) + '...');
-      return openaiResult.data.response;
-    } else {
-      console.error('OpenAI API error:', openaiResult.error || openaiResult.data?.error);
-      throw openaiResult.error || new Error(openaiResult.data?.error || 'Geen antwoord van OpenAI API');
+    if (error) {
+      console.error('OpenAI Supabase function error:', error);
+      throw new Error(`OpenAI API Error: ${error.message}`);
     }
+    
+    if (!data || !data.response) {
+      console.error('Invalid response from OpenAI API:', data);
+      throw new Error('Invalid response from OpenAI API');
+    }
+    
+    return data.response;
   } catch (error) {
-    console.error('Exception calling OpenAI:', error);
+    console.error('Error generating OpenAI response:', error);
     throw error;
   }
 };

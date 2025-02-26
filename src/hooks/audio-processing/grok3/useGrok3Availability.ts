@@ -1,12 +1,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { toast } from '@/hooks/use-toast'
 
 export const useGrok3Availability = () => {
   const [grok3Available, setGrok3Available] = useState<boolean>(false)
   const [lastChecked, setLastChecked] = useState<Date | null>(null)
   const [checkCount, setCheckCount] = useState<number>(0)
   const [manuallyDisabled, setManuallyDisabled] = useState<boolean>(false)
+  const [isChecking, setIsChecking] = useState<boolean>(false)
   
   // The maximum number of retries for the API
   const MAX_RETRY_COUNT = 3
@@ -28,6 +30,12 @@ export const useGrok3Availability = () => {
     setManuallyDisabled(true)
     setGrok3Available(false)
     setLastChecked(new Date())
+    
+    toast({
+      title: "Grok3 API Disabled",
+      description: "Grok3 API connection has been manually disabled",
+      duration: 3000
+    })
   }
   
   // Determine if we should retry the API connection based on check count
@@ -38,21 +46,31 @@ export const useGrok3Availability = () => {
   // Check if Grok3 API is available
   const checkGrok3Availability = useCallback(async (): Promise<boolean> => {
     try {
+      // Prevent multiple simultaneous checks
+      if (isChecking) {
+        console.log('Grok3 availability check already in progress, skipping...')
+        return grok3Available
+      }
+      
+      setIsChecking(true)
       console.log('Checking Grok3 API availability...')
       
       // If manually disabled, don't perform any checks
       if (manuallyDisabled) {
         console.log('Grok3 API is manually disabled, skipping check')
+        setIsChecking(false)
         return false
       }
       
       // If we've checked too many times, don't retry
       if (checkCount >= MAX_RETRY_COUNT) {
         console.log('Exceeded maximum retry count for Grok3 API check')
+        setIsChecking(false)
         return grok3Available
       }
       
       // Call our edge function to check if API keys are valid
+      console.log('Calling check-api-keys edge function...')
       const { data, error } = await supabase.functions.invoke('check-api-keys', {
         body: { service: 'grok3' }
       })
@@ -61,23 +79,56 @@ export const useGrok3Availability = () => {
         console.error('Error checking Grok3 API:', error)
         setGrok3Available(false)
         setCheckCount(prev => prev + 1)
+        setIsChecking(false)
+        
+        toast({
+          title: "API Check Failed",
+          description: "Could not verify Grok3 API availability",
+          variant: "destructive",
+          duration: 3000
+        })
+        
         return false
       }
       
       // Update state with availability status
-      setGrok3Available(data?.available || false)
+      const isAvailable = data?.available || false
+      setGrok3Available(isAvailable)
       setLastChecked(new Date())
       
-      console.log('Grok3 API availability:', data?.available || false)
-      return data?.available || false
+      console.log('Grok3 API availability:', isAvailable)
+      
+      // Show toast only if status changed or first check
+      if (isAvailable !== grok3Available || checkCount === 0) {
+        toast({
+          title: isAvailable ? "Grok3 API Available" : "Grok3 API Unavailable",
+          description: isAvailable 
+            ? "Successfully connected to Grok3 API" 
+            : "Could not connect to Grok3 API. Check your settings or try again later.",
+          variant: isAvailable ? "default" : "destructive",
+          duration: 3000
+        })
+      }
+      
+      setIsChecking(false)
+      return isAvailable
       
     } catch (error) {
       console.error('Error in Grok3 availability check:', error)
       setGrok3Available(false)
       setCheckCount(prev => prev + 1)
+      setIsChecking(false)
+      
+      toast({
+        title: "API Check Error",
+        description: "An unexpected error occurred while checking Grok3 availability",
+        variant: "destructive",
+        duration: 3000
+      })
+      
       return false
     }
-  }, [grok3Available, checkCount, manuallyDisabled])
+  }, [grok3Available, checkCount, manuallyDisabled, isChecking])
   
   // Check availability on initial mount
   useEffect(() => {
@@ -94,6 +145,7 @@ export const useGrok3Availability = () => {
     resetGrok3Connection,
     disableGrok3Connection,
     manuallyDisabled,
-    shouldRetryGrok3
+    shouldRetryGrok3,
+    isChecking
   }
 }

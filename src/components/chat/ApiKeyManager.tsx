@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ApiKeySettings, ModelInfo } from './types/GrokSettings';
@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Key, Save, Check } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 interface ApiKeyManagerProps {
   selectedModel: ModelInfo | undefined;
@@ -28,16 +29,111 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
   const [deepseekKey, setDeepseekKey] = useState(apiKeys.deepseekApiKey || '');
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    const updatedKeys: ApiKeySettings = {
-      openaiApiKey: openaiKey,
-      claudeApiKey: claudeKey,
-      geminiApiKey: geminiKey,
-      deepseekApiKey: deepseekKey
+  // Load API keys from localStorage on component mount
+  useEffect(() => {
+    const loadApiKeys = () => {
+      const savedOpenAIKey = localStorage.getItem('openaiApiKey');
+      const savedClaudeKey = localStorage.getItem('claudeApiKey');
+      const savedGeminiKey = localStorage.getItem('geminiApiKey');
+      const savedDeepseekKey = localStorage.getItem('deepseekApiKey');
+      
+      console.log('Loading API keys from localStorage:', {
+        openai: savedOpenAIKey ? 'present' : 'not found',
+        claude: savedClaudeKey ? 'present' : 'not found',
+        gemini: savedGeminiKey ? 'present' : 'not found',
+        deepseek: savedDeepseekKey ? 'present' : 'not found'
+      });
+      
+      // Only update if keys exist in localStorage
+      const keysToUpdate: ApiKeySettings = { ...apiKeys };
+      
+      if (savedOpenAIKey) keysToUpdate.openaiApiKey = savedOpenAIKey;
+      if (savedClaudeKey) keysToUpdate.claudeApiKey = savedClaudeKey;
+      if (savedGeminiKey) keysToUpdate.geminiApiKey = savedGeminiKey;
+      if (savedDeepseekKey) keysToUpdate.deepseekApiKey = savedDeepseekKey;
+      
+      // Update state and parent component
+      setOpenaiKey(keysToUpdate.openaiApiKey || '');
+      setClaudeKey(keysToUpdate.claudeApiKey || '');
+      setGeminiKey(keysToUpdate.geminiApiKey || '');
+      setDeepseekKey(keysToUpdate.deepseekApiKey || '');
+      onApiKeysChange(keysToUpdate);
     };
+    
+    loadApiKeys();
+  }, []);
+
+  const handleSave = () => {
+    // Validate keys (simple validation - checking if not empty and proper format)
+    const validateKey = (key: string, type: string): boolean => {
+      if (!key) return true; // Empty key is valid (just not set)
+      
+      // Check if key has proper format based on provider
+      if (type === 'openai' && !key.startsWith('sk-')) {
+        toast({
+          title: "Invalid OpenAI API Key",
+          description: "OpenAI API keys should start with 'sk-'",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      if (type === 'claude' && !key.startsWith('sk-ant-')) {
+        toast({
+          title: "Invalid Claude API Key",
+          description: "Claude API keys should start with 'sk-ant-'",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      if (type === 'gemini' && !key.startsWith('AIza')) {
+        toast({
+          title: "Invalid Gemini API Key",
+          description: "Gemini API keys typically start with 'AIza'",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      return true;
+    };
+    
+    // Validate all keys
+    if (!validateKey(openaiKey, 'openai') ||
+        !validateKey(claudeKey, 'claude') ||
+        !validateKey(geminiKey, 'gemini')) {
+      return;
+    }
+    
+    const updatedKeys: ApiKeySettings = {
+      openaiApiKey: openaiKey.trim(),
+      claudeApiKey: claudeKey.trim(),
+      geminiApiKey: geminiKey.trim(),
+      deepseekApiKey: deepseekKey.trim()
+    };
+    
+    // Save to localStorage
+    if (updatedKeys.openaiApiKey) localStorage.setItem('openaiApiKey', updatedKeys.openaiApiKey);
+    if (updatedKeys.claudeApiKey) localStorage.setItem('claudeApiKey', updatedKeys.claudeApiKey);
+    if (updatedKeys.geminiApiKey) localStorage.setItem('geminiApiKey', updatedKeys.geminiApiKey);
+    if (updatedKeys.deepseekApiKey) localStorage.setItem('deepseekApiKey', updatedKeys.deepseekApiKey);
+    
+    console.log('Saved API keys to localStorage:', {
+      openai: updatedKeys.openaiApiKey ? 'present' : 'not set',
+      claude: updatedKeys.claudeApiKey ? 'present' : 'not set',
+      gemini: updatedKeys.geminiApiKey ? 'present' : 'not set',
+      deepseek: updatedKeys.deepseekApiKey ? 'present' : 'not set'
+    });
     
     onApiKeysChange(updatedKeys);
     setSaved(true);
+    
+    toast({
+      title: "API Keys Saved",
+      description: "Your API keys have been saved successfully",
+      variant: "default"
+    });
     
     // Reset saved status after 2 seconds
     setTimeout(() => {
