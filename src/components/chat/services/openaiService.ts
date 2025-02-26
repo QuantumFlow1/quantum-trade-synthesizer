@@ -2,6 +2,7 @@
 import { GrokSettings } from '../types/GrokSettings';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
+import { getApiKey } from './utils/apiHelpers';
 
 export const generateOpenAIResponse = async (
   inputMessage: string,
@@ -9,22 +10,14 @@ export const generateOpenAIResponse = async (
   settings: GrokSettings
 ): Promise<string> => {
   try {
-    // Get the API key from settings or localStorage
-    let apiKey = settings.apiKeys.openaiApiKey;
-    
-    // If not found in settings, try localStorage as a fallback
-    if (!apiKey) {
-      apiKey = localStorage.getItem('openaiApiKey');
-      if (apiKey) {
-        console.log('Retrieved OpenAI API key from localStorage');
-      }
-    }
+    // Get the API key from settings, localStorage, or admin keys
+    const apiKey = await getApiKey('openai', settings.apiKeys.openaiApiKey);
     
     if (!apiKey) {
       console.error('OpenAI API key is missing');
       toast({
         title: "Missing API Key",
-        description: "Please set your OpenAI API key in settings",
+        description: "No OpenAI API key is available. Please set one in settings or contact an administrator.",
         variant: "destructive"
       });
       throw new Error('OpenAI API key is missing');

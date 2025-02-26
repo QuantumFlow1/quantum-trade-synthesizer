@@ -13,6 +13,7 @@ import AccountManagementPanel from "./AccountManagementPanel";
 import DashboardView from "./DashboardView";
 import ModelManagement from "./ModelManagement";
 import AIAgentsList from "./AIAgentsList";
+import ApiKeyManagement from "./ApiKeyManagement";
 import { Agent } from "@/types/agent";
 import { useToast } from "@/hooks/use-toast";
 
@@ -123,6 +124,7 @@ const AdminPanelContent = ({
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="agents">AI Agents</TabsTrigger>
           <TabsTrigger value="models">Advies Modellen</TabsTrigger>
+          <TabsTrigger value="apikeys">API Sleutels</TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -179,6 +181,17 @@ const AdminPanelContent = ({
                 <AccordionTrigger>Adviesmodellen</AccordionTrigger>
                 <AccordionContent>
                   <ModelManagement />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </TabsContent>
+
+          <TabsContent value="apikeys">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="api-keys">
+                <AccordionTrigger>API Sleutelbeheer</AccordionTrigger>
+                <AccordionContent>
+                  <ApiKeyManagement />
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
