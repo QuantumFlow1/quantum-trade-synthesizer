@@ -26,9 +26,9 @@ export const generateClaudeResponse = async (
     body: { 
       message: inputMessage,
       context: conversationHistory,
-      model: settings?.selectedModel,
-      maxTokens: settings?.maxTokens,
-      temperature: settings?.temperature,
+      model: 'claude-3-haiku-20240307',
+      maxTokens: settings?.maxTokens || 1024,
+      temperature: settings?.temperature || 0.7,
       apiKey: apiKey
     }
   });
@@ -38,7 +38,6 @@ export const generateClaudeResponse = async (
     return claudeResult.data.response;
   } else {
     console.error('Claude API error:', claudeResult.error);
-    throw claudeResult.error || new Error('Geen antwoord van Claude API');
+    throw claudeResult.error || new Error('No response from Claude API');
   }
 };
-

@@ -22,7 +22,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, context = [], model = 'claude-3-haiku', maxTokens = 1024, temperature = 0.7, apiKey } = await req.json();
+    const { message, context = [], model = 'claude-3-haiku-20240307', maxTokens = 1024, temperature = 0.7, apiKey } = await req.json();
     
     // Use the provided API key or fallback to environment variable
     const claudeApiKey = apiKey || Deno.env.get('CLAUDE_API_KEY');
