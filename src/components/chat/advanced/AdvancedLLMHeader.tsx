@@ -9,10 +9,15 @@ export default function AdvancedLLMHeader({ selectedModelName, onExit }: Advance
   
   // Update the document title to reflect the selected model
   useEffect(() => {
-    document.title = `${modelDisplayName} Assistant`;
+    // Set timeout to ensure this runs after the component mounts
+    const titleTimeout = setTimeout(() => {
+      document.title = `${modelDisplayName} Assistant`;
+      console.log("Updated document title to:", `${modelDisplayName} Assistant`);
+    }, 100);
     
     // Restore original title when component unmounts
     return () => {
+      clearTimeout(titleTimeout);
       document.title = "Grok AI Assistant";
     };
   }, [selectedModelName, modelDisplayName]);
