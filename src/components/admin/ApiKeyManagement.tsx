@@ -24,6 +24,7 @@ type ApiKey = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  created_by?: string;
 };
 
 type ApiKeyFormData = {
@@ -148,6 +149,16 @@ const ApiKeyManagement = () => {
     }
 
     try {
+      // Ensure we have the user's ID for ownership tracking
+      if (!userProfile?.id) {
+        toast({
+          title: "Auth Error",
+          description: "Unable to identify the current user. Please sign in again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Check if we already have a key of this type
       const existingKey = apiKeys.find(key => key.key_type === formData.key_type);
       
@@ -159,7 +170,7 @@ const ApiKeyManagement = () => {
           .update({ 
             api_key: formData.api_key,
             is_active: formData.is_active,
-            created_by: userProfile?.id
+            created_by: userProfile.id
           })
           .eq('id', existingKey.id);
       } else {
@@ -170,7 +181,7 @@ const ApiKeyManagement = () => {
             key_type: formData.key_type,
             api_key: formData.api_key,
             is_active: formData.is_active,
-            created_by: userProfile?.id
+            created_by: userProfile.id
           });
       }
 
