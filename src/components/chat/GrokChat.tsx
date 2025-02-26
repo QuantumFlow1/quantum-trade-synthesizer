@@ -32,10 +32,10 @@ export function GrokChat() {
   // Use the advanced interface instead of the standard chat interface
   const [useAdvancedInterface, setUseAdvancedInterface] = useState(true);
   
-  // Instellingen standaard zichtbaar maken
+  // Settings default visible
   const [showSettings, setShowSettings] = useState(false);
   
-  // Haal de volledige naam van het geselecteerde model op
+  // Get the full name of the selected model
   const selectedModel = AI_MODELS.find(m => m.id === grokSettings.selectedModel);
   const selectedModelName = selectedModel?.name || 'AI';
 
@@ -43,7 +43,7 @@ export function GrokChat() {
   useEffect(() => {
     toast({
       title: "Multi-Model AI Interface",
-      description: `Chat met verschillende AI modellen. Standaard model is ${selectedModelName}.`,
+      description: `Chat with various AI models. The default model is ${selectedModelName}.`,
       duration: 5000,
     });
   }, [selectedModelName]);
@@ -59,20 +59,20 @@ export function GrokChat() {
   const toggleInterface = () => {
     setUseAdvancedInterface(!useAdvancedInterface);
     toast({
-      title: `${useAdvancedInterface ? 'Standaard' : 'Geavanceerde'} interface geactiveerd`,
-      description: `Je gebruikt nu de ${useAdvancedInterface ? 'standaard' : 'geavanceerde'} AI interface.`,
+      title: `${useAdvancedInterface ? 'Standard' : 'Advanced'} interface activated`,
+      description: `You are now using the ${useAdvancedInterface ? 'standard' : 'advanced'} AI interface.`,
       duration: 3000,
     });
   };
   
   const handleExit = () => {
-    // Navigeer terug naar de hoofdpagina
+    // Navigate back to main page
     navigate('/');
     
-    // Toon een bevestigingsmelding
+    // Show confirmation message
     toast({
-      title: "Chat verlaten",
-      description: "Je hebt de chat verlaten.",
+      title: "Chat exited",
+      description: "You've left the chat.",
       duration: 3000,
     });
   };
@@ -100,7 +100,7 @@ export function GrokChat() {
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>AI Service Status</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
-              <p>De {selectedModelName} service is momenteel niet beschikbaar. Dit is een probleem aan de kant van de AI provider zelf, niet met uw systeem of verbinding. We hebben automatisch overgeschakeld naar een reserve AI-service om u zonder onderbreking te blijven helpen.</p>
+              <p>The {selectedModelName} service is currently unavailable. This is a problem with the AI provider itself, not with your system or connection. We've automatically switched to a backup AI service to continue helping you without interruption.</p>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -111,17 +111,17 @@ export function GrokChat() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verbinding controleren...
+                    Checking connection...
                   </>
                 ) : (
-                  'Probeer opnieuw te verbinden'
+                  'Try to reconnect'
                 )}
               </Button>
             </AlertDescription>
           </Alert>
         )}
         
-        {/* Settings Panel - toon alleen als showSettings true is */}
+        {/* Settings Panel - show only if showSettings is true */}
         {showSettings && (
           <div className="mx-4 mt-4">
             <GrokChatSettings 

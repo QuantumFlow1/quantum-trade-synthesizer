@@ -12,6 +12,9 @@ interface GrokChatHeaderProps {
 }
 
 export function GrokChatHeader({ onClearChat, onToggleSettings, onExit, onToggleInterface, modelName = 'AI' }: GrokChatHeaderProps) {
+  // Update the title display to show "Chat" after the model name
+  const displayName = modelName ? `${modelName} Chat` : 'AI Chat';
+  
   return (
     <CardHeader className="border-b py-4 px-6 flex flex-row items-center justify-between">
       <div className="flex items-center gap-2">
@@ -26,7 +29,7 @@ export function GrokChatHeader({ onClearChat, onToggleSettings, onExit, onToggle
             <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
-        <CardTitle className="text-xl font-semibold">{modelName} Chat</CardTitle>
+        <CardTitle className="text-xl font-semibold">{displayName}</CardTitle>
       </div>
       <div className="flex gap-2">
         {onToggleInterface && (

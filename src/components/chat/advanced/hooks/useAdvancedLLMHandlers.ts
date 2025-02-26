@@ -22,10 +22,15 @@ export const createAdvancedLLMHandlers = (
     grokSettings: any;
     setIsGenerating: React.Dispatch<React.SetStateAction<boolean>>;
     sendGrokMessage: (content: string) => Promise<void>;
+    setSelectedModel: React.Dispatch<React.SetStateAction<ModelId>>;
   }
 ) => {
   // Handle model selection changes
   const handleModelChange = (model: string) => {
+    // Update the local state
+    state.setSelectedModel(model as ModelId);
+    
+    // Update the global settings
     state.setGrokSettings({
       ...state.grokSettings,
       selectedModel: model as ModelId
