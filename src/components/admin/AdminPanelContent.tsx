@@ -29,7 +29,6 @@ const AdminPanelContent = ({
   userRole,
   agents,
   setAgents,
-  userCount,
   systemLoad,
   errorRate,
 }: AdminPanelContentProps) => {
@@ -129,7 +128,6 @@ const AdminPanelContent = ({
         <div className="mt-6">
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardView 
-              userCount={userCount}
               systemLoad={systemLoad}
               errorRate={errorRate}
             />

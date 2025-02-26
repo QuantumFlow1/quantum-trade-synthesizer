@@ -7,18 +7,40 @@ import { Activity, TrendingUp, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface DashboardViewProps {
-  userCount: number;
   systemLoad: number;
   errorRate: number;
 }
 
 const DashboardView = ({
-  userCount,
   systemLoad,
   errorRate
 }: DashboardViewProps) => {
   const [formattedMarketData, setFormattedMarketData] = useState<any[]>([]);
   const [formattedSentimentData, setFormattedSentimentData] = useState<any[]>([]);
+
+  // Query to fetch users count from the profiles table
+  const { data: userCountData, isLoading: userCountLoading } = useQuery({
+    queryKey: ['userCount'],
+    queryFn: async () => {
+      try {
+        console.log("Fetching user count...");
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+        
+        if (error) {
+          console.error('Error fetching user count:', error);
+          throw error;
+        }
+        
+        console.log("User count fetched:", count);
+        return count || 0;
+      } catch (err) {
+        console.error('Error in user count query:', err);
+        return 0;
+      }
+    }
+  });
 
   // Create mock data to use if real data is not available
   const mockMarketData = Array.from({ length: 24 }, (_, i) => ({
@@ -155,7 +177,8 @@ const DashboardView = ({
   useEffect(() => {
     console.log('Market Data to display:', formattedMarketData);
     console.log('Sentiment Data to display:', formattedSentimentData);
-  }, [formattedMarketData, formattedSentimentData]);
+    console.log('User count data:', userCountData);
+  }, [formattedMarketData, formattedSentimentData, userCountData]);
 
   // Display mock data if real data is not available or empty
   const displayMarketData = formattedMarketData.length > 0 ? formattedMarketData : mockMarketData;
@@ -189,6 +212,9 @@ const DashboardView = ({
     console.error('Sentiment data error:', sentimentError);
   }
 
+  // Determine user count to display
+  const displayUserCount = userCountData !== undefined ? userCountData : 0;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -198,7 +224,13 @@ const DashboardView = ({
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{userCount}</div>
+            <div className="text-2xl font-bold">
+              {userCountLoading ? (
+                <span className="text-muted-foreground">Laden...</span>
+              ) : (
+                displayUserCount
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">Actieve accounts</p>
           </CardContent>
         </Card>
