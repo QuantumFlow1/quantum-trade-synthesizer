@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
-import { Bot, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
@@ -85,15 +85,6 @@ const Index = () => {
           >
             {/* Quick Links for authenticated users */}
             <div className="fixed top-4 right-4 z-50 flex gap-2">
-              {user && (
-                <Link to="/chat">
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <Bot className="h-4 w-4" />
-                    <span>Grok Chat</span>
-                  </Button>
-                </Link>
-              )}
-              
               {/* Users Dashboard Link - Only shown to admins */}
               {isAdmin && (
                 <Link to="/admin/users">
@@ -126,3 +117,4 @@ const Index = () => {
 };
 
 export default Index;
+
