@@ -19,6 +19,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
   // Scroll to bottom when messages change
   useEffect(() => {
     console.log("Advanced interface - Messages updated:", messages.length);
+    console.log("Messages content:", messages);
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }

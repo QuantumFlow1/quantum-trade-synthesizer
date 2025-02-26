@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Send, Loader2 } from 'lucide-react';
@@ -19,6 +19,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
   isGenerating,
   modelDisplayName
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Focus textarea on mount
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, []);
+
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +41,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey && !isGenerating && inputMessage.trim()) {
       e.preventDefault();
-      console.log("Message sent using Enter key");
+      console.log("Message sent using Enter key:", inputMessage);
       onSendMessage();
     }
   };
@@ -40,6 +49,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col">
       <Textarea
+        ref={textareaRef}
         className="w-full min-h-[120px] mb-2 resize-none"
         value={inputMessage}
         onChange={(e) => setInputMessage(e.target.value)}
