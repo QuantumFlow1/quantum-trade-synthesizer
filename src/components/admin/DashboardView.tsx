@@ -8,13 +8,14 @@ import SentimentChart from "./dashboard/SentimentChart";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DashboardProvider } from "@/contexts/DashboardContext";
 
 interface DashboardViewProps {
   systemLoad: number;
   errorRate: number;
 }
 
-const DashboardView = ({
+const DashboardViewContent = ({
   systemLoad,
   errorRate
 }: DashboardViewProps) => {
@@ -121,6 +122,15 @@ const DashboardView = ({
         <SentimentChart />
       </div>
     </div>
+  );
+};
+
+// Wrapper component that provides the DashboardProvider context
+const DashboardView = (props: DashboardViewProps) => {
+  return (
+    <DashboardProvider>
+      <DashboardViewContent {...props} />
+    </DashboardProvider>
   );
 };
 
