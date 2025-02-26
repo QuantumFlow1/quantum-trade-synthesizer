@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -8,11 +8,13 @@ import { supabase } from '@/lib/supabase';
 export const useApiAvailability = () => {
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [lastCheckedApi, setLastCheckedApi] = useState<string | null>(null);
 
   // Check if Grok3 API is available
   const checkGrokAvailability = useCallback(async () => {
     console.log('Checking Grok3 API availability...');
     setIsLoading(true);
+    setLastCheckedApi('grok3');
     
     try {
       const { data, error } = await supabase.functions.invoke('grok3-response', {
@@ -41,6 +43,7 @@ export const useApiAvailability = () => {
   const checkOpenAIAvailability = useCallback(async () => {
     console.log('Checking OpenAI API availability...');
     setIsLoading(true);
+    setLastCheckedApi('openai');
     
     try {
       const { data, error } = await supabase.functions.invoke('openai-response', {
@@ -70,17 +73,37 @@ export const useApiAvailability = () => {
     setIsLoading(true);
     
     try {
-      // Try both APIs
-      const grokAvailable = await checkGrokAvailability();
-      if (!grokAvailable) {
-        await checkOpenAIAvailability();
+      // Try the last checked API first, or both if none was checked
+      if (lastCheckedApi === 'grok3') {
+        const grokAvailable = await checkGrokAvailability();
+        if (!grokAvailable) {
+          await checkOpenAIAvailability();
+        }
+      } else if (lastCheckedApi === 'openai') {
+        const openaiAvailable = await checkOpenAIAvailability();
+        if (!openaiAvailable) {
+          await checkGrokAvailability();
+        }
+      } else {
+        // If no API was checked yet, try both
+        const grokAvailable = await checkGrokAvailability();
+        if (!grokAvailable) {
+          await checkOpenAIAvailability();
+        }
       }
     } catch (error) {
       console.error('Error retrying API connection:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [checkGrokAvailability, checkOpenAIAvailability]);
+  }, [checkGrokAvailability, checkOpenAIAvailability, lastCheckedApi]);
+
+  // Check API availability on mount
+  useEffect(() => {
+    if (apiAvailable === null) {
+      retryApiConnection();
+    }
+  }, [apiAvailable, retryApiConnection]);
 
   return {
     apiAvailable,

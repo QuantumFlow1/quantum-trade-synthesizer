@@ -33,12 +33,31 @@ export const generateOpenAIResponse = async (
       throw new Error(openaiResult.error.message || 'Error from OpenAI API');
     }
     
-    if (!openaiResult.data?.response) {
-      console.error('No response data from OpenAI API');
-      throw new Error('Geen antwoord van OpenAI API');
+    // Check for different response formats
+    let responseText;
+    if (typeof openaiResult.data?.response === 'string') {
+      responseText = openaiResult.data.response;
+    } else if (openaiResult.data?.response?.content) {
+      // Handle case where response is an object with content property
+      responseText = openaiResult.data.response.content;
+    } else if (openaiResult.data?.content) {
+      // Handle case where content is directly on data
+      responseText = openaiResult.data.content;
+    } else if (openaiResult.data?.choices && openaiResult.data.choices.length > 0) {
+      // Handle standard OpenAI API format
+      responseText = openaiResult.data.choices[0].message?.content || '';
+    } else {
+      console.error('Unexpected OpenAI API response format:', openaiResult.data);
+      throw new Error('Unexpected response format from OpenAI API');
     }
     
-    return openaiResult.data.response;
+    if (!responseText) {
+      console.error('No text content in OpenAI response:', openaiResult.data);
+      throw new Error('Geen tekstinhoud in OpenAI-antwoord');
+    }
+    
+    console.log('Extracted OpenAI response text:', responseText);
+    return responseText;
   } catch (error) {
     console.error('Error calling OpenAI API:', error);
     throw error;

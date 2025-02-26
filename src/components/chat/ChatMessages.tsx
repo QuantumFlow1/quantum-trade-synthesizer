@@ -23,11 +23,21 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
     }
   }, [messages]);
 
+  // Helper function to format content with newlines
+  const formatContent = (content: string) => {
+    return content.split('\n').map((line, i) => (
+      <React.Fragment key={i}>
+        {line}
+        {i < content.split('\n').length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
+
   if (messages.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
         <Bot className="w-16 h-16 mb-6 opacity-20" />
-        <p className="text-lg">Begin een gesprek met Grok AI.</p>
+        <p className="text-lg">Begin een gesprek met AI.</p>
         <p className="text-sm mt-2">Stel een vraag in het tekstvak hieronder.</p>
       </div>
     );
@@ -38,7 +48,7 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
       {messages.map((message) => (
         <div 
           key={message.id} 
-          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}
         >
           <div 
             className={`rounded-lg px-5 py-3 max-w-[85%] flex ${
@@ -55,7 +65,7 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
               )}
             </div>
             <div className="flex-1">
-              <p className="whitespace-pre-line">{message.content}</p>
+              <div className="whitespace-pre-line">{formatContent(message.content)}</div>
               <p className={`text-xs mt-2 ${message.role === 'user' ? 'text-indigo-200' : 'text-gray-400'}`}>
                 {message.timestamp.toLocaleTimeString()} - {message.timestamp.toLocaleDateString()}
               </p>
