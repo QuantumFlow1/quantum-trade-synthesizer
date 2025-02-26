@@ -1,10 +1,17 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useToast } from './use-toast';
 
-import { useState, useEffect } from 'react';
-
-export const useZoomControls = () => {
-  const [scale, setScale] = useState(1);
+export const useZoomControls = (initialScale = 1) => {
+  const [scale, setScale] = useState(initialScale);
   const [isPinching, setIsPinching] = useState(false);
   const [startTouchDistance, setStartTouchDistance] = useState(0);
+  const { toast } = useToast();
+
+  const setZoomLevel = useCallback((newScale: number) => {
+    const constrainedScale = Math.min(Math.max(0.5, newScale), 2);
+    setScale(constrainedScale);
+    return constrainedScale;
+  }, []);
 
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
@@ -30,20 +37,63 @@ export const useZoomControls = () => {
         );
         
         const scaleDiff = distance / startTouchDistance;
-        const newScale = Math.min(Math.max(0.5, scale * scaleDiff), 2);
-        setScale(newScale);
+        setZoomLevel(scale * scaleDiff);
       }
     };
 
     const handleTouchEnd = () => {
-      setIsPinching(false);
+      if (isPinching) {
+        setIsPinching(false);
+        toast({
+          title: "Zoom Level",
+          description: `Current zoom: ${scale.toFixed(1)}x`,
+          duration: 1500
+        });
+      }
     };
 
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        const newScale = Math.min(Math.max(0.5, scale - e.deltaY * 0.001), 2);
-        setScale(newScale);
+        const newScale = setZoomLevel(scale - e.deltaY * 0.001);
+        
+        if (Math.abs(newScale - scale) > 0.05) {
+          toast({
+            title: "Zoom Level",
+            description: `Current zoom: ${newScale.toFixed(1)}x`,
+            duration: 1500
+          });
+        }
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === '+') {
+        e.preventDefault();
+        const newScale = setZoomLevel(scale + 0.1);
+        toast({
+          title: "Zoom In",
+          description: `Current zoom: ${newScale.toFixed(1)}x`,
+          duration: 1500
+        });
+      }
+      else if (e.ctrlKey && e.key === '-') {
+        e.preventDefault();
+        const newScale = setZoomLevel(scale - 0.1);
+        toast({
+          title: "Zoom Out",
+          description: `Current zoom: ${newScale.toFixed(1)}x`,
+          duration: 1500
+        });
+      }
+      else if (e.ctrlKey && e.key === '0') {
+        e.preventDefault();
+        setZoomLevel(1);
+        toast({
+          title: "Zoom Reset",
+          description: "Zoom level reset to 1.0x",
+          duration: 1500
+        });
       }
     };
 
@@ -51,18 +101,43 @@ export const useZoomControls = () => {
     document.addEventListener('touchmove', handleTouchMove);
     document.addEventListener('touchend', handleTouchEnd);
     document.addEventListener('wheel', handleWheel, { passive: false });
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('wheel', handleWheel);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [scale, isPinching, startTouchDistance]);
+  }, [scale, isPinching, startTouchDistance, setZoomLevel, toast]);
 
-  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 2));
-  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
-  const handleResetZoom = () => setScale(1);
+  const handleZoomIn = useCallback(() => {
+    const newScale = setZoomLevel(scale + 0.1);
+    toast({
+      title: "Zoom In",
+      description: `Current zoom: ${newScale.toFixed(1)}x`,
+      duration: 1500
+    });
+  }, [scale, setZoomLevel, toast]);
+
+  const handleZoomOut = useCallback(() => {
+    const newScale = setZoomLevel(scale - 0.1);
+    toast({
+      title: "Zoom Out",
+      description: `Current zoom: ${newScale.toFixed(1)}x`,
+      duration: 1500
+    });
+  }, [scale, setZoomLevel, toast]);
+
+  const handleResetZoom = useCallback(() => {
+    setZoomLevel(1);
+    toast({
+      title: "Zoom Reset",
+      description: "Zoom level reset to 1.0x",
+      duration: 1500
+    });
+  }, [setZoomLevel, toast]);
 
   return {
     scale,

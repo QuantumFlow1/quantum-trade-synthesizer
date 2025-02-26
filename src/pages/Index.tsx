@@ -113,6 +113,7 @@ const Index = () => {
               <UserDashboard key="user-dashboard" />
             )}
             {!isMobile && <ZoomControls
+              scale={scale}
               onZoomIn={handleZoomIn}
               onZoomOut={handleZoomOut}
               onResetZoom={handleResetZoom}
