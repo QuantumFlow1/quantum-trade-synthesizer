@@ -53,12 +53,13 @@ serve(async (req) => {
 
     // Prepare the conversation history in the format DeepSeek expects
     const messages = context && context.length > 0 
-      ? context
-      : [{ role: 'user', content: message }]
+      ? [...context]  // Create a copy to avoid modifying the original
+      : []
     
     // If the last message isn't the current message, add it
-    const lastMsg = messages[messages.length - 1]
-    if (lastMsg.role !== 'user' || lastMsg.content !== message) {
+    if (messages.length === 0 || 
+        messages[messages.length - 1].role !== 'user' || 
+        messages[messages.length - 1].content !== message) {
       messages.push({ role: 'user', content: message })
     }
 
