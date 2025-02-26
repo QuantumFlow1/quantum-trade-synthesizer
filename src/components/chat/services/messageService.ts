@@ -76,7 +76,10 @@ const generateResponseWithModel = async (
     case 'grok3':
       return await generateGrok3Response(inputMessage, conversationHistory, settings);
     case 'openai':
-      return await generateOpenAIResponse(inputMessage, conversationHistory);
+      return await generateOpenAIResponse(inputMessage, conversationHistory, {
+        temperature: settings?.temperature,
+        maxTokens: settings?.maxTokens || 1024
+      });
     case 'claude':
       return await generateClaudeResponse(inputMessage, conversationHistory);
     case 'gemini':

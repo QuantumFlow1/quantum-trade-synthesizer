@@ -72,56 +72,45 @@ export const createAdvancedLLMHandlers = (
       console.log("Temperature:", state.temperature);
       console.log("Max tokens:", state.maxTokens);
       
-      // Call the actual API through the hook
-      let responseText;
+      // Set updated settings for the API call
+      state.setGrokSettings(updatedSettings);
       
-      try {
-        // Set updated settings for the API call
-        state.setGrokSettings(updatedSettings);
-        
-        // Use the API integration from useGrokChat
-        await state.sendGrokMessage(content);
-        
-        // Since sendGrokMessage adds the response to its own state,
-        // we'll simulate a response here for this component's state
-        responseText = `This is a response from ${getModelDisplayName(state.selectedModel)}. In a real implementation, the response has been added to the chat history via the sendGrokMessage function.`;
-        
-        // Add AI response to conversation
-        const assistantMessage = { role: "assistant", content: responseText };
-        state.setMessages(prev => [...prev, assistantMessage]);
-        
-        // Add to history
-        state.setHistory(prev => [
-          { task: content, output: responseText },
-          ...prev
-        ]);
-        
-        // Clear input if it was successful
-        state.setInputMessage("");
-        
-        toast({
-          title: "Response Generated",
-          description: `${getModelDisplayName(state.selectedModel)} has responded to your query.`,
-          duration: 3000,
-        });
-      } catch (error) {
-        console.error("Error generating response:", error);
-        
-        // Add error message to conversation
-        const errorMessage = { 
-          role: "assistant", 
-          content: "Sorry, I couldn't generate a response. Please try again." 
-        };
-        state.setMessages(prev => [...prev, errorMessage]);
-        
-        toast({
-          title: "Error",
-          description: "Failed to generate a response. Please try again.",
-          variant: "destructive"
-        });
-      }
+      // Use the API integration from useGrokChat
+      await state.sendGrokMessage(content);
+      
+      // Get the last message - should be the AI response
+      // This is a workaround since sendGrokMessage doesn't return the response directly
+      setTimeout(() => {
+        const messages = document.querySelectorAll('.chat-message');
+        if (messages.length > 0) {
+          const lastMessage = messages[messages.length - 1];
+          const responseText = lastMessage.textContent || "Response received from AI";
+          
+          // Add to history
+          state.setHistory(prev => [
+            { task: content, output: responseText },
+            ...prev
+          ]);
+        }
+      }, 500);
+      
+      // Clear input if it was successful
+      state.setInputMessage("");
+      
+      toast({
+        title: "Response Generated",
+        description: `${getModelDisplayName(state.selectedModel)} has responded to your query.`,
+        duration: 3000,
+      });
     } catch (error) {
-      console.error("Error in generate response:", error);
+      console.error("Error generating response:", error);
+      
+      // Add error message to conversation
+      const errorMessage = { 
+        role: "assistant", 
+        content: "Sorry, I couldn't generate a response. Please try again." 
+      };
+      state.setMessages(prev => [...prev, errorMessage]);
       
       toast({
         title: "Error",

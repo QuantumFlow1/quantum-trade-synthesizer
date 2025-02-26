@@ -51,8 +51,16 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { message, context } = await req.json();
-    console.log('Received request for OpenAI:', { message, contextLength: context?.length });
+    const { message, context, options } = await req.json();
+    console.log('Received request for OpenAI:', { 
+      message, 
+      contextLength: context?.length,
+      options 
+    });
+
+    // Apply default options if not provided
+    const temperature = options?.temperature || 0.7;
+    const maxTokens = options?.maxTokens || 1024;
 
     // Make request to OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -67,8 +75,8 @@ serve(async (req) => {
           ...(context || []),
           { role: 'user', content: message }
         ],
-        max_tokens: 500,
-        temperature: 0.7
+        max_tokens: maxTokens,
+        temperature: temperature
       })
     });
 

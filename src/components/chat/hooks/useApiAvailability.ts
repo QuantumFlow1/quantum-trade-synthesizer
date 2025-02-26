@@ -1,76 +1,82 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { toast } from '@/components/ui/use-toast';
 
+/**
+ * Custom hook to check API availability
+ */
 export const useApiAvailability = () => {
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const checkGrokAvailability = async () => {
+  // Check if Grok3 API is available
+  const checkGrokAvailability = useCallback(async () => {
+    console.log('Checking Grok3 API availability...');
     setIsLoading(true);
+    
     try {
-      console.log('Checking Grok3 API availability...');
-      const { data, error } = await supabase.functions.invoke('check-api-keys', {
-        body: { service: 'grok3' }
+      const { data, error } = await supabase.functions.invoke('grok3-response', {
+        method: 'GET'
       });
       
-      if (error) {
-        console.error('Error checking Grok API:', error);
-        setApiAvailable(false);
-        toast({
-          title: "API Status",
-          description: "De Grok API is momenteel onbereikbaar. Dit is een probleem bij de Grok dienst zelf, niet met uw systeem. We schakelen automatisch over naar een alternatieve AI-service.",
-          variant: "destructive",
-          duration: 7000
-        });
-        return false;
-      }
+      if (error) throw error;
       
-      const isAvailable = data?.available || false;
-      setApiAvailable(isAvailable);
-      
-      if (!isAvailable) {
-        toast({
-          title: "API Status",
-          description: "De Grok API is momenteel onbereikbaar. Dit is een probleem bij de Grok dienst zelf, niet met uw systeem. We schakelen automatisch over naar een alternatieve AI-service.",
-          variant: "destructive",
-          duration: 7000
-        });
-      }
-      
-      console.log('Grok3 API available:', isAvailable);
-      return isAvailable;
+      setApiAvailable(data?.status === 'available');
+      console.log('Grok3 API status:', data?.status);
     } catch (error) {
-      console.error('Failed to check API availability:', error);
+      console.error('Error checking Grok API:', error);
+      setApiAvailable(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  // Check if OpenAI API is available
+  const checkOpenAIAvailability = useCallback(async () => {
+    console.log('Checking OpenAI API availability...');
+    setIsLoading(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('openai-response', {
+        method: 'GET'
+      });
+      
+      if (error) throw error;
+      
+      setApiAvailable(data?.status === 'available');
+      console.log('OpenAI API status:', data?.status);
+      return data?.status === 'available';
+    } catch (error) {
+      console.error('Error checking OpenAI API:', error);
       setApiAvailable(false);
       return false;
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Automatically check API availability when component mounts
-  useEffect(() => {
-    checkGrokAvailability();
   }, []);
 
-  const retryApiConnection = async () => {
-    const isAvailable = await checkGrokAvailability();
-    if (isAvailable) {
-      toast({
-        title: "Verbinding hersteld",
-        description: "De Grok API is nu beschikbaar en actief.",
-        duration: 3000,
-      });
+  // Retry API connection
+  const retryApiConnection = useCallback(async () => {
+    setIsLoading(true);
+    
+    try {
+      // Try both APIs
+      const grokAvailable = await checkGrokAvailability();
+      if (!grokAvailable) {
+        await checkOpenAIAvailability();
+      }
+    } catch (error) {
+      console.error('Error retrying API connection:', error);
+    } finally {
+      setIsLoading(false);
     }
-    return isAvailable;
-  };
+  }, [checkGrokAvailability, checkOpenAIAvailability]);
 
   return {
     apiAvailable,
     isLoading,
     checkGrokAvailability,
+    checkOpenAIAvailability,
     retryApiConnection
   };
 };
