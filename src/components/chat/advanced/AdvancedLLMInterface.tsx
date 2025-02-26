@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AI_MODELS, ModelId } from "../types/GrokSettings";
 import { HistoryItem } from "./types";
 import { useNavigate } from "react-router-dom";
@@ -16,11 +16,11 @@ export default function AdvancedLLMInterface() {
   const navigate = useNavigate();
   
   // Retrieve services from the hook
-  const { isLoading, grokSettings, setGrokSettings } = useGrokChat();
+  const { isLoading, grokSettings, setGrokSettings, sendMessage: sendGrokMessage } = useGrokChat();
   
   // State for the advanced interface
   const [selectedModel, setSelectedModel] = useState<ModelId>(grokSettings.selectedModel);
-  const [temperature, setTemperature] = useState(0.7);
+  const [temperature, setTemperature] = useState(grokSettings.temperature || 0.7);
   const [maxTokens, setMaxTokens] = useState(1024);
   const [inputMessage, setInputMessage] = useState("");
   const [messages, setMessages] = useState<Array<{role: string; content: string}>>([]);
@@ -28,13 +28,18 @@ export default function AdvancedLLMInterface() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   
+  // Sync settings with global settings
+  useEffect(() => {
+    setGrokSettings({
+      ...grokSettings,
+      selectedModel: selectedModel,
+      temperature: temperature
+    });
+  }, [selectedModel, temperature]);
+  
   // Handle model selection changes
   const handleModelChange = (model: string) => {
     setSelectedModel(model as ModelId);
-    setGrokSettings({
-      ...grokSettings,
-      selectedModel: model as ModelId,
-    });
     
     toast({
       title: "Model Changed",
@@ -54,58 +59,91 @@ export default function AdvancedLLMInterface() {
       return;
     }
     
-    generateResponse();
+    // Use the task as the input message if no message was provided
+    if (!inputMessage && task) {
+      setInputMessage(task);
+      generateResponse(task);
+    } else {
+      generateResponse();
+    }
   };
   
   // Handle send message
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
-    
-    // Add user message to conversation
-    setMessages((prev) => [
-      ...prev, 
-      { role: "user", content: inputMessage }
-    ]);
-    
     generateResponse();
   };
   
   // Generate AI response
-  const generateResponse = () => {
+  const generateResponse = async (content = inputMessage) => {
+    if (!content.trim()) return;
+    
     setIsGenerating(true);
     
-    // Use the input message or task as the prompt
-    const prompt = inputMessage || task;
+    // Add user message to conversation
+    const userMessage = { role: "user", content };
+    setMessages(prev => [...prev, userMessage]);
     
-    // If we're using the task, add it to messages
-    if (!inputMessage && task) {
-      setMessages((prev) => [
-        ...prev, 
-        { role: "user", content: task }
-      ]);
-    }
-    
-    // Simulate AI response for demonstration
-    setTimeout(() => {
-      const modelDisplayName = getModelDisplayName(selectedModel);
-      const responseText = `This is a simulated response from ${modelDisplayName} using temperature ${temperature} and max tokens ${maxTokens}. In a real implementation, this would come from the AI model API based on your input message and parameters.`;
+    try {
+      // Update settings before sending message
+      const updatedSettings = {
+        ...grokSettings,
+        selectedModel: selectedModel,
+        temperature: temperature
+      };
       
-      // Add AI response to conversation
-      setMessages((prev) => [
-        ...prev, 
-        { role: "assistant", content: responseText }
-      ]);
+      // Prepare the conversation history
+      const conversationHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
       
-      // Add to history
-      setHistory((prev) => [
-        { task: prompt, output: responseText },
-        ...prev,
-      ]);
+      console.log("Generating response with model:", selectedModel);
+      console.log("Temperature:", temperature);
+      console.log("Max tokens:", maxTokens);
       
-      // Clear input
-      setInputMessage("");
+      // In a real implementation, we would call the appropriate API based on the selected model
+      // For now, we'll simulate the response
+      let responseText;
+      
+      setTimeout(async () => {
+        try {
+          // Simulate calling the real API
+          responseText = `This is a simulated response from ${getModelDisplayName(selectedModel)}. In a real implementation, this would come from the ${getModelDisplayName(selectedModel)} API with temperature ${temperature} and max tokens ${maxTokens}. The model would respond to: "${content}"`;
+          
+          // Add AI response to conversation
+          const assistantMessage = { role: "assistant", content: responseText };
+          setMessages(prev => [...prev, assistantMessage]);
+          
+          // Add to history
+          setHistory(prev => [
+            { task: content, output: responseText },
+            ...prev
+          ]);
+          
+          // Clear input if it was successful
+          setInputMessage("");
+        } catch (error) {
+          console.error("Error generating response:", error);
+          toast({
+            title: "Error",
+            description: "Failed to generate a response. Please try again.",
+            variant: "destructive"
+          });
+        } finally {
+          setIsGenerating(false);
+        }
+      }, 1500); // Simulate API response time
+    } catch (error) {
+      console.error("Error in generate response:", error);
       setIsGenerating(false);
-    }, 1500);
+      
+      toast({
+        title: "Error",
+        description: "Failed to generate a response. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
   
   // Handle exit to main chat
@@ -154,6 +192,7 @@ export default function AdvancedLLMInterface() {
             messages={messages}
             selectedModelName={selectedModel}
             onSendMessage={handleSendMessage}
+            isGenerating={isGenerating}
           />
           
           <HistorySection history={history} />

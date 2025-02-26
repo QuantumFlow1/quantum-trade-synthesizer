@@ -1,9 +1,9 @@
 
 import { ModelId } from "../types/GrokSettings";
 
-export interface AdvancedLLMHeaderProps {
-  selectedModelName: string;
-  onExit: () => void;
+export interface HistoryItem {
+  task: string;
+  output: string;
 }
 
 export interface TaskAndModelSectionProps {
@@ -15,9 +15,9 @@ export interface TaskAndModelSectionProps {
 
 export interface ParametersSectionProps {
   temperature: number;
-  setTemperature: (value: number) => void;
+  setTemperature: (temperature: number) => void;
   maxTokens: number;
-  setMaxTokens: (value: number) => void;
+  setMaxTokens: (maxTokens: number) => void;
   handleGenerate: () => void;
   isLoading: boolean;
 }
@@ -25,16 +25,12 @@ export interface ParametersSectionProps {
 export interface ContentGenerationSectionProps {
   inputMessage: string;
   setInputMessage: (message: string) => void;
-  messages: Array<{role: string; content: string}>;
+  messages: Array<{ role: string; content: string }>;
   selectedModelName: string;
   onSendMessage: () => void;
+  isGenerating?: boolean;
 }
 
 export interface HistorySectionProps {
   history: HistoryItem[];
-}
-
-export interface HistoryItem {
-  task: string;
-  output: string;
 }

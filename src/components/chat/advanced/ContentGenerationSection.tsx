@@ -3,7 +3,7 @@ import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { ContentGenerationSectionProps } from './types';
 import { Button } from '@/components/ui/button';
-import { Send } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
 import { getModelDisplayName } from './utils';
 
 const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
@@ -11,7 +11,8 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
   setInputMessage,
   messages,
   selectedModelName,
-  onSendMessage
+  onSendMessage,
+  isGenerating = false
 }) => {
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,15 +34,25 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           placeholder="Enter your prompt here..."
+          disabled={isGenerating}
         />
         <div className="flex justify-end mb-4">
           <Button 
             type="submit" 
             className="flex items-center gap-2"
-            disabled={!inputMessage.trim()}
+            disabled={!inputMessage.trim() || isGenerating}
           >
-            <Send className="h-4 w-4" />
-            <span>Send</span>
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4" />
+                <span>Send</span>
+              </>
+            )}
           </Button>
         </div>
       </form>
@@ -60,7 +71,7 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
                 <p className="font-semibold text-sm">
                   {message.role === 'user' ? 'You' : modelDisplayName}
                 </p>
-                <p className="text-sm">{message.content}</p>
+                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
               </div>
             ))}
           </div>
