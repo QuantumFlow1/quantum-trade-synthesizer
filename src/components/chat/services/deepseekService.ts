@@ -18,6 +18,19 @@ export const generateDeepSeekResponse = async (
   console.log(`DeepSeek: Using model ${model}`);
   
   try {
+    // First check if the DeepSeek API is available
+    const healthCheck = await supabase.functions.invoke('deepseek-response', {
+      method: 'GET'
+    });
+    
+    if (healthCheck.error) {
+      console.error('DeepSeek API health check failed:', healthCheck.error);
+      throw new Error('DeepSeek service is currently unavailable. Please try again later.');
+    }
+    
+    console.log('DeepSeek API health check:', healthCheck.data);
+    
+    // Now make the actual request
     const deepseekResult = await supabase.functions.invoke('deepseek-response', {
       body: { 
         message: inputMessage,

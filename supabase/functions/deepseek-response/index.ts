@@ -13,6 +13,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Basic health check
+  if (req.method === 'GET') {
+    console.log('Health check for DeepSeek API');
+    return new Response(
+      JSON.stringify({ status: 'available', message: 'DeepSeek API ready' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     const { message, context = [], model = 'deepseek-coder', maxTokens = 1024, temperature = 0.7, apiKey } = await req.json();
     
