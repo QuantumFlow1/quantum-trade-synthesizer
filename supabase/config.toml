@@ -21,3 +21,6 @@ path = "supabase/functions/claude-response"
 
 [functions.gemini-response]
 path = "supabase/functions/gemini-response"
+
+[functions.deepseek-response]
+path = "supabase/functions/deepseek-response"

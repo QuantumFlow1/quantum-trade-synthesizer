@@ -5,6 +5,7 @@ import { generateGrok3Response } from './grok3Service';
 import { generateOpenAIResponse } from './openaiService';
 import { generateClaudeResponse } from './claudeService';
 import { generateGeminiResponse } from './geminiService';
+import { generateDeepSeekResponse } from './deepseekService';
 import { generateFallbackResponse } from './fallbackService';
 import { AIModelType, GrokSettings } from '../types/GrokSettings';
 
@@ -31,7 +32,7 @@ export const generateAIResponse = async (
   // If the selected model fails, try other models in sequence
   if (!response) {
     // Define fallback models with the correct type
-    const fallbackModels: AIModelType[] = ['openai', 'claude', 'gemini', 'grok3'].filter(
+    const fallbackModels: AIModelType[] = ['openai', 'claude', 'gemini', 'deepseek', 'grok3'].filter(
       model => model !== selectedModel
     ) as AIModelType[];
     
@@ -81,6 +82,8 @@ const generateResponseWithModel = async (
       return await generateClaudeResponse(inputMessage, conversationHistory);
     case 'gemini':
       return await generateGeminiResponse(inputMessage, conversationHistory);
+    case 'deepseek':
+      return await generateDeepSeekResponse(inputMessage, conversationHistory);
     default:
       throw new Error(`Onbekend model: ${model}`);
   }

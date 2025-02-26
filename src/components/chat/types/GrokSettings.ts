@@ -1,5 +1,5 @@
 
-export type AIModelType = 'grok3' | 'openai' | 'claude' | 'gemini';
+export type AIModelType = 'grok3' | 'openai' | 'claude' | 'gemini' | 'deepseek';
 
 export interface GrokSettings {
   deepSearchEnabled: boolean;
@@ -18,4 +18,5 @@ export const AI_MODELS = [
   { id: 'openai', name: 'OpenAI GPT-4o' },
   { id: 'claude', name: 'Anthropic Claude' },
   { id: 'gemini', name: 'Google Gemini' },
+  { id: 'deepseek', name: 'DeepSeek AI' },
 ];
