@@ -9,186 +9,141 @@ export const useMarketWebSocket = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
   const { toast } = useToast();
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+  const retryDelay = 5000; // 5 seconds
 
-  const reconnect = useCallback(async () => {
-    setConnectionStatus('connecting');
+  // Function to fetch initial market data
+  const fetchInitialData = useCallback(async () => {
     try {
-      await fetchInitialData();
-      toast({
-        title: "Verbinding hersteld",
-        description: "De marktdata wordt nu opnieuw opgehaald.",
-      });
-      setConnectionStatus('connected');
+      console.log('Fetching initial market data...');
+      setConnectionStatus('connecting');
+      
+      const { data, error } = await supabase.functions.invoke('market-data-collector');
+      
+      if (error) {
+        console.error('Error fetching market data:', error);
+        throw error;
+      }
+
+      if (data && Array.isArray(data)) {
+        console.log('Successfully received market data:', data.length, 'items');
+        setMarketData(data as MarketData[]);
+        setConnectionStatus('connected');
+        setRetryCount(0); // Reset retry count on success
+        
+        return true;
+      } else {
+        console.error('Received invalid market data format:', data);
+        throw new Error('Invalid data format received');
+      }
     } catch (error) {
-      console.error('Reconnection error:', error);
+      console.error('Market data fetch error:', error);
       setConnectionStatus('disconnected');
+      
       toast({
-        title: "Verbinding mislukt",
-        description: "Kon geen nieuwe verbinding maken met de marktdata service. Probeer het later opnieuw.",
+        title: "Data Error",
+        description: "Could not fetch market data. Check your internet connection.",
         variant: "destructive",
       });
+      
+      return false;
     }
   }, [toast]);
 
+  // Function to reconnect
+  const reconnect = useCallback(async () => {
+    console.log('Attempting to reconnect to market data service...');
+    setConnectionStatus('connecting');
+    
+    if (await fetchInitialData()) {
+      toast({
+        title: "Connection Restored",
+        description: "Market data service connection has been restored.",
+      });
+    } else if (retryCount < maxRetries) {
+      setRetryCount(prevCount => prevCount + 1);
+      toast({
+        title: "Reconnection Failed",
+        description: `Retry ${retryCount + 1}/${maxRetries} failed. Trying again in ${retryDelay / 1000} seconds.`,
+        variant: "destructive",
+      });
+      
+      setTimeout(reconnect, retryDelay);
+    } else {
+      toast({
+        title: "Connection Failed",
+        description: "Maximum retry attempts reached. Please try again later.",
+        variant: "destructive",
+      });
+    }
+  }, [fetchInitialData, retryCount, maxRetries, toast]);
+
+  // Set up websocket connection and fetch initial data
   useEffect(() => {
     let isSubscribed = true;
-    let retryCount = 0;
-    const maxRetries = 3;
-    const retryDelay = 5000; // 5 seconds
     let currentChannel: RealtimeChannel | null = null;
 
-    const setupWebSocket = async () => {
-      if (!isSubscribed) return null;
+    const setupConnection = async () => {
+      if (!isSubscribed) return;
       
       try {
-        await fetchInitialData();
+        // First fetch initial data
+        const success = await fetchInitialData();
+        if (!success || !isSubscribed) return;
         
+        // Then set up realtime channel for updates
         const channel = supabase
           .channel('market-updates')
-          .on('broadcast', { event: 'market-data' }, async (payload) => {
+          .on('broadcast', { event: 'market-data' }, (payload) => {
             if (!isSubscribed) return;
             
-            console.log('Received market data:', payload);
-            if (payload.payload) {
+            console.log('Received market data update:', payload);
+            if (payload.payload && Array.isArray(payload.payload)) {
               const newMarketData = payload.payload as MarketData[];
               setMarketData(newMarketData);
-              
-              try {
-                const { data: analysisData, error: analysisError } = await supabase.functions.invoke('market-analysis', {
-                  body: { marketData: newMarketData }
-                });
-                
-                if (analysisError) throw analysisError;
-                
-                if (analysisData?.analyses) {
-                  console.log('Market analyses:', analysisData.analyses);
-                  
-                  const socialData = newMarketData.map(data => ({
-                    text: `${data.symbol} ${data.change24h > 0 ? 'shows positive movement' : 'shows negative movement'} of ${Math.abs(data.change24h)}%`,
-                    source: "market-data",
-                    timestamp: new Date().toISOString(),
-                    language: "en",
-                    region: data.symbol.includes('EUR') ? 'EU' : 
-                           data.symbol.includes('USD') ? 'US' : 
-                           data.symbol.includes('JPY') ? 'ASIA' : 'global'
-                  }));
-
-                  const { data: sentimentData, error: sentimentError } = await supabase.functions.invoke('social-monitor', {
-                    body: { socialData }
-                  });
-
-                  if (sentimentError) throw sentimentError;
-
-                  if (sentimentData?.analyses) {
-                    console.log('Global social sentiment analyses:', sentimentData.analyses);
-                  }
-                }
-              } catch (error) {
-                console.error('Analysis error:', error);
-                toast({
-                  title: "Analyse Fout",
-                  description: "Er was een probleem bij het analyseren van de marktdata.",
-                  variant: "destructive",
-                });
-              }
             }
           })
           .subscribe((status) => {
             if (!isSubscribed) return;
             
-            console.log('Connection status:', status);
+            console.log('Market data websocket status:', status);
             if (status === 'SUBSCRIBED') {
               setConnectionStatus('connected');
-              toast({
-                title: "Verbinding Actief",
-                description: "Je ontvangt nu live market updates.",
-              });
             } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
               setConnectionStatus('disconnected');
-              toast({
-                title: "Verbinding Verbroken",
-                description: "De verbinding met de marktdata service is verbroken.",
-                variant: "destructive",
-              });
               
-              // Retry logic
+              // Auto-retry if channel closes unexpectedly
               if (retryCount < maxRetries) {
-                retryCount++;
-                setTimeout(() => {
-                  console.log(`Attempting reconnection (${retryCount}/${maxRetries})...`);
-                  reconnect();
-                }, retryDelay);
+                const nextRetry = retryCount + 1;
+                setRetryCount(nextRetry);
+                
+                console.log(`Connection lost. Auto-retry ${nextRetry}/${maxRetries} in ${retryDelay}ms...`);
+                setTimeout(reconnect, retryDelay);
               }
             }
           });
-
-        return channel;
+        
+        currentChannel = channel;
       } catch (error) {
-        console.error('WebSocket setup error:', error);
+        console.error('Error setting up market data connection:', error);
         setConnectionStatus('disconnected');
-        toast({
-          title: "Verbinding Fout",
-          description: "Er was een probleem bij het opzetten van de marktdata verbinding.",
-          variant: "destructive",
-        });
-        return null;
       }
     };
 
-    // Initialize WebSocket connection
-    setupWebSocket().then(channel => {
-      if (channel) {
-        currentChannel = channel;
-      }
-    });
+    // Initialize connection
+    setupConnection();
 
-    // Cleanup function
+    // Clean up function
     return () => {
+      console.log('Cleaning up market data websocket...');
       isSubscribed = false;
+      
       if (currentChannel) {
         supabase.removeChannel(currentChannel);
       }
     };
-  }, [toast, reconnect]);
-
-  const fetchInitialData = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('market-data-collector');
-      
-      if (error) throw error;
-
-      if (data && Array.isArray(data)) {
-        setMarketData(data as MarketData[]);
-        
-        try {
-          const { data: analysisData, error: analysisError } = await supabase.functions.invoke('market-analysis', {
-            body: { marketData: data }
-          });
-          
-          if (analysisError) throw analysisError;
-          
-          if (analysisData?.analyses) {
-            console.log('Initial market analyses:', analysisData.analyses);
-          }
-        } catch (error) {
-          console.error('Initial analysis error:', error);
-          toast({
-            title: "Analyse Fout",
-            description: "Er was een probleem bij het analyseren van de initiële marktdata.",
-            variant: "destructive",
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Market data error:', error);
-      toast({
-        title: "Data Error",
-        description: "Kon geen marktdata ophalen. Controleer je internetverbinding.",
-        variant: "destructive",
-      });
-      throw error; // Re-throw for the reconnect logic
-    }
-  };
+  }, [fetchInitialData, reconnect, retryCount, maxRetries]);
 
   return { 
     marketData, 
