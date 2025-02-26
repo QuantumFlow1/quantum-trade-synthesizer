@@ -11,8 +11,10 @@ import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GrokChatSettings } from './GrokChatSettings'
 import { AI_MODELS } from './types/GrokSettings'
+import { useNavigate } from 'react-router-dom'
 
 export function GrokChat() {
+  const navigate = useNavigate();
   const {
     messages,
     inputMessage,
@@ -49,12 +51,25 @@ export function GrokChat() {
   const toggleSettings = () => {
     setShowSettings(!showSettings);
   };
+  
+  const handleExit = () => {
+    // Navigeer terug naar de hoofdpagina
+    navigate('/');
+    
+    // Toon een bevestigingsmelding
+    toast({
+      title: "Chat verlaten",
+      description: "Je hebt de chat verlaten.",
+      duration: 3000,
+    });
+  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg bg-white">
       <GrokChatHeader 
         onClearChat={clearChat} 
         onToggleSettings={toggleSettings}
+        onExit={handleExit}
         modelName={selectedModelName}
       />
       
