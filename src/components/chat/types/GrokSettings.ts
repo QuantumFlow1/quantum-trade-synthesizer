@@ -23,11 +23,13 @@ export interface GrokSettings {
   deepSearchEnabled: boolean;
   thinkEnabled: boolean;
   temperature?: number;
+  maxTokens?: number;
 }
 
 export const DEFAULT_SETTINGS: GrokSettings = {
   selectedModel: 'grok3',
   deepSearchEnabled: false,
   thinkEnabled: false,
-  temperature: 0.7
+  temperature: 0.7,
+  maxTokens: 1024
 };

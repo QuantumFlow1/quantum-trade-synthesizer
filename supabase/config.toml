@@ -8,19 +8,19 @@ port = 54321
 
 [functions]
 [functions.grok3-response]
-path = "supabase/functions/grok3-response"
+verify_jwt = false
 
 [functions.generate-ai-response]
-path = "supabase/functions/generate-ai-response"
+verify_jwt = false
 
 [functions.openai-response]
-path = "supabase/functions/openai-response"
+verify_jwt = false
 
 [functions.claude-response]
-path = "supabase/functions/claude-response"
+verify_jwt = false
 
 [functions.gemini-response]
-path = "supabase/functions/gemini-response"
+verify_jwt = false
 
 [functions.deepseek-response]
-path = "supabase/functions/deepseek-response"
+verify_jwt = false
