@@ -19,11 +19,15 @@ export const useApiAvailability = () => {
         method: 'GET'
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error checking Grok API:', error);
+        throw error;
+      }
       
-      setApiAvailable(data?.status === 'available');
+      const isAvailable = data?.status === 'available';
+      setApiAvailable(isAvailable);
       console.log('Grok3 API status:', data?.status);
-      return data?.status === 'available';
+      return isAvailable;
     } catch (error) {
       console.error('Error checking Grok API:', error);
       setApiAvailable(false);
@@ -43,11 +47,15 @@ export const useApiAvailability = () => {
         method: 'GET'
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error checking OpenAI API:', error);
+        throw error;
+      }
       
-      setApiAvailable(data?.status === 'available');
+      const isAvailable = data?.status === 'available';
+      setApiAvailable(isAvailable);
       console.log('OpenAI API status:', data?.status);
-      return data?.status === 'available';
+      return isAvailable;
     } catch (error) {
       console.error('Error checking OpenAI API:', error);
       setApiAvailable(false);

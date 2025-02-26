@@ -13,21 +13,34 @@ export const generateOpenAIResponse = async (
   options?: OpenAIOptions
 ) => {
   console.log('Using OpenAI API...', options);
-  const openaiResult = await supabase.functions.invoke('openai-response', {
-    body: { 
-      message: inputMessage,
-      context: conversationHistory,
-      options: {
-        temperature: options?.temperature || 0.7,
-        maxTokens: options?.maxTokens || 1024
-      }
-    }
-  });
   
-  if (!openaiResult.error && openaiResult.data?.response) {
+  try {
+    const openaiResult = await supabase.functions.invoke('openai-response', {
+      body: { 
+        message: inputMessage,
+        context: conversationHistory,
+        options: {
+          temperature: options?.temperature || 0.7,
+          maxTokens: options?.maxTokens || 1024
+        }
+      }
+    });
+    
+    console.log('OpenAI API response:', openaiResult);
+    
+    if (openaiResult.error) {
+      console.error('OpenAI API error:', openaiResult.error);
+      throw new Error(openaiResult.error.message || 'Error from OpenAI API');
+    }
+    
+    if (!openaiResult.data?.response) {
+      console.error('No response data from OpenAI API');
+      throw new Error('Geen antwoord van OpenAI API');
+    }
+    
     return openaiResult.data.response;
-  } else {
-    console.error('OpenAI API error:', openaiResult.error);
-    throw openaiResult.error || new Error('Geen antwoord van OpenAI API');
+  } catch (error) {
+    console.error('Error calling OpenAI API:', error);
+    throw error;
   }
 };

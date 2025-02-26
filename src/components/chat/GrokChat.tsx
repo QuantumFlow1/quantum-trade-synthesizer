@@ -30,7 +30,7 @@ export function GrokChat() {
   } = useGrokChat();
 
   // Use the advanced interface instead of the standard chat interface
-  const [useAdvancedInterface, setUseAdvancedInterface] = useState(true);
+  const [useAdvancedInterface, setUseAdvancedInterface] = useState(false);
   
   // Settings default visible
   const [showSettings, setShowSettings] = useState(false);
@@ -43,7 +43,7 @@ export function GrokChat() {
   useEffect(() => {
     toast({
       title: "Multi-Model AI Interface",
-      description: `Chat with various AI models. The default model is ${selectedModelName}.`,
+      description: `Chat with various AI models. The current model is ${selectedModelName}.`,
       duration: 5000,
     });
   }, [selectedModelName]);
@@ -95,7 +95,7 @@ export function GrokChat() {
       
       <CardContent className="p-0 flex flex-col h-[600px]">
         {/* API Status Alert */}
-        {apiAvailable === false && grokSettings.selectedModel === 'grok3' && (
+        {apiAvailable === false && (
           <Alert variant="warning" className="m-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>AI Service Status</AlertTitle>

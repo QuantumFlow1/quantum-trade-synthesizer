@@ -12,25 +12,29 @@ import { ModelId, GrokSettings } from '../types/GrokSettings';
 export const generateAIResponse = async (
   inputMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  apiAvailable: boolean,
+  apiAvailable: boolean | null,
   settings?: GrokSettings
 ) => {
   let response;
   let error = null;
   const selectedModel = settings?.selectedModel || 'grok3';
   
+  console.log(`Selected model: ${selectedModel}`);
+  console.log(`API available: ${apiAvailable}`);
+  
   // First try with the selected model
-  if (apiAvailable) {
-    try {
-      response = await generateResponseWithModel(selectedModel, inputMessage, conversationHistory, settings);
-    } catch (primaryError) {
-      console.error(`${selectedModel} service error:`, primaryError);
-      error = primaryError;
-    }
+  try {
+    console.log(`Attempting to generate response with ${selectedModel}`);
+    response = await generateResponseWithModel(selectedModel, inputMessage, conversationHistory, settings);
+    console.log(`${selectedModel} response:`, response ? "Success" : "Failed");
+  } catch (primaryError) {
+    console.error(`${selectedModel} service error:`, primaryError);
+    error = primaryError;
   }
   
   // If the selected model fails, try other models in sequence
   if (!response) {
+    console.log("Primary model failed, trying fallbacks");
     // Define fallback models with explicit ModelId values to satisfy TypeScript
     const fallbackModels: ModelId[] = (['openai', 'claude', 'gemini', 'deepseek', 'grok3'] as const)
       .filter(model => model !== selectedModel) as ModelId[];
@@ -41,6 +45,7 @@ export const generateAIResponse = async (
       try {
         console.log(`Trying fallback model: ${model}`);
         response = await generateResponseWithModel(model, inputMessage, conversationHistory, settings);
+        console.log(`Fallback ${model} response:`, response ? "Success" : "Failed");
       } catch (fallbackError) {
         console.error(`Fallback model ${model} error:`, fallbackError);
         // Continue to the next model
@@ -78,7 +83,7 @@ const generateResponseWithModel = async (
     case 'openai':
       return await generateOpenAIResponse(inputMessage, conversationHistory, {
         temperature: settings?.temperature,
-        maxTokens: settings?.maxTokens || 1024
+        maxTokens: settings?.maxTokens
       });
     case 'claude':
       return await generateClaudeResponse(inputMessage, conversationHistory);

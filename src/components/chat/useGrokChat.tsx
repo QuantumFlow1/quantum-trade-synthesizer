@@ -11,12 +11,18 @@ export function useGrokChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [grokSettings, setGrokSettings] = useState<GrokSettings>(DEFAULT_SETTINGS);
-  const { apiAvailable, isLoading, checkGrokAvailability, retryApiConnection } = useApiAvailability();
+  const { apiAvailable, isLoading, checkGrokAvailability, checkOpenAIAvailability, retryApiConnection } = useApiAvailability();
 
   // Check API availability on mount
   useEffect(() => {
-    checkGrokAvailability();
-  }, []);
+    if (grokSettings.selectedModel === 'grok3') {
+      checkGrokAvailability();
+    } else if (grokSettings.selectedModel === 'openai') {
+      checkOpenAIAvailability();
+    } else {
+      checkGrokAvailability();
+    }
+  }, [grokSettings.selectedModel]);
 
   // Load chat history from localStorage when component mounts
   useEffect(() => {
@@ -53,9 +59,13 @@ export function useGrokChat() {
     setInputMessage('');
 
     try {
-      // If Grok3 API availability is unknown, check it
+      // If API availability is unknown, check it based on selected model
       if (apiAvailable === null) {
-        await checkGrokAvailability();
+        if (grokSettings.selectedModel === 'grok3') {
+          await checkGrokAvailability();
+        } else if (grokSettings.selectedModel === 'openai') {
+          await checkOpenAIAvailability();
+        }
       }
       
       console.log('Generating AI response...');
@@ -67,6 +77,8 @@ export function useGrokChat() {
       }));
       
       const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable, grokSettings);
+      
+      console.log('Received AI response:', response);
       
       // Add assistant response to chat
       const assistantMessage = createChatMessage('assistant', response);
