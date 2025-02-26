@@ -13,7 +13,7 @@ interface UseSendMessageProps {
   setInputMessage: (input: string) => void;
   setIsProcessing: (isProcessing: boolean) => void;
   apiAvailable: boolean | null;
-  checkGrokAvailability: () => Promise<void>;
+  checkGrokAvailability: () => Promise<boolean>;
   grokSettings: GrokSettings;
 }
 
@@ -121,7 +121,7 @@ export function useSendMessage({
       
       console.log('Adding error message to chat:', errorMessage);
       
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages([...messages, errorMessage]);
       
       // Show error toast
       toast({
