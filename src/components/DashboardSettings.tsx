@@ -1,39 +1,45 @@
 
 import { Button } from "@/components/ui/button";
-import { Settings2, X } from "lucide-react";
+import { Settings2 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 interface WidgetSettings {
-  id: string;
+  id: keyof typeof widgetNames;
   name: string;
   enabled: boolean;
 }
 
+const widgetNames = {
+  market: "Market Overview",
+  performance: "Performance Metrics",
+  trading: "Trading Interface",
+  autoTrading: "Auto Trading",
+  riskManagement: "Risk Management",
+  transactions: "Recent Transactions",
+  alerts: "Alerts",
+  advice: "Financial Advice",
+  llmExtensions: "AI Assistant Extensions"
+};
+
 export const DashboardSettings = () => {
   const { toast } = useToast();
-  const [widgets, setWidgets] = useState<WidgetSettings[]>([
-    { id: "market", name: "Market Overview", enabled: true },
-    { id: "performance", name: "Performance Metrics", enabled: true },
-    { id: "trading", name: "Trading Interface", enabled: true },
-    { id: "autoTrading", name: "Auto Trading", enabled: true },
-    { id: "riskManagement", name: "Risk Management", enabled: true },
-    { id: "transactions", name: "Recent Transactions", enabled: true },
-    { id: "alerts", name: "Alerts", enabled: true },
-    { id: "advice", name: "Financial Advice", enabled: true }
-  ]);
+  const { visibleWidgets, setVisibleWidgets } = useDashboard();
+  
+  const widgets: WidgetSettings[] = Object.entries(widgetNames).map(([id, name]) => ({
+    id: id as keyof typeof widgetNames,
+    name,
+    enabled: visibleWidgets[id as keyof typeof visibleWidgets]
+  }));
 
-  const handleWidgetToggle = (widgetId: string) => {
-    setWidgets(prev => 
-      prev.map(widget => 
-        widget.id === widgetId 
-          ? { ...widget, enabled: !widget.enabled }
-          : widget
-      )
-    );
+  const handleWidgetToggle = (widgetId: keyof typeof widgetNames) => {
+    setVisibleWidgets(prev => ({
+      ...prev,
+      [widgetId]: !prev[widgetId]
+    }));
 
     toast({
       title: "Widget Updated",
