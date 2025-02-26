@@ -1,79 +1,33 @@
+
 import { supabase } from '@/lib/supabase';
 import { GrokSettings } from '../types/GrokSettings';
 
 export const generateOpenAIResponse = async (
   inputMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  settings: GrokSettings
-): Promise<string> => {
-  console.log('Generating OpenAI response with:', {
-    message: inputMessage,
-    settings: settings,
-    conversationHistoryLength: conversationHistory.length
+  settings?: GrokSettings
+) => {
+  console.log('Using OpenAI API...', { inputMessage, settings });
+  
+  // Extract the OpenAI API key from settings if available
+  const apiKey = settings?.apiKeys?.openaiApiKey;
+  
+  const openaiResult = await supabase.functions.invoke('openai-response', {
+    body: { 
+      message: inputMessage,
+      context: conversationHistory,
+      model: settings?.selectedModel,
+      maxTokens: settings?.maxTokens,
+      temperature: settings?.temperature,
+      apiKey: apiKey // Pass the API key to the function
+    }
   });
   
-  try {
-    // Log request to help with debugging
-    console.log('Sending request to OpenAI API with:', {
-      message: inputMessage.substring(0, 50) + '...',
-      temperature: settings.temperature || 0.7,
-      maxTokens: settings.maxTokens || 1024,
-      historyLength: conversationHistory.length
-    });
-    
-    const openaiResult = await supabase.functions.invoke('openai-response', {
-      body: { 
-        message: inputMessage,
-        context: conversationHistory,
-        options: {
-          temperature: settings.temperature || 0.7,
-          maxTokens: settings.maxTokens || 1024
-        }
-      }
-    });
-    
-    console.log('OpenAI API full response:', openaiResult);
-    
-    if (openaiResult.error) {
-      console.error('OpenAI API error:', openaiResult.error);
-      throw new Error(`OpenAI API error: ${openaiResult.error.message || 'Unknown error'}`);
-    }
-    
-    if (!openaiResult.data) {
-      console.error('OpenAI API returned no data');
-      throw new Error('No response data from OpenAI API');
-    }
-    
-    // Handle different possible response formats from the edge function
-    let responseText = '';
-    
-    if (typeof openaiResult.data === 'string') {
-      responseText = openaiResult.data;
-    } else if (openaiResult.data.response) {
-      responseText = openaiResult.data.response;
-    } else if (openaiResult.data.text) {
-      responseText = openaiResult.data.text;
-    } else if (openaiResult.data.content) {
-      responseText = openaiResult.data.content;
-    } else if (openaiResult.data.message) {
-      responseText = openaiResult.data.message;
-    } else if (openaiResult.data.generatedText) {
-      responseText = openaiResult.data.generatedText;
-    } else if (openaiResult.data.choices && openaiResult.data.choices.length > 0) {
-      const choice = openaiResult.data.choices[0];
-      responseText = choice.message?.content || choice.text || '';
-    }
-    
-    if (!responseText) {
-      console.error('Could not extract response text from OpenAI result:', openaiResult.data);
-      throw new Error('Unable to parse OpenAI response');
-    }
-    
-    console.log('Extracted OpenAI response text:', responseText.substring(0, 100) + '...');
-    return responseText;
-    
-  } catch (error) {
-    console.error('Error in OpenAI service:', error);
-    throw error || new Error('Failed to get response from OpenAI API');
+  if (!openaiResult.error && openaiResult.data?.response) {
+    console.log('OpenAI response received:', openaiResult.data.response.substring(0, 100) + '...');
+    return openaiResult.data.response;
+  } else {
+    console.error('OpenAI API error:', openaiResult.error);
+    throw openaiResult.error || new Error('Geen antwoord van OpenAI API');
   }
 };

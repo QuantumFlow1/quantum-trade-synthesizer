@@ -8,13 +8,18 @@ export const generateGeminiResponse = async (
   settings?: GrokSettings
 ) => {
   console.log('Using Gemini API...', { inputMessage, settings });
+  
+  // Extract the Gemini API key from settings if available
+  const apiKey = settings?.apiKeys?.geminiApiKey;
+  
   const geminiResult = await supabase.functions.invoke('gemini-response', {
     body: { 
       message: inputMessage,
       context: conversationHistory,
       model: settings?.selectedModel,
       maxTokens: settings?.maxTokens,
-      temperature: settings?.temperature
+      temperature: settings?.temperature,
+      apiKey: apiKey // Pass the API key to the function
     }
   });
   

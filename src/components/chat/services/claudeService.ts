@@ -8,13 +8,18 @@ export const generateClaudeResponse = async (
   settings?: GrokSettings
 ) => {
   console.log('Using Claude API...', { inputMessage, settings });
+  
+  // Extract the Claude API key from settings if available
+  const apiKey = settings?.apiKeys?.claudeApiKey;
+  
   const claudeResult = await supabase.functions.invoke('claude-response', {
     body: { 
       message: inputMessage,
       context: conversationHistory,
       model: settings?.selectedModel,
       maxTokens: settings?.maxTokens,
-      temperature: settings?.temperature
+      temperature: settings?.temperature,
+      apiKey: apiKey // Pass the API key to the function
     }
   });
   

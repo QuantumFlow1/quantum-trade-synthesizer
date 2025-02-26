@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage } from '../types/chat';
 import { generateGrok3Response } from './grok3Service';
@@ -21,6 +22,33 @@ export const createChatMessage = (role: 'user' | 'assistant', content: string): 
   return newMessage;
 };
 
+// Check if the required API key is available for a given model
+const hasRequiredApiKey = (modelId: ModelId, settings: GrokSettings): boolean => {
+  const { apiKeys } = settings;
+  
+  switch (modelId) {
+    case 'openai':
+    case 'gpt-4':
+    case 'gpt-3.5-turbo':
+      return !!apiKeys.openaiApiKey;
+    case 'claude':
+    case 'claude-3-haiku':
+    case 'claude-3-sonnet':
+    case 'claude-3-opus':
+      return !!apiKeys.claudeApiKey;
+    case 'gemini':
+    case 'gemini-pro':
+      return !!apiKeys.geminiApiKey;
+    case 'deepseek':
+    case 'deepseek-chat':
+      return !!apiKeys.deepseekApiKey;
+    case 'grok3':
+      return true; // Grok3 doesn't require an API key in this implementation
+    default:
+      return false;
+  }
+};
+
 // Main function to generate AI response based on available services and selected model
 export const generateAIResponse = async (
   inputMessage: string,
@@ -35,12 +63,36 @@ export const generateAIResponse = async (
     inputMessageLength: inputMessage.length,
     historyLength: conversationHistory.length,
     isGrok3Available,
+    hasApiKey: hasRequiredApiKey(settings.selectedModel, settings)
   });
 
   // Keep track of which services we've tried
   const attemptedServices: string[] = [];
 
   try {
+    // Check if the selected model requires an API key and if it's available
+    if (!hasRequiredApiKey(settings.selectedModel, settings)) {
+      console.warn(`Missing API key for ${settings.selectedModel}, showing warning`);
+      toast({
+        title: "API sleutel ontbreekt",
+        description: "Stel een API sleutel in voor dit model in de instellingen.",
+        variant: "destructive",
+        duration: 5000
+      });
+      
+      // Switch to Grok3 if it's available, otherwise tell the user to set an API key
+      if (isGrok3Available) {
+        settings.selectedModel = 'grok3';
+        toast({
+          title: "Overgeschakeld naar Grok3",
+          description: "Grok3 wordt gebruikt omdat het geen API sleutel vereist.",
+          duration: 3000
+        });
+      } else {
+        return "Om dit model te gebruiken, moet u een API-sleutel instellen in de instellingen. Klik op het instellingenpictogram en voer uw API-sleutel in.";
+      }
+    }
+    
     // Attempt to generate a response based on the selected model
     let response: string | null = null;
     
@@ -63,9 +115,14 @@ export const generateAIResponse = async (
         
         if (!response) {
           console.log('Grok3 not available or failed, falling back to OpenAI...');
-          attemptedServices.push('openai');
-          // Fall back to OpenAI if Grok3 is not available
-          response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+          
+          // Check if we have an OpenAI API key before falling back
+          if (settings.apiKeys.openaiApiKey) {
+            attemptedServices.push('openai');
+            response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+          } else {
+            return "Grok3 is momenteel niet beschikbaar en er is geen OpenAI API-sleutel ingesteld als backup. Stel een API-sleutel in of probeer het later opnieuw.";
+          }
         }
         break;
         
@@ -92,9 +149,13 @@ export const generateAIResponse = async (
             description: "Switching to backup AI service",
             duration: 3000,
           });
-          // If Claude fails, try OpenAI
-          attemptedServices.push('openai');
-          response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+          // If Claude fails and we have an OpenAI key, try OpenAI
+          if (settings.apiKeys.openaiApiKey) {
+            attemptedServices.push('openai');
+            response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+          } else {
+            throw new Error("Claude service unavailable and no backup API key is set");
+          }
         }
         break;
         
@@ -111,9 +172,13 @@ export const generateAIResponse = async (
             description: "Switching to backup AI service",
             duration: 3000,
           });
-          // If Gemini fails, try OpenAI
-          attemptedServices.push('openai');
-          response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+          // If Gemini fails and we have an OpenAI key, try OpenAI
+          if (settings.apiKeys.openaiApiKey) {
+            attemptedServices.push('openai');
+            response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+          } else {
+            throw new Error("Gemini service unavailable and no backup API key is set");
+          }
         }
         break;
         
@@ -130,16 +195,27 @@ export const generateAIResponse = async (
             description: "Switching to backup AI service",
             duration: 3000,
           });
-          // If DeepSeek fails, try OpenAI
-          attemptedServices.push('openai');
-          response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+          // If DeepSeek fails and we have an OpenAI key, try OpenAI
+          if (settings.apiKeys.openaiApiKey) {
+            attemptedServices.push('openai');
+            response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+          } else {
+            throw new Error("DeepSeek service unavailable and no backup API key is set");
+          }
         }
         break;
         
       default:
         console.log(`Unknown model ${settings.selectedModel}, falling back to OpenAI...`);
-        attemptedServices.push('openai');
-        response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+        if (settings.apiKeys.openaiApiKey) {
+          attemptedServices.push('openai');
+          response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+        } else if (isGrok3Available) {
+          attemptedServices.push('grok3');
+          response = await generateGrok3Response(inputMessage, conversationHistory, settings);
+        } else {
+          return "Onbekend model geselecteerd en er is geen API-sleutel ingesteld voor OpenAI als backup.";
+        }
     }
     
     // Check if we got a valid response
@@ -163,11 +239,11 @@ export const generateAIResponse = async (
         return fallbackResponse;
       } else {
         console.error('Empty fallback response');
-        return "I'm sorry, but I'm unable to generate a meaningful response at this time. Please try again later.";
+        return "Het spijt me, maar ik kan momenteel geen zinvol antwoord genereren. Controleer uw API-sleutels of probeer het later opnieuw.";
       }
     } catch (fallbackError) {
       console.error('Even fallback response generation failed:', fallbackError);
-      return "I'm sorry, but I'm currently experiencing technical difficulties. Please try again later.";
+      return "Het spijt me, maar er zijn technische problemen. Controleer of uw API-sleutels correct zijn en probeer het later opnieuw.";
     }
   }
 };

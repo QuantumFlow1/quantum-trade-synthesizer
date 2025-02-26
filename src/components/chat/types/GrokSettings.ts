@@ -20,15 +20,23 @@ export interface ModelInfo {
   id: ModelId;
   name: string;
   description?: string;
+  needsApiKey?: boolean;
 }
 
 export const AI_MODELS: ModelInfo[] = [
   { id: 'grok3', name: 'Grok 3', description: 'Snelle en krachtige AI van xAI' },
-  { id: 'openai', name: 'GPT-4o', description: 'Nieuwste multimodale AI van OpenAI' },
-  { id: 'claude', name: 'Claude 3', description: 'Uitstekend voor nuancering en logica' },
-  { id: 'gemini', name: 'Gemini Pro', description: 'Geavanceerde AI van Google' },
-  { id: 'deepseek', name: 'DeepSeek Coder', description: 'Gespecialiseerd in code en technische analyses' },
+  { id: 'openai', name: 'GPT-4o', description: 'Nieuwste multimodale AI van OpenAI', needsApiKey: true },
+  { id: 'claude', name: 'Claude 3', description: 'Uitstekend voor nuancering en logica', needsApiKey: true },
+  { id: 'gemini', name: 'Gemini Pro', description: 'Geavanceerde AI van Google', needsApiKey: true },
+  { id: 'deepseek', name: 'DeepSeek Coder', description: 'Gespecialiseerd in code en technische analyses', needsApiKey: true },
 ];
+
+export interface ApiKeySettings {
+  openaiApiKey?: string;
+  claudeApiKey?: string;
+  geminiApiKey?: string;
+  deepseekApiKey?: string;
+}
 
 export interface GrokSettings {
   selectedModel: ModelId;
@@ -36,6 +44,7 @@ export interface GrokSettings {
   thinkEnabled: boolean;
   temperature?: number;
   maxTokens?: number;
+  apiKeys: ApiKeySettings;
 }
 
 export const DEFAULT_SETTINGS: GrokSettings = {
@@ -43,5 +52,6 @@ export const DEFAULT_SETTINGS: GrokSettings = {
   deepSearchEnabled: false,
   thinkEnabled: false,
   temperature: 0.7,
-  maxTokens: 1024
+  maxTokens: 1024,
+  apiKeys: {}
 };

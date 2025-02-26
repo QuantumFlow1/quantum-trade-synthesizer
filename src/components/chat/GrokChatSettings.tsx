@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AI_MODELS, GrokSettings } from './types/GrokSettings';
 import { Search, Brain, Cpu } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
+import { ApiKeyManager } from './ApiKeyManager';
 
 interface GrokChatSettingsProps {
   settings: GrokSettings;
@@ -39,13 +40,27 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
       temperature: value[0]
     });
   };
+  
+  const handleApiKeysChange = (apiKeys: any) => {
+    onSettingsChange({
+      ...settings,
+      apiKeys
+    });
+  };
 
-  // Haal de volledige naam van het geselecteerde model op
-  const selectedModelName = AI_MODELS.find(model => model.id === settings.selectedModel)?.name || 'Onbekend model';
+  // Get the currently selected model's full info
+  const selectedModelInfo = AI_MODELS.find(model => model.id === settings.selectedModel);
 
   return (
     <div className="p-4 bg-white border rounded-lg shadow-sm space-y-4">
       <h3 className="text-sm font-medium text-gray-700 mb-3 pb-2 border-b">LLM Model Instellingen</h3>
+      
+      {/* API Key Manager */}
+      <ApiKeyManager 
+        selectedModel={selectedModelInfo}
+        apiKeys={settings.apiKeys}
+        onApiKeysChange={handleApiKeysChange}
+      />
       
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
@@ -53,7 +68,7 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
             <Cpu className="h-4 w-4 text-gray-600" />
             <Label htmlFor="model-select" className="text-sm text-gray-700">AI Model</Label>
           </div>
-          <span className="text-sm font-medium text-primary">{selectedModelName}</span>
+          <span className="text-sm font-medium text-primary">{selectedModelInfo?.name || 'Onbekend model'}</span>
         </div>
         <Select 
           value={settings.selectedModel} 
