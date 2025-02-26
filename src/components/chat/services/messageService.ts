@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage } from '../types/chat';
 import { generateGrok3Response } from './grok3Service';
@@ -8,6 +9,7 @@ import { generateDeepSeekResponse } from './deepseekService';
 import { generateFallbackResponse } from './fallbackService';
 import { GrokSettings, ModelId } from '../types/GrokSettings';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase'; // Added the missing import
 
 // Check if we're in admin context
 const isAdminContext = () => {
