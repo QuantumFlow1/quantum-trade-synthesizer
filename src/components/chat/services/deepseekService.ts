@@ -39,11 +39,10 @@ export const generateDeepSeekResponse = async (
       console.log('DeepSeek response received:', deepseekResult.data.response.substring(0, 100) + '...');
       return deepseekResult.data.response;
     } else {
-      // Log detailed error information
+      // Log detailed error information without using the status property
       console.error('DeepSeek API error details:', {
         error: deepseekResult.error,
-        data: deepseekResult.data,
-        statusCode: deepseekResult.status
+        data: deepseekResult.data
       });
       
       throw new Error(
