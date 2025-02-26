@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Bot, SendIcon, Loader2, User, Settings, Trash2, Sparkles } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
+import { processMessageText } from '@/components/chat/services/utils/messageUtils';
 
 type Message = {
   id: string;
@@ -101,6 +102,8 @@ export function OpenAIChat() {
         timestamp: new Date(),
       };
 
+      // Process the message to ensure proper formatting
+      assistantMessage.content = processMessageText(assistantMessage.content);
       setMessages([...newMessages, assistantMessage]);
 
     } catch (error) {
@@ -116,6 +119,8 @@ export function OpenAIChat() {
         timestamp: new Date(),
       };
       
+      // Process the error message to ensure proper formatting
+      errorMessage.content = processMessageText(errorMessage.content);
       setMessages([...newMessages, errorMessage]);
       
       toast({

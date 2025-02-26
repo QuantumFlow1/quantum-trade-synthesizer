@@ -3,6 +3,7 @@ import { GrokSettings } from '../types/GrokSettings';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
 import { getApiKey } from './utils/apiHelpers';
+import { processMessageText } from './utils/messageUtils';
 
 export const generateOpenAIResponse = async (
   inputMessage: string,
@@ -62,7 +63,11 @@ export const generateOpenAIResponse = async (
         throw new Error('Invalid response from OpenAI API');
       }
       
-      return data.response;
+      // Process the message to ensure proper line breaks and formatting
+      const processedResponse = processMessageText(data.response);
+      console.log('Processed OpenAI response:', processedResponse);
+      
+      return processedResponse;
     } catch (innerError) {
       console.error('Error during OpenAI API call:', innerError);
       // Add more specific error handling for lockdown errors

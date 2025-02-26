@@ -4,3 +4,29 @@
 @import './animations.css';
 @import './components.css';
 @import './utilities.css';
+
+/* Add proper whitespace handling for chat messages */
+.whitespace-pre-line {
+  white-space: pre-line;
+}
+
+.chat-message p {
+  margin-bottom: 0.5rem;
+}
+
+.chat-message p:last-child {
+  margin-bottom: 0;
+}
+
+/* Ensure code blocks are properly formatted */
+.chat-message pre {
+  background-color: #f5f5f5;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.chat-message code {
+  font-family: monospace;
+}
