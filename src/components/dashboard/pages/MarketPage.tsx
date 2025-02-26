@@ -45,10 +45,12 @@ export const MarketPage = () => {
       }
       
       if (data) {
-        setMarketData(data);
+        // Type assertion to ensure data is treated as MarketData[]
+        setMarketData(data as MarketData[]);
         
-        // Extract unique markets for filtering
-        const markets = [...new Set(data.map((item) => item.market))];
+        // Extract unique markets with proper type handling
+        const marketsArray = data as MarketData[];
+        const markets = [...new Set(marketsArray.map((item) => item.market))];
         setUniqueMarkets(markets);
       }
     } catch (error) {
