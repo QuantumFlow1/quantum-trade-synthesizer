@@ -7,7 +7,7 @@ import { generateClaudeResponse } from './claudeService';
 import { generateGeminiResponse } from './geminiService';
 import { generateDeepSeekResponse } from './deepseekService';
 import { generateFallbackResponse } from './fallbackService';
-import { AIModelType, GrokSettings } from '../types/GrokSettings';
+import { ModelId, GrokSettings } from '../types/GrokSettings';
 
 export const generateAIResponse = async (
   inputMessage: string,
@@ -32,9 +32,9 @@ export const generateAIResponse = async (
   // If the selected model fails, try other models in sequence
   if (!response) {
     // Define fallback models with the correct type
-    const fallbackModels: AIModelType[] = ['openai', 'claude', 'gemini', 'deepseek', 'grok3'].filter(
+    const fallbackModels: ModelId[] = ['openai', 'claude', 'gemini', 'deepseek', 'grok3'].filter(
       model => model !== selectedModel
-    ) as AIModelType[];
+    );
     
     for (const model of fallbackModels) {
       if (response) break; // Stop if we got a response
@@ -68,7 +68,7 @@ export const generateAIResponse = async (
 };
 
 const generateResponseWithModel = async (
-  model: AIModelType,
+  model: ModelId,
   inputMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
   settings?: GrokSettings

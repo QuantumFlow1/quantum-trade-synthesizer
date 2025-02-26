@@ -1,6 +1,9 @@
 
 export type ModelId = 'grok3' | 'openai' | 'gemini' | 'claude' | 'deepseek';
 
+// Add this type alias for the messageService to use
+export type AIModelType = ModelId;
+
 export interface ModelInfo {
   id: ModelId;
   name: string;

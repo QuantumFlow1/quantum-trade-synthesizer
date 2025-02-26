@@ -5,12 +5,12 @@ import { ChatMessage } from './types/chat';
 import { loadChatHistory, saveChatHistory } from './utils/storage';
 import { useApiAvailability } from './hooks/useApiAvailability';
 import { generateAIResponse, createChatMessage } from './services/messageService';
-import { GrokSettings, defaultGrokSettings } from './types/GrokSettings';
+import { GrokSettings, DEFAULT_SETTINGS } from './types/GrokSettings';
 
 export function useGrokChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [grokSettings, setGrokSettings] = useState<GrokSettings>(defaultGrokSettings);
+  const [grokSettings, setGrokSettings] = useState<GrokSettings>(DEFAULT_SETTINGS);
   const { apiAvailable, isLoading, checkGrokAvailability, retryApiConnection } = useApiAvailability();
 
   // Check API availability on mount
@@ -44,11 +44,11 @@ export function useGrokChat() {
     localStorage.setItem('grokSettings', JSON.stringify(grokSettings));
   }, [grokSettings]);
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
+  const sendMessage = async (messageContent = inputMessage) => {
+    if (!messageContent.trim()) return;
 
     // Create and add user message
-    const userMessage = createChatMessage('user', inputMessage);
+    const userMessage = createChatMessage('user', messageContent);
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
 
@@ -66,7 +66,7 @@ export function useGrokChat() {
         content: msg.content
       }));
       
-      const response = await generateAIResponse(inputMessage, conversationHistory, apiAvailable, grokSettings);
+      const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable, grokSettings);
       
       // Add assistant response to chat
       const assistantMessage = createChatMessage('assistant', response);
