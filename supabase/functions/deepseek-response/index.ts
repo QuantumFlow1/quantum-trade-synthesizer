@@ -1,5 +1,5 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 
 // Define CORS headers
 const corsHeaders = {
@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Deepseek API URL
+// DeepSeek API URL
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions'
 
 serve(async (req) => {
