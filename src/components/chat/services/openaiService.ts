@@ -47,28 +47,37 @@ export const generateOpenAIResponse = async (
     // Prepare request
     const modelName = settings.selectedModel === 'openai' ? 'gpt-4o' : settings.selectedModel;
     
-    // Call Supabase Edge Function for OpenAI response
-    const { data, error } = await supabase.functions.invoke('openai-response', {
-      body: {
-        messages,
-        model: modelName,
-        temperature: settings.temperature || 0.7,
-        max_tokens: settings.maxTokens || 1024,
-        apiKey: apiKey
+    try {
+      // Call Supabase Edge Function for OpenAI response
+      const { data, error } = await supabase.functions.invoke('openai-response', {
+        body: {
+          messages,
+          model: modelName,
+          temperature: settings.temperature || 0.7,
+          max_tokens: settings.maxTokens || 1024,
+          apiKey: apiKey
+        }
+      });
+      
+      if (error) {
+        console.error('OpenAI Supabase function error:', error);
+        throw new Error(`OpenAI API Error: ${error.message}`);
       }
-    });
-    
-    if (error) {
-      console.error('OpenAI Supabase function error:', error);
-      throw new Error(`OpenAI API Error: ${error.message}`);
+      
+      if (!data || !data.response) {
+        console.error('Invalid response from OpenAI API:', data);
+        throw new Error('Invalid response from OpenAI API');
+      }
+      
+      return data.response;
+    } catch (innerError) {
+      console.error('Error during OpenAI API call:', innerError);
+      // Add more specific error handling for lockdown errors
+      if (innerError.message && innerError.message.includes('intrinsics')) {
+        throw new Error('Security restriction detected. Please try again with different parameters.');
+      }
+      throw innerError;
     }
-    
-    if (!data || !data.response) {
-      console.error('Invalid response from OpenAI API:', data);
-      throw new Error('Invalid response from OpenAI API');
-    }
-    
-    return data.response;
   } catch (error) {
     console.error('Error generating OpenAI response:', error);
     throw error;
