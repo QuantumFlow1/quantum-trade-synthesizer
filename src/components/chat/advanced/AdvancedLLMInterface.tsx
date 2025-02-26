@@ -10,7 +10,7 @@ import TaskAndModelSection from "./TaskAndModelSection";
 import ParametersSection from "./ParametersSection";
 import ContentGenerationSection from "./ContentGenerationSection";
 import HistorySection from "./HistorySection";
-import { isInputValid } from "./utils";
+import { isInputValid, getModelDisplayName } from "./utils";
 
 export default function AdvancedLLMInterface() {
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ export default function AdvancedLLMInterface() {
     
     toast({
       title: "Model Changed",
-      description: `Now using ${model} as the AI model.`,
+      description: `Now using ${getModelDisplayName(model)} as the AI model.`,
       duration: 3000,
     });
   };
@@ -87,7 +87,8 @@ export default function AdvancedLLMInterface() {
     
     // Simulate AI response for demonstration
     setTimeout(() => {
-      const responseText = `This is a simulated response from ${selectedModel} using temperature ${temperature} and max tokens ${maxTokens}. In a real implementation, this would come from the AI model API based on your input message and parameters.`;
+      const modelDisplayName = getModelDisplayName(selectedModel);
+      const responseText = `This is a simulated response from ${modelDisplayName} using temperature ${temperature} and max tokens ${maxTokens}. In a real implementation, this would come from the AI model API based on your input message and parameters.`;
       
       // Add AI response to conversation
       setMessages((prev) => [
@@ -118,13 +119,10 @@ export default function AdvancedLLMInterface() {
     });
   };
   
-  // Get the currently selected model's name
-  const selectedModelName = selectedModel;
-  
   return (
     <div className="w-full max-w-6xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
       <AdvancedLLMHeader 
-        selectedModelName={selectedModelName} 
+        selectedModelName={getModelDisplayName(selectedModel)} 
         onExit={handleExit} 
       />
       
@@ -154,7 +152,7 @@ export default function AdvancedLLMInterface() {
             inputMessage={inputMessage}
             setInputMessage={setInputMessage}
             messages={messages}
-            selectedModelName={selectedModelName}
+            selectedModelName={selectedModel}
             onSendMessage={handleSendMessage}
           />
           

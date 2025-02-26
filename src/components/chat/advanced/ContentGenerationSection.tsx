@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ContentGenerationSectionProps } from './types';
 import { Button } from '@/components/ui/button';
 import { Send } from 'lucide-react';
+import { getModelDisplayName } from './utils';
 
 const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
   inputMessage,
@@ -19,6 +20,9 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
       onSendMessage();
     }
   };
+
+  // Get the display name for the selected model
+  const modelDisplayName = getModelDisplayName(selectedModelName);
 
   return (
     <div className="flex-1 p-4 flex flex-col">
@@ -54,7 +58,7 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
                 }`}
               >
                 <p className="font-semibold text-sm">
-                  {message.role === 'user' ? 'You' : selectedModelName}
+                  {message.role === 'user' ? 'You' : modelDisplayName}
                 </p>
                 <p className="text-sm">{message.content}</p>
               </div>
