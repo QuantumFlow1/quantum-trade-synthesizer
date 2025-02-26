@@ -19,6 +19,14 @@ export const generateOpenAIResponse = async (
   });
   
   try {
+    // Log request to help with debugging
+    console.log('Sending request to OpenAI API with:', {
+      message: inputMessage.substring(0, 50) + '...',
+      temperature: options?.temperature || 0.7,
+      maxTokens: options?.maxTokens || 1024,
+      historyLength: conversationHistory.length
+    });
+    
     const openaiResult = await supabase.functions.invoke('openai-response', {
       body: { 
         message: inputMessage,
@@ -30,7 +38,7 @@ export const generateOpenAIResponse = async (
       }
     });
     
-    console.log('OpenAI API response received:', openaiResult);
+    console.log('OpenAI API full response:', openaiResult);
     
     if (openaiResult.error) {
       console.error('OpenAI API error:', openaiResult.error);
@@ -55,6 +63,8 @@ export const generateOpenAIResponse = async (
       responseText = openaiResult.data.content;
     } else if (openaiResult.data.message) {
       responseText = openaiResult.data.message;
+    } else if (openaiResult.data.generatedText) {
+      responseText = openaiResult.data.generatedText;
     } else if (openaiResult.data.choices && openaiResult.data.choices.length > 0) {
       const choice = openaiResult.data.choices[0];
       responseText = choice.message?.content || choice.text || '';
@@ -65,7 +75,7 @@ export const generateOpenAIResponse = async (
       throw new Error('Unable to parse OpenAI response');
     }
     
-    console.log('Extracted OpenAI response text:', responseText);
+    console.log('Extracted OpenAI response text:', responseText.substring(0, 100) + '...');
     return responseText;
     
   } catch (error) {

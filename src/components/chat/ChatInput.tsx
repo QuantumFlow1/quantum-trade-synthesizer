@@ -13,8 +13,9 @@ interface ChatInputProps {
 
 export function ChatInput({ inputMessage, setInputMessage, sendMessage, isLoading }: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !isLoading) {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading && inputMessage.trim()) {
       e.preventDefault();
+      console.log("Sending message with Enter key");
       sendMessage();
     }
   };

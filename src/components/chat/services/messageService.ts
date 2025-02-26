@@ -21,6 +21,7 @@ export const generateAIResponse = async (
   
   console.log(`Attempting to generate response with model: ${selectedModel}`);
   console.log(`API available: ${apiAvailable}`);
+  console.log(`Settings:`, settings);
   
   // First try with the selected model
   if (apiAvailable) {
@@ -47,7 +48,7 @@ export const generateAIResponse = async (
         console.log(`Trying fallback model: ${model}`);
         response = await generateResponseWithModel(model, inputMessage, conversationHistory, settings);
         if (response) {
-          console.log(`Got response from fallback model ${model}`);
+          console.log(`Got response from fallback model ${model}: ${response.substring(0, 50)}...`);
         }
       } catch (fallbackError) {
         console.error(`Fallback model ${model} error:`, fallbackError);

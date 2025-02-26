@@ -1,14 +1,9 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/json'
-};
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -17,109 +12,91 @@ serve(async (req) => {
   }
 
   try {
-    // For availability checks, return a simple pong
-    if (req.method === 'GET') {
-      console.log('OpenAI availability check received');
-      return new Response(
-        JSON.stringify({ response: 'pong', status: 'available' }),
-        { headers: corsHeaders }
-      );
+    if (!openAIApiKey) {
+      throw new Error('OpenAI API key is not configured. Please set the OPENAI_API_KEY environment variable.');
     }
 
-    if (!OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ 
-          error: 'OPENAI_API_KEY not configured',
-          status: 'error' 
-        }),
-        { 
-          status: 500,
-          headers: corsHeaders 
-        }
-      );
-    }
-
-    if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { 
-          status: 405,
-          headers: corsHeaders 
-        }
-      );
-    }
-
-    // Parse request body
-    const { message, context, options } = await req.json();
-    console.log('Received request for OpenAI:', { 
-      message, 
+    const requestData = await req.json();
+    const { message, context = [], options = {} } = requestData;
+    
+    const temperature = options.temperature || 0.7;
+    const maxTokens = options.maxTokens || 1024;
+    
+    console.log('OpenAI Request:', {
+      messageLength: message?.length,
       contextLength: context?.length,
-      options 
+      temperature,
+      maxTokens,
     });
 
-    // Apply default options if not provided
-    const temperature = options?.temperature || 0.7;
-    const maxTokens = options?.maxTokens || 1024;
+    // Format the conversation history and user message
+    let messages = [];
+    
+    // Add system message for context
+    messages.push({
+      role: 'system',
+      content: 'You are a helpful AI assistant that provides clear, accurate, and useful information.'
+    });
+    
+    // Add conversation history if it exists
+    if (Array.isArray(context) && context.length > 0) {
+      messages = [...messages, ...context];
+    }
+    
+    // Add the user's current message if not already in context
+    if (message && (context.length === 0 || context[context.length - 1]?.role !== 'user')) {
+      messages.push({
+        role: 'user',
+        content: message
+      });
+    }
 
-    // Make request to OpenAI API
+    console.log(`Making request to OpenAI API with ${messages.length} messages`);
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        messages: [
-          ...(context || []),
-          { role: 'user', content: message }
-        ],
+        messages: messages,
+        temperature: temperature,
         max_tokens: maxTokens,
-        temperature: temperature
-      })
+      }),
     });
 
+    const result = await response.json();
+    
     if (!response.ok) {
-      console.error('OpenAI API error:', response.status, response.statusText);
-      const errorData = await response.text();
-      console.error('Error details:', errorData);
-      
-      return new Response(
-        JSON.stringify({ 
-          error: `OpenAI API request failed: ${response.status} ${response.statusText}`,
-          details: errorData,
-          status: 'error'
-        }),
-        { 
-          status: response.status,
-          headers: corsHeaders 
-        }
-      );
+      console.error('OpenAI API error:', result);
+      throw new Error(`OpenAI API error: ${result.error?.message || JSON.stringify(result)}`);
     }
+    
+    if (!result.choices || result.choices.length === 0) {
+      throw new Error('No response from OpenAI API');
+    }
+    
+    const generatedText = result.choices[0].message.content;
+    console.log('OpenAI response received, length:', generatedText.length);
 
-    const data = await response.json();
-    console.log('OpenAI API response received');
-
-    return new Response(
-      JSON.stringify({
-        response: data.choices[0].message.content,
-        status: 'success'
-      }),
-      { headers: corsHeaders }
-    );
-
+    return new Response(JSON.stringify({ 
+      generatedText,
+      model: result.model,
+      usage: result.usage,
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+    
   } catch (error) {
     console.error('Error in openai-response function:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        status: 'error'
-      }),
-      { 
-        status: 500,
-        headers: corsHeaders 
-      }
-    );
+    return new Response(JSON.stringify({ 
+      error: error.message || 'An unknown error occurred',
+      stack: error.stack
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

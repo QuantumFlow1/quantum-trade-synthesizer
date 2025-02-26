@@ -28,11 +28,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
-  // Handle keyboard shortcut (Ctrl+Enter) to send message
+  // Handle keyboard shortcut (Enter key without Shift) to send message
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && inputMessage.trim()) {
+    if (e.key === 'Enter' && !e.shiftKey && !isGenerating && inputMessage.trim()) {
       e.preventDefault();
       onSendMessage();
+      console.log("Message sent using Enter key");
     }
   };
 
@@ -47,7 +48,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         disabled={isGenerating}
       />
       <div className="flex justify-between items-center text-xs text-gray-500">
-        <span>Press Ctrl+Enter to send</span>
+        <span>Press Enter to send (Shift+Enter for new line)</span>
         <Button 
           type="submit" 
           className="flex items-center gap-2"
