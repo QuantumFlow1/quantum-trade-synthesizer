@@ -1,5 +1,5 @@
 
-import { Bot, ArrowLeft, Trash2 } from 'lucide-react'
+import { Bot, ArrowLeft, Trash2, Settings2 } from 'lucide-react'
 import { CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
@@ -7,9 +7,10 @@ import { toast } from '@/components/ui/use-toast'
 
 interface GrokChatHeaderProps {
   onClearChat: () => void;
+  onToggleSettings: () => void;
 }
 
-export function GrokChatHeader({ onClearChat }: GrokChatHeaderProps) {
+export function GrokChatHeader({ onClearChat, onToggleSettings }: GrokChatHeaderProps) {
   const handleClearChat = () => {
     onClearChat();
     toast({
@@ -26,6 +27,16 @@ export function GrokChatHeader({ onClearChat }: GrokChatHeaderProps) {
           <h2 className="text-xl font-semibold">Grok Chat</h2>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={onToggleSettings}
+            className="text-white border-white hover:bg-white/20 hover:text-white"
+            title="Grok instellingen"
+          >
+            <Settings2 className="h-4 w-4 mr-1" />
+            Instellingen
+          </Button>
           <Button 
             variant="outline" 
             size="sm" 

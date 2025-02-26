@@ -3,18 +3,20 @@ import { ChatMessage } from '../types/chat';
 import { v4 as uuidv4 } from 'uuid';
 import { generateGrok3Response } from './grok3Service';
 import { generateFallbackResponse } from './fallbackService';
+import { GrokSettings } from '../types/GrokSettings';
 
 export const generateAIResponse = async (
   inputMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  apiAvailable: boolean
+  apiAvailable: boolean,
+  settings?: GrokSettings
 ) => {
   let response;
   let error = null;
   
   if (apiAvailable) {
     try {
-      response = await generateGrok3Response(inputMessage, conversationHistory);
+      response = await generateGrok3Response(inputMessage, conversationHistory, settings);
     } catch (grokError) {
       console.error('Grok3 service error:', grokError);
       error = grokError;

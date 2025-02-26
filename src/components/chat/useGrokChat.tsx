@@ -5,10 +5,12 @@ import { ChatMessage } from './types/chat';
 import { loadChatHistory, saveChatHistory } from './utils/storage';
 import { useApiAvailability } from './hooks/useApiAvailability';
 import { generateAIResponse, createChatMessage } from './services/messageService';
+import { GrokSettings, defaultGrokSettings } from './types/GrokSettings';
 
 export function useGrokChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [grokSettings, setGrokSettings] = useState<GrokSettings>(defaultGrokSettings);
   const { apiAvailable, isLoading, checkGrokAvailability, retryApiConnection } = useApiAvailability();
 
   // Check API availability on mount
@@ -20,12 +22,27 @@ export function useGrokChat() {
   useEffect(() => {
     const savedMessages = loadChatHistory();
     setMessages(savedMessages);
+    
+    // Load saved Grok settings if available
+    const savedSettings = localStorage.getItem('grokSettings');
+    if (savedSettings) {
+      try {
+        setGrokSettings(JSON.parse(savedSettings));
+      } catch (e) {
+        console.error('Error parsing saved Grok settings:', e);
+      }
+    }
   }, []);
 
   // Save chat history to localStorage when it changes
   useEffect(() => {
     saveChatHistory(messages);
   }, [messages]);
+  
+  // Save settings to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem('grokSettings', JSON.stringify(grokSettings));
+  }, [grokSettings]);
 
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -49,7 +66,7 @@ export function useGrokChat() {
         content: msg.content
       }));
       
-      const response = await generateAIResponse(inputMessage, conversationHistory, apiAvailable);
+      const response = await generateAIResponse(inputMessage, conversationHistory, apiAvailable, grokSettings);
       
       // Add assistant response to chat
       const assistantMessage = createChatMessage('assistant', response);
@@ -88,7 +105,9 @@ export function useGrokChat() {
     sendMessage,
     clearChat,
     apiAvailable,
-    retryApiConnection
+    retryApiConnection,
+    grokSettings,
+    setGrokSettings
   };
 }
 

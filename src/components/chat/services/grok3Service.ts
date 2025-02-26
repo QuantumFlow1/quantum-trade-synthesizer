@@ -1,15 +1,21 @@
 
 import { supabase } from '@/lib/supabase';
+import { GrokSettings } from '../types/GrokSettings';
 
 export const generateGrok3Response = async (
   inputMessage: string,
-  conversationHistory: Array<{ role: string; content: string }>
+  conversationHistory: Array<{ role: string; content: string }>,
+  settings?: GrokSettings
 ) => {
-  console.log('Using Grok3 API...');
+  console.log('Using Grok3 API...', settings);
   const grokResult = await supabase.functions.invoke('grok3-response', {
     body: { 
       message: inputMessage,
-      context: conversationHistory
+      context: conversationHistory,
+      settings: {
+        deepSearch: settings?.deepSearchEnabled,
+        think: settings?.thinkEnabled
+      }
     }
   });
   

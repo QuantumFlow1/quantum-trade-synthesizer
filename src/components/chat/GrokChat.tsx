@@ -4,11 +4,13 @@ import { GrokChatHeader } from './GrokChatHeader'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
 import { useGrokChat } from './useGrokChat'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from '@/components/ui/use-toast'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { AlertTriangle, Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2, Settings2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { GrokChatSettings } from './GrokChatSettings'
+import { GrokSettings, defaultGrokSettings } from './types/GrokSettings'
 
 export function GrokChat() {
   const {
@@ -19,8 +21,12 @@ export function GrokChat() {
     sendMessage,
     clearChat,
     apiAvailable,
-    retryApiConnection
+    retryApiConnection,
+    grokSettings,
+    setGrokSettings
   } = useGrokChat();
+
+  const [showSettings, setShowSettings] = useState(false);
 
   // Display an info message when component mounts
   useEffect(() => {
@@ -35,9 +41,13 @@ export function GrokChat() {
     await retryApiConnection();
   };
 
+  const toggleSettings = () => {
+    setShowSettings(!showSettings);
+  };
+
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg bg-white">
-      <GrokChatHeader onClearChat={clearChat} />
+      <GrokChatHeader onClearChat={clearChat} onToggleSettings={toggleSettings} />
       
       <CardContent className="p-0 flex flex-col h-[600px]">
         {/* API Status Alert */}
@@ -67,8 +77,18 @@ export function GrokChat() {
           </Alert>
         )}
         
+        {/* Settings Panel */}
+        {showSettings && (
+          <div className="m-4 mb-0">
+            <GrokChatSettings 
+              settings={grokSettings}
+              onSettingsChange={setGrokSettings}
+            />
+          </div>
+        )}
+        
         {/* Chat Messages */}
-        <div className={`flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50 ${apiAvailable === false ? 'pt-0' : ''}`}>
+        <div className={`flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50 ${apiAvailable === false || showSettings ? 'pt-0' : ''}`}>
           <ChatMessages messages={messages} />
         </div>
         
