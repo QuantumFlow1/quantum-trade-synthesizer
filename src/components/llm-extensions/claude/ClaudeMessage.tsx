@@ -14,6 +14,9 @@ export function ClaudeMessage({ message }: ClaudeMessageProps) {
     ? message.timestamp 
     : new Date(message.timestamp);
     
+  // Process message content for proper rendering
+  const messageContent = message.content?.replace(/\n/g, '<br>') || '';
+    
   return (
     <div 
       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}
@@ -34,7 +37,10 @@ export function ClaudeMessage({ message }: ClaudeMessageProps) {
           )}
         </div>
         <div className="flex-1">
-          <p className="whitespace-pre-line text-sm break-words">{message.content}</p>
+          <p 
+            className="text-sm break-words"
+            dangerouslySetInnerHTML={{ __html: messageContent }} 
+          />
           <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-green-200' : 'text-gray-400'}`}>
             {timestamp.toLocaleTimeString()}
           </p>
