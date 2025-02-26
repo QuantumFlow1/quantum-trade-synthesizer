@@ -116,7 +116,8 @@ serve(async (req) => {
     }
 
     // Log success (truncated for brevity)
-    console.log('DeepSeek response received:', responseText.substring(0, 100) + '...')
+    console.log('DeepSeek response received successfully:', 
+      responseText.substring(0, 100) + '...')
 
     // Return the successful response
     return new Response(

@@ -43,27 +43,27 @@ export const generateDeepSeekResponse = async (
     });
     
     // Make the request to the DeepSeek Edge Function
-    const deepseekResult = await supabase.functions.invoke('deepseek-response', {
+    const response = await supabase.functions.invoke('deepseek-response', {
       body: functionParams
     });
     
     // Check for errors in the response
-    if (deepseekResult.error) {
-      console.error('DeepSeek Edge Function error:', deepseekResult.error);
-      throw new Error(`DeepSeek API Error: ${deepseekResult.error.message || 'Unknown error'}`);
+    if (response.error) {
+      console.error('DeepSeek Edge Function error:', response.error);
+      throw new Error(`DeepSeek API Error: ${response.error.message || 'Unknown error'}`);
     }
     
     // Check if we received a valid response
-    if (!deepseekResult.data?.response) {
-      console.error('Invalid DeepSeek response:', deepseekResult.data);
+    if (!response.data?.response) {
+      console.error('Invalid DeepSeek response:', response.data);
       throw new Error('Invalid response from DeepSeek API. Please try again.');
     }
     
     // Log the successful response
     console.log('DeepSeek response received successfully:', 
-      deepseekResult.data.response.substring(0, 100) + '...');
+      response.data.response.substring(0, 100) + '...');
     
-    return deepseekResult.data.response;
+    return response.data.response;
   } catch (error) {
     console.error('Exception calling DeepSeek:', error);
     
