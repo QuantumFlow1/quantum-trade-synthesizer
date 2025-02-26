@@ -22,7 +22,9 @@ export const MarketPage = () => {
     const timer = setTimeout(() => {
       if (connectionStatus === 'connected' && marketData && marketData.length > 0) {
         setLoadingState('success');
+        console.log('Market data successfully loaded:', marketData.length, 'items');
       } else if (connectionStatus === 'disconnected') {
+        console.log('Market data connection failed');
         setLoadingState('error');
       }
     }, 3000);
@@ -68,10 +70,10 @@ export const MarketPage = () => {
               variant="outline" 
               size="sm" 
               onClick={handleRefresh}
-              disabled={loadingState === 'loading'}
+              disabled={loadingState === 'loading' || connectionStatus === 'connecting'}
               className="ml-2"
             >
-              <RefreshCcw className="w-4 h-4 mr-2" />
+              <RefreshCcw className={`w-4 h-4 mr-2 ${loadingState === 'loading' ? 'animate-spin' : ''}`} />
               Refresh
             </Button>
           </div>
