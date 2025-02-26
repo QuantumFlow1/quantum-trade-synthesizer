@@ -1,15 +1,20 @@
 
 import { supabase } from '@/lib/supabase';
+import { GrokSettings } from '../types/GrokSettings';
 
 export const generateDeepSeekResponse = async (
   inputMessage: string,
-  conversationHistory: Array<{ role: string; content: string }>
+  conversationHistory: Array<{ role: string; content: string }>,
+  settings?: GrokSettings
 ) => {
   console.log('Using DeepSeek API...');
   const deepseekResult = await supabase.functions.invoke('deepseek-response', {
     body: { 
       message: inputMessage,
-      context: conversationHistory
+      context: conversationHistory,
+      model: settings?.selectedModel,
+      maxTokens: settings?.maxTokens,
+      temperature: settings?.temperature
     }
   });
   

@@ -69,13 +69,13 @@ export const generateAIResponse = async (
       case 'gemini-pro':
       case 'gemini':
         console.log('Generating Gemini response...');
-        response = await generateGeminiResponse(inputMessage, conversationHistory);
+        response = await generateGeminiResponse(inputMessage, conversationHistory, settings);
         break;
         
       case 'deepseek-chat':
       case 'deepseek':
         console.log('Generating DeepSeek response...');
-        response = await generateDeepSeekResponse(inputMessage, conversationHistory);
+        response = await generateDeepSeekResponse(inputMessage, conversationHistory, settings);
         break;
         
       default:
