@@ -12,8 +12,6 @@ import { LoadingProfile } from "@/components/LoadingProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
-// import { EdriziAIAssistant } from "@/components/voice-assistant/EdriziAIAssistant";
-// import { SuperAdminVoiceAssistant } from "@/components/admin/SuperAdminVoiceAssistant";
 import { Link } from "react-router-dom";
 import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -75,40 +73,41 @@ const Index = () => {
       {!user ? (
         <LoginComponent />
       ) : (
-        <div style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}>
-          {/* Grok Chat Link - shown to authenticated users */}
-          {user && (
-            <div className="fixed top-4 right-4 z-50">
-              <Link to="/chat">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <Bot className="h-4 w-4" />
-                  <span>Grok Chat</span>
-                </Button>
-              </Link>
-            </div>
-          )}
-          
-          {isSuperAdmin ? (
-            <>
-              <AdminPanel />
-              {/* Voice assistant temporarily disabled */}
-              {/* <SuperAdminVoiceAssistant /> */}
-            </>
-          ) : userProfile?.role === "admin" ? (
-            <AdminPanel />
-          ) : (
-            <>
-              <UserDashboard />
-              {/* Voice assistant temporarily disabled */}
-              {/* <EdriziAIAssistant /> */}
-            </>
-          )}
-          {!isMobile && <ZoomControls
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onResetZoom={handleResetZoom}
-          />}
-        </div>
+        <AnimatePresence>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
+            className="h-full w-full"
+          >
+            {/* Grok Chat Link - shown to authenticated users */}
+            {user && (
+              <div className="fixed top-4 right-4 z-50">
+                <Link to="/chat">
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <Bot className="h-4 w-4" />
+                    <span>Grok Chat</span>
+                  </Button>
+                </Link>
+              </div>
+            )}
+            
+            {isSuperAdmin ? (
+              <AdminPanel key="admin-panel" />
+            ) : userProfile?.role === "admin" ? (
+              <AdminPanel key="admin-panel" />
+            ) : (
+              <UserDashboard key="user-dashboard" />
+            )}
+            {!isMobile && <ZoomControls
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onResetZoom={handleResetZoom}
+            />}
+          </motion.div>
+        </AnimatePresence>
       )}
     </div>
   );
