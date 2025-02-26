@@ -1,13 +1,9 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/json'
 };
 
 serve(async (req) => {
@@ -17,115 +13,128 @@ serve(async (req) => {
   }
 
   try {
-    // For availability checks, return a simple pong
-    if (req.method === 'GET') {
-      console.log('Gemini availability check received');
-      return new Response(
-        JSON.stringify({ response: 'pong', status: 'available' }),
-        { headers: corsHeaders }
-      );
+    const { message, context, model, maxTokens, temperature, apiKey } = await req.json();
+
+    // Log request details (without sensitive info)
+    console.log(`Gemini request received for model: ${model || 'gemini-pro'}`);
+    console.log(`Message length: ${message?.length || 0}, context items: ${context?.length || 0}`);
+    
+    // Validate required parameters
+    if (!message) {
+      throw new Error("Message is required");
     }
 
-    if (!GEMINI_API_KEY) {
-      console.error('GEMINI_API_KEY not configured');
-      return new Response(
-        JSON.stringify({ 
-          error: 'GEMINI_API_KEY not configured',
-          status: 'error' 
-        }),
-        { 
-          status: 500,
-          headers: corsHeaders 
+    // Check if API key is provided
+    if (!apiKey) {
+      throw new Error("Gemini API key is required");
+    }
+
+    // Prepare conversation history in Gemini format
+    const geminiMessages = [];
+    
+    // Add context messages if available
+    if (context && Array.isArray(context)) {
+      for (const item of context) {
+        if (item.role === 'user') {
+          geminiMessages.push({ role: 'user', parts: [{ text: item.content }] });
+        } else if (item.role === 'assistant') {
+          geminiMessages.push({ role: 'model', parts: [{ text: item.content }] });
         }
-      );
-    }
-
-    if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { 
-          status: 405,
-          headers: corsHeaders 
-        }
-      );
-    }
-
-    // Parse request body
-    const { message, context } = await req.json();
-    console.log('Received request for Gemini:', { message, contextLength: context?.length });
-
-    // Format conversation history for Gemini
-    const formattedContext = context?.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'model',
-      parts: [{ text: msg.content }]
-    })) || [];
-
-    // Add the current message
-    const contents = [
-      ...formattedContext,
-      {
-        role: 'user',
-        parts: [{ text: message }]
       }
-    ];
+    }
+    
+    // Add the current message
+    geminiMessages.push({ role: 'user', parts: [{ text: message }] });
 
-    // Make request to Gemini API
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+    // Set the API endpoint (Gemini API)
+    const selectedModel = model || 'gemini-pro';
+    const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
+
+    // Prepare request payload for Gemini API
+    const payload = {
+      contents: geminiMessages,
+      generationConfig: {
+        temperature: temperature || 0.7,
+        maxOutputTokens: maxTokens || 1024,
+        topP: 0.8,
+        topK: 40,
+      },
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_ONLY_HIGH",
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_ONLY_HIGH",
+        },
+        {
+          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          threshold: "BLOCK_ONLY_HIGH",
+        },
+        {
+          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+          threshold: "BLOCK_ONLY_HIGH",
+        },
+      ],
+    };
+
+    console.log('Sending request to Gemini API...');
+    
+    // Make the API call to Gemini
+    const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        contents,
-        generationConfig: {
-          maxOutputTokens: 500,
-          temperature: 0.7,
-        }
-      })
+      body: JSON.stringify(payload),
     });
 
+    // Parse the API response
+    const data = await response.json();
+    
+    // Log response status (for debugging)
+    console.log(`Gemini API response status: ${response.status}`);
+    
+    // Check for errors in the response
     if (!response.ok) {
-      console.error('Gemini API error:', response.status, response.statusText);
-      const errorData = await response.text();
-      console.error('Error details:', errorData);
-      
-      return new Response(
-        JSON.stringify({ 
-          error: `Gemini API request failed: ${response.status} ${response.statusText}`,
-          details: errorData,
-          status: 'error'
-        }),
-        { 
-          status: response.status,
-          headers: corsHeaders 
-        }
-      );
+      console.error('Gemini API error:', data);
+      throw new Error(data.error?.message || 'Failed to get response from Gemini API');
     }
 
-    const data = await response.json();
-    console.log('Gemini API response received');
-    
-    // Extract the response text
-    const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from Gemini";
+    // Extract the generated text from the Gemini response
+    let generatedText = '';
+    if (data.candidates && data.candidates.length > 0 && 
+        data.candidates[0].content && 
+        data.candidates[0].content.parts && 
+        data.candidates[0].content.parts.length > 0) {
+      generatedText = data.candidates[0].content.parts[0].text || '';
+    } else {
+      throw new Error('No text generated in Gemini response');
+    }
 
-    return new Response(
-      JSON.stringify({
-        response: responseText,
-        status: 'success'
-      }),
-      { headers: corsHeaders }
-    );
-
-  } catch (error) {
-    console.error('Error in gemini-response function:', error);
+    // Return the successful response
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        response: generatedText,
+        status: 'success'
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
+  } catch (error) {
+    // Log and return any errors that occur
+    console.error('Error in gemini-response function:', error);
+    
+    return new Response(
+      JSON.stringify({ 
+        error: error.message || 'Unknown error in Gemini API request',
         status: 'error'
       }),
       { 
-        status: 500,
-        headers: corsHeaders 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }
