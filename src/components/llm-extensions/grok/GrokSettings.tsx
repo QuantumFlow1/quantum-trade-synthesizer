@@ -1,6 +1,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 
 interface GrokSettingsProps {
   onClose: () => void;
@@ -21,9 +23,13 @@ export function GrokSettings({ onClose }: GrokSettingsProps) {
     <div className="bg-gray-50 p-4 rounded-lg">
       <h3 className="text-sm font-medium mb-2">Grok API Settings</h3>
       <div className="space-y-4">
-        <p className="text-sm text-gray-600">
-          Grok API integration is coming soon. Check back later for updates.
-        </p>
+        <Alert variant="info" className="mb-3">
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Grok API integration is coming soon. Check back later for updates.
+          </AlertDescription>
+        </Alert>
+        
         <div>
           <label className="text-sm text-gray-700 block mb-1">API Key</label>
           <input
