@@ -1,0 +1,26 @@
+
+/* Focus states for accessibility */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+/* Loading indicators */
+.loading-pulse {
+  animation: pulse-subtle 1.5s infinite ease-in-out;
+}
+
+.loading-dots::after {
+  content: '.';
+  animation: loading-dots 1.5s infinite;
+}
+
+@keyframes loading-dots {
+  0% { content: '.'; }
+  33% { content: '..'; }
+  66% { content: '...'; }
+}
