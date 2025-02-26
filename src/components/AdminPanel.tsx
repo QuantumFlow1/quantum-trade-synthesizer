@@ -3,7 +3,7 @@ import { useState } from "react";
 import AdminPanelHeader from "@/components/admin/AdminPanelHeader";
 import AdminPanelContent from "@/components/admin/AdminPanelContent";
 import UserDashboard from "@/components/UserDashboard";
-import { SuperAdminVoiceAssistant } from "@/components/admin/SuperAdminVoiceAssistant";
+// Remove the SuperAdminVoiceAssistant import
 import { Agent } from "@/types/agent";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -80,7 +80,8 @@ const AdminPanel = () => {
         setShowAccountManagement={setShowAccountManagement}
         setAgents={setAgents}
       />
-      {userProfile?.role === 'super_admin' && <SuperAdminVoiceAssistant />}
+      {/* Remove the SuperAdminVoiceAssistant component */}
+      {/* Note: commented out userProfile?.role === 'super_admin' && <SuperAdminVoiceAssistant /> */}
       <AdminPanelContent
         userRole="admin"
         agents={agents}

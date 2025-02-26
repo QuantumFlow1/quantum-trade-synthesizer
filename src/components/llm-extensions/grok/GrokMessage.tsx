@@ -1,4 +1,3 @@
-
 import { User, Zap } from 'lucide-react';
 import { Message } from '../deepseek/types';
 
@@ -12,39 +11,13 @@ export function GrokMessage({ message }: GrokMessageProps) {
     ? message.timestamp 
     : new Date(message.timestamp);
   
-  // Add debugging information
-  console.log(`Rendering GrokMessage:`, message);
+  // Add debugging information (keep these for when the feature is restored)
+  console.log(`Rendering disabled GrokMessage:`, message);
   
-  if (!message.content) {
-    console.warn("Empty message content in GrokMessage component");
-  }
-    
   return (
-    <div 
-      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-      data-message-id={message.id}
-    >
-      <div 
-        className={`rounded-lg px-4 py-2 max-w-[85%] flex ${
-          message.role === 'user' 
-            ? 'bg-purple-600 text-white' 
-            : 'bg-gray-100 border border-gray-200'
-        }`}
-      >
-        <div className={`mr-2 mt-1 ${message.role === 'user' ? 'text-white' : 'text-purple-600'}`}>
-          {message.role === 'user' ? (
-            <User className="w-4 h-4" />
-          ) : (
-            <Zap className="w-4 h-4" />
-          )}
-        </div>
-        <div className="flex-1">
-          <p className="whitespace-pre-line text-sm">{message.content || "Error: Empty message content"}</p>
-          <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-purple-200' : 'text-gray-400'}`}>
-            {timestamp.toLocaleTimeString()}
-          </p>
-        </div>
-      </div>
+    <div className="flex items-center justify-center p-4 text-gray-400 border rounded-lg">
+      <Zap className="w-5 h-5 mr-2" />
+      <span>Chat functionality temporarily disabled</span>
     </div>
   );
 }
