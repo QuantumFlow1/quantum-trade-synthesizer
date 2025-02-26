@@ -22,10 +22,12 @@ export const usePositions = () => {
   useEffect(() => {
     if (!user) {
       console.log("No user found, skipping positions fetch");
+      setIsLoading(false);
       return;
     }
 
     console.log("Fetching positions for user:", user.id);
+    let subscription: { unsubscribe: () => void } | null = null;
 
     const fetchPositions = async () => {
       try {
@@ -57,7 +59,7 @@ export const usePositions = () => {
 
     // Subscribe to position updates
     console.log("Setting up realtime subscription for positions");
-    const subscription = supabase
+    subscription = supabase
       .channel("positions_channel")
       .on(
         "postgres_changes",
@@ -88,9 +90,11 @@ export const usePositions = () => {
 
     return () => {
       console.log("Cleaning up positions subscription");
-      subscription.unsubscribe();
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
-  }, [user]);
+  }, [user, toast]);
 
   return { positions, isLoading };
 };
