@@ -11,10 +11,18 @@ export function GrokMessage({ message }: GrokMessageProps) {
   const timestamp = message.timestamp instanceof Date 
     ? message.timestamp 
     : new Date(message.timestamp);
+  
+  // Add debugging information
+  console.log(`Rendering GrokMessage:`, message);
+  
+  if (!message.content) {
+    console.warn("Empty message content in GrokMessage component");
+  }
     
   return (
     <div 
       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+      data-message-id={message.id}
     >
       <div 
         className={`rounded-lg px-4 py-2 max-w-[85%] flex ${
@@ -31,7 +39,7 @@ export function GrokMessage({ message }: GrokMessageProps) {
           )}
         </div>
         <div className="flex-1">
-          <p className="whitespace-pre-line text-sm">{message.content}</p>
+          <p className="whitespace-pre-line text-sm">{message.content || "Error: Empty message content"}</p>
           <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-purple-200' : 'text-gray-400'}`}>
             {timestamp.toLocaleTimeString()}
           </p>

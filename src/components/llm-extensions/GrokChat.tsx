@@ -29,6 +29,7 @@ export function GrokChat() {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+    console.log("GrokChat component messages updated:", messages);
   }, [messages]);
 
   return (
@@ -64,9 +65,12 @@ export function GrokChat() {
         ) : messages.length === 0 ? (
           <GrokEmptyState />
         ) : (
-          messages.map((message) => (
-            <GrokMessage key={message.id} message={message} />
-          ))
+          <>
+            {messages.map((message) => (
+              <GrokMessage key={message.id} message={message} />
+            ))}
+            <div className="text-xs text-gray-400">Message count: {messages.length}</div>
+          </>
         )}
         <div ref={messagesEndRef} />
       </CardContent>
