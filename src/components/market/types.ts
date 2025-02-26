@@ -67,3 +67,50 @@ export interface ChartData {
   high: number;
   low: number;
 }
+
+// New interfaces for profit/loss tracking
+
+export interface ProfitLossRecord {
+  id: string;
+  tradeId: string;
+  timestamp: number;
+  realized: number;    // Realized P&L amount
+  unrealized: number;  // Unrealized P&L amount 
+  percentage: number;  // P&L as percentage of investment
+  assetSymbol: string; // Symbol of the asset traded
+  entryPrice: number;  // Price at which position was opened
+  currentPrice: number;// Current price of the asset
+  quantity: number;    // Quantity of the asset
+  costBasis: number;   // Total cost of investment
+  currentValue: number;// Current value of investment
+  status: 'open' | 'closed';
+}
+
+export interface TradeHistoryItem {
+  id: string;
+  type: 'buy' | 'sell';
+  symbol: string;
+  amount: number;
+  price: number;
+  timestamp: number;
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  totalValue: number;
+  fees?: number;
+  profitLoss?: number;
+  profitLossPercentage?: number;
+}
+
+export interface PortfolioSummary {
+  totalValue: number;
+  totalProfitLoss: number;
+  percentageChange: number;
+  timeframe: '24h' | '7d' | '30d' | 'all';
+  holdings: {
+    symbol: string;
+    amount: number;
+    value: number;
+    profitLoss: number;
+    percentageChange: number;
+  }[];
+}
+
