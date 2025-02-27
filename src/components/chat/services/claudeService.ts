@@ -28,19 +28,24 @@ export const generateClaudeResponse = async (
     throw new Error('Claude API key not found');
   }
   
-  console.log('Calling Claude API with key:', apiKey ? 'present (key length: ' + apiKey.length + ')' : 'not found');
+  console.log('Calling Claude API with key:', apiKey ? `present (key length: ${apiKey.length})` : 'not found');
   
   try {
+    console.log('Invoking claude-response edge function...');
     const claudeResult = await supabase.functions.invoke('claude-response', {
       body: { 
         message: inputMessage,
         context: conversationHistory,
-        model: 'claude-3-haiku-20240307',
+        model: settings?.selectedModel === 'claude' 
+          ? 'claude-3-haiku-20240307' 
+          : 'claude-3-haiku-20240307',
         maxTokens: settings?.maxTokens || 1024,
         temperature: settings?.temperature || 0.7,
         apiKey: apiKey
       }
     });
+    
+    console.log('Edge function response received:', claudeResult);
     
     if (claudeResult.error) {
       console.error('Claude API error from edge function:', claudeResult.error);
@@ -55,16 +60,30 @@ export const generateClaudeResponse = async (
   
     if (!claudeResult.data?.response) {
       console.error('No response data from Claude API:', claudeResult);
-      toast({
-        title: "Invalid Response",
-        description: "Received an invalid response from Claude API",
-        variant: "destructive",
-        duration: 5000,
-      });
-      throw new Error('No response from Claude API');
+      
+      // Check if there's an error message in the data
+      if (claudeResult.data?.error) {
+        toast({
+          title: "Claude API Error",
+          description: claudeResult.data.error,
+          variant: "destructive",
+          duration: 5000,
+        });
+        throw new Error(claudeResult.data.error);
+      } else {
+        toast({
+          title: "Invalid Response",
+          description: "Received an invalid response from Claude API",
+          variant: "destructive",
+          duration: 5000,
+        });
+        throw new Error('No response from Claude API');
+      }
     }
     
-    console.log('Claude response received:', claudeResult.data.response.substring(0, 100) + '...');
+    console.log('Claude response received:', 
+      claudeResult.data.response.substring(0, 100) + '...');
+    
     return claudeResult.data.response;
     
   } catch (error) {
