@@ -1,7 +1,7 @@
 
-import { useState } from "react";
+import React from "react";
 import { Switch } from "@/components/ui/switch";
-import { ApiKey, API_KEY_TYPES } from "./types";
+import { ApiKey } from "./types";
 import { useApiKeyUtils } from "./useApiKeyUtils";
 
 interface ApiKeyListProps {
@@ -10,7 +10,7 @@ interface ApiKeyListProps {
   onStatusChange: (id: string, isActive: boolean) => void;
 }
 
-export const ApiKeyList = ({ apiKeys, loading, onStatusChange }: ApiKeyListProps) => {
+export const ApiKeyList: React.FC<ApiKeyListProps> = ({ apiKeys, loading, onStatusChange }: ApiKeyListProps) => {
   const { renderApiKeyMasked, getKeyTypeName } = useApiKeyUtils();
 
   if (loading) {
