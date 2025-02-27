@@ -1,60 +1,64 @@
 
-// Import necessary modules for Deno
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.5.0';
+import { corsHeaders } from '../_shared/cors.ts';
 
-// CORS headers to allow cross-origin requests
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.anthropic.com; connect-src 'self' https://api.anthropic.com *;"
-};
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+Deno.serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Parse request body
-    const { message, context, model, maxTokens, temperature, apiKey } = await req.json();
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    // Get request body
+    const { message, context, model = 'claude-3-haiku-20240307', maxTokens = 1024, temperature = 0.7, apiKey } = await req.json();
 
-    console.log(`Claude API request for model: ${model}`);
-    console.log(`Message content length: ${message.length}`);
-    console.log(`Context messages: ${context.length}`);
-
+    console.log('Claude API request:', { 
+      model,
+      messageLength: message?.length,
+      contextLength: context?.length,
+      temperature,
+      maxTokens,
+      hasApiKey: !!apiKey
+    });
+    
     if (!apiKey) {
-      throw new Error('API key is required');
+      return new Response(
+        JSON.stringify({ error: 'Claude API key is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      );
     }
 
-    // Format messages for Claude API
-    const messages = context.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
-
-    // Add the latest user message if not already included in context
-    if (!messages.some(msg => msg.content === message && msg.role === 'user')) {
-      messages.push({
-        role: 'user',
-        content: message
+    // Call Claude API
+    const systemPrompt = "You are Claude, an AI assistant by Anthropic. You are helpful, harmless, and honest.";
+    
+    // Create Claude API messages format
+    const messages = [
+      { role: "system", content: systemPrompt },
+    ];
+    
+    // Add context messages if available
+    if (context && Array.isArray(context)) {
+      context.forEach(msg => {
+        if (msg.role === 'user' || msg.role === 'assistant') {
+          messages.push({
+            role: msg.role,
+            content: msg.content
+          });
+        }
       });
     }
-
-    // Determine which Claude API model to use
-    const claudeModel = model === 'claude' || model === 'claude-3-haiku' 
-      ? 'claude-3-haiku-20240307' 
-      : model === 'claude-3-sonnet' 
-        ? 'claude-3-sonnet-20240229' 
-        : model === 'claude-3-opus' 
-          ? 'claude-3-opus-20240229' 
-          : 'claude-3-haiku-20240307';
-
-    console.log(`Using Claude model: ${claudeModel}`);
-
-    // Make API request to Claude API
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    
+    // Add the current message
+    messages.push({ role: "user", content: message });
+    
+    console.log('Sending to Claude API with messages:', JSON.stringify(messages.slice(0, 2) + '... [truncated]'));
+    
+    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -62,41 +66,40 @@ serve(async (req) => {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: claudeModel,
+        model: model,
         messages: messages,
-        max_tokens: maxTokens || 1024,
-        temperature: temperature || 0.7
+        max_tokens: maxTokens,
+        temperature: temperature
       })
     });
-
-    // Check if the response is successful
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Claude API error:', errorData);
-      throw new Error(`Claude API returned error: ${response.status} ${response.statusText}`);
+    
+    // Check for API errors
+    if (!claudeResponse.ok) {
+      const errorText = await claudeResponse.text();
+      console.error('Claude API error:', claudeResponse.status, errorText);
+      return new Response(
+        JSON.stringify({ error: `Claude API returned ${claudeResponse.status}: ${errorText}` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
+      );
     }
-
-    // Parse the response data
-    const data = await response.json();
-    console.log('Claude response received successfully');
-
-    // Return the Claude API response
-    return new Response(JSON.stringify({ 
-      response: data.content[0].text,
-      model: claudeModel
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
-
+    
+    const responseData = await claudeResponse.json();
+    console.log('Claude API response:', JSON.stringify(responseData).substring(0, 150) + '...');
+    
+    // Extract the response content
+    const responseContent = responseData.content && responseData.content[0]?.text;
+    
+    return new Response(
+      JSON.stringify({ response: responseContent }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+    
   } catch (error) {
     console.error('Error in Claude function:', error.message);
     
-    // Return an error response
-    return new Response(JSON.stringify({ 
-      error: error.message 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
   }
 });
