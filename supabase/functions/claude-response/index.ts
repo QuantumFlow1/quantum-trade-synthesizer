@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Claude API request configuration:', { 
+    console.log('Claude API request parameters:', { 
       model,
       messageLength: message.length,
       contextLength: Array.isArray(context) ? context.length : 0,
