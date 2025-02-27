@@ -2,25 +2,33 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.5.0';
 import { corsHeaders } from '../_shared/cors.ts';
 
+// Required for accessing Supabase services from within the function
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
 Deno.serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Create Supabase client for accessing other Supabase services if needed
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     // Get request body
-    const { message, context, model = 'claude-3-haiku-20240307', maxTokens = 1024, temperature = 0.7, apiKey } = await req.json();
+    const { 
+      message, 
+      context, 
+      model = 'claude-3-haiku-20240307', 
+      maxTokens = 1024, 
+      temperature = 0.7, 
+      apiKey 
+    } = await req.json();
 
-    console.log('Claude API request:', { 
+    console.log('Claude API request received:', { 
       model,
-      messageLength: message?.length,
-      contextLength: context?.length,
+      contextLength: context?.length || 0,
       temperature,
       maxTokens,
       hasApiKey: !!apiKey
@@ -33,7 +41,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Call Claude API
+    // Prepare system prompt
     const systemPrompt = "You are Claude, an AI assistant by Anthropic. You are helpful, harmless, and honest.";
     
     // Create Claude API messages format
@@ -56,7 +64,7 @@ Deno.serve(async (req) => {
     // Add the current message
     messages.push({ role: "user", content: message });
     
-    console.log('Sending to Claude API with messages:', JSON.stringify(messages.slice(0, 2) + '... [truncated]'));
+    console.log('Sending request to Claude API...');
     
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -84,7 +92,7 @@ Deno.serve(async (req) => {
     }
     
     const responseData = await claudeResponse.json();
-    console.log('Claude API response:', JSON.stringify(responseData).substring(0, 150) + '...');
+    console.log('Claude API response received:', JSON.stringify(responseData).substring(0, 150) + '...');
     
     // Extract the response content
     const responseContent = responseData.content && responseData.content[0]?.text;

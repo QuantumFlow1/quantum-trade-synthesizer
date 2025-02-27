@@ -28,7 +28,7 @@ export const generateClaudeResponse = async (
     throw new Error('Claude API key not found');
   }
   
-  console.log('Calling Claude API with key:', apiKey ? 'present' : 'not found');
+  console.log('Calling Claude API with key:', apiKey ? 'present (key length: ' + apiKey.length + ')' : 'not found');
   
   try {
     const claudeResult = await supabase.functions.invoke('claude-response', {
@@ -44,11 +44,23 @@ export const generateClaudeResponse = async (
     
     if (claudeResult.error) {
       console.error('Claude API error from edge function:', claudeResult.error);
+      toast({
+        title: "Claude API Error",
+        description: claudeResult.error.message || 'Error calling Claude API',
+        variant: "destructive",
+        duration: 5000,
+      });
       throw new Error(claudeResult.error.message || 'Error calling Claude API');
     }
   
     if (!claudeResult.data?.response) {
       console.error('No response data from Claude API:', claudeResult);
+      toast({
+        title: "Invalid Response",
+        description: "Received an invalid response from Claude API",
+        variant: "destructive",
+        duration: 5000,
+      });
       throw new Error('No response from Claude API');
     }
     
