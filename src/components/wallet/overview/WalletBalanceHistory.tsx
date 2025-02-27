@@ -12,6 +12,7 @@ import {
   AreaChart
 } from "recharts";
 import { Card } from "@/components/ui/card";
+import { formatNumber } from "@/lib/utils";
 
 interface WalletBalanceHistoryProps {
   currency: string;
@@ -27,7 +28,7 @@ export const WalletBalanceHistory = ({
 }: WalletBalanceHistoryProps) => {
   // Generate mock data if none provided
   const mockData = React.useMemo(() => {
-    // Get last 30 days
+    // Get last 365 days (one year)
     const generateMockData = () => {
       const result = [];
       const now = new Date();
@@ -35,7 +36,7 @@ export const WalletBalanceHistory = ({
       // Start with a base value and add some randomness
       let baseValue = 10000;
       
-      for (let i = 29; i >= 0; i--) {
+      for (let i = 364; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
         
@@ -44,8 +45,14 @@ export const WalletBalanceHistory = ({
         const randomChange = (Math.random() - 0.48) * 500; // Slightly biased towards growth
         baseValue = baseValue + randomChange;
         
+        // For yearly data, we'll format differently to avoid crowding
+        const formattedDate = i % 30 === 0 || i === 0 || i === 364 ? 
+          date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 
+          "";
+        
         result.push({
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          date: formattedDate,
+          fullDate: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           balance: Math.max(baseValue, 1000) // Ensure we don't go below 1000
         });
       }
@@ -66,7 +73,7 @@ export const WalletBalanceHistory = ({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Balance History</h3>
+      <h3 className="text-lg font-medium">Balance History (12 Months)</h3>
       <Card className="p-4 bg-secondary/20 backdrop-blur-sm">
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
@@ -87,6 +94,7 @@ export const WalletBalanceHistory = ({
                 tickMargin={10}
                 axisLine={{ opacity: 0.3 }}
                 tickLine={false}
+                interval={0}
               />
               <YAxis 
                 tick={{ fontSize: 12 }} 
@@ -97,6 +105,13 @@ export const WalletBalanceHistory = ({
               />
               <Tooltip 
                 formatter={formatTooltipValue}
+                labelFormatter={(label, items) => {
+                  // Use fullDate for tooltip to always show the complete date
+                  if (items && items.length > 0 && items[0].payload) {
+                    return items[0].payload.fullDate;
+                  }
+                  return label;
+                }}
                 contentStyle={{ 
                   backgroundColor: 'rgba(0, 0, 0, 0.8)', 
                   border: 'none', 
