@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from '@/components/ui/card'
 import { GrokChatHeader } from './GrokChatHeader'
 import { ChatMessages } from './ChatMessages'
@@ -14,7 +15,6 @@ import { useNavigate } from 'react-router-dom'
 import AdvancedLLMInterface from './advanced/AdvancedLLMInterface'
 
 export function GrokChat() {
-  console.log('GrokChat component rendering');
   const navigate = useNavigate();
   const {
     messages,
@@ -100,12 +100,9 @@ export function GrokChat() {
 
   // Render the advanced interface if enabled
   if (useAdvancedInterface) {
-    console.log('Rendering Advanced LLM Interface');
     return <AdvancedLLMInterface />;
   }
 
-  console.log('Rendering standard chat interface');
-  
   // Otherwise render the standard chat interface
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg bg-white">

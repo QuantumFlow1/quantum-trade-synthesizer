@@ -8,7 +8,6 @@ import { useClaudeChat } from './claude/useClaudeChat';
 import { ClaudeMessage } from './claude/ClaudeMessage';
 import { ClaudeSettings } from './claude/ClaudeSettings';
 import { ClaudeEmptyState } from './claude/ClaudeEmptyState';
-import { toast } from '@/components/ui/use-toast';
 
 export function ClaudeChat() {
   const {
@@ -27,25 +26,10 @@ export function ClaudeChat() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Debug logging for messages and API key
+  // Debug logging for messages
   useEffect(() => {
     console.log('Claude chat current messages:', messages);
-    console.log('Claude API key status:', apiKey ? 'Present' : 'Not set');
-  }, [messages, apiKey]);
-
-  // Check API key on mount
-  useEffect(() => {
-    const savedKey = localStorage.getItem('claudeApiKey');
-    if (!savedKey && !apiKey) {
-      console.log('No Claude API key found, showing settings');
-      setShowSettings(true);
-      toast({
-        title: "API Key Required",
-        description: "Please add your Claude API key in settings",
-        duration: 5000,
-      });
-    }
-  }, [apiKey, setShowSettings]);
+  }, [messages]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -89,12 +73,6 @@ export function ClaudeChat() {
       </CardHeader>
       
       <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4 relative">
-        {/* Debug info */}
-        <div className="text-xs text-gray-400">
-          API Key: {apiKey || localStorage.getItem('claudeApiKey') ? 'Present' : 'Missing'} | 
-          Messages: {messages.length}
-        </div>
-
         {showSettings ? (
           <ClaudeSettings 
             apiKey={apiKey} 
@@ -130,7 +108,7 @@ export function ClaudeChat() {
           />
           <Button 
             onClick={sendMessage} 
-            disabled={!inputMessage.trim() || isLoading || (!apiKey && !localStorage.getItem('claudeApiKey'))} 
+            disabled={!inputMessage.trim() || isLoading} 
             className="h-full bg-green-600 hover:bg-green-700"
           >
             {isLoading ? (
