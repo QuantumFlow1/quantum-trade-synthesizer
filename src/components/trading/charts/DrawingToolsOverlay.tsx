@@ -9,12 +9,11 @@ import {
 } from "@/components/ui/tooltip";
 import { 
   Pencil, 
-  LineHorizontal, 
+  Minus, 
   ArrowDown, 
   Square, 
   Circle,
   TrendingUp,
-  Minus,
   X
 } from "lucide-react";
 import { DrawingToolType } from "./types/types";
@@ -61,7 +60,7 @@ export const DrawingToolsOverlay = ({ containerRef }: DrawingToolsOverlayProps) 
                 className="h-8 w-8"
                 onClick={() => handleToolSelect("line")}
               >
-                <LineHorizontal className="h-4 w-4" />
+                <Minus className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Line</TooltipContent>
@@ -89,7 +88,7 @@ export const DrawingToolsOverlay = ({ containerRef }: DrawingToolsOverlayProps) 
                 className="h-8 w-8"
                 onClick={() => handleToolSelect("horizontal")}
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-4 w-4 rotate-0" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Horizontal Line</TooltipContent>
