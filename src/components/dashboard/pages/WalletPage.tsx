@@ -69,16 +69,6 @@ export const WalletPage = () => {
           <h2 className="text-xl font-bold flex items-center">
             <Wallet className="w-5 h-5 mr-2" /> Wallet
           </h2>
-          
-          {walletConnected && (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
-              <TabsList className="grid grid-cols-3">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="transactions">Transactions</TabsTrigger>
-                <TabsTrigger value="actions">Actions</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          )}
         </div>
 
         {isLoading ? (
@@ -88,11 +78,23 @@ export const WalletPage = () => {
         ) : (
           <>
             {walletConnected ? (
-              <TabsContent value={activeTab} className="mt-2">
-                {activeTab === "overview" && <WalletOverview onDisconnect={handleDisconnectWallet} />}
-                {activeTab === "transactions" && <WalletTransactions />}
-                {activeTab === "actions" && <WalletActions />}
-              </TabsContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid grid-cols-3 max-w-md mb-4">
+                  <TabsTrigger value="overview">Overview</TabsTrigger>
+                  <TabsTrigger value="transactions">Transactions</TabsTrigger>
+                  <TabsTrigger value="actions">Actions</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="overview">
+                  <WalletOverview onDisconnect={handleDisconnectWallet} />
+                </TabsContent>
+                <TabsContent value="transactions">
+                  <WalletTransactions />
+                </TabsContent>
+                <TabsContent value="actions">
+                  <WalletActions />
+                </TabsContent>
+              </Tabs>
             ) : (
               <div className="flex flex-col items-center justify-center p-10 space-y-6">
                 <div className="text-center space-y-2">
