@@ -8,19 +8,20 @@ interface ChartViewsProps {
   data: TradingDataPoint[];
   view: "price" | "volume" | "indicators";
   indicator: "sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx";
+  chartType?: "candles" | "line" | "area" | "bars";
 }
 
-export const ChartViews = ({ data, view, indicator }: ChartViewsProps) => {
+export const ChartViews = ({ data, view, indicator, chartType = "candles" }: ChartViewsProps) => {
   if (view === "price") {
-    return <PriceChart data={data} />;
+    return <PriceChart data={data} chartType={chartType} />;
   }
 
   if (view === "volume") {
-    return <VolumeChart data={data} />;
+    return <VolumeChart data={data} chartType={chartType} />;
   }
 
   if (view === "indicators") {
-    return <IndicatorCharts data={data} indicator={indicator} />;
+    return <IndicatorCharts data={data} indicator={indicator} chartType={chartType} />;
   }
 
   return null;

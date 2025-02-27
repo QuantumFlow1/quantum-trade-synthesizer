@@ -11,14 +11,16 @@ import {
   ResponsiveContainer,
   Cell,
   Legend,
-  Brush
+  Brush,
+  Area
 } from "recharts";
 
 interface VolumeChartProps {
   data: TradingDataPoint[];
+  chartType?: "candles" | "line" | "area" | "bars";
 }
 
-export const VolumeChart = ({ data }: VolumeChartProps) => {
+export const VolumeChart = ({ data, chartType = "bars" }: VolumeChartProps) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart data={data}>
@@ -41,18 +43,39 @@ export const VolumeChart = ({ data }: VolumeChartProps) => {
           }}
         />
         <Legend />
-        <Bar
-          dataKey="volume"
-          fill="url(#colorVolume)"
-          name="Volume"
-        >
-          {data.map((entry, index) => (
-            <Cell 
-              key={`cell-${index}`}
-              fill={entry.trend === "up" ? "#4ade80" : "#ef4444"}
-            />
-          ))}
-        </Bar>
+        
+        {chartType === "line" ? (
+          <Line
+            type="monotone"
+            dataKey="volume"
+            stroke="#8b5cf6"
+            strokeWidth={2}
+            name="Volume"
+            dot={false}
+          />
+        ) : chartType === "area" ? (
+          <Area
+            type="monotone"
+            dataKey="volume"
+            stroke="#8b5cf6"
+            fill="url(#colorVolume)"
+            name="Volume"
+          />
+        ) : (
+          <Bar
+            dataKey="volume"
+            fill="url(#colorVolume)"
+            name="Volume"
+          >
+            {data.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`}
+                fill={entry.trend === "up" ? "#4ade80" : "#ef4444"}
+              />
+            ))}
+          </Bar>
+        )}
+        
         <Line
           type="monotone"
           dataKey="sma"
@@ -71,4 +94,3 @@ export const VolumeChart = ({ data }: VolumeChartProps) => {
     </ResponsiveContainer>
   );
 };
-
