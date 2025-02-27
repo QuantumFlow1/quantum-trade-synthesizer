@@ -1,4 +1,5 @@
 
+import { ReactNode } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { 
   ComposedChart, 
@@ -16,7 +17,11 @@ import { CandlestickSeries } from "../CandlestickSeries";
 import { ChartTooltip } from "./ChartTooltip";
 import { BaseChartProps } from "./types";
 
-export const CandleStickChart = ({ data }: BaseChartProps) => {
+interface CandleStickChartProps extends BaseChartProps {
+  children?: ReactNode;
+}
+
+export const CandleStickChart = ({ data, children }: CandleStickChartProps) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
@@ -63,6 +68,7 @@ export const CandleStickChart = ({ data }: BaseChartProps) => {
           stroke="#666666"
           fill="rgba(0,0,0,0.2)"
         />
+        {children}
       </ComposedChart>
     </ResponsiveContainer>
   );

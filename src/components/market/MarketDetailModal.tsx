@@ -13,9 +13,13 @@ import { useState, useEffect } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { generateTradingData } from "@/utils/tradingData";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ChevronDown, ChevronUp, Info, BarChart3, TrendingUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, BarChart3, TrendingUp, LayoutGrid, Bell, LineChart } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Button } from "@/components/ui/button";
+import { AdvancedIndicatorSelector } from "@/components/trading/AdvancedIndicatorSelector";
+import { MultiChartLayout } from "@/components/trading/MultiChartLayout";
+import { CustomAlertSystem } from "@/components/trading/CustomAlertSystem";
+import { toast } from "@/hooks/use-toast";
 
 interface MarketDetailModalProps {
   isOpen: boolean;
@@ -35,6 +39,11 @@ export const MarketDetailModal = ({
   const [chartView, setChartView] = useState<"price" | "volume" | "indicators">("price");
   const [indicator, setIndicator] = useState<"sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx">("sma");
   const [chartType, setChartType] = useState<"candles" | "line" | "area" | "bars">("candles");
+  const [showDrawingTools, setShowDrawingTools] = useState(false);
+  const [showMultiChart, setShowMultiChart] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
+  const [showExtendedData, setShowExtendedData] = useState(false);
+  const [secondaryIndicator, setSecondaryIndicator] = useState<string | undefined>(undefined);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   // Generate dummy trading data for demonstration purposes
@@ -50,6 +59,68 @@ export const MarketDetailModal = ({
 
   const handleTimeframeChange = (timeframe: "1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w") => {
     setCurrentTimeframe(timeframe);
+  };
+
+  const handleChartTypeChange = (type: "candles" | "line" | "area" | "bars") => {
+    setChartType(type);
+    
+    toast({
+      title: "Chart Type Changed",
+      description: `Chart view switched to ${type}`,
+      duration: 2000,
+    });
+  };
+  
+  const handleDrawingToolsToggle = () => {
+    setShowDrawingTools(!showDrawingTools);
+    
+    if (!showDrawingTools) {
+      toast({
+        title: "Drawing Tools Enabled",
+        description: "You can now draw on the chart",
+        duration: 2000,
+      });
+    }
+  };
+  
+  const handleLoadExtendedData = () => {
+    setShowExtendedData(true);
+    
+    // Simulate loading extended data
+    toast({
+      title: "Loading Extended Data",
+      description: "Fetching historical data...",
+      duration: 2000,
+    });
+    
+    // After a timeout, generate more data and add it to the beginning
+    setTimeout(() => {
+      const extendedData = generateTradingData(currentTimeframe, 200);
+      setTradingData(extendedData);
+      
+      toast({
+        title: "Data Loaded",
+        description: "Extended historical data loaded successfully",
+        duration: 2000,
+      });
+      
+      // Reset the flag after loading
+      setTimeout(() => {
+        setShowExtendedData(false);
+      }, 500);
+    }, 2000);
+  };
+  
+  const handleSecondaryIndicatorChange = (indicator: string | undefined) => {
+    setSecondaryIndicator(indicator);
+    
+    if (indicator) {
+      toast({
+        title: "Indicator Overlay Added",
+        description: `${indicator.toUpperCase()} added as overlay`,
+        duration: 2000,
+      });
+    }
   };
 
   const Modal = isMobile ? Sheet : Dialog;
@@ -87,7 +158,7 @@ export const MarketDetailModal = ({
               <Button
                 size="sm"
                 variant={chartType === "candles" ? "default" : "outline"}
-                onClick={() => setChartType("candles")}
+                onClick={() => handleChartTypeChange("candles")}
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Candles
@@ -95,7 +166,7 @@ export const MarketDetailModal = ({
               <Button
                 size="sm"
                 variant={chartType === "line" ? "default" : "outline"}
-                onClick={() => setChartType("line")}
+                onClick={() => handleChartTypeChange("line")}
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Line
@@ -103,105 +174,118 @@ export const MarketDetailModal = ({
               <Button
                 size="sm"
                 variant={chartType === "area" ? "default" : "outline"}
-                onClick={() => setChartType("area")}
+                onClick={() => handleChartTypeChange("area")}
               >
-                <TrendingUp className="h-4 w-4 mr-2" />
+                <LineChart className="h-4 w-4 mr-2" />
                 Area
               </Button>
               <Button
                 size="sm"
                 variant={chartType === "bars" ? "default" : "outline"}
-                onClick={() => setChartType("bars")}
+                onClick={() => handleChartTypeChange("bars")}
               >
                 <BarChart3 className="h-4 w-4 mr-2" />
                 Bars
               </Button>
             </div>
+            
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant={showDrawingTools ? "default" : "outline"}
+                onClick={handleDrawingToolsToggle}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Draw
+              </Button>
+              
+              <Button
+                size="sm"
+                variant={showMultiChart ? "default" : "outline"}
+                onClick={() => setShowMultiChart(!showMultiChart)}
+              >
+                <LayoutGrid className="h-4 w-4 mr-2" />
+                Multi
+              </Button>
+              
+              <Button
+                size="sm"
+                variant={showAlerts ? "default" : "outline"}
+                onClick={() => setShowAlerts(!showAlerts)}
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                Alerts
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleLoadExtendedData}
+                disabled={showExtendedData}
+              >
+                <Info className="h-4 w-4 mr-2" />
+                History
+              </Button>
+            </div>
+            
             <TimeframeSelector
               currentTimeframe={currentTimeframe}
               onTimeframeChange={handleTimeframeChange}
             />
           </div>
 
-          {/* Chart Types Tabs */}
-          <Tabs defaultValue="price" onValueChange={(v) => setChartView(v as any)} className="w-full">
-            <TabsList className="w-full">
-              <TabsTrigger value="price" className="flex-1">Price</TabsTrigger>
-              <TabsTrigger value="volume" className="flex-1">Volume</TabsTrigger>
-              <TabsTrigger value="indicators" className="flex-1">Indicators</TabsTrigger>
-            </TabsList>
-
-            {/* Indicators selector when indicators tab is active */}
-            {chartView === "indicators" && (
-              <div className="mt-2 bg-secondary/10 rounded-md p-2 flex flex-wrap gap-1">
-                <Button
-                  size="sm"
-                  variant={indicator === "sma" ? "default" : "ghost"}
-                  onClick={() => setIndicator("sma")}
-                  className="text-xs"
-                >
-                  SMA
-                </Button>
-                <Button
-                  size="sm"
-                  variant={indicator === "ema" ? "default" : "ghost"}
-                  onClick={() => setIndicator("ema")}
-                  className="text-xs"
-                >
-                  EMA
-                </Button>
-                <Button
-                  size="sm"
-                  variant={indicator === "rsi" ? "default" : "ghost"}
-                  onClick={() => setIndicator("rsi")}
-                  className="text-xs"
-                >
-                  RSI
-                </Button>
-                <Button
-                  size="sm"
-                  variant={indicator === "macd" ? "default" : "ghost"}
-                  onClick={() => setIndicator("macd")}
-                  className="text-xs"
-                >
-                  MACD
-                </Button>
-                <Button
-                  size="sm"
-                  variant={indicator === "bollinger" ? "default" : "ghost"}
-                  onClick={() => setIndicator("bollinger")}
-                  className="text-xs"
-                >
-                  Bollinger
-                </Button>
-                <Button
-                  size="sm"
-                  variant={indicator === "stochastic" ? "default" : "ghost"}
-                  onClick={() => setIndicator("stochastic")}
-                  className="text-xs"
-                >
-                  Stochastic
-                </Button>
-                <Button
-                  size="sm"
-                  variant={indicator === "adx" ? "default" : "ghost"}
-                  onClick={() => setIndicator("adx")}
-                  className="text-xs"
-                >
-                  ADX
-                </Button>
-              </div>
-            )}
-
-            <div className="h-[500px] mt-4">
-              <ChartViews 
+          {/* Multi-Chart Layout */}
+          {showMultiChart ? (
+            <div className="h-[500px] border border-white/10 rounded-lg overflow-hidden">
+              <MultiChartLayout 
                 data={tradingData} 
-                view={chartView} 
-                indicator={indicator}
-                chartType={chartType}
+                onClose={() => setShowMultiChart(false)} 
               />
             </div>
-          </Tabs>
+          ) : (
+            /* Chart Types Tabs */
+            <Tabs defaultValue="price" onValueChange={(v) => setChartView(v as any)} className="w-full">
+              <TabsList className="w-full">
+                <TabsTrigger value="price" className="flex-1">Price</TabsTrigger>
+                <TabsTrigger value="volume" className="flex-1">Volume</TabsTrigger>
+                <TabsTrigger value="indicators" className="flex-1">Indicators</TabsTrigger>
+              </TabsList>
+
+              {/* Indicators selector when indicators tab is active */}
+              {chartView === "indicators" && (
+                <div className="mt-2 bg-secondary/10 rounded-md p-2">
+                  <AdvancedIndicatorSelector 
+                    currentIndicator={indicator}
+                    secondaryIndicator={secondaryIndicator}
+                    onIndicatorChange={setIndicator}
+                    onSecondaryIndicatorChange={handleSecondaryIndicatorChange}
+                  />
+                </div>
+              )}
+
+              <div className="h-[500px] mt-4">
+                <ChartViews 
+                  data={tradingData} 
+                  view={chartView} 
+                  indicator={indicator}
+                  chartType={chartType}
+                  showDrawingTools={showDrawingTools}
+                  showExtendedData={showExtendedData}
+                  secondaryIndicator={secondaryIndicator}
+                />
+              </div>
+            </Tabs>
+          )}
+          
+          {/* Alerts Section */}
+          {showAlerts && (
+            <div className="border border-white/10 rounded-lg p-4 bg-secondary/5">
+              <CustomAlertSystem 
+                data={tradingData} 
+                symbol={marketName || "BTC/USD"} 
+              />
+            </div>
+          )}
 
           {/* Market Information Section */}
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">

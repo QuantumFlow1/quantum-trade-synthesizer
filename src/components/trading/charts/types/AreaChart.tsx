@@ -1,7 +1,9 @@
 
+import { ReactNode } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { 
   ComposedChart, 
+  Area, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -9,14 +11,16 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Legend,
-  Brush,
-  Area,
-  Line
+  Brush
 } from "recharts";
-import { ChartTooltip } from "./ChartTooltip";
 import { BaseChartProps } from "./types";
+import { ChartTooltip } from "./ChartTooltip";
 
-export const AreaChart = ({ data }: BaseChartProps) => {
+interface AreaChartProps extends BaseChartProps {
+  children?: ReactNode;
+}
+
+export const AreaChart = ({ data, children }: AreaChartProps) => {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
@@ -34,21 +38,13 @@ export const AreaChart = ({ data }: BaseChartProps) => {
         <YAxis stroke="#888888" domain={['auto', 'auto']} />
         <ChartTooltip />
         <Legend />
-        <Area
-          type="monotone"
-          dataKey="close"
-          stroke="#4ade80"
-          fillOpacity={1}
-          fill="url(#colorValue)"
+        <Area 
+          type="monotone" 
+          dataKey="close" 
+          stroke="#4ade80" 
+          fill="url(#colorValue)" 
+          fillOpacity={0.3}
           name="Price"
-        />
-        <Line
-          type="monotone"
-          dataKey="sma"
-          stroke="#8b5cf6"
-          strokeWidth={2}
-          dot={false}
-          name="SMA"
         />
         <ReferenceLine
           y={data[0]?.close}
@@ -61,6 +57,7 @@ export const AreaChart = ({ data }: BaseChartProps) => {
           stroke="#666666"
           fill="rgba(0,0,0,0.2)"
         />
+        {children}
       </ComposedChart>
     </ResponsiveContainer>
   );
