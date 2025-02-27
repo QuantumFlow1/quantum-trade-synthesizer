@@ -1,42 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Search, 
-  Calendar, 
-  Filter, 
-  ExternalLink,
-  CheckCircle2,
-  Clock,
-  XCircle,
-  AlertTriangle
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell
-} from "@/components/ui/table";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
+import { TransactionFilters } from "./transactions/TransactionFilters";
+import { TransactionTable } from "./transactions/TransactionTable";
+import { TransactionPagination } from "./transactions/TransactionPagination";
+import { EmptyTransactions } from "./transactions/EmptyTransactions";
 
 interface Transaction {
   id: string;
@@ -188,62 +156,17 @@ export const WalletTransactions = () => {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <AlertTriangle className="h-4 w-4" />;
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search transactions..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <div className="flex gap-2">
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[130px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="All Types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="deposit">Deposits</SelectItem>
-              <SelectItem value="withdrawal">Withdrawals</SelectItem>
-              <SelectItem value="trade">Trades</SelectItem>
-              <SelectItem value="fee">Fees</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[130px]">
-              <Calendar className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="All Statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <TransactionFilters 
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        typeFilter={typeFilter}
+        setTypeFilter={setTypeFilter}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+      />
       
       {/* Transactions table */}
       {isLoading ? (
@@ -252,114 +175,22 @@ export const WalletTransactions = () => {
         </div>
       ) : paginatedTransactions.length > 0 ? (
         <>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead className="hidden md:table-cell">Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Date & Time</TableHead>
-                  <TableHead className="text-right">Details</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>
-                      <div className="flex items-center">
-                        {transaction.type === 'deposit' ? (
-                          <ArrowDownRight className="h-4 w-4 mr-2 text-green-500" />
-                        ) : transaction.type === 'withdrawal' ? (
-                          <ArrowUpRight className="h-4 w-4 mr-2 text-red-500" />
-                        ) : (
-                          <span className="w-4 h-4 mr-2 inline-block"></span>
-                        )}
-                        <span className="capitalize">{transaction.type}</span>
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell className={`font-medium ${transaction.amount >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {transaction.amount >= 0 ? '+' : ''}
-                      {formatAmount(transaction.amount, transaction.currency)} {transaction.currency}
-                    </TableCell>
-                    
-                    <TableCell className="hidden md:table-cell">
-                      <div className="flex items-center gap-1">
-                        {getStatusIcon(transaction.status)}
-                        <span className="capitalize text-sm">{transaction.status}</span>
-                      </div>
-                    </TableCell>
-                    
-                    <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
-                      {formatDate(transaction.timestamp)}
-                    </TableCell>
-                    
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {transaction.status}
-                        </Badge>
-                        
-                        {transaction.hash && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <a
-                                  href={`https://etherscan.io/tx/${transaction.hash}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="p-1 rounded-full hover:bg-secondary/50"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                </a>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>View on blockchain</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <TransactionTable 
+            transactions={paginatedTransactions}
+            formatAmount={formatAmount}
+            formatDate={formatDate}
+          />
           
           {/* Pagination */}
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">
-              Showing page {currentPage} of {totalPages}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
+          <TransactionPagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onNextPage={handleNextPage}
+            onPreviousPage={handlePreviousPage}
+          />
         </>
       ) : (
-        <div className="flex justify-center items-center h-64 border rounded-md">
-          <div className="text-center">
-            <p className="text-muted-foreground">No transactions found</p>
-            <p className="text-sm text-muted-foreground mt-1">Try adjusting your filters</p>
-          </div>
-        </div>
+        <EmptyTransactions />
       )}
     </div>
   );
