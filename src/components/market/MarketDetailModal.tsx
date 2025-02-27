@@ -2,7 +2,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MarketChartView } from "./MarketChartView";
 import { Button } from "../ui/button";
-import { ArrowDown, ArrowUp, ExternalLink, MousePointerSquare, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, MousePointer, TrendingDown, TrendingUp } from "lucide-react";
 import { ChartData } from "./types";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
@@ -132,7 +132,7 @@ export const MarketDetailModal = ({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className="text-sm text-muted-foreground">Open</p>
-                  <p className="font-medium">${latestData.open?.toFixed(2) || "N/A"}</p>
+                  <p className="font-medium">${latestData.high.toFixed(2) || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Close</p>
@@ -140,11 +140,11 @@ export const MarketDetailModal = ({
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">High</p>
-                  <p className="font-medium">${latestData.high?.toFixed(2) || "N/A"}</p>
+                  <p className="font-medium">${latestData.high.toFixed(2) || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Low</p>
-                  <p className="font-medium">${latestData.low?.toFixed(2) || "N/A"}</p>
+                  <p className="font-medium">${latestData.low.toFixed(2) || "N/A"}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Volume</p>
@@ -161,7 +161,7 @@ export const MarketDetailModal = ({
               
               <div className="pt-2">
                 <Button variant="outline" className="w-full">
-                  <MousePointerSquare className="h-4 w-4 mr-2" />
+                  <MousePointer className="h-4 w-4 mr-2" />
                   Open in Advanced Trading View
                 </Button>
               </div>

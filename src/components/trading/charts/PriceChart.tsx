@@ -13,8 +13,10 @@ import { useRef, useState, useEffect } from "react";
 import { DrawingToolsOverlay } from "./DrawingToolsOverlay";
 import { ChartTooltip } from "./types/ChartTooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, CalendarDays } from "lucide-react";
 import { ReplayControls } from "./ReplayControls";
+import { toast } from "@/components/ui/use-toast";
+import { format } from "date-fns";
 
 interface PriceChartProps {
   data: TradingDataPoint[];
@@ -44,6 +46,15 @@ export const PriceChart = ({
   const [replayProgress, setReplayProgress] = useState(0);
   const [replaySpeed, setReplaySpeed] = useState(1);
   const replayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Date range state
+  const now = new Date();
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(now.getDate() - 7);
+  
+  const [startDate, setStartDate] = useState<Date>(oneWeekAgo);
+  const [endDate, setEndDate] = useState<Date>(now);
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1h");
   
   // Initialize replay data when component mounts or data changes
   useEffect(() => {
@@ -151,6 +162,50 @@ export const PriceChart = ({
     }
   };
   
+  // Handle date range change
+  const handleDateRangeChange = (start: Date, end: Date) => {
+    setStartDate(start);
+    setEndDate(end);
+    
+    // Here you would typically fetch new data based on the date range
+    // For this example, we'll simulate a data update
+    const simulatedStartData = {
+      ...data[0],
+      name: format(start, 'MMM dd yyyy')
+    };
+    
+    const simulatedEndData = {
+      ...data[data.length - 1],
+      name: format(end, 'MMM dd yyyy')
+    };
+    
+    // Reset replay with the first data point from the new range
+    setReplayData([simulatedStartData]);
+    setReplayProgress(0);
+    setIsPlaying(false);
+    
+    toast({
+      title: "Date Range Updated",
+      description: `Showing data from ${format(start, 'MMM dd, yyyy')} to ${format(end, 'MMM dd, yyyy')}`,
+      duration: 3000,
+    });
+  };
+  
+  // Handle timeframe change
+  const handleTimeframeChange = (timeframe: string) => {
+    setSelectedTimeframe(timeframe);
+    
+    toast({
+      title: "Timeframe Updated",
+      description: `Chart now showing ${timeframe} data`,
+      duration: 3000,
+    });
+    
+    // Here you would typically fetch new data based on the timeframe
+    // For this demo, we'll just reset the replay
+    handleReset();
+  };
+  
   // Render secondary indicator if provided
   const renderSecondaryIndicator = () => {
     if (!secondaryIndicator) return null;
@@ -192,6 +247,11 @@ export const PriceChart = ({
             currentSpeed={replaySpeed}
             progress={replayProgress}
             onProgressChange={handleProgressChange}
+            startDate={startDate}
+            endDate={endDate}
+            onDateRangeChange={handleDateRangeChange}
+            selectedTimeframe={selectedTimeframe}
+            onTimeframeChange={handleTimeframeChange}
           />
         </div>
       )}
