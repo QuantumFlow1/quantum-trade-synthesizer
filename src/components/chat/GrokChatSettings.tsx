@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AI_MODELS, GrokSettings } from './types/GrokSettings';
 import { Search, Brain, Cpu } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
-import { ApiKeyManager } from './api-keys/ApiKeyManager';
+import { ApiKeyManager } from './ApiKeyManager';
 import { toast } from '@/hooks/use-toast';
 
 interface GrokChatSettingsProps {

@@ -35,14 +35,3 @@ export const getUserRoleInfo = (userProfile: UserProfile | null) => {
   
   return { isAdmin, isTrader, isLovTrader }
 }
-
-// New function to check if a user should have API key access
-export const hasApiKeyAccess = (userProfile: UserProfile | null): boolean => {
-  if (!userProfile) return false
-  
-  // Super admin, admin, and lov_trader roles have API key access
-  return userProfile.role === 'super_admin' || 
-         userProfile.role === 'admin' || 
-         userProfile.role === 'lov_trader' || 
-         (userProfile.role === 'trader' && !!userProfile.api_access)
-}

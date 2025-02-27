@@ -1,168 +1,102 @@
 
-import { corsHeaders } from '../_shared/cors.ts';
+// Import necessary modules for Deno
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-// Define constants
-const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_API_VERSION = '2023-06-01';
+// CORS headers to allow cross-origin requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.anthropic.com; connect-src 'self' https://api.anthropic.com *;"
+};
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('Claude edge function invoked');
-    
-    // Parse the request body
-    let requestBody;
-    try {
-      requestBody = await req.json();
-    } catch (error) {
-      console.error('Error parsing request body:', error);
-      return new Response(
-        JSON.stringify({ error: 'Invalid request body format' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
-    
-    const { 
-      message, 
-      context, 
-      model = 'claude-3-haiku-20240307', 
-      maxTokens = 1024, 
-      temperature = 0.7, 
-      apiKey 
-    } = requestBody;
+    // Parse request body
+    const { message, context, model, maxTokens, temperature, apiKey } = await req.json();
 
-    // Validate required parameters
-    if (!message) {
-      console.error('Missing required parameter: message');
-      return new Response(
-        JSON.stringify({ error: 'Message is required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
-    }
+    console.log(`Claude API request for model: ${model}`);
+    console.log(`Message content length: ${message.length}`);
+    console.log(`Context messages: ${context.length}`);
 
     if (!apiKey) {
-      console.error('Missing required parameter: apiKey');
-      return new Response(
-        JSON.stringify({ error: 'Claude API key is required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      throw new Error('API key is required');
     }
 
-    console.log('Claude API request parameters:', { 
-      model,
-      messageLength: message.length,
-      contextLength: Array.isArray(context) ? context.length : 0,
-      temperature,
-      maxTokens,
-      apiKeyProvided: !!apiKey
+    // Format messages for Claude API
+    const messages = context.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+
+    // Add the latest user message if not already included in context
+    if (!messages.some(msg => msg.content === message && msg.role === 'user')) {
+      messages.push({
+        role: 'user',
+        content: message
+      });
+    }
+
+    // Determine which Claude API model to use
+    const claudeModel = model === 'claude' || model === 'claude-3-haiku' 
+      ? 'claude-3-haiku-20240307' 
+      : model === 'claude-3-sonnet' 
+        ? 'claude-3-sonnet-20240229' 
+        : model === 'claude-3-opus' 
+          ? 'claude-3-opus-20240229' 
+          : 'claude-3-haiku-20240307';
+
+    console.log(`Using Claude model: ${claudeModel}`);
+
+    // Make API request to Claude API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: claudeModel,
+        messages: messages,
+        max_tokens: maxTokens || 1024,
+        temperature: temperature || 0.7
+      })
     });
-    
-    // Prepare system prompt
-    const systemPrompt = "You are Claude, an AI assistant by Anthropic. You are helpful, harmless, and honest.";
-    
-    // Create Claude API messages format
-    const messages = [
-      { role: "system", content: systemPrompt },
-    ];
-    
-    // Add context messages if available
-    if (context && Array.isArray(context)) {
-      context.forEach(msg => {
-        if (msg.role === 'user' || msg.role === 'assistant') {
-          messages.push({
-            role: msg.role,
-            content: msg.content
-          });
-        }
-      });
+
+    // Check if the response is successful
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Claude API error:', errorData);
+      throw new Error(`Claude API returned error: ${response.status} ${response.statusText}`);
     }
-    
-    // Add the current message
-    messages.push({ role: "user", content: message });
-    
-    console.log('Sending request to Claude API...');
-    
-    try {
-      const claudeResponse = await fetch(CLAUDE_API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': CLAUDE_API_VERSION
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: messages,
-          max_tokens: maxTokens,
-          temperature: temperature
-        })
-      });
-      
-      // Log the response status
-      console.log('Claude API response status:', claudeResponse.status);
-      
-      // Check for API errors
-      if (!claudeResponse.ok) {
-        const errorData = await claudeResponse.text();
-        console.error('Claude API error response:', claudeResponse.status, errorData);
-        
-        let errorMessage = `Claude API returned status ${claudeResponse.status}`;
-        
-        try {
-          // Try to parse the error as JSON
-          const parsedError = JSON.parse(errorData);
-          if (parsedError.error) {
-            errorMessage = `Claude API error: ${parsedError.error.message || parsedError.error.type || JSON.stringify(parsedError.error)}`;
-          }
-        } catch (e) {
-          // If parsing fails, use the raw error text
-          errorMessage = `Claude API error (${claudeResponse.status}): ${errorData.substring(0, 200)}`;
-        }
-        
-        return new Response(
-          JSON.stringify({ error: errorMessage }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: claudeResponse.status }
-        );
-      }
-      
-      const responseData = await claudeResponse.json();
-      console.log('Claude API response received, content length:', 
-        responseData.content?.[0]?.text?.length || 0);
-      
-      // Extract the response content
-      const responseContent = responseData.content?.[0]?.text;
-      
-      if (!responseContent) {
-        console.error('No content in Claude response:', JSON.stringify(responseData).substring(0, 200));
-        return new Response(
-          JSON.stringify({ error: 'No content in Claude response' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ response: responseContent }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-      
-    } catch (fetchError) {
-      console.error('Error fetching from Claude API:', fetchError);
-      return new Response(
-        JSON.stringify({ error: `Failed to connect to Claude API: ${fetchError.message}` }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 502 }
-      );
-    }
-    
+
+    // Parse the response data
+    const data = await response.json();
+    console.log('Claude response received successfully');
+
+    // Return the Claude API response
+    return new Response(JSON.stringify({ 
+      response: data.content[0].text,
+      model: claudeModel
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+
   } catch (error) {
-    console.error('Unhandled error in Claude edge function:', error);
+    console.error('Error in Claude function:', error.message);
     
-    return new Response(
-      JSON.stringify({ error: `Unhandled error: ${error.message}` }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    // Return an error response
+    return new Response(JSON.stringify({ 
+      error: error.message 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 });

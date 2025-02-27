@@ -4,9 +4,6 @@ import { toast } from '@/components/ui/use-toast';
 import { Message } from '../deepseek/types';
 import { generateClaudeResponse } from '@/components/chat/services/claudeService';
 import { GrokSettings } from '@/components/chat/types/GrokSettings';
-import { fetchAdminApiKey } from '@/components/chat/services/utils/apiHelpers';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { hasApiKeyAccess } from '@/utils/auth-utils';
 
 export function useClaudeChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -14,32 +11,15 @@ export function useClaudeChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState<string>('');
-  const { userProfile } = useAuth();
   
-  // Load API key from localStorage or admin database
+  // Load API key from localStorage
   useEffect(() => {
-    const loadApiKey = async () => {
-      // First check localStorage
-      const savedApiKey = localStorage.getItem('claudeApiKey');
-      if (savedApiKey) {
-        setApiKey(savedApiKey);
-        console.log('Claude API key loaded from localStorage');
-        return;
-      }
-      
-      // If not in localStorage and user has access, try to fetch from admin database
-      if (hasApiKeyAccess(userProfile)) {
-        const adminKey = await fetchAdminApiKey('claude');
-        if (adminKey) {
-          setApiKey(adminKey);
-          localStorage.setItem('claudeApiKey', adminKey);
-          console.log('Claude API key loaded from admin database');
-        }
-      }
-    };
-    
-    loadApiKey();
-  }, [userProfile]);
+    const savedApiKey = localStorage.getItem('claudeApiKey');
+    if (savedApiKey) {
+      setApiKey(savedApiKey);
+      console.log('Claude API key loaded from localStorage');
+    }
+  }, []);
   
   // Load saved messages from localStorage when component mounts
   useEffect(() => {
@@ -94,10 +74,7 @@ export function useClaudeChat() {
       }
     }
     
-    // Check if we have an API key from localStorage or admin
-    const effectiveApiKey = apiKey || localStorage.getItem('claudeApiKey');
-    
-    if (!effectiveApiKey) {
+    if (!apiKey) {
       toast({
         title: "API Key Required",
         description: "Please add your Claude API key in settings.",
@@ -132,7 +109,7 @@ export function useClaudeChat() {
       const claudeSettings: GrokSettings = {
         selectedModel: "claude",
         apiKeys: {
-          claudeApiKey: effectiveApiKey
+          claudeApiKey: apiKey
         },
         temperature: 0.7,
         maxTokens: 1024,
