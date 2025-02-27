@@ -3,11 +3,12 @@ import { TradingDataPoint } from "@/utils/tradingData";
 import { PriceChart } from "./charts/PriceChart";
 import { VolumeChart } from "./charts/VolumeChart";
 import { IndicatorCharts } from "./charts/IndicatorCharts";
+import { IndicatorType } from "./charts/types/types";
 
 interface ChartViewsProps {
   data: TradingDataPoint[];
   view: "price" | "volume" | "indicators";
-  indicator: "sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx";
+  indicator: IndicatorType;
   chartType?: "candles" | "line" | "area" | "bars";
   showDrawingTools?: boolean;
   showExtendedData?: boolean;

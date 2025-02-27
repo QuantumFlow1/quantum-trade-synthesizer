@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2, Pencil, TrendingUp, Ruler, Square, Circle, MinusIcon, UndoIcon, RedoIcon } from "lucide-react";

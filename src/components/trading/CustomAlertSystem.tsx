@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,18 +74,15 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
   });
   const [triggeredAlert, setTriggeredAlert] = useState<TradingAlert | null>(null);
 
-  // Update current price when data changes
   useEffect(() => {
     if (data && data.length > 0) {
       const latestPrice = data[data.length - 1].close;
       setCurrentPrice(latestPrice);
       
-      // Check if any alerts should be triggered
       checkAlerts(latestPrice);
     }
   }, [data]);
 
-  // Check if any alerts should be triggered
   const checkAlerts = (price: number) => {
     const triggeredAlerts = alerts.filter(alert => {
       if (!alert.active) return false;
@@ -97,46 +93,38 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
         case "below":
           return price < alert.value;
         case "crosses":
-          // This would require previous price data to detect crossing
           return false;
         case "crosses-up":
-          // This would require previous price data to detect crossing up
           return false;
         case "crosses-down":
-          // This would require previous price data to detect crossing down
           return false;
         default:
           return false;
       }
     });
     
-    // Mark triggered alerts and notify
     if (triggeredAlerts.length > 0) {
       const firstTriggeredAlert = triggeredAlerts[0];
       setTriggeredAlert(firstTriggeredAlert);
       
-      // Mark alert as triggered
       setAlerts(prev => 
         prev.map(alert => 
           alert.id === firstTriggeredAlert.id ? { ...alert, triggered: true } : alert
         )
       );
       
-      // Show toast notification
       toast({
         title: "Alert Triggered",
         description: `${firstTriggeredAlert.name}: ${symbol} ${firstTriggeredAlert.condition} ${firstTriggeredAlert.value}`,
         variant: "destructive"
       });
       
-      // Play sound if enabled
       if (firstTriggeredAlert.sound) {
         playAlertSound();
       }
     }
   };
   
-  // Play alert sound
   const playAlertSound = () => {
     try {
       const audio = new Audio('/alert.mp3');
@@ -146,7 +134,6 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
     }
   };
   
-  // Create a new alert
   const handleCreateAlert = () => {
     const id = Date.now().toString();
     
@@ -159,13 +146,11 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
     
     setAlerts(prev => [...prev, alert]);
     
-    // Show success toast
     toast({
       title: "Alert Created",
       description: `Alert "${newAlert.name}" has been created successfully.`
     });
     
-    // Reset new alert form
     setNewAlert({
       name: "",
       type: "price",
@@ -177,7 +162,6 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
     });
   };
   
-  // Toggle alert active state
   const toggleAlertActive = (id: string) => {
     setAlerts(prev => 
       prev.map(alert => 
@@ -186,7 +170,6 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
     );
   };
   
-  // Delete an alert
   const deleteAlert = (id: string) => {
     setAlerts(prev => prev.filter(alert => alert.id !== id));
     
@@ -196,12 +179,10 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
     });
   };
   
-  // Dismiss triggered alert
   const dismissTriggeredAlert = () => {
     setTriggeredAlert(null);
   };
   
-  // Get filtered alerts
   const getFilteredAlerts = () => {
     if (showActiveAlertsOnly) {
       return alerts.filter(alert => alert.active);
@@ -211,7 +192,6 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
 
   return (
     <div className="space-y-4">
-      {/* Triggered Alert Notification */}
       {triggeredAlert && (
         <Alert variant="destructive" className="animate-pulse">
           <AlertTriangle className="h-4 w-4" />
@@ -230,7 +210,6 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
         </Alert>
       )}
       
-      {/* Alert Header */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold flex items-center">
           <Bell className="h-5 w-5 mr-2" />
@@ -359,7 +338,6 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
         </Dialog>
       </div>
       
-      {/* Alerts Filter */}
       <div className="flex items-center space-x-2">
         <Switch 
           id="active-alerts-only"
@@ -369,7 +347,6 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
         <Label htmlFor="active-alerts-only">Show active alerts only</Label>
       </div>
       
-      {/* Alerts List */}
       <div className="space-y-2">
         {getFilteredAlerts().length === 0 ? (
           <div className="text-center py-6 border border-dashed border-border rounded-md">

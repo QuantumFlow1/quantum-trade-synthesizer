@@ -27,9 +27,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { IndicatorType } from "./charts/types/types";
 
 interface IndicatorSelectorProps {
-  currentIndicator: string;
+  currentIndicator: IndicatorType;
   secondaryIndicator?: string;
   onIndicatorChange: (indicator: string) => void;
   onSecondaryIndicatorChange?: (indicator: string | undefined) => void;

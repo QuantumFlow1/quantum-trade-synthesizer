@@ -19,10 +19,11 @@ import {
 } from "recharts";
 import { DrawingToolsOverlay } from "./DrawingToolsOverlay";
 import { useRef } from "react";
+import { IndicatorType } from "./types/types";
 
 interface IndicatorChartsProps {
   data: TradingDataPoint[];
-  indicator: "sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx";
+  indicator: IndicatorType;
   chartType?: "candles" | "line" | "area" | "bars";
   showDrawingTools?: boolean;
   children?: ReactNode;

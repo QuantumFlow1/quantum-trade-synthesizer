@@ -20,6 +20,7 @@ import { AdvancedIndicatorSelector } from "@/components/trading/AdvancedIndicato
 import { MultiChartLayout } from "@/components/trading/MultiChartLayout";
 import { CustomAlertSystem } from "@/components/trading/CustomAlertSystem";
 import { toast } from "@/hooks/use-toast";
+import { IndicatorType } from "@/components/trading/charts/types/types";
 
 interface MarketDetailModalProps {
   isOpen: boolean;
@@ -37,7 +38,7 @@ export const MarketDetailModal = ({
   const [tradingData, setTradingData] = useState<TradingDataPoint[]>([]);
   const [currentTimeframe, setCurrentTimeframe] = useState<"1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w">("1d");
   const [chartView, setChartView] = useState<"price" | "volume" | "indicators">("price");
-  const [indicator, setIndicator] = useState<"sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx">("sma");
+  const [indicator, setIndicator] = useState<IndicatorType>("sma");
   const [chartType, setChartType] = useState<"candles" | "line" | "area" | "bars">("candles");
   const [showDrawingTools, setShowDrawingTools] = useState(false);
   const [showMultiChart, setShowMultiChart] = useState(false);
@@ -66,8 +67,7 @@ export const MarketDetailModal = ({
     
     toast({
       title: "Chart Type Changed",
-      description: `Chart view switched to ${type}`,
-      duration: 2000,
+      description: `Chart view switched to ${type}`
     });
   };
   
@@ -77,8 +77,7 @@ export const MarketDetailModal = ({
     if (!showDrawingTools) {
       toast({
         title: "Drawing Tools Enabled",
-        description: "You can now draw on the chart",
-        duration: 2000,
+        description: "You can now draw on the chart"
       });
     }
   };
@@ -89,8 +88,7 @@ export const MarketDetailModal = ({
     // Simulate loading extended data
     toast({
       title: "Loading Extended Data",
-      description: "Fetching historical data...",
-      duration: 2000,
+      description: "Fetching historical data..."
     });
     
     // After a timeout, generate more data and add it to the beginning
@@ -100,8 +98,7 @@ export const MarketDetailModal = ({
       
       toast({
         title: "Data Loaded",
-        description: "Extended historical data loaded successfully",
-        duration: 2000,
+        description: "Extended historical data loaded successfully"
       });
       
       // Reset the flag after loading
@@ -117,10 +114,14 @@ export const MarketDetailModal = ({
     if (indicator) {
       toast({
         title: "Indicator Overlay Added",
-        description: `${indicator.toUpperCase()} added as overlay`,
-        duration: 2000,
+        description: `${indicator.toUpperCase()} added as overlay`
       });
     }
+  };
+  
+  // Create a type-safe wrapper for the setIndicator function
+  const handleIndicatorChange = (newIndicator: string) => {
+    setIndicator(newIndicator as IndicatorType);
   };
 
   const Modal = isMobile ? Sheet : Dialog;
@@ -257,7 +258,7 @@ export const MarketDetailModal = ({
                   <AdvancedIndicatorSelector 
                     currentIndicator={indicator}
                     secondaryIndicator={secondaryIndicator}
-                    onIndicatorChange={setIndicator}
+                    onIndicatorChange={handleIndicatorChange}
                     onSecondaryIndicatorChange={handleSecondaryIndicatorChange}
                   />
                 </div>
