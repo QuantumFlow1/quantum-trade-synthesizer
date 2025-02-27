@@ -3,7 +3,9 @@ import { TradingDataPoint } from "@/utils/tradingData";
 import { PriceChart } from "./charts/PriceChart";
 import { VolumeChart } from "./charts/VolumeChart";
 import { IndicatorCharts } from "./charts/IndicatorCharts";
-import { IndicatorType } from "./charts/types/types";
+
+// Define the IndicatorType to fix TypeScript error
+type IndicatorType = "sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx";
 
 interface ChartViewsProps {
   data: TradingDataPoint[];

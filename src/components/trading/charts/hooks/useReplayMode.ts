@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 export interface ReplayModeOptions {
@@ -76,6 +76,12 @@ export const useReplayMode = ({ showReplayMode = false, data }: ReplayModeOption
   // Toggle play/pause
   const handlePlayPause = () => {
     setIsPlaying(prev => !prev);
+    
+    toast({
+      title: isPlaying ? "Paused" : "Playing",
+      description: isPlaying ? "Replay paused" : "Replay started",
+      duration: 1500,
+    });
   };
   
   // Reset replay to beginning
@@ -87,6 +93,12 @@ export const useReplayMode = ({ showReplayMode = false, data }: ReplayModeOption
     if (replayTimerRef.current) {
       clearInterval(replayTimerRef.current);
     }
+    
+    toast({
+      title: "Reset",
+      description: "Replay reset to beginning",
+      duration: 1500,
+    });
   };
   
   // Handle manual progress change
@@ -100,6 +112,12 @@ export const useReplayMode = ({ showReplayMode = false, data }: ReplayModeOption
   // Handle speed change
   const handleSpeedChange = (speed: number) => {
     setReplaySpeed(speed);
+    
+    toast({
+      title: "Speed Changed",
+      description: `Playback speed set to ${speed}x`,
+      duration: 1500,
+    });
     
     // Restart the interval if we're playing
     if (isPlaying && replayTimerRef.current) {

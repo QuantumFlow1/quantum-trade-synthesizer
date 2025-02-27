@@ -8,7 +8,9 @@ import {
   Clock, 
   Turtle, 
   Rabbit, 
-  CalendarDays 
+  CalendarDays,
+  Rewind,
+  FastForward
 } from "lucide-react";
 import { useState } from "react";
 import { 
@@ -82,11 +84,46 @@ export const ReplayControls = ({
     }
   };
   
+  // Function to handle rewind (go back 10% in the replay)
+  const handleRewind = () => {
+    const newProgress = Math.max(0, progress - 10);
+    onProgressChange(newProgress);
+    
+    toast({
+      title: "Rewinding",
+      description: "Moved back 10% in the timeline",
+      duration: 1500,
+    });
+  };
+  
+  // Function to handle fast forward (go forward 10% in the replay)
+  const handleFastForward = () => {
+    const newProgress = Math.min(100, progress + 10);
+    onProgressChange(newProgress);
+    
+    toast({
+      title: "Fast Forwarding",
+      description: "Moved forward 10% in the timeline",
+      duration: 1500,
+    });
+  };
+  
   return (
     <div className="bg-background/90 backdrop-blur-sm border rounded-lg p-3 shadow-lg">
       <div className="flex flex-col space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleRewind}
+              className="h-8 w-8"
+              title="Rewind 10%"
+            >
+              <Rewind className="h-5 w-5" />
+              <span className="sr-only">Rewind</span>
+            </Button>
+            
             <Button 
               variant="ghost" 
               size="icon" 
@@ -99,6 +136,17 @@ export const ReplayControls = ({
                 <PlayCircle className="h-6 w-6" />
               )}
               <span className="sr-only">{isPlaying ? "Pause" : "Play"}</span>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleFastForward}
+              className="h-8 w-8"
+              title="Fast Forward 10%"
+            >
+              <FastForward className="h-5 w-5" />
+              <span className="sr-only">Fast Forward</span>
             </Button>
             
             <Button 
