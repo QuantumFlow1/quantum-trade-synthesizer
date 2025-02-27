@@ -1,7 +1,7 @@
 
 import { corsHeaders } from '../_shared/cors.ts';
 
-// Define constants and types
+// Define constants
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_API_VERSION = '2023-06-01';
 

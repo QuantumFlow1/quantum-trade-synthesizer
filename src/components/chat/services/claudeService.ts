@@ -36,9 +36,7 @@ export const generateClaudeResponse = async (
       body: { 
         message: inputMessage,
         context: conversationHistory,
-        model: settings?.selectedModel === 'claude' 
-          ? 'claude-3-haiku-20240307' 
-          : 'claude-3-haiku-20240307',
+        model: settings?.selectedModel || 'claude-3-haiku-20240307',
         maxTokens: settings?.maxTokens || 1024,
         temperature: settings?.temperature || 0.7,
         apiKey: apiKey
