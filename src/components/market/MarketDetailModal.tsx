@@ -40,10 +40,10 @@ export const MarketDetailModal = ({
   // Generate dummy trading data for demonstration purposes
   useEffect(() => {
     if (isOpen && marketName) {
-      const dummyData = generateTradingData(100);
+      const dummyData = generateTradingData(currentTimeframe);
       setTradingData(dummyData);
     }
-  }, [isOpen, marketName]);
+  }, [isOpen, marketName, currentTimeframe]);
 
   // Get market stats for the selected market
   const marketStats = marketData?.find((item: any) => item.name === marketName) || null;
