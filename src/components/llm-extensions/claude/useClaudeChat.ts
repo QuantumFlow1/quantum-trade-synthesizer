@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Message } from '../deepseek/types';
 import { generateClaudeResponse } from '@/components/chat/services/claudeService';
@@ -19,27 +19,36 @@ export function useClaudeChat() {
   // Load API key from localStorage or admin database
   useEffect(() => {
     const loadApiKey = async () => {
-      // First check localStorage
-      const savedApiKey = localStorage.getItem('claudeApiKey');
-      if (savedApiKey) {
-        setApiKey(savedApiKey);
-        console.log('Claude API key loaded from localStorage');
-        return;
-      }
-      
-      // If not in localStorage and user has access, try to fetch from admin database
-      if (hasApiKeyAccess(userProfile)) {
-        const adminKey = await fetchAdminApiKey('claude');
-        if (adminKey) {
-          setApiKey(adminKey);
-          localStorage.setItem('claudeApiKey', adminKey);
-          console.log('Claude API key loaded from admin database');
+      try {
+        // First check localStorage
+        const savedApiKey = localStorage.getItem('claudeApiKey');
+        if (savedApiKey) {
+          console.log('Claude API key loaded from localStorage');
+          setApiKey(savedApiKey);
+          return;
         }
+        
+        // If not in localStorage and user has access, try to fetch from admin database
+        if (userProfile && hasApiKeyAccess(userProfile)) {
+          const adminKey = await fetchAdminApiKey('claude');
+          if (adminKey) {
+            console.log('Claude API key loaded from admin database');
+            setApiKey(adminKey);
+            localStorage.setItem('claudeApiKey', adminKey);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading Claude API key:', error);
       }
     };
     
     loadApiKey();
   }, [userProfile]);
+  
+  // Debug for API key value
+  useEffect(() => {
+    console.log('Current Claude API key status:', apiKey ? 'Present' : 'Not set');
+  }, [apiKey]);
   
   // Load saved messages from localStorage when component mounts
   useEffect(() => {
@@ -66,14 +75,27 @@ export function useClaudeChat() {
   };
 
   const saveApiKey = (key: string) => {
+    if (!key.trim()) {
+      toast({
+        title: "Invalid API Key",
+        description: "Please enter a valid Claude API key",
+        variant: "destructive",
+        duration: 3000,
+      });
+      return;
+    }
+    
     localStorage.setItem('claudeApiKey', key);
     setApiKey(key);
     setShowSettings(false);
+    
     toast({
       title: "API Key Saved",
       description: "Your Claude API key has been saved.",
       duration: 3000,
     });
+    
+    console.log('Claude API key saved to localStorage');
   };
 
   const sendMessage = async () => {
@@ -140,12 +162,16 @@ export function useClaudeChat() {
         thinkEnabled: false
       };
 
+      console.log('Sending message to Claude with API key:', effectiveApiKey ? 'Present' : 'Missing');
+
       // Call Claude API
       const response = await generateClaudeResponse(
         inputMessage,
         messageHistory,
         claudeSettings
       );
+
+      console.log('Received response from Claude:', response ? 'Response received' : 'No response');
 
       // Add Claude's response to chat
       const assistantMessage: Message = {
