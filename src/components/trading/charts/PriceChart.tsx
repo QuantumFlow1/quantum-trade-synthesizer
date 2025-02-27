@@ -52,7 +52,10 @@ export const PriceChart = ({ data, chartType = "candles" }: PriceChartProps) => 
                   backdropFilter: "blur(16px)"
                 }}
                 labelFormatter={(label) => `Time: ${label}`}
-                formatter={(value, name) => [parseFloat(value).toFixed(2), name]}
+                formatter={(value, name) => {
+                  // Convert value to string before returning
+                  return [value.toString(), name];
+                }}
               />
               <Legend />
               <CandlestickSeries
@@ -216,6 +219,7 @@ export const PriceChart = ({ data, chartType = "candles" }: PriceChartProps) => 
                 {data.map((entry, index) => (
                   <Bar 
                     key={`cell-${index}`}
+                    dataKey="close"
                     fill={entry.trend === "up" ? "#4ade80" : "#ef4444"}
                   />
                 ))}
