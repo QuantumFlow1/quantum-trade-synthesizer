@@ -6,7 +6,7 @@ import { TradingDataPoint } from "@/utils/tradingData";
 interface ChartContainerProps {
   data: TradingDataPoint[];
   view: "price" | "volume" | "indicators";
-  indicator: string;
+  indicator: "sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx";
   chartType: "candles" | "line" | "area" | "bars";
   chartContainerRef: RefObject<HTMLDivElement>;
   scale: number;
