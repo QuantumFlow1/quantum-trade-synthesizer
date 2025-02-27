@@ -32,42 +32,55 @@ export const generateClaudeResponse = async (
   
   try {
     console.log('Invoking claude-response edge function...');
-    const claudeResult = await supabase.functions.invoke('claude-response', {
-      body: { 
-        message: inputMessage,
-        context: conversationHistory,
-        model: settings?.selectedModel || 'claude-3-haiku-20240307',
-        maxTokens: settings?.maxTokens || 1024,
-        temperature: settings?.temperature || 0.7,
-        apiKey: apiKey
-      }
+    
+    // Prepare the request payload with all necessary parameters
+    const payload = { 
+      message: inputMessage,
+      context: conversationHistory,
+      model: settings?.selectedModel === 'claude' ? 'claude-3-haiku-20240307' : settings?.selectedModel || 'claude-3-haiku-20240307',
+      maxTokens: settings?.maxTokens || 1024,
+      temperature: settings?.temperature || 0.7,
+      apiKey: apiKey
+    };
+    
+    console.log('Edge function payload prepared:', {
+      model: payload.model,
+      messageLength: payload.message.length,
+      contextLength: payload.context.length
     });
     
-    console.log('Edge function response received:', claudeResult);
+    // Call the edge function
+    const { data, error } = await supabase.functions.invoke('claude-response', {
+      body: payload
+    });
     
-    if (claudeResult.error) {
-      console.error('Claude API error from edge function:', claudeResult.error);
+    // Log the response for debugging
+    console.log('Edge function response received:', error ? 'Error' : 'Success', data);
+    
+    if (error) {
+      console.error('Claude API error from edge function:', error);
       toast({
         title: "Claude API Error",
-        description: claudeResult.error.message || 'Error calling Claude API',
+        description: error.message || 'Error calling Claude API',
         variant: "destructive",
         duration: 5000,
       });
-      throw new Error(claudeResult.error.message || 'Error calling Claude API');
+      throw new Error(error.message || 'Error calling Claude API');
     }
   
-    if (!claudeResult.data?.response) {
-      console.error('No response data from Claude API:', claudeResult);
+    // Check for missing response data
+    if (!data?.response) {
+      console.error('No response data from Claude API:', data);
       
-      // Check if there's an error message in the data
-      if (claudeResult.data?.error) {
+      // Handle error message in data
+      if (data?.error) {
         toast({
           title: "Claude API Error",
-          description: claudeResult.data.error,
+          description: data.error,
           variant: "destructive",
           duration: 5000,
         });
-        throw new Error(claudeResult.data.error);
+        throw new Error(data.error);
       } else {
         toast({
           title: "Invalid Response",
@@ -79,10 +92,10 @@ export const generateClaudeResponse = async (
       }
     }
     
-    console.log('Claude response received:', 
-      claudeResult.data.response.substring(0, 100) + '...');
+    console.log('Claude response successfully received:', 
+      data.response.substring(0, 100) + '...');
     
-    return claudeResult.data.response;
+    return data.response;
     
   } catch (error) {
     console.error('Claude API call exception:', error);
