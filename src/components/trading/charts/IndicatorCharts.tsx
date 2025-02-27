@@ -280,4 +280,41 @@ export const IndicatorCharts = ({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey
+              <XAxis dataKey="name" stroke="#888888" />
+              <YAxis stroke="#888888" />
+              <Tooltip {...baseTooltipStyle} />
+              <Legend />
+              
+              {chartType === "area" ? (
+                <Area 
+                  type="monotone" 
+                  dataKey="close" 
+                  stroke="#4ade80"
+                  fill="rgba(74, 222, 128, 0.1)"
+                  fillOpacity={0.3}
+                  name="Price"
+                />
+              ) : (
+                <Line 
+                  type="monotone" 
+                  dataKey="close" 
+                  stroke="#4ade80" 
+                  strokeWidth={2}
+                  name="Price"
+                />
+              )}
+              
+              <Line type="monotone" dataKey="sma" stroke="#8b5cf6" strokeWidth={2} name="SMA" />
+              <Brush 
+                dataKey="name"
+                height={30}
+                stroke="#666666"
+                fill="rgba(0,0,0,0.2)"
+              />
+              {children}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+      );
+  }
+};
