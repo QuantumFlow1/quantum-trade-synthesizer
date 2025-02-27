@@ -13,10 +13,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
-import { Users } from "lucide-react";
+import { Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
+  console.log('Index component rendering');
   const { user, userProfile } = useAuth();
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
   const isMobile = useIsMobile();
@@ -62,12 +63,15 @@ const Index = () => {
 
   // Show loading screen while fetching profile
   if (user && !userProfile) {
+    console.log('Rendering loading profile');
     return <LoadingProfile />;
   }
 
   // Helper function to determine if user is a super admin
   const isSuperAdmin = userProfile?.role === "super_admin" || userProfile?.role === "lov_trader";
   const isAdmin = userProfile?.role === "admin" || isSuperAdmin;
+
+  console.log('User authenticated:', !!user, 'User role:', userProfile?.role);
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -85,6 +89,14 @@ const Index = () => {
           >
             {/* Quick Links for authenticated users */}
             <div className="fixed top-4 right-4 z-50 flex gap-2">
+              {/* Chat Link - Shown to all authenticated users */}
+              <Link to="/chat">
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  <span>Chat</span>
+                </Button>
+              </Link>
+              
               {/* Users Dashboard Link - Only shown to admins */}
               {isAdmin && (
                 <Link to="/admin/users">
@@ -117,4 +129,3 @@ const Index = () => {
 };
 
 export default Index;
-
