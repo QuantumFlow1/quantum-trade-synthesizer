@@ -21,8 +21,8 @@ const ApiKeyManagement = () => {
     formData, 
     setFormData, 
     fetchApiKeys, 
-    updateApiKeyStatus, 
-    handleFormSubmit 
+    handleStatusChange, 
+    handleSubmit 
   } = useApiKeyManagement();
   
   // Check if user has super_admin permission
@@ -59,8 +59,8 @@ const ApiKeyManagement = () => {
         <CardContent>
           <ApiKeyForm 
             formData={formData}
-            onFormChange={setFormData}
-            onSubmit={handleFormSubmit}
+            setFormData={setFormData}
+            onSubmit={handleSubmit}
           />
         </CardContent>
       </Card>
@@ -73,7 +73,7 @@ const ApiKeyManagement = () => {
           <ApiKeyList 
             apiKeys={apiKeys}
             loading={loading}
-            onStatusChange={updateApiKeyStatus}
+            onStatusChange={handleStatusChange}
           />
         </CardContent>
       </Card>
