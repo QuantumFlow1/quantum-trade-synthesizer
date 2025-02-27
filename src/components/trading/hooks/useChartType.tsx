@@ -7,35 +7,38 @@ import { AreaChart } from "../charts/types/AreaChart";
 import { BarChart } from "../charts/types/BarChart";
 
 export const useChartType = (data: TradingDataPoint[], chartType: "candles" | "line" | "area" | "bars") => {
-  const renderChart = (additionalComponent?: () => ReactNode) => {
+  const renderChart = (additionalComponent?: () => ReactNode, replayData?: TradingDataPoint[]) => {
+    // Use replay data if provided, otherwise use the original data
+    const chartData = replayData || data;
+    
     switch (chartType) {
       case "candles":
         return (
-          <CandleStickChart data={data}>
+          <CandleStickChart data={chartData}>
             {additionalComponent && additionalComponent()}
           </CandleStickChart>
         );
       case "line":
         return (
-          <LineChart data={data}>
+          <LineChart data={chartData}>
             {additionalComponent && additionalComponent()}
           </LineChart>
         );
       case "area":
         return (
-          <AreaChart data={data}>
+          <AreaChart data={chartData}>
             {additionalComponent && additionalComponent()}
           </AreaChart>
         );
       case "bars":
         return (
-          <BarChart data={data}>
+          <BarChart data={chartData}>
             {additionalComponent && additionalComponent()}
           </BarChart>
         );
       default:
         return (
-          <CandleStickChart data={data}>
+          <CandleStickChart data={chartData}>
             {additionalComponent && additionalComponent()}
           </CandleStickChart>
         );

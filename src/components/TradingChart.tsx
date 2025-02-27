@@ -16,6 +16,8 @@ import { useZoomControls } from "@/hooks/use-zoom-controls";
 import { TimeframeSelector } from "./trading/TimeframeSelector";
 import { toast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 
 const TradingChart = () => {
   const [data, setData] = useState<TradingDataPoint[]>(generateTradingData());
@@ -24,6 +26,7 @@ const TradingChart = () => {
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('available');
   const [timeframe, setTimeframe] = useState<"1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w">("1h");
   const [chartType, setChartType] = useState<"candles" | "line" | "area" | "bars">("candles");
+  const [showReplayMode, setShowReplayMode] = useState(false);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls(1);
@@ -41,8 +44,10 @@ const TradingChart = () => {
     });
   }, [timeframe]);
 
-  // Live data update effect
+  // Live data update effect - only when not in replay mode
   useEffect(() => {
+    if (showReplayMode) return;
+    
     const interval = setInterval(() => {
       setData(prev => {
         const newData = [...prev.slice(1)];
@@ -99,7 +104,7 @@ const TradingChart = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [timeframe]);
+  }, [timeframe, showReplayMode]);
 
   const handleSubmitOrder = (order: any) => {
     console.log("Order submitted:", order);
@@ -130,6 +135,18 @@ const TradingChart = () => {
     toast({
       title: "Chart Type Changed",
       description: `Chart view switched to ${type}`,
+      duration: 2000,
+    });
+  };
+  
+  const handleToggleReplayMode = () => {
+    setShowReplayMode(prev => !prev);
+    
+    toast({
+      title: showReplayMode ? "Replay mode disabled" : "Replay mode enabled",
+      description: showReplayMode 
+        ? "Chart will now update in real-time" 
+        : "You can now replay historical price movements",
       duration: 2000,
     });
   };
@@ -181,6 +198,15 @@ const TradingChart = () => {
                         </SelectGroup>
                       </SelectContent>
                     </Select>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="replay-mode"
+                        checked={showReplayMode}
+                        onCheckedChange={handleToggleReplayMode}
+                      />
+                      <Label htmlFor="replay-mode">Replay Mode</Label>
+                    </div>
                   </div>
                   
                   <div className="flex items-center space-x-1">
@@ -262,6 +288,7 @@ const TradingChart = () => {
                       view="price" 
                       indicator={indicator} 
                       chartType={chartType}
+                      showReplayMode={showReplayMode}
                     />
                   </div>
                 </TabsContent>

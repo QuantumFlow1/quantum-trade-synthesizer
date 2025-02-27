@@ -13,6 +13,7 @@ interface ChartViewsProps {
   showDrawingTools?: boolean;
   showExtendedData?: boolean;
   secondaryIndicator?: string;
+  showReplayMode?: boolean;
 }
 
 export const ChartViews = ({ 
@@ -22,7 +23,8 @@ export const ChartViews = ({
   chartType = "candles",
   showDrawingTools = false,
   showExtendedData = false,
-  secondaryIndicator
+  secondaryIndicator,
+  showReplayMode = false
 }: ChartViewsProps) => {
   if (view === "price") {
     return (
@@ -32,6 +34,7 @@ export const ChartViews = ({
         showDrawingTools={showDrawingTools}
         showExtendedData={showExtendedData}
         secondaryIndicator={secondaryIndicator}
+        showReplayMode={showReplayMode}
       />
     );
   }

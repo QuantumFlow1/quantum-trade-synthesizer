@@ -14,6 +14,7 @@ import { DrawingToolsOverlay } from "./DrawingToolsOverlay";
 import { ChartTooltip } from "./types/ChartTooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InfoIcon } from "lucide-react";
+import { ReplayControls } from "./ReplayControls";
 
 interface PriceChartProps {
   data: TradingDataPoint[];
@@ -21,6 +22,7 @@ interface PriceChartProps {
   showDrawingTools?: boolean;
   showExtendedData?: boolean;
   secondaryIndicator?: string;
+  showReplayMode?: boolean;
 }
 
 export const PriceChart = ({ 
@@ -28,12 +30,30 @@ export const PriceChart = ({
   chartType = "candles", 
   showDrawingTools = false,
   showExtendedData = false,
-  secondaryIndicator
+  secondaryIndicator,
+  showReplayMode = false
 }: PriceChartProps) => {
   const { renderChart } = useChartType(data, chartType);
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [showExtendedAlert, setShowExtendedAlert] = useState(false);
-
+  
+  // Replay mode state
+  const [isReplayMode, setIsReplayMode] = useState(showReplayMode);
+  const [replayData, setReplayData] = useState<TradingDataPoint[]>([]);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [replayProgress, setReplayProgress] = useState(0);
+  const [replaySpeed, setReplaySpeed] = useState(1);
+  const replayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Initialize replay data when component mounts or data changes
+  useEffect(() => {
+    if (isReplayMode && data.length > 0) {
+      // Start with just the first data point
+      setReplayData([data[0]]);
+      setReplayProgress(0);
+    }
+  }, [data, isReplayMode]);
+  
   // Handle showing extended data alert
   useEffect(() => {
     if (showExtendedData) {
@@ -44,7 +64,93 @@ export const PriceChart = ({
       return () => clearTimeout(timer);
     }
   }, [showExtendedData]);
-
+  
+  // Handle replay progress tracking
+  useEffect(() => {
+    if (isReplayMode && isPlaying) {
+      // Clear any existing timer
+      if (replayTimerRef.current) {
+        clearInterval(replayTimerRef.current);
+      }
+      
+      // Set up a new timer based on current speed
+      replayTimerRef.current = setInterval(() => {
+        setReplayProgress(prev => {
+          const newProgress = prev + 1;
+          
+          // If we've reached the end, stop playing
+          if (newProgress >= 100) {
+            setIsPlaying(false);
+            clearInterval(replayTimerRef.current!);
+            return 100;
+          }
+          
+          // Update the displayed data based on the progress
+          const dataIndex = Math.floor((data.length * newProgress) / 100);
+          setReplayData(data.slice(0, dataIndex + 1));
+          
+          return newProgress;
+        });
+      }, 1000 / replaySpeed); // Adjust interval based on speed
+      
+      // Clean up the timer on unmount
+      return () => {
+        if (replayTimerRef.current) {
+          clearInterval(replayTimerRef.current);
+        }
+      };
+    }
+  }, [isReplayMode, isPlaying, replaySpeed, data]);
+  
+  // Toggle play/pause
+  const handlePlayPause = () => {
+    setIsPlaying(prev => !prev);
+  };
+  
+  // Reset replay to beginning
+  const handleReset = () => {
+    setIsPlaying(false);
+    setReplayProgress(0);
+    setReplayData([data[0]]);
+    
+    if (replayTimerRef.current) {
+      clearInterval(replayTimerRef.current);
+    }
+  };
+  
+  // Handle manual progress change
+  const handleProgressChange = (progress: number) => {
+    setReplayProgress(progress);
+    
+    const dataIndex = Math.floor((data.length * progress) / 100);
+    setReplayData(data.slice(0, dataIndex + 1));
+  };
+  
+  // Handle speed change
+  const handleSpeedChange = (speed: number) => {
+    setReplaySpeed(speed);
+    
+    // Restart the interval if we're playing
+    if (isPlaying && replayTimerRef.current) {
+      clearInterval(replayTimerRef.current);
+      replayTimerRef.current = setInterval(() => {
+        setReplayProgress(prev => {
+          const newProgress = prev + 1;
+          if (newProgress >= 100) {
+            setIsPlaying(false);
+            clearInterval(replayTimerRef.current!);
+            return 100;
+          }
+          
+          const dataIndex = Math.floor((data.length * newProgress) / 100);
+          setReplayData(data.slice(0, dataIndex + 1));
+          
+          return newProgress;
+        });
+      }, 1000 / speed);
+    }
+  };
+  
   // Render secondary indicator if provided
   const renderSecondaryIndicator = () => {
     if (!secondaryIndicator) return null;
@@ -76,7 +182,21 @@ export const PriceChart = ({
         <DrawingToolsOverlay containerRef={chartContainerRef} />
       )}
       
-      {renderChart(renderSecondaryIndicator)}
+      {isReplayMode && (
+        <div className="absolute bottom-4 left-4 right-4 z-10">
+          <ReplayControls 
+            isPlaying={isPlaying}
+            onPlayPause={handlePlayPause}
+            onReset={handleReset}
+            onSpeedChange={handleSpeedChange}
+            currentSpeed={replaySpeed}
+            progress={replayProgress}
+            onProgressChange={handleProgressChange}
+          />
+        </div>
+      )}
+      
+      {renderChart(renderSecondaryIndicator, isReplayMode ? replayData : data)}
     </div>
   );
 };

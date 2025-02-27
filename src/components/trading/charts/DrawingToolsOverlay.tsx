@@ -2,446 +2,531 @@
 import { useState, useRef, useEffect, RefObject } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2, Pencil, TrendingUp, Ruler, Square, Circle, MinusIcon, UndoIcon, RedoIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
-type DrawingTool = "line" | "arrow" | "rectangle" | "circle" | "horizontal" | "fibonacci" | "pencil" | "none";
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface DrawingShape {
+  id: string;
+  type: "line" | "arrow" | "horizontal" | "rectangle" | "circle" | "fibonacci" | "pencil";
+  points: Point[];
+  color: string;
+  lineWidth: number;
+}
 
 interface DrawingToolsOverlayProps {
   containerRef: RefObject<HTMLDivElement>;
 }
 
 export const DrawingToolsOverlay = ({ containerRef }: DrawingToolsOverlayProps) => {
-  const [selectedTool, setSelectedTool] = useState<DrawingTool>("none");
-  const [drawings, setDrawings] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[][]>([]);
-  const [redoStack, setRedoStack] = useState<any[][]>([]);
+  const [selectedTool, setSelectedTool] = useState<"none" | "line" | "arrow" | "horizontal" | "rectangle" | "circle" | "fibonacci" | "pencil">("none");
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [startPoint, setStartPoint] = useState<Point | null>(null);
+  const [currentPoint, setCurrentPoint] = useState<Point | null>(null);
+  const [shapes, setShapes] = useState<DrawingShape[]>([]);
+  const [history, setHistory] = useState<DrawingShape[][]>([]);
+  const [redoStack, setRedoStack] = useState<DrawingShape[][]>([]);
+  const [pencilPoints, setPencilPoints] = useState<Point[]>([]);
+  
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const isDrawing = useRef(false);
-  const startPos = useRef({ x: 0, y: 0 });
-  const currentPos = useRef({ x: 0, y: 0 });
+  const drawingColor = "#4ade80";
+  const lineWidth = 2;
 
-  // Initialize canvas
+  // Initialize canvas when component mounts
   useEffect(() => {
-    if (!containerRef.current) return;
-    
-    const canvas = document.createElement('canvas');
-    canvas.style.position = 'absolute';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    canvas.style.pointerEvents = selectedTool === 'none' ? 'none' : 'auto';
-    canvas.style.zIndex = '10';
-    canvas.width = containerRef.current.clientWidth;
-    canvas.height = containerRef.current.clientHeight;
-    canvasRef.current = canvas;
-    containerRef.current.appendChild(canvas);
-    
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.strokeStyle = '#8b5cf6';
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
+    if (containerRef.current) {
+      const canvas = document.createElement("canvas");
+      canvas.className = "absolute inset-0 z-10 pointer-events-auto";
+      canvas.width = containerRef.current.clientWidth;
+      canvas.height = containerRef.current.clientHeight;
+      
+      if (canvasRef.current) {
+        containerRef.current.removeChild(canvasRef.current);
+      }
+      
+      containerRef.current.appendChild(canvas);
+      canvasRef.current = canvas;
+      
+      // Add event listeners
+      canvas.addEventListener("mousedown", handleMouseDown);
+      canvas.addEventListener("mousemove", handleMouseMove);
+      canvas.addEventListener("mouseup", handleMouseUp);
+      
+      // Initial render
+      redrawCanvas();
     }
     
-    // Redraw existing drawings
+    return () => {
+      if (canvasRef.current) {
+        canvasRef.current.removeEventListener("mousedown", handleMouseDown);
+        canvasRef.current.removeEventListener("mousemove", handleMouseMove);
+        canvasRef.current.removeEventListener("mouseup", handleMouseUp);
+      }
+    };
+  }, [containerRef.current]);
+  
+  // Redraw canvas whenever shapes change
+  useEffect(() => {
     redrawCanvas();
-    
-    return () => {
-      if (containerRef.current && canvas) {
-        containerRef.current.removeChild(canvas);
-      }
-    };
-  }, [containerRef, selectedTool]);
+  }, [shapes, currentPoint, startPoint, isDrawing, selectedTool, pencilPoints]);
   
-  // Update canvas size on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (canvasRef.current && containerRef.current) {
-        canvasRef.current.width = containerRef.current.clientWidth;
-        canvasRef.current.height = containerRef.current.clientHeight;
-        redrawCanvas();
-      }
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  
-  // Handle mouse events for drawing
-  useEffect(() => {
-    if (!canvasRef.current || selectedTool === 'none') return;
-    
-    const canvas = canvasRef.current;
-    
-    const handleMouseDown = (e: MouseEvent) => {
-      if (selectedTool === 'none') return;
-      
-      const rect = canvas.getBoundingClientRect();
-      startPos.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-      currentPos.current = { ...startPos.current };
-      isDrawing.current = true;
-    };
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDrawing.current) return;
-      
-      const rect = canvas.getBoundingClientRect();
-      currentPos.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
-      
-      redrawCanvas();
-      drawCurrentShape();
-    };
-    
-    const handleMouseUp = () => {
-      if (!isDrawing.current) return;
-      
-      // Save the drawing
-      const newDrawing = {
-        tool: selectedTool,
-        start: { ...startPos.current },
-        end: { ...currentPos.current }
-      };
-      
-      // Save to history for undo/redo
-      setHistory(prev => [...prev, [...drawings]]);
-      setRedoStack([]);
-      
-      setDrawings(prev => [...prev, newDrawing]);
-      isDrawing.current = false;
-    };
-    
-    canvas.addEventListener('mousedown', handleMouseDown);
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseup', handleMouseUp);
-    canvas.addEventListener('mouseleave', handleMouseUp);
-    
-    return () => {
-      canvas.removeEventListener('mousedown', handleMouseDown);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('mouseup', handleMouseUp);
-      canvas.removeEventListener('mouseleave', handleMouseUp);
-    };
-  }, [selectedTool, drawings]);
-  
-  // Redraw all shapes on the canvas
   const redrawCanvas = () => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!ctx || !canvas) return;
+    if (!canvasRef.current) return;
     
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw all saved shapes
-    drawings.forEach(drawing => {
-      drawShape(ctx, drawing.tool, drawing.start, drawing.end);
-    });
-  };
-  
-  // Draw the current shape being created
-  const drawCurrentShape = () => {
-    const ctx = canvasRef.current?.getContext('2d');
+    const ctx = canvasRef.current.getContext("2d");
     if (!ctx) return;
     
-    drawShape(ctx, selectedTool, startPos.current, currentPos.current);
-  };
-  
-  // Draw a specific shape
-  const drawShape = (ctx: CanvasRenderingContext2D, tool: DrawingTool, start: {x: number, y: number}, end: {x: number, y: number}) => {
-    switch(tool) {
-      case 'line':
-        ctx.beginPath();
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(end.x, end.y);
+    // Clear canvas
+    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    
+    // Draw all saved shapes
+    shapes.forEach(shape => {
+      drawShape(ctx, shape);
+    });
+    
+    // Draw current shape if drawing
+    if (isDrawing && startPoint && currentPoint) {
+      ctx.strokeStyle = drawingColor;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      
+      if (selectedTool === "line" || selectedTool === "arrow") {
+        ctx.moveTo(startPoint.x, startPoint.y);
+        ctx.lineTo(currentPoint.x, currentPoint.y);
         ctx.stroke();
-        break;
-      case 'arrow':
-        drawArrow(ctx, start, end);
-        break;
-      case 'rectangle':
-        ctx.beginPath();
-        ctx.rect(
-          Math.min(start.x, end.x),
-          Math.min(start.y, end.y),
-          Math.abs(end.x - start.x),
-          Math.abs(end.y - start.y)
-        );
+        
+        if (selectedTool === "arrow") {
+          drawArrowhead(ctx, startPoint, currentPoint);
+        }
+      } else if (selectedTool === "horizontal") {
+        ctx.moveTo(startPoint.x, startPoint.y);
+        ctx.lineTo(currentPoint.x, startPoint.y);
         ctx.stroke();
-        break;
-      case 'circle':
+      } else if (selectedTool === "rectangle") {
+        const width = currentPoint.x - startPoint.x;
+        const height = currentPoint.y - startPoint.y;
+        ctx.strokeRect(startPoint.x, startPoint.y, width, height);
+      } else if (selectedTool === "circle") {
         const radius = Math.sqrt(
-          Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2)
+          Math.pow(currentPoint.x - startPoint.x, 2) + 
+          Math.pow(currentPoint.y - startPoint.y, 2)
         );
         ctx.beginPath();
-        ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
+        ctx.arc(startPoint.x, startPoint.y, radius, 0, 2 * Math.PI);
         ctx.stroke();
-        break;
-      case 'horizontal':
-        ctx.beginPath();
-        ctx.moveTo(0, start.y);
-        ctx.lineTo(ctx.canvas.width, start.y);
+      } else if (selectedTool === "fibonacci") {
+        const width = currentPoint.x - startPoint.x;
+        const height = currentPoint.y - startPoint.y;
+        
+        // Draw main line
+        ctx.moveTo(startPoint.x, startPoint.y);
+        ctx.lineTo(currentPoint.x, currentPoint.y);
         ctx.stroke();
-        break;
-      case 'fibonacci':
-        drawFibonacciRetracement(ctx, start, end);
-        break;
-      case 'pencil':
-        // Pencil is handled differently - in real implementation
-        // this would track all points for a freeform line
-        ctx.beginPath();
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(end.x, end.y);
-        ctx.stroke();
-        break;
-      default:
-        break;
+        
+        // Draw Fibonacci levels
+        const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+        
+        levels.forEach(level => {
+          const y = startPoint.y + height * level;
+          ctx.beginPath();
+          ctx.moveTo(startPoint.x, y);
+          ctx.lineTo(currentPoint.x, y);
+          ctx.stroke();
+          
+          // Add label
+          ctx.fillStyle = drawingColor;
+          ctx.font = "10px Arial";
+          ctx.fillText(`${(level * 100).toFixed(1)}%`, startPoint.x - 30, y);
+        });
+      }
+    }
+    
+    // Draw current pencil path
+    if (selectedTool === "pencil" && pencilPoints.length > 1) {
+      ctx.strokeStyle = drawingColor;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(pencilPoints[0].x, pencilPoints[0].y);
+      
+      for (let i = 1; i < pencilPoints.length; i++) {
+        ctx.lineTo(pencilPoints[i].x, pencilPoints[i].y);
+      }
+      
+      ctx.stroke();
     }
   };
   
-  // Draw an arrow
-  const drawArrow = (ctx: CanvasRenderingContext2D, start: {x: number, y: number}, end: {x: number, y: number}) => {
-    const headlen = 10;
-    const dx = end.x - start.x;
-    const dy = end.y - start.y;
-    const angle = Math.atan2(dy, dx);
+  const drawShape = (ctx: CanvasRenderingContext2D, shape: DrawingShape) => {
+    ctx.strokeStyle = shape.color;
+    ctx.lineWidth = shape.lineWidth;
     
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
-    ctx.lineTo(
-      end.x - headlen * Math.cos(angle - Math.PI / 6),
-      end.y - headlen * Math.sin(angle - Math.PI / 6)
-    );
-    ctx.moveTo(end.x, end.y);
-    ctx.lineTo(
-      end.x - headlen * Math.cos(angle + Math.PI / 6),
-      end.y - headlen * Math.sin(angle + Math.PI / 6)
-    );
-    ctx.stroke();
-  };
-  
-  // Draw Fibonacci retracement levels
-  const drawFibonacciRetracement = (ctx: CanvasRenderingContext2D, start: {x: number, y: number}, end: {x: number, y: number}) => {
-    const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-    const height = end.y - start.y;
-    const width = ctx.canvas.width;
-    
-    // Draw the main trend line
-    ctx.beginPath();
-    ctx.moveTo(start.x, start.y);
-    ctx.lineTo(end.x, end.y);
-    ctx.stroke();
-    
-    // Draw horizontal lines for each level
-    levels.forEach(level => {
-      const y = start.y + height * level;
+    if (shape.type === "pencil" && shape.points.length > 1) {
       ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
+      ctx.moveTo(shape.points[0].x, shape.points[0].y);
+      
+      for (let i = 1; i < shape.points.length; i++) {
+        ctx.lineTo(shape.points[i].x, shape.points[i].y);
+      }
+      
+      ctx.stroke();
+      return;
+    }
+    
+    if (shape.points.length < 2) return;
+    
+    const start = shape.points[0];
+    const end = shape.points[1];
+    
+    ctx.beginPath();
+    
+    if (shape.type === "line" || shape.type === "arrow") {
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
       ctx.stroke();
       
-      // Label the level
-      ctx.fillStyle = "#8b5cf6";
-      ctx.fillText(`${(level * 100).toFixed(1)}%`, 5, y - 5);
-    });
+      if (shape.type === "arrow") {
+        drawArrowhead(ctx, start, end);
+      }
+    } else if (shape.type === "horizontal") {
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, start.y);
+      ctx.stroke();
+    } else if (shape.type === "rectangle") {
+      const width = end.x - start.x;
+      const height = end.y - start.y;
+      ctx.strokeRect(start.x, start.y, width, height);
+    } else if (shape.type === "circle") {
+      const radius = Math.sqrt(
+        Math.pow(end.x - start.x, 2) + 
+        Math.pow(end.y - start.y, 2)
+      );
+      ctx.beginPath();
+      ctx.arc(start.x, start.y, radius, 0, 2 * Math.PI);
+      ctx.stroke();
+    } else if (shape.type === "fibonacci") {
+      const width = end.x - start.x;
+      const height = end.y - start.y;
+      
+      // Draw main line
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      
+      // Draw Fibonacci levels
+      const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+      
+      levels.forEach(level => {
+        const y = start.y + height * level;
+        ctx.beginPath();
+        ctx.moveTo(start.x, y);
+        ctx.lineTo(end.x, y);
+        ctx.stroke();
+        
+        // Add label
+        ctx.fillStyle = shape.color;
+        ctx.font = "10px Arial";
+        ctx.fillText(`${(level * 100).toFixed(1)}%`, start.x - 30, y);
+      });
+    }
   };
   
-  // Clear all drawings
-  const handleClear = () => {
-    // Save current state to history before clearing
-    if (drawings.length > 0) {
-      setHistory(prev => [...prev, [...drawings]]);
+  const drawArrowhead = (ctx: CanvasRenderingContext2D, from: Point, to: Point) => {
+    const headLength = 10;
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+    
+    ctx.beginPath();
+    ctx.moveTo(to.x, to.y);
+    ctx.lineTo(
+      to.x - headLength * Math.cos(angle - Math.PI / 6),
+      to.y - headLength * Math.sin(angle - Math.PI / 6)
+    );
+    ctx.moveTo(to.x, to.y);
+    ctx.lineTo(
+      to.x - headLength * Math.cos(angle + Math.PI / 6),
+      to.y - headLength * Math.sin(angle + Math.PI / 6)
+    );
+    ctx.stroke();
+  };
+  
+  const handleMouseDown = (e: MouseEvent) => {
+    if (selectedTool === "none") return;
+    
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setIsDrawing(true);
+    setStartPoint({ x, y });
+    setCurrentPoint({ x, y });
+    
+    if (selectedTool === "pencil") {
+      setPencilPoints([{ x, y }]);
+    }
+  };
+  
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDrawing) return;
+    
+    const rect = canvasRef.current!.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setCurrentPoint({ x, y });
+    
+    if (selectedTool === "pencil") {
+      setPencilPoints(prev => [...prev, { x, y }]);
+    }
+  };
+  
+  const handleMouseUp = () => {
+    if (!isDrawing || !startPoint || !currentPoint) return;
+    
+    // Save the drawn shape
+    if (selectedTool !== "none") {
+      const newShape: DrawingShape = {
+        id: Math.random().toString(36).substr(2, 9),
+        type: selectedTool === "none" ? "line" : selectedTool,
+        points: selectedTool === "pencil" 
+          ? [...pencilPoints] 
+          : [startPoint, currentPoint],
+        color: drawingColor,
+        lineWidth,
+      };
+      
+      // Save current state to history for undo
+      setHistory(prev => [...prev, shapes]);
+      setShapes(prev => [...prev, newShape]);
+      
+      // Clear redo stack when new action is taken
       setRedoStack([]);
     }
     
-    setDrawings([]);
-    redrawCanvas();
+    setIsDrawing(false);
+    setPencilPoints([]);
   };
   
-  // Undo last drawing
+  const handleSelectTool = (tool: "line" | "arrow" | "horizontal" | "rectangle" | "circle" | "fibonacci" | "pencil") => {
+    setSelectedTool(prevTool => prevTool === tool ? "none" : tool);
+  };
+  
+  const handleClearCanvas = () => {
+    setHistory(prev => [...prev, shapes]);
+    setShapes([]);
+    setRedoStack([]);
+  };
+  
   const handleUndo = () => {
     if (history.length === 0) return;
     
-    const lastState = history[history.length - 1];
-    setRedoStack(prev => [...prev, [...drawings]]);
-    setDrawings(lastState);
-    setHistory(prev => prev.slice(0, -1));
+    const prevShapes = history[history.length - 1];
+    const newHistory = history.slice(0, -1);
+    
+    setRedoStack(prev => [...prev, shapes]);
+    setShapes(prevShapes);
+    setHistory(newHistory);
   };
   
-  // Redo last undone drawing
   const handleRedo = () => {
     if (redoStack.length === 0) return;
     
-    const nextState = redoStack[redoStack.length - 1];
-    setHistory(prev => [...prev, [...drawings]]);
-    setDrawings(nextState);
-    setRedoStack(prev => prev.slice(0, -1));
+    const nextShapes = redoStack[redoStack.length - 1];
+    const newRedoStack = redoStack.slice(0, -1);
+    
+    setHistory(prev => [...prev, shapes]);
+    setShapes(nextShapes);
+    setRedoStack(newRedoStack);
   };
 
   return (
-    <div className="absolute top-2 left-2 z-20 bg-background/80 backdrop-blur-sm p-1 rounded-lg shadow-lg border border-border flex flex-col gap-1">
-      <TooltipProvider>
-        <div className="flex flex-col gap-1">
+    <div className="absolute top-2 left-2 z-20 flex flex-col items-start space-y-2">
+      <div className="flex items-center space-x-1 bg-background/80 backdrop-blur-md p-1 rounded-md border border-border">
+        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
-                size="icon" 
                 variant={selectedTool === "line" ? "default" : "outline"} 
-                onClick={() => setSelectedTool(selectedTool === "line" ? "none" : "line")}
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => handleSelectTool("line")}
               >
                 <TrendingUp className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Trend Line</p>
+            <TooltipContent side="right">
+              <p>Trendline</p>
             </TooltipContent>
           </Tooltip>
-          
+        </TooltipProvider>
+        
+        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
-                size="icon" 
                 variant={selectedTool === "arrow" ? "default" : "outline"} 
-                onClick={() => setSelectedTool(selectedTool === "arrow" ? "none" : "arrow")}
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => handleSelectTool("arrow")}
               >
-                <TrendingUp className="h-4 w-4 rotate-45" />
+                <TrendingUp className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent side="right">
               <p>Arrow</p>
             </TooltipContent>
           </Tooltip>
-          
+        </TooltipProvider>
+        
+        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
-                size="icon" 
-                variant={selectedTool === "rectangle" ? "default" : "outline"} 
-                onClick={() => setSelectedTool(selectedTool === "rectangle" ? "none" : "rectangle")}
-              >
-                <Square className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Rectangle</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
-                variant={selectedTool === "circle" ? "default" : "outline"} 
-                onClick={() => setSelectedTool(selectedTool === "circle" ? "none" : "circle")}
-              >
-                <Circle className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Circle</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                size="icon" 
                 variant={selectedTool === "horizontal" ? "default" : "outline"} 
-                onClick={() => setSelectedTool(selectedTool === "horizontal" ? "none" : "horizontal")}
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => handleSelectTool("horizontal")}
               >
                 <MinusIcon className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent side="right">
               <p>Horizontal Line</p>
             </TooltipContent>
           </Tooltip>
-          
+        </TooltipProvider>
+        
+        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
+                variant={selectedTool === "rectangle" ? "default" : "outline"} 
                 size="icon" 
+                className="h-8 w-8" 
+                onClick={() => handleSelectTool("rectangle")}
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Rectangle</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant={selectedTool === "circle" ? "default" : "outline"} 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => handleSelectTool("circle")}
+              >
+                <Circle className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Circle</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
                 variant={selectedTool === "fibonacci" ? "default" : "outline"} 
-                onClick={() => setSelectedTool(selectedTool === "fibonacci" ? "none" : "fibonacci")}
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => handleSelectTool("fibonacci")}
               >
                 <Ruler className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Fibonacci Retracement</p>
+            <TooltipContent side="right">
+              <p>Fibonacci</p>
             </TooltipContent>
           </Tooltip>
-          
+        </TooltipProvider>
+        
+        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
-                size="icon" 
                 variant={selectedTool === "pencil" ? "default" : "outline"} 
-                onClick={() => setSelectedTool(selectedTool === "pencil" ? "none" : "pencil")}
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => handleSelectTool("pencil")}
               >
                 <Pencil className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Freehand Drawing</p>
+            <TooltipContent side="right">
+              <p>Free Drawing</p>
             </TooltipContent>
           </Tooltip>
-        </div>
-        
-        <div className="flex flex-col gap-1 mt-2 pt-2 border-t border-border">
+        </TooltipProvider>
+      </div>
+      
+      <div className="flex items-center space-x-1 bg-background/80 backdrop-blur-md p-1 rounded-md border border-border">
+        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
-                size="icon" 
                 variant="outline" 
+                size="icon" 
+                className="h-8 w-8" 
                 onClick={handleUndo}
                 disabled={history.length === 0}
               >
                 <UndoIcon className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent side="right">
               <p>Undo</p>
             </TooltipContent>
           </Tooltip>
-          
+        </TooltipProvider>
+        
+        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
-                size="icon" 
                 variant="outline" 
+                size="icon" 
+                className="h-8 w-8" 
                 onClick={handleRedo}
                 disabled={redoStack.length === 0}
               >
                 <RedoIcon className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent side="right">
               <p>Redo</p>
             </TooltipContent>
           </Tooltip>
-          
+        </TooltipProvider>
+        
+        <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
+                variant="outline" 
                 size="icon" 
-                variant="destructive" 
-                onClick={handleClear}
-                disabled={drawings.length === 0}
+                className="h-8 w-8" 
+                onClick={handleClearCanvas}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent side="right">
               <p>Clear All</p>
             </TooltipContent>
           </Tooltip>
-        </div>
-      </TooltipProvider>
+        </TooltipProvider>
+      </div>
     </div>
   );
 };
