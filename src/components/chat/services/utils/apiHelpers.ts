@@ -13,6 +13,8 @@ export const isAdminContext = () => {
 // Fetch an admin-managed API key of a given type
 export const fetchAdminApiKey = async (keyType: string): Promise<string | null> => {
   try {
+    console.log(`Attempting to fetch admin API key for ${keyType}...`);
+    
     const { data, error } = await supabase
       .from('admin_api_keys')
       .select('api_key')
@@ -23,13 +25,14 @@ export const fetchAdminApiKey = async (keyType: string): Promise<string | null> 
       .single();
     
     if (error) {
-      console.log('No admin API key found or error fetching:', error.message);
+      console.log(`No admin API key found for ${keyType} or error fetching:`, error.message);
       return null;
     }
     
+    console.log(`Successfully retrieved admin API key for ${keyType}`);
     return data?.api_key || null;
   } catch (error) {
-    console.error('Error fetching admin API key:', error);
+    console.error(`Error fetching admin API key for ${keyType}:`, error);
     return null;
   }
 };
@@ -101,6 +104,27 @@ export const hasRequiredApiKey = async (modelId: ModelId, settings: GrokSettings
       gemini: adminGeminiKey ? 'present' : 'not found',
       deepseek: adminDeepseekKey ? 'present' : 'not found'
     });
+    
+    // If we found an admin key but don't have it in localStorage yet, save it
+    if (adminOpenaiKey && !openaiKeyInStorage) {
+      localStorage.setItem('openaiApiKey', adminOpenaiKey);
+      console.log('Saved admin OpenAI key to localStorage');
+    }
+    
+    if (adminClaudeKey && !claudeKeyInStorage) {
+      localStorage.setItem('claudeApiKey', adminClaudeKey);
+      console.log('Saved admin Claude key to localStorage');
+    }
+    
+    if (adminGeminiKey && !geminiKeyInStorage) {
+      localStorage.setItem('geminiApiKey', adminGeminiKey);
+      console.log('Saved admin Gemini key to localStorage');
+    }
+    
+    if (adminDeepseekKey && !deepseekKeyInStorage) {
+      localStorage.setItem('deepseekApiKey', adminDeepseekKey);
+      console.log('Saved admin DeepSeek key to localStorage');
+    }
   } catch (error) {
     console.error('Error checking admin API keys:', error);
   }
@@ -147,8 +171,14 @@ export const getApiKey = async (keyType: string, userKey?: string): Promise<stri
     return localStorageKey;
   }
   
-  // Finally, check for admin-managed key
-  return await fetchAdminApiKey(keyType);
+  // Finally, check for admin-managed key and store it in localStorage for future use
+  const adminKey = await fetchAdminApiKey(keyType);
+  if (adminKey) {
+    localStorage.setItem(`${keyType}ApiKey`, adminKey);
+    console.log(`Stored admin ${keyType} key in localStorage for future use`);
+  }
+  
+  return adminKey;
 };
 
 // Helper function to check if a service might be temporarily unavailable

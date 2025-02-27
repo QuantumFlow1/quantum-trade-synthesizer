@@ -12,8 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Key, Save, Check } from 'lucide-react';
+import { Key, Save, Check, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { hasApiKeyAccess } from '@/utils/auth-utils';
+import { supabase } from '@/lib/supabase';
+import { fetchAdminApiKey } from './services/utils/apiHelpers';
 
 interface ApiKeyManagerProps {
   selectedModel: ModelInfo | undefined;
@@ -28,40 +32,101 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
   const [geminiKey, setGeminiKey] = useState(apiKeys.geminiApiKey || '');
   const [deepseekKey, setDeepseekKey] = useState(apiKeys.deepseekApiKey || '');
   const [saved, setSaved] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { userProfile } = useAuth();
+  
+  const hasAccess = hasApiKeyAccess(userProfile);
 
-  // Load API keys from localStorage on component mount
+  // Load API keys from localStorage and admin database on component mount
   useEffect(() => {
-    const loadApiKeys = () => {
-      const savedOpenAIKey = localStorage.getItem('openaiApiKey');
-      const savedClaudeKey = localStorage.getItem('claudeApiKey');
-      const savedGeminiKey = localStorage.getItem('geminiApiKey');
-      const savedDeepseekKey = localStorage.getItem('deepseekApiKey');
+    const loadApiKeys = async () => {
+      setIsLoading(true);
       
-      console.log('Loading API keys from localStorage:', {
-        openai: savedOpenAIKey ? 'present' : 'not found',
-        claude: savedClaudeKey ? 'present' : 'not found',
-        gemini: savedGeminiKey ? 'present' : 'not found',
-        deepseek: savedDeepseekKey ? 'present' : 'not found'
-      });
-      
-      // Only update if keys exist in localStorage
-      const keysToUpdate: ApiKeySettings = { ...apiKeys };
-      
-      if (savedOpenAIKey) keysToUpdate.openaiApiKey = savedOpenAIKey;
-      if (savedClaudeKey) keysToUpdate.claudeApiKey = savedClaudeKey;
-      if (savedGeminiKey) keysToUpdate.geminiApiKey = savedGeminiKey;
-      if (savedDeepseekKey) keysToUpdate.deepseekApiKey = savedDeepseekKey;
-      
-      // Update state and parent component
-      setOpenaiKey(keysToUpdate.openaiApiKey || '');
-      setClaudeKey(keysToUpdate.claudeApiKey || '');
-      setGeminiKey(keysToUpdate.geminiApiKey || '');
-      setDeepseekKey(keysToUpdate.deepseekApiKey || '');
-      onApiKeysChange(keysToUpdate);
+      try {
+        // First check localStorage for personal keys
+        const savedOpenAIKey = localStorage.getItem('openaiApiKey');
+        const savedClaudeKey = localStorage.getItem('claudeApiKey');
+        const savedGeminiKey = localStorage.getItem('geminiApiKey');
+        const savedDeepseekKey = localStorage.getItem('deepseekApiKey');
+        
+        // Start with the keys from localStorage
+        const keysToUpdate: ApiKeySettings = { ...apiKeys };
+        
+        if (savedOpenAIKey) keysToUpdate.openaiApiKey = savedOpenAIKey;
+        if (savedClaudeKey) keysToUpdate.claudeApiKey = savedClaudeKey;
+        if (savedGeminiKey) keysToUpdate.geminiApiKey = savedGeminiKey;
+        if (savedDeepseekKey) keysToUpdate.deepseekApiKey = savedDeepseekKey;
+        
+        // If the user has API key access, try to load from admin database
+        if (hasAccess) {
+          console.log('User has API key access, checking admin database');
+          
+          // Try to fetch from admin database if not in localStorage
+          if (!keysToUpdate.openaiApiKey) {
+            const adminOpenAIKey = await fetchAdminApiKey('openai');
+            if (adminOpenAIKey) {
+              console.log('Found admin OpenAI key');
+              keysToUpdate.openaiApiKey = adminOpenAIKey;
+              // Save to localStorage to avoid future fetches
+              localStorage.setItem('openaiApiKey', adminOpenAIKey);
+            }
+          }
+          
+          if (!keysToUpdate.claudeApiKey) {
+            const adminClaudeKey = await fetchAdminApiKey('claude');
+            if (adminClaudeKey) {
+              console.log('Found admin Claude key');
+              keysToUpdate.claudeApiKey = adminClaudeKey;
+              localStorage.setItem('claudeApiKey', adminClaudeKey);
+            }
+          }
+          
+          if (!keysToUpdate.geminiApiKey) {
+            const adminGeminiKey = await fetchAdminApiKey('gemini');
+            if (adminGeminiKey) {
+              console.log('Found admin Gemini key');
+              keysToUpdate.geminiApiKey = adminGeminiKey;
+              localStorage.setItem('geminiApiKey', adminGeminiKey);
+            }
+          }
+          
+          if (!keysToUpdate.deepseekApiKey) {
+            const adminDeepseekKey = await fetchAdminApiKey('deepseek');
+            if (adminDeepseekKey) {
+              console.log('Found admin DeepSeek key');
+              keysToUpdate.deepseekApiKey = adminDeepseekKey;
+              localStorage.setItem('deepseekApiKey', adminDeepseekKey);
+            }
+          }
+        }
+        
+        // Update state and parent component
+        setOpenaiKey(keysToUpdate.openaiApiKey || '');
+        setClaudeKey(keysToUpdate.claudeApiKey || '');
+        setGeminiKey(keysToUpdate.geminiApiKey || '');
+        setDeepseekKey(keysToUpdate.deepseekApiKey || '');
+        onApiKeysChange(keysToUpdate);
+        
+        console.log('API keys loaded successfully:', {
+          openai: keysToUpdate.openaiApiKey ? 'present' : 'not found',
+          claude: keysToUpdate.claudeApiKey ? 'present' : 'not found',
+          gemini: keysToUpdate.geminiApiKey ? 'present' : 'not found',
+          deepseek: keysToUpdate.deepseekApiKey ? 'present' : 'not found'
+        });
+      } catch (error) {
+        console.error('Error loading API keys:', error);
+        toast({
+          title: "Error loading API keys",
+          description: "There was a problem retrieving your API keys.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     loadApiKeys();
-  }, []);
+  }, [userProfile?.id]);
 
   const handleSave = () => {
     // Validate keys (simple validation - checking if not empty and proper format)
@@ -151,6 +216,68 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
       setDeepseekKey(apiKeys.deepseekApiKey || '');
     }
   };
+  
+  // Function to reload admin keys
+  const handleRefreshAdminKeys = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Clear local storage to force a refresh
+      localStorage.removeItem('openaiApiKey');
+      localStorage.removeItem('claudeApiKey');
+      localStorage.removeItem('geminiApiKey');
+      localStorage.removeItem('deepseekApiKey');
+      
+      // Try to fetch fresh admin keys
+      const adminOpenAIKey = await fetchAdminApiKey('openai');
+      const adminClaudeKey = await fetchAdminApiKey('claude');
+      const adminGeminiKey = await fetchAdminApiKey('gemini');
+      const adminDeepseekKey = await fetchAdminApiKey('deepseek');
+      
+      const keysToUpdate: ApiKeySettings = { ...apiKeys };
+      
+      if (adminOpenAIKey) {
+        keysToUpdate.openaiApiKey = adminOpenAIKey;
+        setOpenaiKey(adminOpenAIKey);
+        localStorage.setItem('openaiApiKey', adminOpenAIKey);
+      }
+      
+      if (adminClaudeKey) {
+        keysToUpdate.claudeApiKey = adminClaudeKey;
+        setClaudeKey(adminClaudeKey);
+        localStorage.setItem('claudeApiKey', adminClaudeKey);
+      }
+      
+      if (adminGeminiKey) {
+        keysToUpdate.geminiApiKey = adminGeminiKey;
+        setGeminiKey(adminGeminiKey);
+        localStorage.setItem('geminiApiKey', adminGeminiKey);
+      }
+      
+      if (adminDeepseekKey) {
+        keysToUpdate.deepseekApiKey = adminDeepseekKey;
+        setDeepseekKey(adminDeepseekKey);
+        localStorage.setItem('deepseekApiKey', adminDeepseekKey);
+      }
+      
+      onApiKeysChange(keysToUpdate);
+      
+      toast({
+        title: "Admin Keys Refreshed",
+        description: "Successfully loaded the latest API keys from the admin database",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error refreshing admin API keys:', error);
+      toast({
+        title: "Error Refreshing Keys",
+        description: "There was a problem retrieving the admin API keys.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Check if the current model needs an API key
   const currentModelNeedsKey = selectedModel?.needsApiKey || false;
@@ -197,8 +324,13 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
             variant="outline" 
             size="sm" 
             className="mb-4 text-xs"
+            disabled={isLoading}
           >
-            <Key className="h-3.5 w-3.5 mr-1" />
+            {isLoading ? (
+              <RefreshCw className="h-3.5 w-3.5 mr-1 animate-spin" />
+            ) : (
+              <Key className="h-3.5 w-3.5 mr-1" />
+            )}
             API Sleutels
           </Button>
         </DialogTrigger>
@@ -206,11 +338,28 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
           <DialogHeader>
             <DialogTitle>API Sleutels Beheren</DialogTitle>
             <DialogDescription>
-              Voer uw API sleutels in voor de verschillende AI-modellen. Deze worden veilig opgeslagen in uw browser.
+              {hasAccess 
+                ? "Je kunt je eigen API sleutels invoeren of de sleutels van de beheerder gebruiken."
+                : "Voer uw API sleutels in voor de verschillende AI-modellen. Deze worden veilig opgeslagen in uw browser."}
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            {hasAccess && (
+              <div className="flex justify-end mb-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRefreshAdminKeys}
+                  disabled={isLoading}
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                  Admin sleutels verversen
+                </Button>
+              </div>
+            )}
+            
             <div className="space-y-2">
               <label className="text-sm font-medium">OpenAI API Sleutel</label>
               <Input 
@@ -257,7 +406,7 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
           </div>
           
           <DialogFooter>
-            <Button onClick={handleSave} className="w-full">
+            <Button onClick={handleSave} className="w-full" disabled={isLoading}>
               {saved ? (
                 <>
                   <Check className="h-4 w-4 mr-2" />
