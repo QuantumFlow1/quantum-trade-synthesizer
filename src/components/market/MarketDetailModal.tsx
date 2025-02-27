@@ -11,7 +11,7 @@ import { TimeframeSelector } from "@/components/trading/TimeframeSelector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
-import { generateDummyTradingData } from "@/utils/tradingData";
+import { generateTradingData } from "@/utils/tradingData";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ChevronDown, ChevronUp, Info, BarChart3, TrendingUp } from "lucide-react";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -40,7 +40,7 @@ export const MarketDetailModal = ({
   // Generate dummy trading data for demonstration purposes
   useEffect(() => {
     if (isOpen && marketName) {
-      const dummyData = generateDummyTradingData(100);
+      const dummyData = generateTradingData(100);
       setTradingData(dummyData);
     }
   }, [isOpen, marketName]);
