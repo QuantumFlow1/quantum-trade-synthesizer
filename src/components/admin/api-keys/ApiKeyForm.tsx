@@ -1,69 +1,67 @@
 
-import { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ApiKeyFormData, API_KEY_TYPES } from "./types";
 
 interface ApiKeyFormProps {
   formData: ApiKeyFormData;
-  onFormChange: (data: ApiKeyFormData) => void;
+  setFormData: (data: ApiKeyFormData) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
-export const ApiKeyForm = ({ formData, onFormChange, onSubmit }: ApiKeyFormProps) => {
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    onFormChange({ ...formData, [name]: value });
-  };
-
-  const handleSwitchChange = (checked: boolean) => {
-    onFormChange({ ...formData, is_active: checked });
-  };
-
+export const ApiKeyForm: React.FC<ApiKeyFormProps> = ({
+  formData,
+  setFormData,
+  onSubmit,
+}) => {
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4 p-4 border rounded-md">
       <div className="space-y-2">
-        <Label htmlFor="key_type">API Type</Label>
-        <select 
-          id="key_type"
-          name="key_type"
+        <Label htmlFor="key-type">API Key Type</Label>
+        <Select
           value={formData.key_type}
-          onChange={handleInputChange}
-          className="w-full px-3 py-2 border rounded-md"
+          onValueChange={(value) => setFormData({ ...formData, key_type: value })}
         >
-          {API_KEY_TYPES.map(type => (
-            <option key={type.id} value={type.id}>
-              {type.name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="key-type">
+            <SelectValue placeholder="Select key type" />
+          </SelectTrigger>
+          <SelectContent>
+            {API_KEY_TYPES.map((type) => (
+              <SelectItem key={type.id} value={type.id}>
+                {type.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      
+
       <div className="space-y-2">
-        <Label htmlFor="api_key">API Key</Label>
-        <Input 
-          id="api_key"
-          name="api_key"
-          type="password"
-          placeholder="Enter API key"
+        <Label htmlFor="api-key">API Key</Label>
+        <Input
+          id="api-key"
+          type="text"
           value={formData.api_key}
-          onChange={handleInputChange}
+          onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+          placeholder="Enter API key"
+          required
         />
       </div>
-      
-      <div className="flex items-center space-x-2">
-        <Switch 
-          id="is_active" 
+
+      <div className="flex items-center justify-between">
+        <Label htmlFor="is-active" className="cursor-pointer">Active</Label>
+        <Switch
+          id="is-active"
           checked={formData.is_active}
-          onCheckedChange={handleSwitchChange}
+          onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
         />
-        <Label htmlFor="is_active">Active</Label>
       </div>
-      
+
       <Button type="submit" className="w-full">
-        Save API Key
+        Add API Key
       </Button>
     </form>
   );

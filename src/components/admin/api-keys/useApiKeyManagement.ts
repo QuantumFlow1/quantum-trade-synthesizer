@@ -1,152 +1,117 @@
 
 import { useState, useEffect } from "react";
-import { toast } from "@/components/ui/use-toast";
-import { supabase } from "@/lib/supabase";
 import { ApiKey, ApiKeyFormData } from "./types";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/ui/use-toast";
 
 export const useApiKeyManagement = () => {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
-  const { userProfile } = useAuth();
-  
   const [formData, setFormData] = useState<ApiKeyFormData>({
-    key_type: 'openai',
-    api_key: '',
-    is_active: true
+    key_type: "openai",
+    api_key: "",
+    is_active: true,
   });
+
+  // Fetch API keys on component mount
+  useEffect(() => {
+    fetchApiKeys();
+  }, []);
 
   const fetchApiKeys = async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('admin_api_keys')
-        .select('*')
-        .order('key_type', { ascending: true });
+        .from("api_keys")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       setApiKeys(data || []);
-    } catch (error) {
-      console.error('Error fetching API keys:', error);
+    } catch (error: any) {
+      console.error("Error fetching API keys:", error.message);
       toast({
         title: "Error",
-        description: "Failed to fetch API keys.",
-        variant: "destructive"
+        description: "Failed to load API keys",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const updateApiKeyStatus = async (id: string, isActive: boolean) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     try {
-      const { error } = await supabase
-        .from('admin_api_keys')
-        .update({ is_active: isActive })
-        .eq('id', id);
+      setLoading(true);
+      
+      // Insert the new API key
+      const { data, error } = await supabase
+        .from("api_keys")
+        .insert([formData])
+        .select();
 
-      if (error) {
-        throw error;
-      }
-
-      // Update local state
-      setApiKeys(prev => 
-        prev.map(key => 
-          key.id === id ? { ...key, is_active: isActive } : key
-        )
-      );
-
+      if (error) throw error;
+      
       toast({
         title: "Success",
-        description: `API key ${isActive ? 'activated' : 'deactivated'} successfully.`,
+        description: "API key added successfully",
       });
-    } catch (error) {
-      console.error('Error updating API key status:', error);
+      
+      // Reset form data
+      setFormData({
+        key_type: "openai",
+        api_key: "",
+        is_active: true,
+      });
+      
+      // Refresh the list
+      fetchApiKeys();
+    } catch (error: any) {
+      console.error("Error adding API key:", error.message);
       toast({
         title: "Error",
-        description: "Failed to update API key status.",
-        variant: "destructive"
+        description: "Failed to add API key",
+        variant: "destructive",
       });
-      // Revert the local state change if the database update failed
-      fetchApiKeys();
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.api_key) {
-      toast({
-        title: "Validation Error",
-        description: "API key cannot be empty.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleStatusChange = async (id: string, isActive: boolean) => {
     try {
-      // Ensure we have the user's ID for ownership tracking
-      if (!userProfile?.id) {
-        toast({
-          title: "Auth Error",
-          description: "Unable to identify the current user. Please sign in again.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Check if we already have a key of this type
-      const existingKey = apiKeys.find(key => key.key_type === formData.key_type);
+      setLoading(true);
       
-      let response;
-      if (existingKey) {
-        // Update existing key
-        response = await supabase
-          .from('admin_api_keys')
-          .update({ 
-            api_key: formData.api_key,
-            is_active: formData.is_active,
-            created_by: userProfile.id
-          })
-          .eq('id', existingKey.id);
-      } else {
-        // Insert new key
-        response = await supabase
-          .from('admin_api_keys')
-          .insert({ 
-            key_type: formData.key_type,
-            api_key: formData.api_key,
-            is_active: formData.is_active,
-            created_by: userProfile.id
-          });
-      }
+      // Update the API key's active status
+      const { error } = await supabase
+        .from("api_keys")
+        .update({ is_active: isActive })
+        .eq("id", id);
 
-      if (response.error) {
-        throw response.error;
-      }
-
+      if (error) throw error;
+      
       toast({
         title: "Success",
-        description: `${existingKey ? 'Updated' : 'Added'} API key successfully.`,
+        description: `API key ${isActive ? "activated" : "deactivated"}`,
       });
-
-      // Reset form and refresh the list
-      setFormData({
-        key_type: 'openai',
-        api_key: '',
-        is_active: true
-      });
-      fetchApiKeys();
-    } catch (error) {
-      console.error('Error saving API key:', error);
+      
+      // Update the local state to reflect the change
+      setApiKeys(prevKeys =>
+        prevKeys.map(key =>
+          key.id === id ? { ...key, is_active: isActive } : key
+        )
+      );
+    } catch (error: any) {
+      console.error("Error updating API key status:", error.message);
       toast({
         title: "Error",
-        description: "Failed to save API key.",
-        variant: "destructive"
+        description: "Failed to update API key status",
+        variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -155,8 +120,8 @@ export const useApiKeyManagement = () => {
     loading,
     formData,
     setFormData,
+    handleSubmit,
+    handleStatusChange,
     fetchApiKeys,
-    updateApiKeyStatus,
-    handleFormSubmit
   };
 };
