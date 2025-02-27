@@ -8,3 +8,4 @@ export interface BaseChartProps {
 }
 
 export type IndicatorType = "sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx";
+

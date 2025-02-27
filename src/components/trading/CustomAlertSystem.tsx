@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -385,7 +386,6 @@ export const CustomAlertSystem = ({ data, symbol = "BTC/USD" }: CustomAlertSyste
                 <Switch 
                   checked={alert.active}
                   onCheckedChange={() => toggleAlertActive(alert.id)}
-                  size="sm"
                 />
                 <Button 
                   variant="ghost" 
