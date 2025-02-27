@@ -1,6 +1,5 @@
 
 import { ReactNode } from "react";
-import { TradingDataPoint } from "@/utils/tradingData";
 import { 
   ComposedChart, 
   Area, 

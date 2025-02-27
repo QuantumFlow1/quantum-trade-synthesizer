@@ -4,11 +4,12 @@ import { ChartViews } from "./ChartViews";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { ZoomControls } from "../ZoomControls";
 import { toast } from "@/components/ui/use-toast";
+import { IndicatorType } from "./charts/types/types";
 
 interface ChartContainerProps {
   data: TradingDataPoint[];
   view: "price" | "volume" | "indicators";
-  indicator: string;
+  indicator: IndicatorType;
   chartType: "candles" | "line" | "area" | "bars";
   chartContainerRef: RefObject<HTMLDivElement>;
   scale: number;
