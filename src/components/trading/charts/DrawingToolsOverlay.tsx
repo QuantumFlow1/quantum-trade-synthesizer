@@ -1,10 +1,15 @@
 
 import { useState, RefObject } from "react";
 import { Button } from "@/components/ui/button";
-import { Tooltip } from "@/components/ui/tooltip";
+import { 
+  TooltipProvider, 
+  Tooltip, 
+  TooltipTrigger, 
+  TooltipContent 
+} from "@/components/ui/tooltip";
 import { 
   Pencil, 
-  Line, 
+  LineHorizontal, 
   ArrowDown, 
   Square, 
   Circle,
@@ -45,95 +50,121 @@ export const DrawingToolsOverlay = ({ containerRef }: DrawingToolsOverlayProps) 
   };
 
   return (
-    <div className="absolute top-2 left-2 z-10 flex flex-col shadow-lg rounded-md bg-background/70 backdrop-blur-md border border-border">
-      <div className="p-1 flex flex-col gap-1">
-        <Tooltip content="Line">
-          <Button 
-            size="icon" 
-            variant={selectedTool === "line" ? "default" : "ghost"} 
-            className="h-8 w-8"
-            onClick={() => handleToolSelect("line")}
-          >
-            <Line className="h-4 w-4" />
-          </Button>
-        </Tooltip>
-        
-        <Tooltip content="Arrow">
-          <Button 
-            size="icon" 
-            variant={selectedTool === "arrow" ? "default" : "ghost"} 
-            className="h-8 w-8"
-            onClick={() => handleToolSelect("arrow")}
-          >
-            <ArrowDown className="h-4 w-4" />
-          </Button>
-        </Tooltip>
-        
-        <Tooltip content="Horizontal Line">
-          <Button 
-            size="icon" 
-            variant={selectedTool === "horizontal" ? "default" : "ghost"} 
-            className="h-8 w-8"
-            onClick={() => handleToolSelect("horizontal")}
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
-        </Tooltip>
-        
-        <Tooltip content="Rectangle">
-          <Button 
-            size="icon" 
-            variant={selectedTool === "rectangle" ? "default" : "ghost"} 
-            className="h-8 w-8"
-            onClick={() => handleToolSelect("rectangle")}
-          >
-            <Square className="h-4 w-4" />
-          </Button>
-        </Tooltip>
-        
-        <Tooltip content="Circle">
-          <Button 
-            size="icon" 
-            variant={selectedTool === "circle" ? "default" : "ghost"} 
-            className="h-8 w-8"
-            onClick={() => handleToolSelect("circle")}
-          >
-            <Circle className="h-4 w-4" />
-          </Button>
-        </Tooltip>
-        
-        <Tooltip content="Fibonacci">
-          <Button 
-            size="icon" 
-            variant={selectedTool === "fibonacci" ? "default" : "ghost"} 
-            className="h-8 w-8"
-            onClick={() => handleToolSelect("fibonacci")}
-          >
-            <TrendingUp className="h-4 w-4" />
-          </Button>
-        </Tooltip>
-        
-        <Tooltip content="Pencil">
-          <Button 
-            size="icon" 
-            variant={selectedTool === "pencil" ? "default" : "ghost"} 
-            className="h-8 w-8"
-            onClick={() => handleToolSelect("pencil")}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-        </Tooltip>
-        
-        <Tooltip content="Clear All">
-          <Button 
-            size="icon" 
-            variant="ghost" 
-            className="h-8 w-8"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </Tooltip>
+    <TooltipProvider>
+      <div className="absolute top-2 left-2 z-10 flex flex-col shadow-lg rounded-md bg-background/70 backdrop-blur-md border border-border">
+        <div className="p-1 flex flex-col gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={selectedTool === "line" ? "default" : "ghost"} 
+                className="h-8 w-8"
+                onClick={() => handleToolSelect("line")}
+              >
+                <LineHorizontal className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Line</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={selectedTool === "arrow" ? "default" : "ghost"} 
+                className="h-8 w-8"
+                onClick={() => handleToolSelect("arrow")}
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Arrow</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={selectedTool === "horizontal" ? "default" : "ghost"} 
+                className="h-8 w-8"
+                onClick={() => handleToolSelect("horizontal")}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Horizontal Line</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={selectedTool === "rectangle" ? "default" : "ghost"} 
+                className="h-8 w-8"
+                onClick={() => handleToolSelect("rectangle")}
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Rectangle</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={selectedTool === "circle" ? "default" : "ghost"} 
+                className="h-8 w-8"
+                onClick={() => handleToolSelect("circle")}
+              >
+                <Circle className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Circle</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={selectedTool === "fibonacci" ? "default" : "ghost"} 
+                className="h-8 w-8"
+                onClick={() => handleToolSelect("fibonacci")}
+              >
+                <TrendingUp className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Fibonacci</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant={selectedTool === "pencil" ? "default" : "ghost"} 
+                className="h-8 w-8"
+                onClick={() => handleToolSelect("pencil")}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Pencil</TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                size="icon" 
+                variant="ghost" 
+                className="h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Clear All</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
