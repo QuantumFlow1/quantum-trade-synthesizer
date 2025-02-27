@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { StandardOrderForm } from "./order-form/StandardOrderForm";
 import { AdvancedOrderForm } from "./order-form/AdvancedOrderForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle } from "lucide-react";
 
 interface TradeOrderFormProps {
   apiStatus?: 'checking' | 'available' | 'unavailable';
@@ -25,10 +26,10 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
 
   const { toast } = useToast();
 
-  // Simuleer het ophalen van de huidige prijs
+  // Simulate fetching current price
   useEffect(() => {
     const interval = setInterval(() => {
-      // Simuleer kleine prijsschommelingen
+      // Simulate small price fluctuations
       const newPrice = currentPrice + (Math.random() * 200 - 100);
       setCurrentPrice(Math.round(newPrice * 100) / 100);
     }, 5000);
@@ -38,13 +39,24 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if the API is unavailable
+    if (apiStatus !== 'available') {
+      toast({
+        title: "Trading Unavailable",
+        description: "Trading services are currently unavailable. Please try again later.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsSubmitting(true);
 
-    // Simuleer API vertraging
+    // Simulate API delay
     setTimeout(() => {
       toast({
-        title: "Order geplaatst",
-        description: `Uw ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} order voor ${amount} BTC is succesvol geplaatst.`,
+        title: "Order Placed",
+        description: `Your ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} order for ${amount} BTC has been successfully placed.`,
       });
       setIsSubmitting(false);
     }, 1500);
@@ -56,7 +68,7 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     setTakeProfit(takeProfitValue);
   };
 
-  // Genereer aanbevolen stop loss en take profit waarden
+  // Generate recommended stop loss and take profit values
   const stopLossPercentage = orderType === "buy" ? 5 : 7;
   const takeProfitPercentage = orderType === "buy" ? 10 : 12;
   const stopLossRecommendation = orderType === "buy" 
@@ -66,25 +78,42 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     ? currentPrice * (1 + takeProfitPercentage/100) 
     : currentPrice * (1 - takeProfitPercentage/100);
 
-  // Dummy AI analyse data
+  // Dummy AI analysis data
   const aiAnalysis = {
     confidence: 78,
-    riskLevel: "Gemiddeld",
-    recommendation: orderType === "buy" ? "Koop met stop-loss" : "Verkoop met limiet",
-    expectedProfit: `${takeProfitPercentage}% bij correcte uitvoering`,
+    riskLevel: "Medium",
+    recommendation: orderType === "buy" ? "Buy with stop-loss" : "Sell with limit",
+    expectedProfit: `${takeProfitPercentage}% if executed correctly`,
     stopLossRecommendation: Math.round(stopLossRecommendation * 100) / 100,
     takeProfitRecommendation: Math.round(takeProfitRecommendation * 100) / 100,
     collaboratingAgents: ["TrendAnalyzer", "RiskProfiler", "VolatilityMonitor"]
   };
 
+  const isApiAvailable = apiStatus === 'available';
+  const isApiChecking = apiStatus === 'checking';
+
   return (
     <Card className="backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
+      {isApiChecking && (
+        <div className="mb-4 p-2 bg-blue-500/10 rounded-md flex items-center text-sm text-muted-foreground">
+          <AlertCircle className="h-4 w-4 mr-2 text-blue-500" />
+          Checking connection to trading services...
+        </div>
+      )}
+      
+      {!isApiAvailable && !isApiChecking && (
+        <div className="mb-4 p-2 bg-red-500/10 rounded-md flex items-center text-sm text-muted-foreground">
+          <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
+          Trading services unavailable. You can view the interface but cannot place orders.
+        </div>
+      )}
+      
       <Tabs defaultValue="standard" onValueChange={setOrderMode}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Order Formulier</h2>
+          <h2 className="text-xl font-bold">Order Form</h2>
           <TabsList>
-            <TabsTrigger value="standard">Standaard</TabsTrigger>
-            <TabsTrigger value="advanced">Geavanceerd</TabsTrigger>
+            <TabsTrigger value="standard">Standard</TabsTrigger>
+            <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
         </div>
 
@@ -118,8 +147,8 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
             currentPrice={currentPrice}
             advancedSignal={advancedSignal}
             setAdvancedSignal={setAdvancedSignal}
-            apiEnabled={true}
-            apiAvailable={apiStatus === 'available'}
+            apiEnabled={isApiAvailable}
+            apiAvailable={isApiAvailable}
             onSignalApplied={handleSignalApplied}
             onSubmit={handleSubmit}
           />
