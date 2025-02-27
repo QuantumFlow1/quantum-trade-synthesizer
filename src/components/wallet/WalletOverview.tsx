@@ -6,6 +6,7 @@ import { WalletHeader } from "./overview/WalletHeader";
 import { WalletBalanceCards } from "./overview/WalletBalanceCards";
 import { WalletPerformance } from "./overview/WalletPerformance";
 import { WalletAssetAllocation } from "./overview/WalletAssetAllocation";
+import { WalletBalanceHistory } from "./overview/WalletBalanceHistory";
 
 interface WalletOverviewProps {
   onDisconnect: () => void;
@@ -122,6 +123,10 @@ export const WalletOverview = ({ onDisconnect }: WalletOverviewProps) => {
         performanceToday={walletData.performanceToday}
         performanceWeek={walletData.performanceWeek}
         performanceMonth={walletData.performanceMonth}
+      />
+      
+      <WalletBalanceHistory 
+        currency={walletData.currency}
       />
       
       <WalletAssetAllocation />
