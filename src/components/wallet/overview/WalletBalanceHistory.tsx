@@ -13,9 +13,11 @@ import {
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import { formatNumber } from "@/lib/utils";
+import { WalletType } from "../WalletOverview";
 
 interface WalletBalanceHistoryProps {
   currency: string;
+  walletType: WalletType;
   data?: {
     date: string;
     balance: number;
@@ -24,6 +26,7 @@ interface WalletBalanceHistoryProps {
 
 export const WalletBalanceHistory = ({ 
   currency, 
+  walletType,
   data 
 }: WalletBalanceHistoryProps) => {
   // Generate mock data if none provided
@@ -34,7 +37,11 @@ export const WalletBalanceHistory = ({
       const now = new Date();
       
       // Start with a base value and add some randomness
-      let baseValue = 10000;
+      let baseValue = walletType === 'crypto' ? 10000 : 5000;
+      
+      // Volatility is higher for crypto, lower for fiat
+      const volatility = walletType === 'crypto' ? 0.48 : 0.1;
+      const maxChange = walletType === 'crypto' ? 500 : 100;
       
       for (let i = 364; i >= 0; i--) {
         const date = new Date(now);
@@ -42,7 +49,7 @@ export const WalletBalanceHistory = ({
         
         // Add some randomness to simulate price movements
         // More weight to previous value to simulate realistic price movements
-        const randomChange = (Math.random() - 0.48) * 500; // Slightly biased towards growth
+        const randomChange = (Math.random() - volatility) * maxChange;
         baseValue = baseValue + randomChange;
         
         // For yearly data, we'll format differently to avoid crowding
@@ -53,7 +60,7 @@ export const WalletBalanceHistory = ({
         result.push({
           date: formattedDate,
           fullDate: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          balance: Math.max(baseValue, 1000) // Ensure we don't go below 1000
+          balance: Math.max(baseValue, walletType === 'crypto' ? 1000 : 500) // Ensure we don't go below minimum
         });
       }
       
@@ -61,7 +68,7 @@ export const WalletBalanceHistory = ({
     };
     
     return data || generateMockData();
-  }, [data]);
+  }, [data, walletType]);
 
   // Custom tooltip formatter to include currency symbol
   const formatTooltipValue = (value: number) => {
@@ -70,6 +77,9 @@ export const WalletBalanceHistory = ({
       maximumFractionDigits: 2
     })}`;
   };
+
+  // Different colors for crypto and fiat
+  const areaColor = walletType === 'crypto' ? '#8884d8' : '#4CAF50';
 
   return (
     <div className="space-y-4">
@@ -82,9 +92,9 @@ export const WalletBalanceHistory = ({
               margin={{ top: 10, right: 10, left: 0, bottom: 20 }}
             >
               <defs>
-                <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0.1} />
+                <linearGradient id={`color${walletType}Balance`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={areaColor} stopOpacity={0.8} />
+                  <stop offset="95%" stopColor={areaColor} stopOpacity={0.1} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
@@ -122,9 +132,9 @@ export const WalletBalanceHistory = ({
               <Area 
                 type="monotone" 
                 dataKey="balance" 
-                stroke="#8884d8" 
+                stroke={areaColor} 
                 fillOpacity={1}
-                fill="url(#colorBalance)"
+                fill={`url(#color${walletType}Balance)`}
                 strokeWidth={2}
               />
             </AreaChart>

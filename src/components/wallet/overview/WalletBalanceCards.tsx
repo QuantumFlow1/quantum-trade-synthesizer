@@ -1,6 +1,7 @@
 
 import { Card } from "@/components/ui/card";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { WalletType } from "../WalletOverview";
 
 interface WalletBalanceCardsProps {
   balance: number;
@@ -8,6 +9,7 @@ interface WalletBalanceCardsProps {
   lockedBalance: number;
   performanceToday: number;
   currency: string;
+  walletType: WalletType;
 }
 
 export const WalletBalanceCards = ({
@@ -15,7 +17,8 @@ export const WalletBalanceCards = ({
   availableBalance,
   lockedBalance,
   performanceToday,
-  currency
+  currency,
+  walletType
 }: WalletBalanceCardsProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -38,15 +41,21 @@ export const WalletBalanceCards = ({
         <div className="text-sm text-muted-foreground">Available Balance</div>
         <div className="text-2xl font-bold">{currency}{availableBalance.toLocaleString()}</div>
         <div className="mt-2 text-xs text-muted-foreground">
-          Available for trading
+          {walletType === 'crypto' 
+            ? 'Available for trading' 
+            : 'Available for withdrawal'}
         </div>
       </Card>
       
       <Card className="p-4 bg-secondary/20 backdrop-blur-sm">
-        <div className="text-sm text-muted-foreground">Locked Balance</div>
+        <div className="text-sm text-muted-foreground">
+          {walletType === 'crypto' ? 'Locked Balance' : 'Pending Balance'}
+        </div>
         <div className="text-2xl font-bold">{currency}{lockedBalance.toLocaleString()}</div>
         <div className="mt-2 text-xs text-muted-foreground">
-          In active trades/orders
+          {walletType === 'crypto' 
+            ? 'In active trades/orders' 
+            : 'Pending transactions'}
         </div>
       </Card>
     </div>

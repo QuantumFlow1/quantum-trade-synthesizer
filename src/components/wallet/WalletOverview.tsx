@@ -1,16 +1,19 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Wallet } from "lucide-react";
+import { Wallet, CreditCard, Bitcoin } from "lucide-react";
 import { WalletHeader } from "./overview/WalletHeader";
 import { WalletBalanceCards } from "./overview/WalletBalanceCards";
 import { WalletPerformance } from "./overview/WalletPerformance";
 import { WalletAssetAllocation } from "./overview/WalletAssetAllocation";
 import { WalletBalanceHistory } from "./overview/WalletBalanceHistory";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface WalletOverviewProps {
   onDisconnect: () => void;
 }
+
+export type WalletType = 'crypto' | 'fiat';
 
 interface WalletData {
   address: string;
@@ -22,10 +25,15 @@ interface WalletData {
   performanceToday: number;
   performanceWeek: number;
   performanceMonth: number;
+  type: WalletType;
 }
 
 export const WalletOverview = ({ onDisconnect }: WalletOverviewProps) => {
-  const [walletData, setWalletData] = useState<WalletData | null>(null);
+  const [walletData, setWalletData] = useState<Record<WalletType, WalletData | null>>({
+    crypto: null,
+    fiat: null
+  });
+  const [activeWalletType, setActiveWalletType] = useState<WalletType>('crypto');
   const { toast } = useToast();
 
   // Simulate fetching wallet data
@@ -35,8 +43,8 @@ export const WalletOverview = ({ onDisconnect }: WalletOverviewProps) => {
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Mock wallet data
-        const mockWalletData: WalletData = {
+        // Mock wallet data for crypto
+        const mockCryptoWallet: WalletData = {
           address: "0x1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t",
           balance: 12453.78,
           availableBalance: 10200.50,
@@ -46,9 +54,27 @@ export const WalletOverview = ({ onDisconnect }: WalletOverviewProps) => {
           performanceToday: 2.34,
           performanceWeek: -1.2,
           performanceMonth: 8.5,
+          type: 'crypto'
         };
         
-        setWalletData(mockWalletData);
+        // Mock wallet data for fiat
+        const mockFiatWallet: WalletData = {
+          address: "US-87654321-ACCT",
+          balance: 5680.42,
+          availableBalance: 5680.42,
+          lockedBalance: 0,
+          currency: "$",
+          lastUpdated: new Date(),
+          performanceToday: 0.01,
+          performanceWeek: 0.04,
+          performanceMonth: 0.15,
+          type: 'fiat'
+        };
+        
+        setWalletData({
+          crypto: mockCryptoWallet,
+          fiat: mockFiatWallet
+        });
       } catch (error) {
         console.error("Error fetching wallet data:", error);
         toast({
@@ -68,16 +94,21 @@ export const WalletOverview = ({ onDisconnect }: WalletOverviewProps) => {
       await new Promise(resolve => setTimeout(resolve, 1200));
       
       // Update with slightly different mock data
-      if (walletData) {
-        const updatedWalletData = {
-          ...walletData,
-          balance: walletData.balance + (Math.random() * 100 - 50),
-          availableBalance: walletData.availableBalance + (Math.random() * 50 - 25),
+      const currentWallet = walletData[activeWalletType];
+      
+      if (currentWallet) {
+        const updatedWallet = {
+          ...currentWallet,
+          balance: currentWallet.balance + (Math.random() * 100 - 50),
+          availableBalance: currentWallet.availableBalance + (Math.random() * 50 - 25),
           lastUpdated: new Date(),
-          performanceToday: walletData.performanceToday + (Math.random() * 0.5 - 0.25),
+          performanceToday: currentWallet.performanceToday + (Math.random() * 0.5 - 0.25),
         };
         
-        setWalletData(updatedWalletData);
+        setWalletData(prev => ({
+          ...prev,
+          [activeWalletType]: updatedWallet
+        }));
         
         toast({
           title: "Wallet Refreshed",
@@ -94,7 +125,10 @@ export const WalletOverview = ({ onDisconnect }: WalletOverviewProps) => {
     }
   };
 
-  if (!walletData) {
+  const currentWallet = walletData[activeWalletType];
+  const isLoading = !walletData.crypto || !walletData.fiat;
+
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -104,32 +138,66 @@ export const WalletOverview = ({ onDisconnect }: WalletOverviewProps) => {
 
   return (
     <div className="space-y-6">
-      <WalletHeader 
-        address={walletData.address}
-        lastUpdated={walletData.lastUpdated}
-        onRefresh={handleRefresh}
-        onDisconnect={onDisconnect}
-      />
-      
-      <WalletBalanceCards 
-        balance={walletData.balance}
-        availableBalance={walletData.availableBalance}
-        lockedBalance={walletData.lockedBalance}
-        performanceToday={walletData.performanceToday}
-        currency={walletData.currency}
-      />
-      
-      <WalletPerformance 
-        performanceToday={walletData.performanceToday}
-        performanceWeek={walletData.performanceWeek}
-        performanceMonth={walletData.performanceMonth}
-      />
-      
-      <WalletBalanceHistory 
-        currency={walletData.currency}
-      />
-      
-      <WalletAssetAllocation />
+      <Tabs 
+        value={activeWalletType} 
+        onValueChange={(value) => setActiveWalletType(value as WalletType)}
+        className="w-full"
+      >
+        <TabsList className="grid grid-cols-2 w-full max-w-md mb-4">
+          <TabsTrigger value="crypto" className="flex items-center gap-2">
+            <Bitcoin className="h-4 w-4" />
+            Crypto Wallet
+          </TabsTrigger>
+          <TabsTrigger value="fiat" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            Fiat Wallet
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="crypto" className="space-y-6">
+          {currentWallet && activeWalletType === 'crypto' && renderWalletContent(currentWallet)}
+        </TabsContent>
+        
+        <TabsContent value="fiat" className="space-y-6">
+          {currentWallet && activeWalletType === 'fiat' && renderWalletContent(currentWallet)}
+        </TabsContent>
+      </Tabs>
     </div>
   );
+  
+  function renderWalletContent(wallet: WalletData) {
+    return (
+      <>
+        <WalletHeader 
+          address={wallet.address}
+          lastUpdated={wallet.lastUpdated}
+          onRefresh={handleRefresh}
+          onDisconnect={onDisconnect}
+          walletType={wallet.type}
+        />
+        
+        <WalletBalanceCards 
+          balance={wallet.balance}
+          availableBalance={wallet.availableBalance}
+          lockedBalance={wallet.lockedBalance}
+          performanceToday={wallet.performanceToday}
+          currency={wallet.currency}
+          walletType={wallet.type}
+        />
+        
+        <WalletPerformance 
+          performanceToday={wallet.performanceToday}
+          performanceWeek={wallet.performanceWeek}
+          performanceMonth={wallet.performanceMonth}
+        />
+        
+        <WalletBalanceHistory 
+          currency={wallet.currency}
+          walletType={wallet.type}
+        />
+        
+        <WalletAssetAllocation walletType={wallet.type} />
+      </>
+    );
+  }
 };

@@ -1,96 +1,104 @@
 
-import { useState } from "react";
-import { Copy, ExternalLink, LogOut, RefreshCw } from "lucide-react";
+import { Wallet, RefreshCw, LogOut, Copy, ExternalLink, CreditCard, Bitcoin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { WalletType } from "../WalletOverview";
 
 interface WalletHeaderProps {
   address: string;
   lastUpdated: Date;
-  onRefresh: () => Promise<void>;
+  onRefresh: () => void;
   onDisconnect: () => void;
+  walletType: WalletType;
 }
 
-export const WalletHeader = ({ 
-  address, 
-  lastUpdated, 
-  onRefresh, 
-  onDisconnect 
+export const WalletHeader = ({
+  address,
+  lastUpdated,
+  onRefresh,
+  onDisconnect,
+  walletType
 }: WalletHeaderProps) => {
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const { toast } = useToast();
-
-  // Format address for display
-  const formatAddress = (address: string) => {
-    if (address.length <= 12) return address;
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(address);
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    
-    toast({
-      title: "Address Copied",
-      description: "Wallet address copied to clipboard",
-    });
+  const getWalletIcon = () => {
+    if (walletType === 'crypto') {
+      return <Bitcoin className="h-5 w-5 mr-2" />;
+    } else {
+      return <CreditCard className="h-5 w-5 mr-2" />;
+    }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await onRefresh();
-    setIsRefreshing(false);
+  const getWalletTitle = () => {
+    if (walletType === 'crypto') {
+      return "Cryptocurrency Wallet";
+    } else {
+      return "Fiat Currency Wallet";
+    }
   };
 
   return (
-    <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-      {/* Wallet Info */}
-      <div className="space-y-2">
-        <div className="flex items-center space-x-2">
-          <div className="text-sm text-muted-foreground">Wallet Address:</div>
-          <div className="flex items-center space-x-2">
-            <span className="font-mono text-sm">{formatAddress(address)}</span>
-            <button 
-              onClick={() => copyToClipboard(address)}
-              className="p-1 rounded-full hover:bg-secondary/50"
-              aria-label="Copy wallet address"
-            >
-              <Copy className="h-3 w-3" />
-            </button>
-            <a 
-              href={`https://etherscan.io/address/${address}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="p-1 rounded-full hover:bg-secondary/50"
-              aria-label="View on blockchain explorer"
-            >
-              <ExternalLink className="h-3 w-3" />
-            </a>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h2 className="text-xl font-bold flex items-center">
+          {getWalletIcon()}
+          {getWalletTitle()}
+        </h2>
+        
+        <div className="flex items-center mt-2 space-x-2">
+          <div className="text-sm text-muted-foreground flex items-center">
+            <span className="hidden sm:inline mr-2">Address:</span>
+            <span className="font-mono text-xs truncate max-w-[180px] sm:max-w-xs">
+              {address}
+            </span>
           </div>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={copyToClipboard}>
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Copy address</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          
+          {walletType === 'crypto' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" 
+                    onClick={() => window.open(`https://etherscan.io/address/${address}`, '_blank')}>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View on blockchain</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
-        <div className="text-xs text-muted-foreground">
-          Last updated: {lastUpdated.toLocaleTimeString()}
+        
+        <div className="text-xs text-muted-foreground mt-1">
+          Last updated: {lastUpdated.toLocaleString()}
         </div>
       </div>
       
-      {/* Actions */}
-      <div className="flex space-x-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="text-xs"
-        >
-          <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+      <div className="flex space-x-2 w-full sm:w-auto justify-end">
+        <Button variant="outline" size="sm" onClick={onRefresh} className="flex items-center">
+          <RefreshCw className="h-4 w-4 mr-1" />
           Refresh
         </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={onDisconnect}
-          className="text-xs text-destructive hover:text-destructive"
-        >
-          <LogOut className="h-3 w-3 mr-1" />
+        
+        <Button variant="outline" size="sm" onClick={onDisconnect} className="flex items-center text-red-500">
+          <LogOut className="h-4 w-4 mr-1" />
           Disconnect
         </Button>
       </div>
