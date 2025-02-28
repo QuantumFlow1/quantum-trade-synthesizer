@@ -38,6 +38,11 @@ const AdminPanelContent = ({
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Create a copy of the current agents array to avoid direct modification
+    const updatedAgents = [...agents];
+    const now = new Date().toISOString();
+    
+    // Check if receptionist exists, if not add it
     const receptionistExists = agents.some(agent => agent.type === "receptionist");
     if (!receptionistExists) {
       const receptionistAgent: Agent = {
@@ -46,8 +51,8 @@ const AdminPanelContent = ({
         status: "active",
         type: "receptionist",
         description: "Geautomatiseerde receptioniste voor het QuantumFlow platform",
-        createdAt: new Date().toISOString(),
-        lastActive: new Date().toISOString(),
+        createdAt: now,
+        lastActive: now,
         tasks: [
           "Verwelkom nieuwe gebruikers en geef platformintroductie",
           "Beantwoord algemene vragen over QuantumFlow functionaliteiten",
@@ -65,16 +70,118 @@ const AdminPanelContent = ({
           tasksCompleted: 0
         }
       };
-      setAgents([...agents, receptionistAgent]);
+      updatedAgents.push(receptionistAgent);
     }
-  }, [agents, setAgents]);
+    
+    // Check if data analyzer exists, if not add it
+    const dataAnalyzerExists = agents.some(agent => agent.type === "analyst" && agent.name.includes("Data Analyzer"));
+    if (!dataAnalyzerExists) {
+      const dataAnalyzerAgent: Agent = {
+        id: "analyst-001",
+        name: "QuantumFlow Data Analyzer",
+        status: "active",
+        type: "analyst",
+        description: "Geavanceerde data-analytische AI voor marktanalyse en patroonherkenning",
+        createdAt: now,
+        lastActive: now,
+        tasks: [
+          "Analyseer marktdata voor handelssignalen",
+          "Identificeer trends en patronen in handelsbewegingen",
+          "Bereken risico-parameters en optimale posities",
+          "Voorspel marktvolatiliteit op basis van historische gegevens",
+          "Genereer periodieke analyses van portefeuilleprestaties",
+          "Identificeer correlaties tussen verschillende markten",
+          "Voer sentimentanalyse uit op nieuws en sociale media",
+          "Creëer gepersonaliseerde marktinzichten voor gebruikers",
+          "Monitor ongewone marktbewegingen en waarschuw indien nodig",
+          "Valideer trading strategieën via backtesting"
+        ],
+        performance: {
+          successRate: 92,
+          tasksCompleted: 145
+        }
+      };
+      updatedAgents.push(dataAnalyzerAgent);
+    }
+    
+    // Check if trader agent exists, if not add it
+    const traderExists = agents.some(agent => agent.type === "trader");
+    if (!traderExists) {
+      const traderAgent: Agent = {
+        id: "trader-001",
+        name: "QuantumFlow Automated Trader",
+        status: "active",
+        type: "trader",
+        description: "Geautomatiseerde handelsassistent voor het uitvoeren van handelstransacties",
+        createdAt: now,
+        lastActive: now,
+        tasks: [
+          "Voer handelstransacties uit op basis van signalen",
+          "Beheer risico's door stop-loss en take-profit niveaus",
+          "Optimaliseer order-routing voor beste uitvoering",
+          "Pas positiegroottes aan op basis van volatiliteit",
+          "Voer dollar-cost-averaging strategie uit",
+          "Implementeer automatische rebalancing",
+          "Monitor open posities en pas aan indien nodig",
+          "Voer grid-trading strategieën uit",
+          "Implementeer arbitrage tussen verschillende markten",
+          "Rapporteer over handelsprestaties"
+        ],
+        performance: {
+          successRate: 88,
+          tasksCompleted: 78
+        }
+      };
+      updatedAgents.push(traderAgent);
+    }
+    
+    // Check if advisor agent exists, if not add it
+    const advisorExists = agents.some(agent => agent.type === "advisor");
+    if (!advisorExists) {
+      const advisorAgent: Agent = {
+        id: "advisor-001",
+        name: "QuantumFlow Financial Advisor",
+        status: "active",
+        type: "advisor",
+        description: "Persoonlijke financiële adviseur voor portefeuilleoptimalisatie",
+        createdAt: now,
+        lastActive: now,
+        tasks: [
+          "Geef gepersonaliseerd beleggingsadvies",
+          "Optimaliseer asset allocatie gebaseerd op risicoprofiel",
+          "Adviseer over diversificatiestrategieën",
+          "Bied tax-loss harvesting aanbevelingen",
+          "Geef inzicht in lange termijn markttrends",
+          "Analyseer rendement versus risico van portefeuille",
+          "Genereer periodieke adviesrapporten",
+          "Pas advies aan op basis van marktsituatie",
+          "Identificeer investeringskansen met hoogste potentieel",
+          "Adviseer over herbalancering van portefeuille"
+        ],
+        performance: {
+          successRate: 91,
+          tasksCompleted: 112
+        }
+      };
+      updatedAgents.push(advisorAgent);
+    }
+    
+    // Only update the agents state if changes were made
+    if (updatedAgents.length !== agents.length) {
+      setAgents(updatedAgents);
+      toast({
+        title: "AI Agenten Bijgewerkt",
+        description: "Alle benodigde AI agenten zijn geïnitialiseerd en actief.",
+      });
+    }
+  }, [agents, setAgents, toast]);
 
   const handleAgentAction = (agentId: string, action: "terminate" | "activate" | "pause") => {
     const updatedAgents = agents.map(agent => {
       if (agent.id === agentId) {
         const newStatus = action === "terminate" ? "terminated" as const : 
                          action === "pause" ? "paused" as const : "active" as const;
-        return { ...agent, status: newStatus };
+        return { ...agent, status: newStatus, lastActive: new Date().toISOString() };
       }
       return agent;
     });
@@ -162,7 +269,7 @@ const AdminPanelContent = ({
           </TabsContent>
 
           <TabsContent value="agents">
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="single" collapsible className="w-full" defaultValue="ai-agents">
               <AccordionItem value="ai-agents">
                 <AccordionTrigger>AI Assistenten</AccordionTrigger>
                 <AccordionContent>
