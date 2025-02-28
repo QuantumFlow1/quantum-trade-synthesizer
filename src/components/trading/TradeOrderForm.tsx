@@ -6,6 +6,7 @@ import { StandardOrderForm } from "./order-form/StandardOrderForm";
 import { AdvancedOrderForm } from "./order-form/AdvancedOrderForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface TradeOrderFormProps {
   apiStatus?: 'checking' | 'available' | 'unavailable';
@@ -23,8 +24,23 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [currentPrice, setCurrentPrice] = useState<number>(42000);
   const [advancedSignal, setAdvancedSignal] = useState<any>(null);
+  const [localApiStatus, setLocalApiStatus] = useState<'checking' | 'available' | 'unavailable'>(apiStatus);
 
   const { toast } = useToast();
+
+  // Update local API status when prop changes
+  useEffect(() => {
+    if (apiStatus !== localApiStatus) {
+      setLocalApiStatus(apiStatus);
+    }
+  }, [apiStatus]);
+
+  // Verify API status if it's checking
+  useEffect(() => {
+    if (localApiStatus === 'checking') {
+      verifyApiStatus();
+    }
+  }, [localApiStatus]);
 
   // Simulate fetching current price
   useEffect(() => {
@@ -37,11 +53,26 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     return () => clearInterval(interval);
   }, [currentPrice]);
 
+  const verifyApiStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('grok3-response', {
+        body: { message: "ping", context: [] }
+      });
+      
+      if (error) throw error;
+      setLocalApiStatus('available');
+      console.log("TradeOrderForm: API is available");
+    } catch (error) {
+      console.error("TradeOrderForm: Failed to verify API status:", error);
+      setLocalApiStatus('unavailable');
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Check if the API is unavailable
-    if (apiStatus !== 'available') {
+    if (localApiStatus !== 'available') {
       toast({
         title: "Trading Niet Beschikbaar",
         description: "Trading services zijn momenteel niet beschikbaar. Probeer het later opnieuw.",
@@ -89,8 +120,8 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     collaboratingAgents: ["TrendAnalyzer", "RiskProfiler", "VolatilityMonitor"]
   };
 
-  const isApiAvailable = apiStatus === 'available';
-  const isApiChecking = apiStatus === 'checking';
+  const isApiAvailable = localApiStatus === 'available';
+  const isApiChecking = localApiStatus === 'checking';
 
   return (
     <Card className="backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
@@ -129,7 +160,7 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
             isSubmitting={isSubmitting}
             stopLossRecommendation={stopLossRecommendation}
             takeProfitRecommendation={takeProfitRecommendation}
-            apiStatus={apiStatus}
+            apiStatus={localApiStatus}
             aiAnalysis={aiAnalysis}
             onOrderTypeChange={setOrderType}
             onOrderExecutionTypeChange={setOrderExecutionType}

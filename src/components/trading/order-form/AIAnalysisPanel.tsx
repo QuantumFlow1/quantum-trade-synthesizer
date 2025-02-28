@@ -1,9 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Brain, TrendingUp, AlertTriangle, Users, Wifi, WifiOff } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
 
 interface AIAnalysisPanelProps {
   aiAnalysis?: {
@@ -21,6 +22,13 @@ interface AIAnalysisPanelProps {
 export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPanelProps) => {
   const { toast } = useToast();
   const [showTips, setShowTips] = useState(false);
+  const [localIsOnline, setLocalIsOnline] = useState<boolean>(isOnline);
+  const [isChecking, setIsChecking] = useState<boolean>(false);
+
+  // Als de prop verandert, werk dan de lokale status bij
+  useEffect(() => {
+    setLocalIsOnline(isOnline);
+  }, [isOnline]);
 
   const defaultAnalysis = {
     confidence: 0,
@@ -38,24 +46,42 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
     setShowTips(!showTips);
   };
 
-  const handleManualUpdate = () => {
+  const handleManualUpdate = async () => {
+    setIsChecking(true);
     toast({
       title: "Handmatige verbinding",
       description: "Proberen te verbinden met de AI service...",
     });
     
-    // Simuleer een vertraging en toon dan een resultaat
-    setTimeout(() => {
+    try {
+      // Controleer de API-verbinding
+      const { data, error } = await supabase.functions.invoke('grok3-response', {
+        body: { message: "ping", context: [] }
+      });
+      
+      if (error) throw error;
+      
+      // Als we hier komen, is de verbinding geslaagd
+      setLocalIsOnline(true);
+      toast({
+        title: "Verbinding geslaagd",
+        description: "De AI analyseservice is nu beschikbaar.",
+      });
+    } catch (error) {
+      console.error("Fout bij verbinden met AI service:", error);
+      setLocalIsOnline(false);
       toast({
         title: "Verbindingsstatus",
         description: "De AI analyseservice is momenteel niet beschikbaar. Controleer de API-status in het beheerdersdashboard.",
         variant: "destructive",
       });
-    }, 1500);
+    } finally {
+      setIsChecking(false);
+    }
   };
 
   // Wanneer de status offline is, toon een alternatieve weergave
-  if (!isOnline) {
+  if (!localIsOnline) {
     return (
       <Card className="p-4 bg-secondary/10 backdrop-blur-xl border border-white/10">
         <div className="flex items-center justify-between mb-4">
@@ -103,8 +129,9 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
             size="sm" 
             className="w-full" 
             onClick={handleManualUpdate}
+            disabled={isChecking}
           >
-            Probeer opnieuw te verbinden
+            {isChecking ? "Verbinding controleren..." : "Probeer opnieuw te verbinden"}
           </Button>
         </div>
       </Card>

@@ -7,6 +7,7 @@ import { AIAdvicePanel } from "@/components/dashboard/AIAdvicePanel";
 import UserSentimentAnalysis from "@/components/user/UserSentimentAnalysis";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 interface OverviewPageProps {
   apiStatus: 'checking' | 'available' | 'unavailable';
@@ -14,6 +15,7 @@ interface OverviewPageProps {
 
 export const OverviewPage = ({ apiStatus }: OverviewPageProps) => {
   const [localApiStatus, setLocalApiStatus] = useState<'checking' | 'available' | 'unavailable'>(apiStatus);
+  const { setApiStatus } = useDashboard();
 
   // Effect to check API availability when component mounts
   useEffect(() => {
@@ -26,15 +28,22 @@ export const OverviewPage = ({ apiStatus }: OverviewPageProps) => {
 
   const checkApiStatus = async () => {
     try {
+      setLocalApiStatus('checking');
       const { data, error } = await supabase.functions.invoke('grok3-response', {
         body: { message: "ping", context: [] }
       });
       
       if (error) throw error;
-      setLocalApiStatus('available');
+      const newStatus = 'available';
+      setLocalApiStatus(newStatus);
+      setApiStatus(newStatus); // Update global context state
+      console.log("API is available");
     } catch (error) {
       console.error("Failed to verify API status:", error);
-      setLocalApiStatus('unavailable');
+      const newStatus = 'unavailable';
+      setLocalApiStatus(newStatus);
+      setApiStatus(newStatus); // Update global context state
+      console.log("API is unavailable");
     }
   };
 
