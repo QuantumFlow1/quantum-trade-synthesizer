@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from "react";
-import { Brain, TrendingUp, AlertTriangle, Users, Wifi, WifiOff } from "lucide-react";
+import { Brain, TrendingUp, AlertTriangle, Users, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { fetchAdminApiKey } from "@/components/chat/services/utils/apiHelpers";
 
 interface AIAnalysisPanelProps {
   aiAnalysis?: {
@@ -30,6 +31,13 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
     setLocalIsOnline(isOnline);
   }, [isOnline]);
 
+  // Bij het laden van de component, controleer de status als die nog niet is ingesteld
+  useEffect(() => {
+    if (!isOnline) {
+      checkAPIAvailability();
+    }
+  }, []);
+
   const defaultAnalysis = {
     confidence: 0,
     riskLevel: "Onbekend",
@@ -46,6 +54,54 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
     setShowTips(!showTips);
   };
 
+  // Controleert of er API sleutels beschikbaar zijn
+  const checkAPIAvailability = async () => {
+    try {
+      // Controleer of er admin API keys beschikbaar zijn
+      const hasOpenAI = await fetchAdminApiKey('openai');
+      const hasClaude = await fetchAdminApiKey('claude');
+      const hasGemini = await fetchAdminApiKey('gemini');
+      const hasDeepseek = await fetchAdminApiKey('deepseek');
+      
+      // Controleer of er user API keys in localStorage staan
+      const openaiKey = localStorage.getItem('openaiApiKey');
+      const claudeKey = localStorage.getItem('claudeApiKey');
+      const geminiKey = localStorage.getItem('geminiApiKey');
+      const deepseekKey = localStorage.getItem('deepseekApiKey');
+      
+      // Als er ten minste één key beschikbaar is, dan kunnen we doorgaan
+      const hasAnyKey = !!(hasOpenAI || hasClaude || hasGemini || hasDeepseek || 
+                          openaiKey || claudeKey || geminiKey || deepseekKey);
+                          
+      console.log("API sleutels beschikbaarheidscontrole:", {
+        adminKeys: {
+          openai: !!hasOpenAI,
+          claude: !!hasClaude,
+          gemini: !!hasGemini,
+          deepseek: !!hasDeepseek
+        },
+        localStorageKeys: {
+          openai: !!openaiKey,
+          claude: !!claudeKey,
+          gemini: !!geminiKey,
+          deepseek: !!deepseekKey
+        },
+        hasAnyKey
+      });
+      
+      if (!hasAnyKey) {
+        console.log("Geen API sleutels beschikbaar");
+        setLocalIsOnline(false);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Fout bij controleren API sleutels:", error);
+      return false;
+    }
+  };
+
   const handleManualUpdate = async () => {
     setIsChecking(true);
     toast({
@@ -54,6 +110,13 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
     });
     
     try {
+      // Controleer eerst of er überhaupt API sleutels beschikbaar zijn
+      const hasKeys = await checkAPIAvailability();
+      
+      if (!hasKeys) {
+        throw new Error("Geen API sleutels geconfigureerd");
+      }
+      
       // Controleer de API-verbinding
       const { data, error } = await supabase.functions.invoke('grok3-response', {
         body: { message: "ping", context: [] }
@@ -70,9 +133,16 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
     } catch (error) {
       console.error("Fout bij verbinden met AI service:", error);
       setLocalIsOnline(false);
+      
+      let errorMessage = "De AI analyseservice is momenteel niet beschikbaar.";
+      
+      if (error.message && error.message.includes("API sleutels")) {
+        errorMessage = "Er zijn geen API sleutels geconfigureerd. Voeg deze toe via het admin paneel of in uw persoonlijke instellingen.";
+      }
+      
       toast({
         title: "Verbindingsstatus",
-        description: "De AI analyseservice is momenteel niet beschikbaar. Controleer de API-status in het beheerdersdashboard.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -97,7 +167,7 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
         
         <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-md mb-4">
           <p className="text-sm text-muted-foreground">
-            De AI analyseservice is momenteel niet beschikbaar. Dit kan komen door een ongeldige API sleutel of een tijdelijke onderbreking van de service.
+            De AI analyseservice is momenteel niet beschikbaar. Dit kan komen door een ontbrekende API sleutel of een tijdelijke onderbreking van de service.
           </p>
         </div>
 
@@ -131,7 +201,17 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
             onClick={handleManualUpdate}
             disabled={isChecking}
           >
-            {isChecking ? "Verbinding controleren..." : "Probeer opnieuw te verbinden"}
+            {isChecking ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Verbinding controleren...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Probeer opnieuw te verbinden
+              </>
+            )}
           </Button>
         </div>
       </Card>
