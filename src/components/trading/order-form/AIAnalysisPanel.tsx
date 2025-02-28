@@ -40,10 +40,18 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
 
   const handleManualUpdate = () => {
     toast({
-      title: "AI Service Offline",
-      description: "De AI analyseservice is momenteel niet beschikbaar. Controleer uw API sleutel of probeer het later opnieuw.",
-      variant: "destructive",
+      title: "Handmatige verbinding",
+      description: "Proberen te verbinden met de AI service...",
     });
+    
+    // Simuleer een vertraging en toon dan een resultaat
+    setTimeout(() => {
+      toast({
+        title: "Verbindingsstatus",
+        description: "De AI analyseservice is momenteel niet beschikbaar. Controleer de API-status in het beheerdersdashboard.",
+        variant: "destructive",
+      });
+    }, 1500);
   };
 
   // Wanneer de status offline is, toon een alternatieve weergave

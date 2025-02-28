@@ -2,7 +2,7 @@
 import { Agent } from "@/types/agent";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, XCircle, Activity } from "lucide-react";
+import { Play, Pause, XCircle, Activity, WifiOff, Wifi } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface AIAgentCardProps {
@@ -39,13 +39,13 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
       case "paused":
         return (
           <Badge variant="default" className="bg-amber-500/20 text-amber-500 border border-amber-500/50">
-            Gepauzeerd
+            <Pause className="h-3 w-3 mr-1" /> Gepauzeerd
           </Badge>
         );
       case "terminated":
         return (
           <Badge variant="default" className="bg-red-500/20 text-red-500 border border-red-500/50">
-            Beëindigd
+            <WifiOff className="h-3 w-3 mr-1" /> Beëindigd
           </Badge>
         );
       default:
@@ -70,7 +70,7 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
   };
 
   return (
-    <Card className="bg-secondary/30 backdrop-blur-sm border-secondary/50 hover:border-secondary/80 transition-all duration-300">
+    <Card className={`bg-secondary/30 backdrop-blur-sm border-secondary/50 hover:border-secondary/80 transition-all duration-300 ${agent.status === "terminated" ? "opacity-70" : ""}`}>
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
           <span className="flex items-center gap-2">
@@ -151,8 +151,18 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
               </ul>
             </div>
           )}
-          <div className="text-xs text-muted-foreground mt-3">
-            Laatst actief: {formatDate(agent.lastActive)}
+          <div className="text-xs text-muted-foreground mt-3 flex items-center justify-between">
+            <span>
+              Laatst actief: {formatDate(agent.lastActive)}
+            </span>
+            <span className="flex items-center">
+              {agent.status === "active" ? (
+                <Wifi className="h-3 w-3 text-green-500 mr-1" />
+              ) : (
+                <WifiOff className="h-3 w-3 text-red-500 mr-1" />
+              )}
+              {agent.status === "active" ? "Online" : "Offline"}
+            </span>
           </div>
         </div>
       </CardContent>

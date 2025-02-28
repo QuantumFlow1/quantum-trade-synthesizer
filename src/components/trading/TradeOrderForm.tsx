@@ -43,8 +43,8 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     // Check if the API is unavailable
     if (apiStatus !== 'available') {
       toast({
-        title: "Trading Unavailable",
-        description: "Trading services are currently unavailable. Please try again later.",
+        title: "Trading Niet Beschikbaar",
+        description: "Trading services zijn momenteel niet beschikbaar. Probeer het later opnieuw.",
         variant: "destructive",
       });
       return;
@@ -55,8 +55,8 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     // Simulate API delay
     setTimeout(() => {
       toast({
-        title: "Order Placed",
-        description: `Your ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} order for ${amount} BTC has been successfully placed.`,
+        title: "Order Geplaatst",
+        description: `Uw ${orderType === "buy" ? "KOOP" : "VERKOOP"} ${orderExecutionType.toUpperCase()} order voor ${amount} BTC is succesvol geplaatst.`,
       });
       setIsSubmitting(false);
     }, 1500);
@@ -97,23 +97,23 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
       {isApiChecking && (
         <div className="mb-4 p-2 bg-blue-500/10 rounded-md flex items-center text-sm text-muted-foreground">
           <AlertCircle className="h-4 w-4 mr-2 text-blue-500" />
-          Checking connection to trading services...
+          Controleren van verbinding met trading services...
         </div>
       )}
       
       {!isApiAvailable && !isApiChecking && (
         <div className="mb-4 p-2 bg-red-500/10 rounded-md flex items-center text-sm text-muted-foreground">
           <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-          Trading services unavailable. You can view the interface but cannot place orders.
+          Trading services niet beschikbaar. U kunt de interface bekijken maar geen orders plaatsen.
         </div>
       )}
       
       <Tabs defaultValue="standard" onValueChange={setOrderMode}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Order Form</h2>
+          <h2 className="text-xl font-bold">Order Formulier</h2>
           <TabsList>
-            <TabsTrigger value="standard">Standard</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
+            <TabsTrigger value="standard">Standaard</TabsTrigger>
+            <TabsTrigger value="advanced">Geavanceerd</TabsTrigger>
           </TabsList>
         </div>
 
