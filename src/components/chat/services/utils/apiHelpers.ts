@@ -1,178 +1,111 @@
 
-import { toast } from '@/components/ui/use-toast';
-import { GrokSettings, ModelId } from '../../types/GrokSettings';
-import { supabase } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
+import { ApiKeySettings, ModelId } from "../../types/GrokSettings";
 
-// Check if we're in admin context
-export const isAdminContext = () => {
-  return typeof window !== 'undefined' && 
-    (window.location.pathname.includes('/admin') || 
-     window.sessionStorage.getItem('disable-chat-services') === 'true');
+/**
+ * Check if the current execution context is an admin context
+ */
+export const isAdminContext = (): boolean => {
+  // Check if we're in an admin context (e.g. a dashboard or admin page)
+  // This is determined by checking the URL
+  return window.location.pathname.includes('/admin') || 
+         window.location.pathname.includes('/dashboard');
 };
 
-// Fetch an admin-managed API key of a given type
-export const fetchAdminApiKey = async (keyType: string): Promise<string | null> => {
+/**
+ * Check if a service is available
+ */
+export const checkServiceAvailability = async (service: string): Promise<boolean> => {
   try {
-    const { data, error } = await supabase
-      .from('admin_api_keys')
-      .select('api_key')
-      .eq('key_type', keyType)
-      .eq('is_active', true)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .single();
+    // Use a lightweight ping to check if the service is available
+    const { data, error } = await supabase.functions.invoke(`${service}-ping`, {
+      body: { test: true }
+    });
     
     if (error) {
-      console.log('No admin API key found or error fetching:', error.message);
+      console.error(`${service} service availability check failed:`, error);
+      return false;
+    }
+    
+    return data?.available === true;
+  } catch (error) {
+    console.error(`Error checking ${service} availability:`, error);
+    return false;
+  }
+};
+
+/**
+ * Get API key with fallback to admin keys
+ */
+export const getApiKey = async (
+  provider: 'openai' | 'claude' | 'gemini' | 'deepseek',
+  userProvidedKey?: string
+): Promise<string | null> => {
+  // First try to use the user-provided key
+  if (userProvidedKey) {
+    return userProvidedKey;
+  }
+  
+  // Then try localStorage
+  const localStorageKey = localStorage.getItem(`${provider}ApiKey`);
+  if (localStorageKey) {
+    console.log(`Using ${provider} API key from localStorage`);
+    return localStorageKey;
+  }
+  
+  // Finally try to fetch an admin key
+  return await fetchAdminApiKey(provider);
+};
+
+/**
+ * Fetch an admin API key from Supabase
+ */
+export const fetchAdminApiKey = async (
+  provider: 'openai' | 'claude' | 'gemini' | 'deepseek'
+): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('get-admin-key', {
+      body: { provider }
+    });
+    
+    if (error) {
+      console.error(`Error fetching admin ${provider} API key:`, error);
       return null;
     }
     
-    return data?.api_key || null;
+    if (data?.key) {
+      console.log(`Using admin ${provider} API key`);
+      return data.key;
+    }
+    
+    return null;
   } catch (error) {
-    console.error('Error fetching admin API key:', error);
+    console.error(`Error in fetchAdminApiKey for ${provider}:`, error);
     return null;
   }
 };
 
-// Check if the required API key is available for a given model
-export const hasRequiredApiKey = async (modelId: ModelId, settings: GrokSettings): Promise<boolean> => {
-  // Early return if in admin context
-  if (isAdminContext()) {
-    return false;
-  }
-
-  const { apiKeys } = settings;
-  
-  // Log the available API keys (masked for security)
-  console.log('Checking for required API key:', {
-    model: modelId,
-    openaiKeyAvailable: apiKeys.openaiApiKey ? 'Yes' : 'No',
-    claudeKeyAvailable: apiKeys.claudeApiKey ? 'Yes' : 'No',
-    geminiKeyAvailable: apiKeys.geminiApiKey ? 'Yes' : 'No',
-    deepseekKeyAvailable: apiKeys.deepseekApiKey ? 'Yes' : 'No'
-  });
-  
-  // Also check localStorage directly as a backup
-  const openaiKeyInStorage = localStorage.getItem('openaiApiKey');
-  const claudeKeyInStorage = localStorage.getItem('claudeApiKey');
-  const geminiKeyInStorage = localStorage.getItem('geminiApiKey');
-  const deepseekKeyInStorage = localStorage.getItem('deepseekApiKey');
-  
-  console.log('API keys in localStorage:', {
-    openai: openaiKeyInStorage ? 'present' : 'not found',
-    claude: claudeKeyInStorage ? 'present' : 'not found',
-    gemini: geminiKeyInStorage ? 'present' : 'not found',
-    deepseek: deepseekKeyInStorage ? 'present' : 'not found'
-  });
-  
-  // Check for admin-managed API keys
-  let adminOpenaiKey = null;
-  let adminClaudeKey = null;
-  let adminGeminiKey = null;
-  let adminDeepseekKey = null;
-  
-  try {
-    // Only fetch admin keys for the needed model to reduce database calls
-    switch (modelId) {
-      case 'openai':
-      case 'gpt-4':
-      case 'gpt-3.5-turbo':
-        adminOpenaiKey = await fetchAdminApiKey('openai');
-        break;
-      case 'claude':
-      case 'claude-3-haiku':
-      case 'claude-3-sonnet':
-      case 'claude-3-opus':
-        adminClaudeKey = await fetchAdminApiKey('claude');
-        break;
-      case 'gemini':
-      case 'gemini-pro':
-        adminGeminiKey = await fetchAdminApiKey('gemini');
-        break;
-      case 'deepseek':
-      case 'deepseek-chat':
-        adminDeepseekKey = await fetchAdminApiKey('deepseek');
-        break;
-    }
-    
-    console.log('Admin API keys available:', {
-      openai: adminOpenaiKey ? 'present' : 'not found',
-      claude: adminClaudeKey ? 'present' : 'not found',
-      gemini: adminGeminiKey ? 'present' : 'not found',
-      deepseek: adminDeepseekKey ? 'present' : 'not found'
-    });
-  } catch (error) {
-    console.error('Error checking admin API keys:', error);
-  }
-  
-  // Use either the settings object, localStorage, or admin key as a fallback
-  switch (modelId) {
+/**
+ * Check if the required API key is available
+ */
+export const hasRequiredApiKey = (model: ModelId, settings: { apiKeys: ApiKeySettings }): boolean => {
+  switch (model) {
     case 'openai':
     case 'gpt-4':
     case 'gpt-3.5-turbo':
-      return !!(apiKeys.openaiApiKey || openaiKeyInStorage || adminOpenaiKey);
+      return !!settings.apiKeys.openaiApiKey || !!localStorage.getItem('openaiApiKey');
     case 'claude':
     case 'claude-3-haiku':
     case 'claude-3-sonnet':
     case 'claude-3-opus':
-      return !!(apiKeys.claudeApiKey || claudeKeyInStorage || adminClaudeKey);
+      return !!settings.apiKeys.claudeApiKey || !!localStorage.getItem('claudeApiKey');
     case 'gemini':
     case 'gemini-pro':
-      return !!(apiKeys.geminiApiKey || geminiKeyInStorage || adminGeminiKey);
+      return !!settings.apiKeys.geminiApiKey || !!localStorage.getItem('geminiApiKey');
     case 'deepseek':
     case 'deepseek-chat':
-      return !!(apiKeys.deepseekApiKey || deepseekKeyInStorage || adminDeepseekKey);
-    case 'grok3':
-      return true; // Grok3 doesn't require an API key in this implementation
+      return !!settings.apiKeys.deepseekApiKey || !!localStorage.getItem('deepseekApiKey');
     default:
-      return false;
+      return true; // No key required for default model (grok3)
   }
-};
-
-// Get the best available API key for a given model type
-export const getApiKey = async (keyType: string, userKey?: string): Promise<string | null> => {
-  // Priority:
-  // 1. User provided key in the function call (from settings)
-  // 2. User's localStorage key
-  // 3. Admin-managed key
-  
-  // Check user-provided key first
-  if (userKey) {
-    return userKey;
-  }
-  
-  // Then check localStorage
-  const localStorageKey = localStorage.getItem(`${keyType}ApiKey`);
-  if (localStorageKey) {
-    return localStorageKey;
-  }
-  
-  // Finally, check for admin-managed key
-  return await fetchAdminApiKey(keyType);
-};
-
-// Helper function to check if a service might be temporarily unavailable
-export const checkServiceAvailability = async (serviceName: string): Promise<boolean> => {
-  if (serviceName === 'deepseek') {
-    try {
-      const { error } = await supabase.functions.invoke('deepseek-response', {
-        body: { 
-          message: "system: ping test",
-          context: [],
-          model: "deepseek-chat",
-          maxTokens: 10,
-          temperature: 0.7,
-          apiKey: "test-key" // Just for checking if the function exists
-        }
-      });
-      
-      // We expect an API key error, but not a function unavailable error
-      return !error || error.message.includes('API key');
-    } catch {
-      return false;
-    }
-  }
-  
-  // Default to assuming the service is available for other services
-  return true;
 };

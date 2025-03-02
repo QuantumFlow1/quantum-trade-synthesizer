@@ -3,16 +3,21 @@ import { MessageSquare } from 'lucide-react';
 
 export function ClaudeEmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-500">
-      <MessageSquare className="h-16 w-16 text-green-400 mb-4 opacity-50" />
-      <h3 className="text-lg font-medium mb-2">Claude AI Chat</h3>
-      <p className="max-w-md">
-        Start a conversation with Claude, an AI assistant developed by Anthropic.
-        Claude is designed to be helpful, harmless, and honest.
+    <div className="flex flex-col items-center justify-center h-full text-center p-6 text-muted-foreground">
+      <MessageSquare className="h-16 w-16 mb-4 text-green-500/20" />
+      <h3 className="text-lg font-medium mb-2">Claude Chat</h3>
+      <p className="mb-4">
+        Start chatting with Claude, an AI assistant created by Anthropic.
       </p>
-      <p className="mt-2 text-sm">
-        You'll need to provide your Claude API key in the settings before you can start chatting.
-      </p>
+      <div className="text-sm space-y-2 max-w-md">
+        <p>Try asking Claude about:</p>
+        <ul className="space-y-1">
+          <li>• Complex reasoning tasks</li>
+          <li>• Creative writing and content generation</li>
+          <li>• Detailed explanations of difficult concepts</li>
+          <li>• Code assistance and debugging</li>
+        </ul>
+      </div>
     </div>
   );
 }

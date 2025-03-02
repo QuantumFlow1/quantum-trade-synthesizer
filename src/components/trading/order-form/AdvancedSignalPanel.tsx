@@ -36,6 +36,20 @@ export const AdvancedSignalPanel = ({
       return;
     }
     
+    // Check if any API keys are available
+    const openaiKey = localStorage.getItem('openaiApiKey');
+    const claudeKey = localStorage.getItem('claudeApiKey');
+    const geminiKey = localStorage.getItem('geminiApiKey');
+    
+    if (!openaiKey && !claudeKey && !geminiKey) {
+      toast({
+        title: "Geen API sleutels",
+        description: "Stel ten minste één API sleutel in om geavanceerde signalen te genereren.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('grok3-response', {

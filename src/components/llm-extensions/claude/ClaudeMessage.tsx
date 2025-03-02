@@ -1,5 +1,5 @@
 
-import { User, MessageSquare } from 'lucide-react';
+import { User, Bot } from 'lucide-react';
 import { Message } from '../deepseek/types';
 
 interface ClaudeMessageProps {
@@ -7,43 +7,39 @@ interface ClaudeMessageProps {
 }
 
 export function ClaudeMessage({ message }: ClaudeMessageProps) {
-  console.log('Rendering Claude message:', message);
-
-  // Make sure timestamp is a Date object
-  const timestamp = message.timestamp instanceof Date 
-    ? message.timestamp 
-    : new Date(message.timestamp);
-    
-  // Process message content for proper rendering
-  const messageContent = message.content?.replace(/\n/g, '<br>') || '';
-    
+  const isUser = message.role === 'user';
+  
+  const formatTimestamp = (date: Date) => {
+    return new Date(date).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+  
   return (
-    <div 
-      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} w-full fade-in`}
-      data-message-id={message.id}
-    >
+    <div className={`flex gap-3 ${isUser ? 'items-end' : 'items-start'}`}>
       <div 
-        className={`rounded-lg px-4 py-2 max-w-[85%] flex hover-lift ${
-          message.role === 'user' 
-            ? 'bg-green-600 text-white border-0' 
-            : 'bg-secondary border-0'
+        className={`flex items-center justify-center rounded-full h-8 w-8 ${
+          isUser ? 'bg-primary/10' : 'bg-green-500/10'
         }`}
       >
-        <div className={`mr-2 mt-1 ${message.role === 'user' ? 'text-white' : 'text-green-600'}`}>
-          {message.role === 'user' ? (
-            <User className="w-4 h-4" />
-          ) : (
-            <MessageSquare className="w-4 h-4" />
-          )}
-        </div>
-        <div className="flex-1">
-          <p 
-            className="text-sm break-words"
-            dangerouslySetInnerHTML={{ __html: messageContent }} 
-          />
-          <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-green-200' : 'text-gray-400'}`}>
-            {timestamp.toLocaleTimeString()}
-          </p>
+        {isUser ? (
+          <User className="h-4 w-4 text-primary" />
+        ) : (
+          <Bot className="h-4 w-4 text-green-500" />
+        )}
+      </div>
+      
+      <div 
+        className={`rounded-lg p-3 flex-1 ${
+          isUser 
+            ? 'bg-primary text-primary-foreground' 
+            : 'bg-muted text-muted-foreground'
+        }`}
+      >
+        <div className="whitespace-pre-wrap">{message.content}</div>
+        <div className="text-xs opacity-70 mt-1 text-right">
+          {message.timestamp ? formatTimestamp(message.timestamp) : ''}
         </div>
       </div>
     </div>
