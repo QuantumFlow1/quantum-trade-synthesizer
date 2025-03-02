@@ -152,12 +152,17 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
-    if (!open) {
-      // Reset form values if dialog is closed without saving
-      setOpenaiKey(apiKeys.openaiApiKey || '');
-      setClaudeKey(apiKeys.claudeApiKey || '');
-      setGeminiKey(apiKeys.geminiApiKey || '');
-      setDeepseekKey(apiKeys.deepseekApiKey || '');
+    if (open) {
+      // Ensure the form values are up-to-date with the latest from localStorage when opening
+      const openKey = localStorage.getItem('openaiApiKey') || '';
+      const claudeKey = localStorage.getItem('claudeApiKey') || '';
+      const geminiKey = localStorage.getItem('geminiApiKey') || '';
+      const deepKey = localStorage.getItem('deepseekApiKey') || '';
+      
+      setOpenaiKey(openKey);
+      setClaudeKey(claudeKey);
+      setGeminiKey(geminiKey);
+      setDeepseekKey(deepKey);
     }
   };
 
@@ -248,7 +253,7 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
                 type="password" 
                 value={geminiKey} 
                 onChange={e => setGeminiKey(e.target.value)} 
-                placeholder="AIzaSy..." 
+                placeholder="AIza..." 
               />
               <p className="text-xs text-gray-500">Vereist voor Gemini Pro</p>
             </div>

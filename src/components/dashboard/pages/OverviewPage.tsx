@@ -37,7 +37,17 @@ export const OverviewPage = ({ apiStatus }: OverviewPageProps) => {
     };
     
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    
+    // Also check for any localStorage changes directly in this window
+    window.addEventListener('localStorage-changed', () => {
+      console.log('localStorage-changed event triggered, rechecking API status');
+      checkApiStatus();
+    });
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('localStorage-changed', checkApiStatus);
+    };
   }, [apiStatus]);
 
   const checkApiStatus = async () => {

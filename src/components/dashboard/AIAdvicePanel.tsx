@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Brain, AlertCircle, WifiOff, Wifi, RefreshCw, Key } from "lucide-react";
@@ -51,6 +52,10 @@ export function AIAdvicePanel({ apiStatus = 'checking', isCheckingKeys = false, 
     if (apiStatus === 'available') {
       fetchAdvice();
     }
+
+    // Add listener for localStorage changes
+    window.addEventListener('storage', loadKeys);
+    return () => window.removeEventListener('storage', loadKeys);
   }, [apiStatus]);
 
   const fetchAdvice = async () => {

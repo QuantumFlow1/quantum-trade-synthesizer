@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,19 @@ interface ClaudeSettingsProps {
 
 export function ClaudeSettings({ apiKey, setApiKey, onClose }: ClaudeSettingsProps) {
   const [inputKey, setInputKey] = useState(apiKey);
+  
+  useEffect(() => {
+    // Load API key from localStorage if not already set in props
+    if (!apiKey) {
+      const savedKey = localStorage.getItem('claudeApiKey') || '';
+      if (savedKey) {
+        setInputKey(savedKey);
+        setApiKey(savedKey);
+      }
+    } else {
+      setInputKey(apiKey);
+    }
+  }, [apiKey, setApiKey]);
 
   const saveSettings = () => {
     if (!inputKey.trim()) {
@@ -26,6 +39,9 @@ export function ClaudeSettings({ apiKey, setApiKey, onClose }: ClaudeSettingsPro
 
     setApiKey(inputKey);
     localStorage.setItem('claudeApiKey', inputKey);
+    
+    // Dispatch a custom event to notify other components of the change
+    window.dispatchEvent(new Event('localStorage-changed'));
     
     toast({
       title: "Settings saved",
