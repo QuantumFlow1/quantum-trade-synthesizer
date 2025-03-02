@@ -1,0 +1,119 @@
+
+import { ApiKeySettings, ModelInfo } from '../types/GrokSettings';
+import { toast } from '@/hooks/use-toast';
+
+/**
+ * Validates an API key based on its type
+ */
+export const validateApiKey = (key: string, type: string): boolean => {
+  if (!key) return true; // Empty key is valid (just not set)
+  
+  // Check if key has proper format based on provider
+  if (type === 'openai' && !key.startsWith('sk-')) {
+    toast({
+      title: "Invalid OpenAI API Key",
+      description: "OpenAI API keys should start with 'sk-'",
+      variant: "destructive"
+    });
+    return false;
+  }
+  
+  if (type === 'claude' && !key.startsWith('sk-ant-')) {
+    toast({
+      title: "Invalid Claude API Key",
+      description: "Claude API keys should start with 'sk-ant-'",
+      variant: "destructive"
+    });
+    return false;
+  }
+  
+  if (type === 'gemini' && !key.startsWith('AIza')) {
+    toast({
+      title: "Invalid Gemini API Key",
+      description: "Gemini API keys typically start with 'AIza'",
+      variant: "destructive"
+    });
+    return false;
+  }
+  
+  return true;
+};
+
+/**
+ * Saves API keys to localStorage and returns updated ApiKeySettings
+ */
+export const saveApiKeys = (
+  openaiKey: string, 
+  claudeKey: string, 
+  geminiKey: string, 
+  deepseekKey: string
+): ApiKeySettings => {
+  const updatedKeys: ApiKeySettings = {
+    openaiApiKey: openaiKey.trim(),
+    claudeApiKey: claudeKey.trim(),
+    geminiApiKey: geminiKey.trim(),
+    deepseekApiKey: deepseekKey.trim()
+  };
+  
+  // Save to localStorage
+  if (updatedKeys.openaiApiKey) localStorage.setItem('openaiApiKey', updatedKeys.openaiApiKey);
+  if (updatedKeys.claudeApiKey) localStorage.setItem('claudeApiKey', updatedKeys.claudeApiKey);
+  if (updatedKeys.geminiApiKey) localStorage.setItem('geminiApiKey', updatedKeys.geminiApiKey);
+  if (updatedKeys.deepseekApiKey) localStorage.setItem('deepseekApiKey', updatedKeys.deepseekApiKey);
+  
+  console.log('Saved API keys to localStorage:', {
+    openai: updatedKeys.openaiApiKey ? 'present' : 'not set',
+    claude: updatedKeys.claudeApiKey ? 'present' : 'not set',
+    gemini: updatedKeys.geminiApiKey ? 'present' : 'not set',
+    deepseek: updatedKeys.deepseekApiKey ? 'present' : 'not set'
+  });
+  
+  return updatedKeys;
+};
+
+/**
+ * Checks if the current model has a required API key set
+ */
+export const hasCurrentModelKey = (
+  selectedModel: ModelInfo | undefined,
+  apiKeys: ApiKeySettings
+): boolean => {
+  if (!selectedModel) return false;
+  
+  switch (selectedModel.id) {
+    case 'openai':
+    case 'gpt-4':
+    case 'gpt-3.5-turbo':
+      return !!apiKeys.openaiApiKey;
+    case 'claude':
+    case 'claude-3-haiku':
+    case 'claude-3-sonnet':
+    case 'claude-3-opus':
+      return !!apiKeys.claudeApiKey;
+    case 'gemini':
+    case 'gemini-pro':
+      return !!apiKeys.geminiApiKey;
+    case 'deepseek':
+    case 'deepseek-chat':
+      return !!apiKeys.deepseekApiKey;
+    default:
+      return true;
+  }
+};
+
+/**
+ * Loads API keys from localStorage
+ */
+export const loadApiKeysFromStorage = (): ApiKeySettings => {
+  const savedOpenAIKey = localStorage.getItem('openaiApiKey') || '';
+  const savedClaudeKey = localStorage.getItem('claudeApiKey') || '';
+  const savedGeminiKey = localStorage.getItem('geminiApiKey') || '';
+  const savedDeepseekKey = localStorage.getItem('deepseekApiKey') || '';
+  
+  return {
+    openaiApiKey: savedOpenAIKey,
+    claudeApiKey: savedClaudeKey,
+    geminiApiKey: savedGeminiKey,
+    deepseekApiKey: savedDeepseekKey
+  };
+};
