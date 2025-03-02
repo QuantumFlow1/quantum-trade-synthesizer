@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Brain, AlertCircle, WifiOff, Wifi, RefreshCw, Key } from "lucide-react";
@@ -28,21 +27,27 @@ export function AIAdvicePanel({ apiStatus = 'checking', isCheckingKeys = false, 
   // Load saved API keys on component mount
   useEffect(() => {
     const loadKeys = () => {
-      const savedOpenAI = localStorage.getItem('openaiApiKey');
-      const savedClaude = localStorage.getItem('claudeApiKey');
-      const savedGemini = localStorage.getItem('geminiApiKey');
-      const savedDeepseek = localStorage.getItem('deepseekApiKey');
+      const savedOpenAI = localStorage.getItem('openaiApiKey') || '';
+      const savedClaude = localStorage.getItem('claudeApiKey') || '';
+      const savedGemini = localStorage.getItem('geminiApiKey') || '';
+      const savedDeepseek = localStorage.getItem('deepseekApiKey') || '';
       
-      if (savedOpenAI) setOpenaiKey(savedOpenAI);
-      if (savedClaude) setClaudeKey(savedClaude);
-      if (savedGemini) setGeminiKey(savedGemini);
-      if (savedDeepseek) setDeepseekKey(savedDeepseek);
+      console.log('Loading API keys from localStorage:', {
+        openai: savedOpenAI ? 'present' : 'not found',
+        claude: savedClaude ? 'present' : 'not found',
+        gemini: savedGemini ? 'present' : 'not found',
+        deepseek: savedDeepseek ? 'present' : 'not found'
+      });
+      
+      setOpenaiKey(savedOpenAI);
+      setClaudeKey(savedClaude);
+      setGeminiKey(savedGemini);
+      setDeepseekKey(savedDeepseek);
     };
     
     loadKeys();
-  }, []);
-  
-  useEffect(() => {
+    
+    // Also load advice if API is available
     if (apiStatus === 'available') {
       fetchAdvice();
     }
@@ -85,10 +90,17 @@ export function AIAdvicePanel({ apiStatus = 'checking', isCheckingKeys = false, 
   };
   
   const saveApiKeys = () => {
-    if (openaiKey) localStorage.setItem('openaiApiKey', openaiKey);
-    if (claudeKey) localStorage.setItem('claudeApiKey', claudeKey);
-    if (geminiKey) localStorage.setItem('geminiApiKey', geminiKey);
-    if (deepseekKey) localStorage.setItem('deepseekApiKey', deepseekKey);
+    if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
+    if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
+    if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
+    if (deepseekKey.trim()) localStorage.setItem('deepseekApiKey', deepseekKey.trim());
+    
+    console.log('Saved API keys to localStorage:', {
+      openai: openaiKey ? 'present' : 'not set',
+      claude: claudeKey ? 'present' : 'not set',
+      gemini: geminiKey ? 'present' : 'not set',
+      deepseek: deepseekKey ? 'present' : 'not set'
+    });
     
     toast({
       title: "API sleutels opgeslagen",

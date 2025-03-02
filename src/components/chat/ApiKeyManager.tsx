@@ -23,19 +23,19 @@ interface ApiKeyManagerProps {
 
 export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKeyManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [openaiKey, setOpenaiKey] = useState(apiKeys.openaiApiKey || '');
-  const [claudeKey, setClaudeKey] = useState(apiKeys.claudeApiKey || '');
-  const [geminiKey, setGeminiKey] = useState(apiKeys.geminiApiKey || '');
-  const [deepseekKey, setDeepseekKey] = useState(apiKeys.deepseekApiKey || '');
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [claudeKey, setClaudeKey] = useState('');
+  const [geminiKey, setGeminiKey] = useState('');
+  const [deepseekKey, setDeepseekKey] = useState('');
   const [saved, setSaved] = useState(false);
 
   // Load API keys from localStorage on component mount
   useEffect(() => {
     const loadApiKeys = () => {
-      const savedOpenAIKey = localStorage.getItem('openaiApiKey');
-      const savedClaudeKey = localStorage.getItem('claudeApiKey');
-      const savedGeminiKey = localStorage.getItem('geminiApiKey');
-      const savedDeepseekKey = localStorage.getItem('deepseekApiKey');
+      const savedOpenAIKey = localStorage.getItem('openaiApiKey') || '';
+      const savedClaudeKey = localStorage.getItem('claudeApiKey') || '';
+      const savedGeminiKey = localStorage.getItem('geminiApiKey') || '';
+      const savedDeepseekKey = localStorage.getItem('deepseekApiKey') || '';
       
       console.log('Loading API keys from localStorage:', {
         openai: savedOpenAIKey ? 'present' : 'not found',
@@ -44,24 +44,33 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
         deepseek: savedDeepseekKey ? 'present' : 'not found'
       });
       
-      // Only update if keys exist in localStorage
-      const keysToUpdate: ApiKeySettings = { ...apiKeys };
+      // Set the state with loaded keys
+      setOpenaiKey(savedOpenAIKey);
+      setClaudeKey(savedClaudeKey);
+      setGeminiKey(savedGeminiKey);
+      setDeepseekKey(savedDeepseekKey);
       
-      if (savedOpenAIKey) keysToUpdate.openaiApiKey = savedOpenAIKey;
-      if (savedClaudeKey) keysToUpdate.claudeApiKey = savedClaudeKey;
-      if (savedGeminiKey) keysToUpdate.geminiApiKey = savedGeminiKey;
-      if (savedDeepseekKey) keysToUpdate.deepseekApiKey = savedDeepseekKey;
+      // Update the parent component's state with loaded keys
+      const updatedKeys: ApiKeySettings = {
+        openaiApiKey: savedOpenAIKey,
+        claudeApiKey: savedClaudeKey,
+        geminiApiKey: savedGeminiKey,
+        deepseekApiKey: savedDeepseekKey
+      };
       
-      // Update state and parent component
-      setOpenaiKey(keysToUpdate.openaiApiKey || '');
-      setClaudeKey(keysToUpdate.claudeApiKey || '');
-      setGeminiKey(keysToUpdate.geminiApiKey || '');
-      setDeepseekKey(keysToUpdate.deepseekApiKey || '');
-      onApiKeysChange(keysToUpdate);
+      onApiKeysChange(updatedKeys);
     };
     
     loadApiKeys();
-  }, []);
+  }, [onApiKeysChange]);
+
+  // Update local state when apiKeys prop changes
+  useEffect(() => {
+    setOpenaiKey(apiKeys.openaiApiKey || '');
+    setClaudeKey(apiKeys.claudeApiKey || '');
+    setGeminiKey(apiKeys.geminiApiKey || '');
+    setDeepseekKey(apiKeys.deepseekApiKey || '');
+  }, [apiKeys]);
 
   const handleSave = () => {
     // Validate keys (simple validation - checking if not empty and proper format)

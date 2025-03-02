@@ -27,6 +27,17 @@ export const OverviewPage = ({ apiStatus }: OverviewPageProps) => {
     } else {
       setLocalApiStatus(apiStatus);
     }
+    
+    // Add an event listener for storage changes to detect when API keys are updated in another window/tab
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key && e.key.includes('ApiKey')) {
+        console.log('API key changed in localStorage, rechecking API status');
+        checkApiStatus();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [apiStatus]);
 
   const checkApiStatus = async () => {
@@ -37,6 +48,11 @@ export const OverviewPage = ({ apiStatus }: OverviewPageProps) => {
       // First, check if we have any API keys configured
       const adminKeys = await checkApiKeysAvailability();
       const userKeys = checkLocalStorageKeys();
+      
+      console.log('API key check results:', {
+        adminKeys,
+        userKeys
+      });
       
       if (!adminKeys && !userKeys) {
         console.log("No API keys available - marking API as unavailable");
