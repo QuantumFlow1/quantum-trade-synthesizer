@@ -56,6 +56,11 @@ export const OverviewPage = ({ apiStatus }: OverviewPageProps) => {
       setLocalApiStatus(newStatus);
       setApiStatus(newStatus); // Update global context state
       console.log("API is available");
+      
+      toast({
+        title: "API verbinding succesvol",
+        description: "De AI-services zijn nu beschikbaar.",
+      });
     } catch (error) {
       console.error("Failed to verify API status:", error);
       const newStatus = 'unavailable';

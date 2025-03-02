@@ -1,10 +1,13 @@
 
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Brain, AlertCircle, WifiOff, Wifi, RefreshCw } from "lucide-react";
+import { Brain, AlertCircle, WifiOff, Wifi, RefreshCw, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface AIAdvicePanelProps {
   apiStatus?: 'checking' | 'available' | 'unavailable';
@@ -16,6 +19,28 @@ export function AIAdvicePanel({ apiStatus = 'checking', isCheckingKeys = false, 
   const { toast } = useToast();
   const [advice, setAdvice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isKeySheetOpen, setIsKeySheetOpen] = useState(false);
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [claudeKey, setClaudeKey] = useState('');
+  const [geminiKey, setGeminiKey] = useState('');
+  const [deepseekKey, setDeepseekKey] = useState('');
+  
+  // Load saved API keys on component mount
+  useEffect(() => {
+    const loadKeys = () => {
+      const savedOpenAI = localStorage.getItem('openaiApiKey');
+      const savedClaude = localStorage.getItem('claudeApiKey');
+      const savedGemini = localStorage.getItem('geminiApiKey');
+      const savedDeepseek = localStorage.getItem('deepseekApiKey');
+      
+      if (savedOpenAI) setOpenaiKey(savedOpenAI);
+      if (savedClaude) setClaudeKey(savedClaude);
+      if (savedGemini) setGeminiKey(savedGemini);
+      if (savedDeepseek) setDeepseekKey(savedDeepseek);
+    };
+    
+    loadKeys();
+  }, []);
   
   useEffect(() => {
     if (apiStatus === 'available') {
@@ -58,6 +83,27 @@ export function AIAdvicePanel({ apiStatus = 'checking', isCheckingKeys = false, 
       });
     }
   };
+  
+  const saveApiKeys = () => {
+    if (openaiKey) localStorage.setItem('openaiApiKey', openaiKey);
+    if (claudeKey) localStorage.setItem('claudeApiKey', claudeKey);
+    if (geminiKey) localStorage.setItem('geminiApiKey', geminiKey);
+    if (deepseekKey) localStorage.setItem('deepseekApiKey', deepseekKey);
+    
+    toast({
+      title: "API sleutels opgeslagen",
+      description: "Uw API sleutels zijn opgeslagen. Controleer opnieuw de verbinding.",
+    });
+    
+    setIsKeySheetOpen(false);
+    
+    // Automatically trigger a connection check
+    if (onManualCheck) {
+      setTimeout(() => {
+        onManualCheck();
+      }, 500);
+    }
+  };
 
   // Offline status
   if (apiStatus === 'unavailable') {
@@ -87,6 +133,75 @@ export function AIAdvicePanel({ apiStatus = 'checking', isCheckingKeys = false, 
               <li>Controleer uw internetverbinding</li>
             </ul>
           </div>
+          
+          <Sheet open={isKeySheetOpen} onOpenChange={setIsKeySheetOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                className="w-full mb-2" 
+                variant="outline" 
+                size="sm"
+              >
+                <Key size={16} className="mr-2" />
+                API Sleutels Configureren
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>API Sleutels Instellen</SheetTitle>
+              </SheetHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="openai-api-key">OpenAI API Sleutel</Label>
+                  <Input 
+                    id="openai-api-key"
+                    type="password" 
+                    placeholder="sk-..." 
+                    value={openaiKey}
+                    onChange={(e) => setOpenaiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Vereist voor GPT-4 en andere OpenAI modellen</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="claude-api-key">Claude API Sleutel</Label>
+                  <Input 
+                    id="claude-api-key"
+                    type="password" 
+                    placeholder="sk-ant-..." 
+                    value={claudeKey}
+                    onChange={(e) => setClaudeKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Vereist voor Claude modellen</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="gemini-api-key">Gemini API Sleutel</Label>
+                  <Input 
+                    id="gemini-api-key"
+                    type="password" 
+                    placeholder="AIza..." 
+                    value={geminiKey}
+                    onChange={(e) => setGeminiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Vereist voor Gemini modellen</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="deepseek-api-key">DeepSeek API Sleutel</Label>
+                  <Input 
+                    id="deepseek-api-key"
+                    type="password" 
+                    placeholder="sk-..." 
+                    value={deepseekKey}
+                    onChange={(e) => setDeepseekKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Vereist voor DeepSeek modellen</p>
+                </div>
+                
+                <Button className="w-full mt-4" onClick={saveApiKeys}>Opslaan</Button>
+              </div>
+            </SheetContent>
+          </Sheet>
           
           <Button 
             className="w-full" 

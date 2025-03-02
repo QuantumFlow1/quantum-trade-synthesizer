@@ -1,11 +1,14 @@
 
 import { useState, useEffect } from "react";
-import { Brain, TrendingUp, AlertTriangle, Users, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { Brain, TrendingUp, AlertTriangle, Users, Wifi, WifiOff, RefreshCw, Key } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { fetchAdminApiKey } from "@/components/chat/services/utils/apiHelpers";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface AIAnalysisPanelProps {
   aiAnalysis?: {
@@ -25,6 +28,11 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
   const [showTips, setShowTips] = useState(false);
   const [localIsOnline, setLocalIsOnline] = useState<boolean>(isOnline);
   const [isChecking, setIsChecking] = useState<boolean>(false);
+  const [isKeySheetOpen, setIsKeySheetOpen] = useState(false);
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [claudeKey, setClaudeKey] = useState('');
+  const [geminiKey, setGeminiKey] = useState('');
+  const [deepseekKey, setDeepseekKey] = useState('');
 
   // Als de prop verandert, werk dan de lokale status bij
   useEffect(() => {
@@ -36,7 +44,22 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
     if (!isOnline) {
       checkAPIAvailability();
     }
+    
+    // Load saved keys
+    loadSavedKeys();
   }, []);
+  
+  const loadSavedKeys = () => {
+    const savedOpenAI = localStorage.getItem('openaiApiKey');
+    const savedClaude = localStorage.getItem('claudeApiKey');
+    const savedGemini = localStorage.getItem('geminiApiKey');
+    const savedDeepseek = localStorage.getItem('deepseekApiKey');
+    
+    if (savedOpenAI) setOpenaiKey(savedOpenAI);
+    if (savedClaude) setClaudeKey(savedClaude);
+    if (savedGemini) setGeminiKey(savedGemini);
+    if (savedDeepseek) setDeepseekKey(savedDeepseek);
+  };
 
   const defaultAnalysis = {
     confidence: 0,
@@ -52,6 +75,25 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
 
   const toggleTips = () => {
     setShowTips(!showTips);
+  };
+  
+  const saveApiKeys = () => {
+    if (openaiKey) localStorage.setItem('openaiApiKey', openaiKey);
+    if (claudeKey) localStorage.setItem('claudeApiKey', claudeKey);
+    if (geminiKey) localStorage.setItem('geminiApiKey', geminiKey);
+    if (deepseekKey) localStorage.setItem('deepseekApiKey', deepseekKey);
+    
+    toast({
+      title: "API sleutels opgeslagen",
+      description: "Uw API sleutels zijn opgeslagen. Controleer opnieuw de verbinding.",
+    });
+    
+    setIsKeySheetOpen(false);
+    
+    // Automatically check API availability after saving keys
+    setTimeout(() => {
+      handleManualUpdate();
+    }, 500);
   };
 
   // Controleert of er API sleutels beschikbaar zijn
@@ -172,6 +214,75 @@ export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPane
         </div>
 
         <div className="space-y-2">
+          <Sheet open={isKeySheetOpen} onOpenChange={setIsKeySheetOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mb-2" 
+              >
+                <Key className="w-4 h-4 mr-2" />
+                API Sleutels Configureren
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>API Sleutels Instellen</SheetTitle>
+              </SheetHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="openai-api-key">OpenAI API Sleutel</Label>
+                  <Input 
+                    id="openai-api-key"
+                    type="password" 
+                    placeholder="sk-..." 
+                    value={openaiKey}
+                    onChange={(e) => setOpenaiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Vereist voor GPT-4 en andere OpenAI modellen</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="claude-api-key">Claude API Sleutel</Label>
+                  <Input 
+                    id="claude-api-key"
+                    type="password" 
+                    placeholder="sk-ant-..." 
+                    value={claudeKey}
+                    onChange={(e) => setClaudeKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Vereist voor Claude modellen</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="gemini-api-key">Gemini API Sleutel</Label>
+                  <Input 
+                    id="gemini-api-key"
+                    type="password" 
+                    placeholder="AIza..." 
+                    value={geminiKey}
+                    onChange={(e) => setGeminiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Vereist voor Gemini modellen</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="deepseek-api-key">DeepSeek API Sleutel</Label>
+                  <Input 
+                    id="deepseek-api-key"
+                    type="password" 
+                    placeholder="sk-..." 
+                    value={deepseekKey}
+                    onChange={(e) => setDeepseekKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Vereist voor DeepSeek modellen</p>
+                </div>
+                
+                <Button className="w-full mt-4" onClick={saveApiKeys}>Opslaan</Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+
           <Button 
             variant="outline" 
             size="sm" 
