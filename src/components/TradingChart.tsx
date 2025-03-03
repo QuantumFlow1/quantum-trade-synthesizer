@@ -24,7 +24,7 @@ const formatMarketData = (apiData: any[]): TradingDataPoint[] => {
     // Generate compatible trading data format based on actual market data
     const formattedData = generateTradingData().map((item, index) => {
       // Determine trend explicitly as "up" or "down" to satisfy TypeScript
-      const trend: "up" | "down" = 
+      const trendValue: "up" | "down" = 
         mainAsset.change24h !== undefined 
           ? (mainAsset.change24h >= 0 ? "up" : "down") 
           : item.trend;
@@ -37,7 +37,7 @@ const formatMarketData = (apiData: any[]): TradingDataPoint[] => {
         high: mainAsset.high24h || (mainAsset.price ? mainAsset.price * 1.02 : item.high),
         low: mainAsset.low24h || (mainAsset.price ? mainAsset.price * 0.98 : item.low),
         volume: mainAsset.volume24h || item.volume,
-        trend: trend
+        trend: trendValue
       };
     });
     

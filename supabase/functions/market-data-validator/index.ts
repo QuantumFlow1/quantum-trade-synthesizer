@@ -33,8 +33,12 @@ serve(async (req) => {
     
     // Map the data to ensure it has the correct structure
     const validatedData = marketData.map((item) => {
+      // Explicitly determine trend as "up" or "down" to satisfy TypeScript
+      const trendValue: "up" | "down" = 
+        (item.change24h > 0 || item.close > item.open) ? "up" : "down";
+
       // Set default values for required TradingDataPoint properties
-      const result = {
+      const result: TradingDataPoint = {
         name: item.name || item.symbol || "Unknown",
         open: typeof item.open === 'number' ? item.open : (item.price || 0),
         close: typeof item.close === 'number' ? item.close : (item.price || 0),
@@ -52,9 +56,9 @@ serve(async (req) => {
         bollingerLower: item.bollingerLower || (item.low - Math.random() * 300) || 0,
         stochastic: item.stochastic || Math.random() * 100 || 50,
         adx: item.adx || Math.random() * 100 || 50,
-        // Ensure trend is strictly "up" or "down"
-        trend: item.change24h > 0 || item.close > item.open ? "up" : "down"
-      } as TradingDataPoint;
+        // Use the explicitly determined trend value
+        trend: trendValue
+      };
       
       return result;
     });

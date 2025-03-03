@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Book, ChevronDown, ChevronRight, FileText, GitBranch, Lightbulb, TrendingUp, Users } from 'lucide-react';
+import { Book, ChevronDown, ChevronRight, FileText, GitBranch, Lightbulb, TrendingUp, Users, Clock } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +21,86 @@ interface Guide {
 }
 
 const guides: Guide[] = [
+  {
+    id: 'day-trading',
+    title: 'Day Trading Strategy',
+    icon: Clock,
+    description: 'Comprehensive guide to day trading with our AI-powered platform',
+    color: 'red',
+    sections: [
+      {
+        title: 'Initial Setup (1-2 Days)',
+        content: [
+          'Create a day trading dashboard with multiple small timeframe charts (1m, 5m, 15m)',
+          'Set up quick-access order panel for rapid execution',
+          'Configure real-time indicator panels for short-term signals',
+          'Set up custom alerts for volatility spikes and sudden price movements',
+          'Use AI analysis tools to identify potential gappers each morning',
+          'Create a watchlist of 5-8 assets with highest AI-predicted movement potential'
+        ]
+      },
+      {
+        title: 'Opening Range Strategy',
+        content: [
+          'Use 5-minute charts to identify the first hour\'s high and low',
+          'Set up alerts for breakouts above or below this range',
+          'Configure AI alerts to align with breakout direction',
+          'Enter positions when breakout is confirmed by technical indicators',
+          'Exit trades that don\'t show momentum within specific timeframes'
+        ]
+      },
+      {
+        title: 'Momentum Trading Setup',
+        content: [
+          'Configure RSI (set to shorter periods like 7-14)',
+          'Set up MACD with faster settings (like 5,12,4)',
+          'Add volume indicators to confirm price movements',
+          'Use multiple timeframe analysis (5m and 15m primary focus)',
+          'Program platform to highlight price/momentum divergences'
+        ]
+      },
+      {
+        title: 'AI-Enhanced Scalping',
+        content: [
+          'Set up small profit targets (0.5-1.5%)',
+          'Configure AI to identify micro-trends within trading session',
+          'Use 1-minute charts for entry timing after setup on larger timeframes',
+          'Implement trailing stops adjusting automatically based on volatility',
+          'Utilize AI sentiment signals for quick entry/exit confirmations'
+        ]
+      },
+      {
+        title: 'Risk Management',
+        content: [
+          'Configure automatic daily loss limits (2-3% of account)',
+          'Set per-trade risk at 0.5-1% maximum',
+          'Utilize stop-loss automation with tight stops (1:1.5 or 1:2 risk-reward)',
+          'Set up time-based exit rules for non-performing trades',
+          'Configure AI risk assessment for real-time trade evaluation'
+        ]
+      },
+      {
+        title: 'Daily Workflow',
+        content: [
+          'Morning Routine: Review AI market analysis 30 minutes before open',
+          'Active Trading: Focus on first 1-2 hours and last hour of session',
+          'Implement "cooling off" rule after consecutive losses',
+          'Take short breaks hourly to reassess market conditions',
+          'End-of-Day: Review all trades and compare with AI recommendations'
+        ]
+      },
+      {
+        title: 'Getting Started',
+        content: [
+          'Set up simulation mode with defined starting capital',
+          'Focus on one specific setup until consistently profitable',
+          'Keep trade journals using platform reporting features',
+          'Start with smaller position sizes (0.5% of account per trade)',
+          'Track performance metrics: win rate, win/loss ratio, drawdown'
+        ]
+      }
+    ]
+  },
   {
     id: 'financial-modeling',
     title: 'Financial Modeling',
