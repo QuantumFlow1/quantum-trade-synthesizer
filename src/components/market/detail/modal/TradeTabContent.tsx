@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { ArrowUp, ArrowDown, MousePointer } from 'lucide-react';
+import { ArrowUp, ArrowDown, MousePointer, Shield, TrendingUp } from 'lucide-react';
 import { ChartData, MarketData } from '../../types';
 import { formatCurrency, formatPercentage } from '../../utils/formatters';
 
@@ -25,6 +25,12 @@ interface TradeTabContentProps {
   change24h: number;
   handleBuyClick: () => void;
   handleSellClick: () => void;
+  stopLoss: string;
+  setStopLoss: (value: string) => void;
+  takeProfit: string;
+  setTakeProfit: (value: string) => void;
+  advancedOptions: boolean;
+  setAdvancedOptions: (value: boolean) => void;
 }
 
 export const TradeTabContent: React.FC<TradeTabContentProps> = ({ 
@@ -40,8 +46,18 @@ export const TradeTabContent: React.FC<TradeTabContentProps> = ({
   isPriceUp,
   change24h,
   handleBuyClick,
-  handleSellClick
+  handleSellClick,
+  stopLoss,
+  setStopLoss,
+  takeProfit,
+  setTakeProfit,
+  advancedOptions,
+  setAdvancedOptions
 }) => {
+  // Calculate the default stop loss and take profit values based on current price
+  const defaultStopLoss = (latestData.price * 0.95).toFixed(2);
+  const defaultTakeProfit = (latestData.price * 1.05).toFixed(2);
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Card className="p-4 space-y-4">
@@ -88,9 +104,50 @@ export const TradeTabContent: React.FC<TradeTabContentProps> = ({
         </div>
         
         <div className="flex items-center space-x-2">
-          <Switch id="advanced-options" />
+          <Switch 
+            id="advanced-options" 
+            checked={advancedOptions} 
+            onCheckedChange={setAdvancedOptions} 
+          />
           <Label htmlFor="advanced-options">Enable advanced options</Label>
         </div>
+        
+        {advancedOptions && (
+          <div className="space-y-4 p-3 bg-secondary/20 rounded border border-border">
+            <h4 className="text-sm font-medium flex items-center">
+              <Shield className="h-4 w-4 mr-2" />
+              Risk Management
+            </h4>
+            
+            <div className="space-y-2">
+              <Label htmlFor="stop-loss">Stop Loss</Label>
+              <Input 
+                id="stop-loss" 
+                type="number" 
+                placeholder={defaultStopLoss} 
+                value={stopLoss}
+                onChange={(e) => setStopLoss(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Price at which your position will automatically close to limit losses
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="take-profit">Take Profit</Label>
+              <Input 
+                id="take-profit" 
+                type="number" 
+                placeholder={defaultTakeProfit} 
+                value={takeProfit}
+                onChange={(e) => setTakeProfit(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Price at which your position will automatically close to secure profits
+              </p>
+            </div>
+          </div>
+        )}
         
         <div className="flex gap-2 pt-2">
           <Button className="flex-1" onClick={handleBuyClick}>
@@ -107,7 +164,7 @@ export const TradeTabContent: React.FC<TradeTabContentProps> = ({
       <Card className="p-4 space-y-4">
         <h3 className="text-lg font-medium">Market Details</h3>
         
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-y-2 mb-3">
           <div>
             <p className="text-sm text-muted-foreground">Current Price</p>
             <p className="font-medium">${latestData.price.toFixed(2)}</p>
@@ -148,6 +205,29 @@ export const TradeTabContent: React.FC<TradeTabContentProps> = ({
             }`}>
               {Math.abs(change24h) > 10 ? 'High' : Math.abs(change24h) > 5 ? 'Medium' : 'Low'}
             </span>
+          </div>
+        </div>
+
+        <Separator />
+        
+        <div>
+          <h4 className="text-sm font-medium flex items-center mb-2">
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Performance Projection
+          </h4>
+          <div className="grid grid-cols-2 gap-y-2 text-sm">
+            <div>
+              <p className="text-muted-foreground">Potential Profit (1d)</p>
+              <p className="text-green-500 font-medium">
+                +{(Math.abs(change24h) * 1.2).toFixed(2)}%
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Potential Loss (1d)</p>
+              <p className="text-red-500 font-medium">
+                -{(Math.abs(change24h) * 0.8).toFixed(2)}%
+              </p>
+            </div>
           </div>
         </div>
         

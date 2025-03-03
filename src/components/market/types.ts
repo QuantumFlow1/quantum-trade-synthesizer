@@ -1,3 +1,4 @@
+
 export interface TradeSignal {
   type: 'LONG' | 'SHORT';
   entry: number;

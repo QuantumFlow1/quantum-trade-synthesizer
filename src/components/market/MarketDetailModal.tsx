@@ -5,11 +5,12 @@ import { useToast } from "../ui/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
 import { useState, useEffect } from "react";
-import { ChartData, MarketData } from "./types";
+import { ChartData, MarketData, ProfitLossRecord, TradeHistoryItem } from "./types";
 import { ModalHeader } from "./detail/modal/ModalHeader";
 import { ChartTabContent } from "./detail/modal/ChartTabContent";
 import { TradeTabContent } from "./detail/modal/TradeTabContent";
 import { PositionsTabContent } from "./detail/modal/PositionsTabContent";
+import { PerformanceTabContent } from "./detail/modal/PerformanceTabContent";
 
 interface MarketDetailModalProps {
   isOpen: boolean;
@@ -29,6 +30,13 @@ export const MarketDetailModal = ({
   const [orderType, setOrderType] = useState<string>("market");
   const [currentTab, setCurrentTab] = useState<string>("chart");
   const [hasPositions, setHasPositions] = useState<boolean>(false);
+  const [stopLoss, setStopLoss] = useState<string>("");
+  const [takeProfit, setTakeProfit] = useState<string>("");
+  const [advancedOptions, setAdvancedOptions] = useState<boolean>(false);
+  const [tradeHistory, setTradeHistory] = useState<TradeHistoryItem[]>([]);
+  const [profitLoss, setProfitLoss] = useState<ProfitLossRecord[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(true);
+  
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -89,12 +97,76 @@ export const MarketDetailModal = ({
       }
     };
 
-    checkPositions();
-  }, [user, marketName, isOpen]);
+    const fetchTradeHistory = async () => {
+      setIsHistoryLoading(true);
+      try {
+        const { data: pairData } = await supabase
+          .from("trading_pairs")
+          .select("id")
+          .eq("symbol", marketName)
+          .maybeSingle();
 
-  if (!marketName || !marketData.length) {
-    return null;
-  }
+        if (pairData?.id) {
+          const { data, error } = await supabase
+            .from("trades")
+            .select("*")
+            .eq("user_id", user.id)
+            .eq("pair_id", pairData.id)
+            .order("created_at", { ascending: false });
+
+          if (error) throw error;
+
+          // Transform the data for our UI
+          const historyItems: TradeHistoryItem[] = data.map(trade => ({
+            id: trade.id,
+            type: trade.type,
+            symbol: marketName || "BTC/USD",
+            amount: trade.amount,
+            price: trade.price,
+            timestamp: new Date(trade.created_at).getTime(),
+            status: trade.status,
+            totalValue: trade.amount * trade.price,
+            fees: trade.amount * trade.price * 0.001,
+            profitLoss: trade.type === 'sell' ? (trade.price - previousPrice) * trade.amount : undefined,
+            profitLossPercentage: trade.type === 'sell' ? ((trade.price - previousPrice) / previousPrice) * 100 : undefined
+          }));
+
+          setTradeHistory(historyItems);
+
+          // Generate dummy profit/loss records for demonstration
+          const plRecords: ProfitLossRecord[] = historyItems.map((trade, index) => ({
+            id: `pl-${trade.id}`,
+            tradeId: trade.id,
+            timestamp: trade.timestamp,
+            realized: trade.profitLoss || 0,
+            unrealized: 0,
+            percentage: trade.profitLossPercentage || 0,
+            assetSymbol: trade.symbol,
+            entryPrice: trade.price,
+            currentPrice: latestData.price,
+            quantity: trade.amount,
+            costBasis: trade.amount * trade.price,
+            currentValue: trade.amount * latestData.price,
+            status: 'closed'
+          }));
+
+          setProfitLoss(plRecords);
+        }
+      } catch (error) {
+        console.error("Error fetching trade history:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load trade history. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    };
+
+    checkPositions();
+    fetchTradeHistory();
+  }, [user, marketName, isOpen, previousPrice, latestData.price, toast]);
 
   const handleBuyClick = async () => {
     if (!user) {
@@ -115,16 +187,29 @@ export const MarketDetailModal = ({
 
       if (pairError) throw pairError;
 
-      const pairId = pairData?.id || `${marketName.replace('/', '_')}_default`;
+      const pairId = pairData?.id || `${marketName?.replace('/', '_')}_default`;
       
-      const { error: tradeError } = await supabase.from("trades").insert({
+      const tradeData = {
         user_id: user.id,
         pair_id: pairId,
         type: "buy",
         amount: parseFloat(amount),
         price: latestData.price,
         status: "pending",
-      });
+      };
+      
+      // Add stop loss and take profit if enabled
+      if (advancedOptions) {
+        if (stopLoss && parseFloat(stopLoss) > 0) {
+          Object.assign(tradeData, { stop_price: parseFloat(stopLoss) });
+        }
+        
+        if (takeProfit && parseFloat(takeProfit) > 0) {
+          Object.assign(tradeData, { limit_price: parseFloat(takeProfit) });
+        }
+      }
+      
+      const { error: tradeError } = await supabase.from("trades").insert(tradeData);
 
       if (tradeError) throw tradeError;
 
@@ -180,16 +265,29 @@ export const MarketDetailModal = ({
 
       if (pairError) throw pairError;
 
-      const pairId = pairData?.id || `${marketName.replace('/', '_')}_default`;
+      const pairId = pairData?.id || `${marketName?.replace('/', '_')}_default`;
       
-      const { error: tradeError } = await supabase.from("trades").insert({
+      const tradeData = {
         user_id: user.id,
         pair_id: pairId,
         type: "sell",
         amount: parseFloat(amount),
         price: latestData.price,
         status: "pending",
-      });
+      };
+      
+      // Add stop loss and take profit if enabled
+      if (advancedOptions) {
+        if (stopLoss && parseFloat(stopLoss) > 0) {
+          Object.assign(tradeData, { stop_price: parseFloat(stopLoss) });
+        }
+        
+        if (takeProfit && parseFloat(takeProfit) > 0) {
+          Object.assign(tradeData, { limit_price: parseFloat(takeProfit) });
+        }
+      }
+      
+      const { error: tradeError } = await supabase.from("trades").insert(tradeData);
 
       if (tradeError) throw tradeError;
 
@@ -207,6 +305,10 @@ export const MarketDetailModal = ({
     }
   };
 
+  if (!marketName || !marketData.length) {
+    return null;
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
@@ -217,10 +319,11 @@ export const MarketDetailModal = ({
         />
 
         <Tabs defaultValue="chart" value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList className="grid grid-cols-3 mb-4">
+          <TabsList className="grid grid-cols-4 mb-4">
             <TabsTrigger value="chart">Price & Chart</TabsTrigger>
             <TabsTrigger value="trade">Trade</TabsTrigger>
             <TabsTrigger value="positions" disabled={!hasPositions}>Your Positions</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
           </TabsList>
           
           <TabsContent value="chart" className="space-y-6">
@@ -247,6 +350,12 @@ export const MarketDetailModal = ({
               change24h={change24h}
               handleBuyClick={handleBuyClick}
               handleSellClick={handleSellClick}
+              stopLoss={stopLoss}
+              setStopLoss={setStopLoss}
+              takeProfit={takeProfit}
+              setTakeProfit={setTakeProfit}
+              advancedOptions={advancedOptions}
+              setAdvancedOptions={setAdvancedOptions}
             />
           </TabsContent>
           
@@ -259,6 +368,15 @@ export const MarketDetailModal = ({
               latestData={latestData}
               isPriceUp={isPriceUp}
               setCurrentTab={setCurrentTab}
+            />
+          </TabsContent>
+          
+          <TabsContent value="performance">
+            <PerformanceTabContent
+              marketName={marketName}
+              tradeHistory={tradeHistory}
+              profitLoss={profitLoss}
+              isLoading={isHistoryLoading}
             />
           </TabsContent>
         </Tabs>
