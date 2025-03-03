@@ -1,8 +1,9 @@
 
 import { Bot, AlertTriangle } from 'lucide-react';
+import { EdgeFunctionStatus } from './types';
 
 interface DeepSeekEmptyStateProps {
-  edgeFunctionStatus?: 'checking' | 'available' | 'unavailable';
+  edgeFunctionStatus?: EdgeFunctionStatus;
 }
 
 export function DeepSeekEmptyState({ edgeFunctionStatus = 'checking' }: DeepSeekEmptyStateProps) {

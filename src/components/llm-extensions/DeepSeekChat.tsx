@@ -9,6 +9,7 @@ import { DeepSeekSettings } from './deepseek/DeepSeekSettings';
 import { DeepSeekEmptyState } from './deepseek/DeepSeekEmptyState';
 import { useDeepSeekChat } from './deepseek/useDeepSeekChat';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { EdgeFunctionStatus } from './types/chatTypes';
 
 export function DeepSeekChat() {
   const {
