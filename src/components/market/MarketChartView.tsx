@@ -35,7 +35,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
               <span>{(dataPoint.confidence * 100).toFixed(0)}%</span>
             </p>
             <div className="mt-1 px-2 py-0.5 bg-primary/20 text-primary text-xs rounded text-center">
-              Projected
+              AI Projection
             </div>
           </>
         ) : (
@@ -145,7 +145,7 @@ export const MarketChartView = ({ data, type }: MarketChartViewProps) => {
                 x={data[projectionStartIndex].name} 
                 stroke="#f59e0b" 
                 strokeDasharray="3 3"
-                label={{ value: "Projections →", position: "insideTopRight", fill: "#f59e0b", fontSize: 10 }}
+                label={{ value: "AI Projections →", position: "insideTopRight", fill: "#f59e0b", fontSize: 10 }}
               />
             )}
           </LineChart>
