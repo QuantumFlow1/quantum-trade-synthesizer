@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -16,6 +17,7 @@ import { MarketData } from '../../types';
 
 interface TradeTabContentProps {
   marketData: MarketData;
+  marketName: string | null; // Add marketName property
   amount: string;
   setAmount: (value: string) => void;
   leverage: string;
@@ -32,6 +34,7 @@ interface TradeTabContentProps {
 
 export const TradeTabContent = ({
   marketData,
+  marketName,
   amount,
   setAmount,
   leverage,
