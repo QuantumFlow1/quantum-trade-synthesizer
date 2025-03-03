@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { EnhancedMarketPage } from '../EnhancedMarketPage';
 import { Card } from '@/components/ui/card';
@@ -8,14 +7,34 @@ import { usePositions } from '@/hooks/use-positions';
 import { Activity, BarChart3, Eye, EyeOff, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TransactionList from '@/components/TransactionList';
+import { TransactionFilters } from '@/components/wallet/transactions/TransactionFilters';
+import { TransactionPagination } from '@/components/wallet/transactions/TransactionPagination';
 
 export const EnhancedMarketTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState('market');
   const { positions, isLoading } = usePositions();
   const [showCharts, setShowCharts] = useState(true);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = 5;
 
   const toggleChartsVisibility = () => {
     setShowCharts(!showCharts);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
   };
 
   return (
@@ -70,7 +89,25 @@ export const EnhancedMarketTab: React.FC = () => {
 
         <TabsContent value="transactions" className="mt-6">
           <Card className="p-6">
-            <TransactionList />
+            <div className="space-y-6">
+              <TransactionFilters 
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                typeFilter={typeFilter}
+                setTypeFilter={setTypeFilter}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+              />
+              
+              <TransactionList />
+              
+              <TransactionPagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onNextPage={handleNextPage}
+                onPreviousPage={handlePreviousPage}
+              />
+            </div>
           </Card>
         </TabsContent>
       </Tabs>
@@ -78,7 +115,6 @@ export const EnhancedMarketTab: React.FC = () => {
   );
 };
 
-// Create a specialized positions panel with detailed information
 const PositionsDetailPanel: React.FC<{ 
   positions: any[];
   isLoading: boolean;
@@ -118,7 +154,6 @@ const PositionsDetailPanel: React.FC<{
   );
 };
 
-// Position details component showing more information about a selected position
 const PositionDetails: React.FC<{ 
   position: any;
   showCharts: boolean;
@@ -187,4 +222,3 @@ const PositionDetails: React.FC<{
     </Card>
   );
 };
-
