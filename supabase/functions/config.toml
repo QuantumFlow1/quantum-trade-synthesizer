@@ -40,3 +40,7 @@ verify_jwt = false
 
 [functions.deepseek-ping]
 verify_jwt = false
+
+[functions.market-data-validator]
+verify_jwt = false
+

@@ -102,7 +102,7 @@ const TradingChart = () => {
     return checkAdminKeys();
   }, []);
 
-  // Fetch market data from API
+  // Fetch market data from API with validation
   const fetchMarketData = async () => {
     try {
       if (forceSimulation) {
@@ -111,6 +111,7 @@ const TradingChart = () => {
         return generatedData;
       }
       
+      // First fetch raw market data
       const { data: marketData, error } = await supabase.functions.invoke('market-data-collector');
       
       if (error) {
@@ -124,10 +125,29 @@ const TradingChart = () => {
         console.log("Raw market data received:", marketData);
         setRawMarketData(marketData);
         
-        // Format the data to match expected format - ensuring type safety
-        const formattedData = formatMarketData(marketData);
-        setData(formattedData);
-        return formattedData;
+        // Send the raw data to our validator service
+        const { data: validationResult, error: validationError } = await supabase.functions.invoke('market-data-validator', {
+          body: { marketData, source: 'market-data-collector' }
+        });
+        
+        if (validationError) {
+          console.error("Error validating market data:", validationError);
+          // Fall back to our local formatting
+          const formattedData = formatMarketData(marketData);
+          setData(formattedData);
+          return formattedData;
+        }
+        
+        if (validationResult && validationResult.valid && validationResult.data) {
+          console.log("Using validated market data");
+          setData(validationResult.data);
+          return validationResult.data;
+        } else {
+          console.warn("Validation service returned invalid data, falling back to local formatting");
+          const formattedData = formatMarketData(marketData);
+          setData(formattedData);
+          return formattedData;
+        }
       }
       
       return null;
