@@ -1,194 +1,131 @@
-
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
-  Form, 
-  FormControl, 
-  FormField, 
-  FormItem, 
-  FormLabel 
-} from '@/components/ui/form';
+  Card, 
+  CardContent 
+} from '@/components/ui/card';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { BarChart, ArrowRight, TrendingUp, AlertTriangle } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { MarketData } from '../../types';
+import { Label } from '@/components/ui/label';
+import { ArrowDownUp, Settings, AlertTriangle } from 'lucide-react';
+import { MarketData } from '@/components/market/types';
 
 interface TradeTabContentProps {
   marketData: MarketData;
-  marketName: string | null; // Add marketName property
+  marketName: string | null; // marketName property
+  orderType: string; // orderType property
   amount: string;
   setAmount: (value: string) => void;
   leverage: string;
   setLeverage: (value: string) => void;
+  side: "buy" | "sell";
+  setSide: (value: "buy" | "sell") => void;
+  orderPrice: string;
+  setOrderPrice: (value: string) => void;
   advancedOptions: boolean;
   setAdvancedOptions: (value: boolean) => void;
-  stopLoss: string;
-  setStopLoss: (value: string) => void;
-  takeProfit: string;
-  setTakeProfit: (value: string) => void;
-  handleBuyClick: () => void;
-  handleSellClick: () => void;
 }
 
 export const TradeTabContent = ({
   marketData,
   marketName,
+  orderType,
   amount,
   setAmount,
   leverage,
   setLeverage,
+  side,
+  setSide,
+  orderPrice,
+  setOrderPrice,
   advancedOptions,
-  setAdvancedOptions,
-  stopLoss,
-  setStopLoss,
-  takeProfit,
-  setTakeProfit,
-  handleBuyClick,
-  handleSellClick
-}: TradeTabContentProps) => {
-  const form = useForm({
-    defaultValues: {
-      amount: amount,
-      leverage: leverage,
-      stopLoss: stopLoss,
-      takeProfit: takeProfit,
-      advancedOptions: advancedOptions,
-    },
-  });
-
-  useEffect(() => {
-    form.reset({
-      amount: amount,
-      leverage: leverage,
-      stopLoss: stopLoss,
-      takeProfit: takeProfit,
-      advancedOptions: advancedOptions,
-    });
-  }, [amount, leverage, stopLoss, takeProfit, advancedOptions, form]);
-
+  setAdvancedOptions
+}) => {
   return (
-    <Form {...form}>
-      <form className="space-y-6">
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Amount</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="0.01"
-                  value={amount}
-                  onChange={(e) => {
-                    setAmount(e.target.value);
-                    field.onChange(e);
-                  }}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+    <Card className="w-full">
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">
+            {side === "buy" ? "Buy" : "Sell"} {marketName}
+          </h2>
+          <div className="flex items-center space-x-2">
+            <Settings className="h-4 w-4 text-muted-foreground" />
+            <Switch id="advanced" onCheckedChange={setAdvancedOptions} />
+            <Label htmlFor="advanced" className="text-sm">
+              Advanced
+            </Label>
+          </div>
+        </div>
 
-        <FormField
-          control={form.control}
-          name="leverage"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Leverage</FormLabel>
-              <FormControl>
-                <Slider
-                  defaultValue={[parseFloat(leverage)]}
-                  max={100}
-                  step={1}
-                  onValueChange={(value) => {
-                    setLeverage(value[0].toString());
-                    field.onChange(value[0].toString());
-                  }}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="amount">Amount</Label>
+          <Input
+            id="amount"
+            type="number"
+            placeholder="0.0"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
+        </div>
 
-        <FormField
-          control={form.control}
-          name="advancedOptions"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Advanced Options</FormLabel>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={advancedOptions}
-                  onCheckedChange={(checked) => {
-                    setAdvancedOptions(checked);
-                    field.onChange(checked);
-                  }}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <div className="space-y-2">
+          <Label htmlFor="leverage">Leverage</Label>
+          <Select value={leverage} onValueChange={setLeverage}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="1x" />
+            </SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 5, 10, 20].map((l) => (
+                <SelectItem key={l} value={l.toString()}>
+                  {l}x
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {advancedOptions && (
-          <>
-            <FormField
-              control={form.control}
-              name="stopLoss"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Stop Loss</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      value={stopLoss}
-                      onChange={(e) => {
-                        setStopLoss(e.target.value);
-                        field.onChange(e);
-                      }}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
+          <div className="space-y-2">
+            <Label htmlFor="price">Order Price</Label>
+            <Input
+              id="price"
+              type="number"
+              placeholder="Market Price"
+              value={orderPrice}
+              onChange={(e) => setOrderPrice(e.target.value)}
             />
-
-            <FormField
-              control={form.control}
-              name="takeProfit"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Take Profit</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      value={takeProfit}
-                      onChange={(e) => {
-                        setTakeProfit(e.target.value);
-                        field.onChange(e);
-                      }}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          </>
+          </div>
         )}
 
-        <div className="flex justify-center gap-4">
-          <Button className="bg-green-500 hover:bg-green-600" onClick={handleBuyClick}>
-            Buy
-          </Button>
-          <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-50" onClick={handleSellClick}>
-            Sell
-          </Button>
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <p>Estimated Fee: 0.0012 BTC</p>
+          <p>
+            Available Balance: {marketData?.price || 'N/A'} USD
+          </p>
         </div>
-      </form>
-    </Form>
+
+        <Button className="w-full" onClick={() => alert('Trade Placed!')}>
+          {side === "buy" ? "Buy" : "Sell"} {marketName}
+        </Button>
+
+        <div className="mt-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+          <div className="flex items-center gap-2 text-yellow-400">
+            <AlertTriangle className="w-4 h-4" />
+            <span className="text-sm font-medium">High Volatility Warning</span>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Trading {marketName} involves significant risk due to high market
+            volatility. Please trade with caution.
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
