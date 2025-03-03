@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
-import { Message } from './types';
+import { Message, EdgeFunctionStatus } from './types';
 import { supabase } from '@/lib/supabase';
 
 export function useDeepSeekChat() {
@@ -9,7 +9,7 @@ export function useDeepSeekChat() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<EdgeFunctionStatus>('checking');
   
   // Check DeepSeek edge function status when component mounts
   useEffect(() => {

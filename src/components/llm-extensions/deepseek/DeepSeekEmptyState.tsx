@@ -2,10 +2,10 @@
 import { Bot, AlertTriangle } from 'lucide-react';
 
 interface DeepSeekEmptyStateProps {
-  edgeFunctionStatus?: 'available' | 'unavailable' | 'unknown';
+  edgeFunctionStatus?: 'checking' | 'available' | 'unavailable';
 }
 
-export function DeepSeekEmptyState({ edgeFunctionStatus = 'unknown' }: DeepSeekEmptyStateProps) {
+export function DeepSeekEmptyState({ edgeFunctionStatus = 'checking' }: DeepSeekEmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-500">
       {edgeFunctionStatus === 'unavailable' ? (
@@ -15,6 +15,14 @@ export function DeepSeekEmptyState({ edgeFunctionStatus = 'unknown' }: DeepSeekE
           <p className="max-w-md">
             The DeepSeek AI service is currently unavailable. This might be due to a temporary outage
             or deployment issue. Please try again later or use a different AI model.
+          </p>
+        </>
+      ) : edgeFunctionStatus === 'checking' ? (
+        <>
+          <Bot className="h-16 w-16 text-blue-500/50 mb-4" />
+          <h3 className="text-lg font-medium mb-2">Checking DeepSeek Availability</h3>
+          <p className="max-w-md">
+            Checking if the DeepSeek AI service is available...
           </p>
         </>
       ) : (
