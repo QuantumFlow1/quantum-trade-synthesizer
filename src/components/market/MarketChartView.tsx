@@ -28,11 +28,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           <>
             <p className="text-xs text-white/80 flex items-center justify-between">
               <span>Projected Price:</span>
-              <span className="font-bold text-primary">${dataPoint.projectedPrice?.toFixed(2)}</span>
+              <span className="font-bold text-primary">${dataPoint.projectedPrice?.toFixed(2) || 'N/A'}</span>
             </p>
             <p className="text-xs text-white/80 flex items-center justify-between">
               <span>Confidence:</span>
-              <span>{(dataPoint.confidence * 100).toFixed(0)}%</span>
+              <span>{dataPoint.confidence ? (dataPoint.confidence * 100).toFixed(0) : 'N/A'}%</span>
             </p>
             <div className="mt-1 px-2 py-0.5 bg-primary/20 text-primary text-xs rounded text-center">
               AI Projection
@@ -42,18 +42,18 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           <>
             <p className="text-xs text-white/80 flex items-center justify-between">
               <span>Price:</span>
-              <span className="font-bold">${payload[0].value?.toFixed(2)}</span>
+              <span className="font-bold">${payload[0].value?.toFixed(2) || 'N/A'}</span>
             </p>
             {payload[1] && (
               <p className="text-xs text-white/80 flex items-center justify-between">
                 <span>High:</span>
-                <span>${payload[1].value?.toFixed(2)}</span>
+                <span>${payload[1].value?.toFixed(2) || 'N/A'}</span>
               </p>
             )}
             {payload[2] && (
               <p className="text-xs text-white/80 flex items-center justify-between">
                 <span>Low:</span>
-                <span>${payload[2].value?.toFixed(2)}</span>
+                <span>${payload[2].value?.toFixed(2) || 'N/A'}</span>
               </p>
             )}
           </>
