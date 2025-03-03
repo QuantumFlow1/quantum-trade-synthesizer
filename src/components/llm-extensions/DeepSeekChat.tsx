@@ -18,6 +18,8 @@ export function DeepSeekChat() {
     isLoading,
     showSettings,
     edgeFunctionStatus,
+    apiKey,
+    saveApiKey,
     setInputMessage,
     sendMessage,
     clearChat,
@@ -86,7 +88,11 @@ export function DeepSeekChat() {
         )}
         
         {showSettings ? (
-          <DeepSeekSettings onClose={() => setShowSettings(false)} />
+          <DeepSeekSettings 
+            apiKey={apiKey} 
+            setApiKey={saveApiKey}
+            onClose={() => setShowSettings(false)} 
+          />
         ) : messages.length === 0 ? (
           <DeepSeekEmptyState edgeFunctionStatus={edgeFunctionStatus} />
         ) : (

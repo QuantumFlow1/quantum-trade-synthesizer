@@ -8,43 +8,32 @@ import { toast } from '@/hooks/use-toast';
 import { validateApiKey } from '@/components/chat/api-keys/apiKeyUtils';
 
 interface DeepSeekSettingsProps {
+  apiKey: string;
+  setApiKey: (key: string) => void;
   onClose: () => void;
 }
 
-export function DeepSeekSettings({ onClose }: DeepSeekSettingsProps) {
-  const [apiKey, setApiKey] = useState('');
+export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSettingsProps) {
+  const [key, setKey] = useState(apiKey);
   const [saved, setSaved] = useState(false);
   
-  // Load API key from localStorage
+  // Update local state when apiKey prop changes
   useEffect(() => {
-    const savedApiKey = localStorage.getItem('deepseekApiKey');
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    }
-  }, []);
+    setKey(apiKey);
+  }, [apiKey]);
   
   const handleSave = () => {
     // Validate the API key
-    if (!validateApiKey(apiKey, 'deepseek')) {
+    if (!validateApiKey(key, 'deepseek')) {
       return;
     }
     
-    // Save API key to localStorage
-    localStorage.setItem('deepseekApiKey', apiKey);
+    // Save API key
+    setApiKey(key);
     
     // Show saved animation
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-    
-    // Show toast notification
-    toast({
-      title: "API Key Saved",
-      description: "Your DeepSeek API key has been saved.",
-      variant: "default"
-    });
-    
-    // Trigger an event to notify other components
-    window.dispatchEvent(new Event('apikey-updated'));
   };
   
   return (
@@ -56,8 +45,8 @@ export function DeepSeekSettings({ onClose }: DeepSeekSettingsProps) {
         <Input
           id="deepseek-api-key"
           type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
+          value={key}
+          onChange={(e) => setKey(e.target.value)}
           placeholder="Enter your DeepSeek API key"
         />
         <p className="text-xs text-muted-foreground">
@@ -85,8 +74,8 @@ export function DeepSeekSettings({ onClose }: DeepSeekSettingsProps) {
       </div>
       
       <div className="text-sm text-muted-foreground">
-        <p>DeepSeek offers powerful code-focused AI models.</p>
-        <p>You can get an API key by signing up on the DeepSeek website.</p>
+        <p>DeepSeek is specialized in code generation and technical assistance.</p>
+        <p>You can get an API key from the <a href="https://platform.deepseek.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">DeepSeek Platform</a>.</p>
       </div>
     </div>
   );
