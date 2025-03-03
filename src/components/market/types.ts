@@ -1,4 +1,3 @@
-
 export interface TradeSignal {
   type: 'LONG' | 'SHORT';
   entry: number;
@@ -17,7 +16,20 @@ export interface MarketData {
   change24h?: number;
   high24h?: number;
   low24h?: number;
-  symbol: string; // Ensuring symbol property is here
+  symbol: string;
+  name?: string;
+  marketCap?: number;
+  totalVolume24h?: number;
+  circulatingSupply?: number;
+  totalSupply?: number;
+  rank?: number;
+  ath?: number;
+  athDate?: string;
+  atl?: number;
+  atlDate?: string;
+  lastUpdated?: string;
+  priceChange7d?: number;
+  priceChange30d?: number;
 }
 
 export interface TradeOrder {
@@ -37,8 +49,8 @@ export interface TokenData {
   balance: string;
   network: string;
   address: string;
-  verified: boolean;  // Indicates if token is verified/trusted
-  decimals: number;   // Token decimals for accurate calculations
+  verified: boolean;
+  decimals: number;
   tokenType?: 'ERC20' | 'ERC721' | 'ERC1155' | 'BEP20' | 'Other';
 }
 
@@ -58,7 +70,6 @@ export interface SecureTransaction {
   maxPriorityFeePerGas?: string;
 }
 
-// ChartData interface definition
 export interface ChartData {
   name: string;
   price: number;
@@ -68,21 +79,19 @@ export interface ChartData {
   low: number;
 }
 
-// New interfaces for profit/loss tracking
-
 export interface ProfitLossRecord {
   id: string;
   tradeId: string;
   timestamp: number;
-  realized: number;    // Realized P&L amount
-  unrealized: number;  // Unrealized P&L amount 
-  percentage: number;  // P&L as percentage of investment
-  assetSymbol: string; // Symbol of the asset traded
-  entryPrice: number;  // Price at which position was opened
-  currentPrice: number;// Current price of the asset
-  quantity: number;    // Quantity of the asset
-  costBasis: number;   // Total cost of investment
-  currentValue: number;// Current value of investment
+  realized: number;
+  unrealized: number;
+  percentage: number;
+  assetSymbol: string;
+  entryPrice: number;
+  currentPrice: number;
+  quantity: number;
+  costBasis: number;
+  currentValue: number;
   status: 'open' | 'closed';
 }
 
@@ -114,3 +123,34 @@ export interface PortfolioSummary {
   }[];
 }
 
+export interface MarketOverviewData {
+  totalMarketCap: number;
+  totalVolume24h: number;
+  btcDominance: number;
+  ethDominance: number;
+  marketCapChange24h: number;
+  activeCoins: number;
+  trending: MarketData[];
+}
+
+export interface TimeframeOption {
+  label: string;
+  value: '1h' | '24h' | '7d' | '30d' | '90d' | '1y' | 'all';
+  active: boolean;
+}
+
+export interface MarketCategory {
+  id: string;
+  name: string;
+  marketCap: number;
+  volume24h: number;
+  change24h: number;
+  coins: number;
+}
+
+export interface MarketTrend {
+  category: string;
+  performance: number;
+  topGainers: { symbol: string; change: number }[];
+  topLosers: { symbol: string; change: number }[];
+}

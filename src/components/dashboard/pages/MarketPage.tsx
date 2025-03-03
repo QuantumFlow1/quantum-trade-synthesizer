@@ -1,45 +1,57 @@
 
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { useMarketData } from "./market/useMarketData";
 import { MarketHeader } from "./market/MarketHeader";
 import { MarketTabs } from "./market/MarketTabs";
+import { MarketDataTable } from "./market/MarketDataTable";
+import { TestnetTokenTab } from "./market/TestnetTokenTab";
+import { WalletConnection } from "./market/WalletConnection";
+import { useMarketData } from "./market/useMarketData";
+import { EnhancedMarketTab } from "./market/EnhancedMarketTab";
 
 export const MarketPage = () => {
-  const [activeTab, setActiveTab] = useState<string>("api");
-  
-  const {
-    isLoading,
-    sortField,
-    sortDirection,
-    selectedMarket,
-    uniqueMarkets,
-    sortedAndFilteredData,
-    fetchMarketData,
-    toggleSortDirection,
-    handleSortChange,
-    setSelectedMarket,
-  } = useMarketData();
+  const [activeTab, setActiveTab] = useState("coins");
+  const [walletConnected, setWalletConnected] = useState(false);
+  const { marketData, isLoading, filterValue, setFilterValue, error } = useMarketData();
+
+  const handleConnectWallet = () => {
+    setWalletConnected(true);
+  };
 
   return (
     <div className="space-y-6">
-      <Card className="col-span-full backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-        <MarketHeader isLoading={isLoading} onRefresh={fetchMarketData} />
+      <MarketHeader 
+        filterValue={filterValue} 
+        setFilterValue={setFilterValue} 
+        isLoading={isLoading}
+      />
 
-        <MarketTabs
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          isLoading={isLoading}
-          selectedMarket={selectedMarket}
-          setSelectedMarket={setSelectedMarket}
-          sortDirection={sortDirection}
-          toggleSortDirection={toggleSortDirection}
-          sortField={sortField}
-          handleSortChange={handleSortChange}
-          sortedAndFilteredData={sortedAndFilteredData}
-          uniqueMarkets={uniqueMarkets}
+      <MarketTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {activeTab === "coins" && (
+        <MarketDataTable 
+          marketData={marketData} 
+          isLoading={isLoading} 
+          error={error}
         />
-      </Card>
+      )}
+
+      {activeTab === "enhanced" && (
+        <EnhancedMarketTab />
+      )}
+
+      {activeTab === "tokens" && (
+        walletConnected ? (
+          <div>
+            <p className="text-center text-gray-500 py-10">
+              Coming soon: Your token balances will appear here
+            </p>
+          </div>
+        ) : (
+          <WalletConnection onConnect={handleConnectWallet} />
+        )
+      )}
+
+      {activeTab === "testnet" && <TestnetTokenTab />}
     </div>
   );
 };
