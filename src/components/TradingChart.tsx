@@ -9,6 +9,39 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { loadApiKeysFromStorage } from "@/components/chat/api-keys/apiKeyUtils";
 
+// Helper function to format market data to expected format
+const formatMarketData = (apiData) => {
+  if (!apiData || !Array.isArray(apiData)) {
+    console.error("Invalid market data received:", apiData);
+    return generateTradingData(); // Fallback to generated data
+  }
+  
+  // Convert the API response to the expected format
+  try {
+    // Extract the first item (usually BTC) as our main trading asset
+    const mainAsset = apiData[0] || {};
+    
+    // Generate compatible trading data format based on actual market data
+    const formattedData = generateTradingData().map((item, index) => {
+      return {
+        ...item,
+        // Use actual price data if available
+        open: mainAsset.price ? mainAsset.price * (0.99 + Math.random() * 0.02) : item.open,
+        close: mainAsset.price || item.close,
+        high: mainAsset.high24h || (mainAsset.price ? mainAsset.price * 1.02 : item.high),
+        low: mainAsset.low24h || (mainAsset.price ? mainAsset.price * 0.98 : item.low),
+        volume: mainAsset.volume24h || item.volume,
+        trend: mainAsset.change24h >= 0 ? "up" : "down"
+      };
+    });
+    
+    return formattedData;
+  } catch (error) {
+    console.error("Error formatting market data:", error);
+    return generateTradingData(); // Fallback to generated data
+  }
+};
+
 const TradingChart = () => {
   const [data, setData] = useState(generateTradingData());
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
@@ -16,6 +49,7 @@ const TradingChart = () => {
   const [forceSimulation, setForceSimulation] = useState(false);
   const [lastAPICheckTime, setLastAPICheckTime] = useState<Date | null>(null);
   const [apiKeysAvailable, setApiKeysAvailable] = useState<boolean>(false);
+  const [rawMarketData, setRawMarketData] = useState<any>(null);
 
   // Check if any API keys are configured
   const checkApiKeysAvailability = useCallback(() => {
@@ -61,6 +95,43 @@ const TradingChart = () => {
     
     return checkAdminKeys();
   }, []);
+
+  // Fetch market data from API
+  const fetchMarketData = async () => {
+    try {
+      if (forceSimulation) {
+        const generatedData = generateTradingData();
+        setData(generatedData);
+        return generatedData;
+      }
+      
+      const { data: marketData, error } = await supabase.functions.invoke('market-data-collector');
+      
+      if (error) {
+        console.error("Error fetching market data:", error);
+        const fallbackData = generateTradingData();
+        setData(fallbackData);
+        return fallbackData;
+      }
+      
+      if (marketData) {
+        console.log("Raw market data received:", marketData);
+        setRawMarketData(marketData);
+        
+        // Format the data to match expected format
+        const formattedData = formatMarketData(marketData);
+        setData(formattedData);
+        return formattedData;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error in fetchMarketData:", error);
+      const fallbackData = generateTradingData();
+      setData(fallbackData);
+      return fallbackData;
+    }
+  };
 
   // Check the API status when the component mounts
   useEffect(() => {
@@ -111,6 +182,9 @@ const TradingChart = () => {
           console.log("API is available:", data);
           setApiStatus('available');
           setLastAPICheckTime(new Date());
+          
+          // Fetch initial market data
+          await fetchMarketData();
         }
       } catch (error) {
         console.error("Error checking API status:", error);
@@ -173,6 +247,10 @@ const TradingChart = () => {
       } else {
         console.log("API is available after retry:", data);
         setApiStatus('available');
+        
+        // Fetch fresh market data
+        await fetchMarketData();
+        
         toast({
           title: "Connection Restored",
           description: "Successfully connected to trading services.",
@@ -212,11 +290,15 @@ const TradingChart = () => {
   useEffect(() => {
     // Update the trading data every 5 seconds
     const dataInterval = setInterval(() => {
-      setData(generateTradingData());
+      if (forceSimulation) {
+        setData(generateTradingData());
+      } else if (apiStatus === 'available') {
+        fetchMarketData();
+      }
     }, 5000);
 
     return () => clearInterval(dataInterval);
-  }, []);
+  }, [forceSimulation, apiStatus]);
 
   return (
     <div className="space-y-6">
@@ -267,7 +349,7 @@ const TradingChart = () => {
 
         <TradingOrderSection 
           apiStatus={apiStatus}
-          marketData={data}
+          marketData={rawMarketData}
           onSimulationToggle={toggleSimulationMode}
           isSimulationMode={forceSimulation}
           apiKeysAvailable={apiKeysAvailable}
