@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { TradeOrderForm } from "./TradeOrderForm";
 import PositionsList from "./PositionsList";
@@ -12,6 +11,7 @@ import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/components/ui/tabs";
 import { SimulationToggle } from "./SimulationToggle";
 import { Button } from "../ui/button";
 import { toast } from "@/hooks/use-toast";
+import { CollaborativeInsightsPanel } from "./CollaborativeInsightsPanel";
 
 interface TradingOrderSectionProps {
   apiStatus: 'checking' | 'available' | 'unavailable';
@@ -92,6 +92,8 @@ export const TradingOrderSection = ({ apiStatus }: TradingOrderSectionProps) => 
           </AlertDescription>
         </Alert>
       )}
+      
+      <CollaborativeInsightsPanel />
       
       <TradeOrderForm 
         apiStatus={effectiveApiStatus} 
