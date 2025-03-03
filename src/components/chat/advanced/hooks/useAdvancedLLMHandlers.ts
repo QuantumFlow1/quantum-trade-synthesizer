@@ -68,6 +68,7 @@ export const createAdvancedLLMHandlers = (
       console.log("Generating response with model:", state.selectedModel);
       console.log("Temperature:", state.temperature);
       console.log("Max tokens:", state.maxTokens);
+      console.log("Message content:", content);
       
       // Set updated settings for the API call
       state.setGrokSettings(updatedSettings);

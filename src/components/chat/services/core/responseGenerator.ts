@@ -25,26 +25,51 @@ const generateAIResponseByModel = async (
   console.log(`Attempting to generate response using ${model} model`);
   
   try {
+    let response: string = "";
+    
     switch (model) {
       case 'grok3':
-        return await generateGrok3Response(inputMessage, conversationHistory);
+        response = await generateGrok3Response(inputMessage, conversationHistory);
+        break;
       case 'openai':
-        return await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+        response = await generateOpenAIResponse(inputMessage, conversationHistory, settings);
+        break;
       case 'claude':
-        return await generateClaudeResponse(inputMessage, conversationHistory, settings);
+        response = await generateClaudeResponse(inputMessage, conversationHistory, settings);
+        break;
       case 'gemini':
-        return await generateGeminiResponse(inputMessage, conversationHistory, settings);
+        response = await generateGeminiResponse(inputMessage, conversationHistory, settings);
+        break;
       case 'deepseek':
       case 'deepseek-chat':
-        return await generateDeepSeekResponse(inputMessage, conversationHistory, settings);
+        response = await generateDeepSeekResponse(inputMessage, conversationHistory, settings);
+        break;
       default:
         if (isGrok3Available) {
           console.log('Unknown model type, falling back to Grok3');
-          return await generateGrok3Response(inputMessage, conversationHistory);
+          response = await generateGrok3Response(inputMessage, conversationHistory);
         } else {
-          return generateFallbackResponse(inputMessage, conversationHistory);
+          response = generateFallbackResponse(inputMessage, conversationHistory);
         }
     }
+    
+    // Ensure we have a valid text response
+    if (!response || typeof response !== 'string') {
+      console.error(`Invalid response type from ${model}:`, response);
+      throw new Error(`Invalid response received from ${model}`);
+    }
+    
+    // Trim any leading/trailing whitespace
+    response = response.trim();
+    
+    // If still empty, throw an error
+    if (!response) {
+      throw new Error(`Empty response received from ${model}`);
+    }
+    
+    console.log(`Got response from ${model}:`, response.substring(0, 100) + '...');
+    return response;
+    
   } catch (error) {
     console.error(`Error generating response with ${model}:`, error);
     

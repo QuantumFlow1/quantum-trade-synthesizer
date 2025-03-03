@@ -19,7 +19,6 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
   // Scroll to bottom when messages change
   useEffect(() => {
     console.log("Advanced interface - Messages updated:", messages.length);
-    console.log("Advanced messages content:", messages);
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -33,11 +32,13 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
       {messages.length > 0 ? (
         <div className="space-y-4 w-full">
           {messages.map((message, index) => {
-            console.log(`Rendering advanced message ${index}, role: ${message.role}, content:`, message.content);
+            // Log each message for debugging
+            console.log(`Rendering message ${index}:`, message);
             
-            if (!message.content) {
-              console.warn(`Advanced message at index ${index} has empty content!`);
-            }
+            // Additional check to ensure content is a string
+            const messageContent = typeof message.content === 'string' 
+              ? message.content 
+              : JSON.stringify(message.content) || "Error: Invalid message content";
             
             return (
               <div 
@@ -56,7 +57,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
                   </span>
                 </div>
                 <p className="text-sm whitespace-pre-wrap">
-                  {message.content || "Error: Empty message content"}
+                  {messageContent || "Error: Empty message content"}
                 </p>
               </div>
             );

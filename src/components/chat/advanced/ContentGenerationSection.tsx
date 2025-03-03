@@ -16,7 +16,13 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
   // Get the display name for the selected model
   const modelDisplayName = getModelDisplayName(selectedModelName);
   
-  console.log("ContentGenerationSection rendering with messages:", messages);
+  // Validate messages to ensure they're in the correct format
+  const validatedMessages = messages.map(msg => ({
+    role: msg.role || 'user',
+    content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content) || ''
+  }));
+  
+  console.log("ContentGenerationSection rendering with validated messages:", validatedMessages);
 
   return (
     <div className="flex-1 p-4 flex flex-col">
@@ -24,12 +30,12 @@ const ContentGenerationSection: React.FC<ContentGenerationSectionProps> = ({
       
       {/* Debug info */}
       <div className="text-xs text-gray-500 mb-2">
-        Messages in state: {messages.length}
+        Messages in state: {validatedMessages.length}
       </div>
       
       {/* Messages display area */}
       <MessageList 
-        messages={messages} 
+        messages={validatedMessages} 
         selectedModelName={selectedModelName} 
       />
       
