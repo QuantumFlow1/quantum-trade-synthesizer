@@ -25,7 +25,7 @@ export const EnhancedMarketDetail: React.FC<EnhancedMarketDetailProps> = ({
         <MarketPriceOverview marketData={marketData} />
         <MarketPriceChart marketData={marketData} />
         <MarketStatistics marketData={marketData} />
-        <MarketActions />
+        <MarketActions marketData={marketData} onClose={onClose} />
       </CardContent>
     </Card>
   );
