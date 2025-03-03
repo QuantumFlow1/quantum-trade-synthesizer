@@ -1,34 +1,20 @@
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "../ui/use-toast";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { supabase } from "@/lib/supabase";
-import { useState, useEffect } from "react";
-import { ChartData, MarketData, ProfitLossRecord, TradeHistoryItem } from "./types";
-import { ModalHeader } from "./detail/modal/ModalHeader";
-import { ChartTabContent } from "./detail/modal/ChartTabContent";
-import { TradeTabContent } from "./detail/modal/TradeTabContent";
-import { PositionsTabContent } from "./detail/modal/PositionsTabContent";
-import { PerformanceTabContent } from "./detail/modal/PerformanceTabContent";
+import { ChartData, MarketData, ProfitLossRecord, TradeHistoryItem } from "../../types";
 
-interface MarketDetailModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface UseModalDataProps {
   marketName: string | null;
   marketData: ChartData[];
+  onClose: () => void;
 }
 
-export const MarketDetailModal = ({
-  isOpen,
-  onClose,
-  marketName,
-  marketData
-}: MarketDetailModalProps) => {
+export const useModalData = ({ marketName, marketData, onClose }: UseModalDataProps) => {
   const [amount, setAmount] = useState<string>("0.01");
   const [leverage, setLeverage] = useState<string>("1");
   const [orderType, setOrderType] = useState<string>("market");
-  const [currentTab, setCurrentTab] = useState<string>("chart");
   const [hasPositions, setHasPositions] = useState<boolean>(false);
   const [stopLoss, setStopLoss] = useState<string>("");
   const [takeProfit, setTakeProfit] = useState<string>("");
@@ -305,82 +291,30 @@ export const MarketDetailModal = ({
     }
   };
 
-  if (!marketName || !marketData.length) {
-    return null;
-  }
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-        <ModalHeader 
-          marketName={marketName} 
-          latestData={latestData} 
-          isPriceUp={isPriceUp} 
-        />
-
-        <Tabs defaultValue="chart" value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList className="grid grid-cols-4 mb-4">
-            <TabsTrigger value="chart">Price & Chart</TabsTrigger>
-            <TabsTrigger value="trade">Trade</TabsTrigger>
-            <TabsTrigger value="positions" disabled={!hasPositions}>Your Positions</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="chart" className="space-y-6">
-            <ChartTabContent 
-              marketData={fullMarketData}
-              marketName={marketName}
-              data={marketData}
-              isPriceUp={isPriceUp}
-            />
-          </TabsContent>
-          
-          <TabsContent value="trade">
-            <TradeTabContent 
-              marketData={fullMarketData}
-              marketName={marketName}
-              amount={amount}
-              setAmount={setAmount}
-              leverage={leverage}
-              setLeverage={setLeverage}
-              orderType={orderType}
-              setOrderType={setOrderType}
-              latestData={latestData}
-              isPriceUp={isPriceUp}
-              change24h={change24h}
-              handleBuyClick={handleBuyClick}
-              handleSellClick={handleSellClick}
-              stopLoss={stopLoss}
-              setStopLoss={setStopLoss}
-              takeProfit={takeProfit}
-              setTakeProfit={setTakeProfit}
-              advancedOptions={advancedOptions}
-              setAdvancedOptions={setAdvancedOptions}
-            />
-          </TabsContent>
-          
-          <TabsContent value="positions">
-            <PositionsTabContent 
-              marketName={marketName}
-              hasPositions={hasPositions}
-              amount={amount}
-              leverage={leverage}
-              latestData={latestData}
-              isPriceUp={isPriceUp}
-              setCurrentTab={setCurrentTab}
-            />
-          </TabsContent>
-          
-          <TabsContent value="performance">
-            <PerformanceTabContent
-              marketName={marketName}
-              tradeHistory={tradeHistory}
-              profitLoss={profitLoss}
-              isLoading={isHistoryLoading}
-            />
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
-  );
+  return {
+    amount,
+    setAmount,
+    leverage,
+    setLeverage,
+    orderType,
+    setOrderType,
+    hasPositions,
+    setHasPositions,
+    stopLoss,
+    setStopLoss,
+    takeProfit,
+    setTakeProfit,
+    advancedOptions,
+    setAdvancedOptions,
+    tradeHistory,
+    profitLoss,
+    isHistoryLoading,
+    fullMarketData,
+    latestData,
+    previousPrice,
+    isPriceUp,
+    change24h,
+    handleBuyClick,
+    handleSellClick
+  };
 };

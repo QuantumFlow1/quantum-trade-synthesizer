@@ -1,31 +1,36 @@
 
-import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { MarketData } from './types';
+import { Card, CardContent } from "@/components/ui/card";
 import { MarketDetailHeader } from './detail/MarketDetailHeader';
 import { MarketPriceOverview } from './detail/MarketPriceOverview';
 import { MarketPriceChart } from './detail/MarketPriceChart';
 import { MarketStatistics } from './detail/MarketStatistics';
 import { MarketActions } from './detail/MarketActions';
+import { MarketData } from './types';
 
 interface EnhancedMarketDetailProps {
   marketData: MarketData;
   onClose: () => void;
 }
 
-export const EnhancedMarketDetail: React.FC<EnhancedMarketDetailProps> = ({
-  marketData,
-  onClose
-}) => {
+export const EnhancedMarketDetail = ({ marketData, onClose }: EnhancedMarketDetailProps) => {
   return (
-    <Card className="w-full shadow-md">
+    <Card className="bg-card">
       <MarketDetailHeader marketData={marketData} onClose={onClose} />
       
-      <CardContent className="pb-6">
+      <CardContent className="space-y-6">
         <MarketPriceOverview marketData={marketData} />
-        <MarketPriceChart marketData={marketData} />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <MarketPriceChart marketData={marketData} />
+          </div>
+          
+          <div className="lg:col-span-1">
+            <MarketActions marketData={marketData} onClose={onClose} />
+          </div>
+        </div>
+        
         <MarketStatistics marketData={marketData} />
-        <MarketActions marketData={marketData} onClose={onClose} />
       </CardContent>
     </Card>
   );
