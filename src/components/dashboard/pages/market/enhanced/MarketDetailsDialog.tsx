@@ -1,13 +1,13 @@
 
 import React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { MarketData } from '@/components/market/types';
 import { EnhancedMarketDetail } from '@/components/market/EnhancedMarketDetail';
+import { MarketData } from '@/components/market/types';
 
 interface MarketDetailsDialogProps {
   selectedMarket: MarketData | null;
   showMarketDetail: boolean;
-  setShowMarketDetail: (show: boolean) => void;
+  setShowMarketDetail: (value: boolean) => void;
   handleCloseMarketDetail: () => void;
 }
 

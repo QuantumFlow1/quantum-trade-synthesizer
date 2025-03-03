@@ -1,7 +1,8 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { MarketData } from '@/components/market/types';
+import { supabase } from '@/lib/supabase';
 
 export const useMarketDataState = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
@@ -14,25 +15,27 @@ export const useMarketDataState = () => {
   const [showMarketDetail, setShowMarketDetail] = useState(false);
   
   const { toast } = useToast();
-
-  const fetchMarketData = useCallback(async () => {
+  
+  const fetchMarketData = async () => {
     try {
       setIsRefreshing(true);
-      const response = await fetch('https://tfmlretexydslgowlkid.supabase.co/functions/v1/fetch-market-data');
+      // Use supabase client to call the market-data-collector function
+      const { data, error } = await supabase.functions.invoke('market-data-collector');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch market data');
+      if (error) {
+        throw new Error(`Failed to fetch market data: ${error.message}`);
       }
       
-      const data = await response.json();
-      setMarketData(data);
-      filterData(data, searchTerm, activeTab);
-      
-      toast({
-        title: 'Market data updated',
-        description: `Successfully fetched data for ${data.length} markets`,
-        duration: 3000,
-      });
+      if (data) {
+        setMarketData(data as MarketData[]);
+        filterData(data as MarketData[], searchTerm, activeTab);
+        
+        toast({
+          title: 'Market data updated',
+          description: `Successfully fetched data for ${data.length} markets`,
+          duration: 3000,
+        });
+      }
     } catch (error) {
       console.error('Error fetching market data:', error);
       toast({
@@ -45,8 +48,19 @@ export const useMarketDataState = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [searchTerm, activeTab, toast]);
-
+  };
+  
+  useEffect(() => {
+    fetchMarketData();
+    
+    // Auto-refresh market data every 60 seconds
+    const refreshInterval = setInterval(() => {
+      fetchMarketData();
+    }, 60000);
+    
+    return () => clearInterval(refreshInterval);
+  }, []);
+  
   const filterData = (data: MarketData[], search: string, tab: string) => {
     let filtered = [...data];
     
@@ -71,17 +85,6 @@ export const useMarketDataState = () => {
     filterData(marketData, searchTerm, activeTab);
   }, [searchTerm, activeTab, marketData]);
   
-  useEffect(() => {
-    fetchMarketData();
-    
-    // Auto-refresh market data every 60 seconds
-    const refreshInterval = setInterval(() => {
-      fetchMarketData();
-    }, 60000);
-    
-    return () => clearInterval(refreshInterval);
-  }, [fetchMarketData]);
-
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };

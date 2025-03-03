@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Search, RefreshCw } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Search, RefreshCw } from 'lucide-react';
 
 interface MarketHeaderProps {
   searchTerm: string;
@@ -11,11 +12,11 @@ interface MarketHeaderProps {
   isRefreshing: boolean;
 }
 
-export const MarketHeader: React.FC<MarketHeaderProps> = ({
-  searchTerm,
-  onSearchChange,
-  onRefresh,
-  isRefreshing
+export const MarketHeader: React.FC<MarketHeaderProps> = ({ 
+  searchTerm, 
+  onSearchChange, 
+  onRefresh, 
+  isRefreshing 
 }) => {
   return (
     <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">

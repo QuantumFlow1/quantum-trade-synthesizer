@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TrendingUp, BarChart } from 'lucide-react';
 import { MarketData } from '@/components/market/types';
 import { MarketCharts } from '@/components/market/MarketCharts';
@@ -11,8 +12,8 @@ interface MarketTrendCardsProps {
 }
 
 export const MarketTrendCards: React.FC<MarketTrendCardsProps> = ({ 
-  marketData, 
-  isLoading 
+  marketData,
+  isLoading
 }) => {
   const getTopPerformers = (): MarketData[] => {
     return [...marketData]
