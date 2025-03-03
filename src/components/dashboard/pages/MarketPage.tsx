@@ -11,27 +11,36 @@ import { EnhancedMarketTab } from "./market/EnhancedMarketTab";
 export const MarketPage = () => {
   const [activeTab, setActiveTab] = useState("coins");
   const [walletConnected, setWalletConnected] = useState(false);
-  const { marketData, isLoading, filterValue, setFilterValue, error } = useMarketData();
+  const { 
+    marketData, 
+    isLoading, 
+    sortField,
+    sortDirection,
+    handleSortChange,
+    error 
+  } = useMarketData();
 
   const handleConnectWallet = () => {
     setWalletConnected(true);
   };
 
+  const handleDisconnectWallet = () => {
+    setWalletConnected(false);
+  };
+
   return (
     <div className="space-y-6">
-      <MarketHeader 
-        filterValue={filterValue} 
-        setFilterValue={setFilterValue} 
-        isLoading={isLoading}
-      />
+      <MarketHeader isLoading={isLoading} />
 
       <MarketTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       {activeTab === "coins" && (
         <MarketDataTable 
-          marketData={marketData} 
+          data={marketData} 
           isLoading={isLoading} 
-          error={error}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSortChange={handleSortChange}
         />
       )}
 
@@ -47,7 +56,10 @@ export const MarketPage = () => {
             </p>
           </div>
         ) : (
-          <WalletConnection onConnect={handleConnectWallet} />
+          <WalletConnection 
+            onConnect={handleConnectWallet}
+            onDisconnect={handleDisconnectWallet}  
+          />
         )
       )}
 

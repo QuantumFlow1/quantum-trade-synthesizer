@@ -10,9 +10,16 @@ import { AlertTriangle, BellRing, TrendingUp, PlusCircle } from "lucide-react";
 interface PositionsListProps {
   positions: Position[];
   isLoading: boolean;
+  onPositionSelect?: (id: string) => void;
+  selectedPositionId?: string | null;
 }
 
-const PositionsList = ({ positions, isLoading }: PositionsListProps) => {
+const PositionsList = ({ 
+  positions, 
+  isLoading, 
+  onPositionSelect, 
+  selectedPositionId 
+}: PositionsListProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -124,7 +131,13 @@ const PositionsList = ({ positions, isLoading }: PositionsListProps) => {
   return (
     <div className="space-y-4">
       {positions.map((position) => (
-        <Card key={position.id} className="p-4">
+        <Card 
+          key={position.id} 
+          className={`p-4 cursor-pointer transition-all ${
+            selectedPositionId === position.id ? 'ring-2 ring-primary' : ''
+          }`}
+          onClick={() => onPositionSelect && onPositionSelect(position.id)}
+        >
           <div className="flex justify-between items-start">
             <div>
               <h4 className="font-medium">Position #{position.id.slice(0, 8)}</h4>
@@ -149,7 +162,10 @@ const PositionsList = ({ positions, isLoading }: PositionsListProps) => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleClosePosition(position.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleClosePosition(position.id);
+              }}
               className="ml-4"
             >
               Close Position
