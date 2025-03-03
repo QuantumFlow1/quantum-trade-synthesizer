@@ -15,9 +15,11 @@ export function useClaudeChat() {
   useEffect(() => {
     const savedApiKey = localStorage.getItem('claudeApiKey');
     if (savedApiKey) {
+      console.log('Found saved Claude API key in localStorage');
       setApiKey(savedApiKey);
     } else {
       // Show settings if no API key is found
+      console.log('No Claude API key found in localStorage');
       setShowSettings(true);
     }
     
@@ -29,6 +31,23 @@ export function useClaudeChat() {
         console.error('Error parsing saved Claude messages:', e);
       }
     }
+    
+    // Listen for API key changes from other components
+    const handleApiKeyUpdate = () => {
+      const updatedKey = localStorage.getItem('claudeApiKey');
+      if (updatedKey && updatedKey !== apiKey) {
+        console.log('API key updated from another component');
+        setApiKey(updatedKey);
+      }
+    };
+    
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
+    
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
+    };
   }, []);
 
   // Save messages to localStorage when they change

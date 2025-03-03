@@ -17,10 +17,18 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
   const [key, setKey] = useState(apiKey);
   const [saved, setSaved] = useState(false);
   
-  // Update local state when apiKey prop changes
+  // Load saved API key on component mount if not provided in props
   useEffect(() => {
-    setKey(apiKey);
-  }, [apiKey]);
+    if (!apiKey) {
+      const savedKey = localStorage.getItem('deepseekApiKey');
+      if (savedKey) {
+        setKey(savedKey);
+        setApiKey(savedKey); // Update parent component with saved key
+      }
+    } else {
+      setKey(apiKey);
+    }
+  }, [apiKey, setApiKey]);
   
   const handleSave = () => {
     // Validate the API key
@@ -28,12 +36,24 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
       return;
     }
     
-    // Save API key
+    // Save API key to localStorage
+    localStorage.setItem('deepseekApiKey', key);
+    
+    // Update parent component
     setApiKey(key);
     
     // Show saved animation
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+    
+    toast({
+      title: "API key saved",
+      description: "Your DeepSeek API key has been saved.",
+      duration: 3000,
+    });
+    
+    // Trigger custom event for other components
+    window.dispatchEvent(new Event('apikey-updated'));
   };
   
   return (

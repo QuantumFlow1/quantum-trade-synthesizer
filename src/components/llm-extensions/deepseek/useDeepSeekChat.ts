@@ -17,9 +17,11 @@ export function useDeepSeekChat() {
   useEffect(() => {
     const savedApiKey = localStorage.getItem('deepseekApiKey');
     if (savedApiKey) {
+      console.log('Found saved DeepSeek API key in localStorage');
       setApiKey(savedApiKey);
     } else {
       // Show settings if no API key is found
+      console.log('No DeepSeek API key found in localStorage');
       setShowSettings(true);
     }
     
@@ -34,6 +36,23 @@ export function useDeepSeekChat() {
     
     // Check edge function status
     checkEdgeFunctionStatus();
+    
+    // Listen for API key changes from other components
+    const handleApiKeyUpdate = () => {
+      const updatedKey = localStorage.getItem('deepseekApiKey');
+      if (updatedKey && updatedKey !== apiKey) {
+        console.log('API key updated from another component');
+        setApiKey(updatedKey);
+      }
+    };
+    
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
+    
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
+    };
   }, []);
 
   // Save messages to localStorage when they change
