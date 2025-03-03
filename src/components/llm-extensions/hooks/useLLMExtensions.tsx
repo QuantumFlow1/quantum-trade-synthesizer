@@ -15,7 +15,7 @@ export function useLLMExtensions() {
   const [connectionStatus, setConnectionStatus] = useState({
     deepseek: 'disconnected',
     openai: 'disconnected',
-    grok: 'disconnected',
+    grok: 'connected', // Grok is always available as it's our default model
     claude: 'disconnected'
   } as Record<string, 'connected' | 'connecting' | 'disconnected' | 'error'>);
   
@@ -30,7 +30,7 @@ export function useLLMExtensions() {
       }
     }
     
-    // Check for API keys to determine connection status
+    // Check for API keys to determine initial connection status
     const deepseekKey = localStorage.getItem('deepseekApiKey');
     const openaiKey = localStorage.getItem('openaiApiKey');
     const claudeKey = localStorage.getItem('claudeApiKey');
@@ -41,7 +41,7 @@ export function useLLMExtensions() {
       deepseek: deepseekKey ? 'connected' : 'disconnected',
       openai: openaiKey ? 'connected' : 'disconnected',
       claude: claudeKey ? 'connected' : 'disconnected',
-      // Grok doesn't need an API key
+      // Grok doesn't need an API key so it's always connected
       grok: 'connected'
     }));
   }, []);
@@ -63,9 +63,27 @@ export function useLLMExtensions() {
       }));
     };
     
+    // Listen for localStorage changes
     window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
+    
+    // Listen for connection status changes from individual LLM components
+    const handleConnectionStatusChange = (event: CustomEvent) => {
+      const { provider, status } = event.detail;
+      setConnectionStatus(prev => ({
+        ...prev,
+        [provider]: status
+      }));
+    };
+    
+    window.addEventListener('connection-status-changed', 
+      handleConnectionStatusChange as EventListener);
+    
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
+      window.removeEventListener('connection-status-changed', 
+        handleConnectionStatusChange as EventListener);
     };
   }, []);
   
@@ -100,6 +118,12 @@ export function useLLMExtensions() {
       ...prev,
       [llm]: status
     }));
+    
+    // Broadcast connection status change
+    const event = new CustomEvent('connection-status-changed', {
+      detail: { provider: llm, status }
+    });
+    window.dispatchEvent(event);
   };
 
   return {

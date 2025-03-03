@@ -30,10 +30,15 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
 
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected' | 'error'>('disconnected');
 
-  // Check API status on mount
+  // Check API status on mount and when API key changes
   useEffect(() => {
     checkEdgeFunctionStatus();
-  }, []);
+    
+    // Also update connection status when API key changes
+    if (apiKey) {
+      checkEdgeFunctionStatus();
+    }
+  }, [apiKey]);
 
   // Update connection status when API status changes
   useEffect(() => {
@@ -42,6 +47,12 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
     } else if (edgeFunctionStatus === 'available') {
       if (apiKey) {
         setConnectionStatus('connected');
+        
+        // Dispatch an event to notify other components
+        const event = new CustomEvent('connection-status-changed', {
+          detail: { provider: 'deepseek', status: 'connected' }
+        });
+        window.dispatchEvent(event);
       } else {
         setConnectionStatus('disconnected');
       }

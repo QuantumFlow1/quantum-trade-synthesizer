@@ -46,6 +46,13 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
   };
   
   const saveApiKeys = () => {
+    // Store previous values to check what changed
+    const prevOpenAI = localStorage.getItem('openaiApiKey');
+    const prevClaude = localStorage.getItem('claudeApiKey');
+    const prevGemini = localStorage.getItem('geminiApiKey');
+    const prevDeepseek = localStorage.getItem('deepseekApiKey');
+    
+    // Save new values
     if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
     if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
     if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
@@ -66,8 +73,28 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
     onOpenChange(false);
     onSave();
     
-    // Dispatch custom event for other components
+    // Dispatch custom events for other components
     window.dispatchEvent(new Event('localStorage-changed'));
+    window.dispatchEvent(new Event('apikey-updated'));
+    
+    // For each API key that changed, dispatch a specific event
+    if (prevOpenAI !== openaiKey && openaiKey) {
+      window.dispatchEvent(new CustomEvent('connection-status-changed', {
+        detail: { provider: 'openai', status: 'connected' }
+      }));
+    }
+    
+    if (prevClaude !== claudeKey && claudeKey) {
+      window.dispatchEvent(new CustomEvent('connection-status-changed', {
+        detail: { provider: 'claude', status: 'connected' }
+      }));
+    }
+    
+    if (prevDeepseek !== deepseekKey && deepseekKey) {
+      window.dispatchEvent(new CustomEvent('connection-status-changed', {
+        detail: { provider: 'deepseek', status: 'connected' }
+      }));
+    }
     
     // Automatically trigger a connection check
     if (onManualCheck) {

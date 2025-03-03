@@ -1,7 +1,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { EdgeFunctionStatus } from '../../types/chatTypes';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase';
 
 export function useDeepSeekApi() {
   const [isApiLoading, setIsApiLoading] = useState(false);
@@ -16,6 +17,7 @@ export function useDeepSeekApi() {
     };
 
     window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
     
     // Initial check when component mounts
     if (edgeFunctionStatus === 'checking') {
@@ -24,6 +26,7 @@ export function useDeepSeekApi() {
     
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
     };
   }, []);
 
@@ -35,11 +38,27 @@ export function useDeepSeekApi() {
       setEdgeFunctionStatus('checking');
       console.log('Checking DeepSeek API connection status...');
       
-      // Get the API key from localStorage if available
-      const apiKey = localStorage.getItem('deepseekApiKey') || '';
+      // Get the API key from localStorage if available or fetch admin key
+      let apiKey = localStorage.getItem('deepseekApiKey');
       
       if (!apiKey) {
-        console.log('No DeepSeek API key found in localStorage');
+        // Try to get admin key from Supabase
+        try {
+          const { data, error } = await supabase.functions.invoke('get-admin-key', {
+            body: { provider: 'deepseek' }
+          });
+          
+          if (!error && data?.key) {
+            apiKey = data.key;
+            console.log('Using admin DeepSeek API key');
+          }
+        } catch (keyError) {
+          console.error('Error fetching admin DeepSeek API key:', keyError);
+        }
+      }
+      
+      if (!apiKey) {
+        console.log('No DeepSeek API key found in localStorage or admin keys');
         setEdgeFunctionStatus('unavailable');
         return false;
       }
@@ -64,32 +83,33 @@ export function useDeepSeekApi() {
         console.log('DeepSeek API connection successful');
         setEdgeFunctionStatus('available');
         setLastChecked(new Date());
-        toast({
-          title: 'DeepSeek API Connected',
-          description: 'Successfully connected to the DeepSeek API service',
-          duration: 3000,
-        });
+        
+        // Notify parent component about successful connection
+        window.dispatchEvent(new CustomEvent('connection-status-changed', {
+          detail: { provider: 'deepseek', status: 'connected' }
+        }));
+        
         return true;
       } else {
         console.error('DeepSeek API is not available:', responseText);
         setEdgeFunctionStatus('unavailable');
-        toast({
-          title: 'DeepSeek API Connection Failed',
-          description: 'Could not connect to the DeepSeek API. Please check your API key.',
-          variant: 'destructive',
-          duration: 5000,
-        });
+        
+        // Notify parent component about failed connection
+        window.dispatchEvent(new CustomEvent('connection-status-changed', {
+          detail: { provider: 'deepseek', status: 'error' }
+        }));
+        
         return false;
       }
     } catch (error) {
       console.error('Error checking DeepSeek API status:', error);
       setEdgeFunctionStatus('unavailable');
-      toast({
-        title: 'DeepSeek API Error',
-        description: 'An error occurred while connecting to the DeepSeek API',
-        variant: 'destructive',
-        duration: 5000,
-      });
+      
+      // Notify parent component about error
+      window.dispatchEvent(new CustomEvent('connection-status-changed', {
+        detail: { provider: 'deepseek', status: 'error' }
+      }));
+      
       return false;
     } finally {
       setLastChecked(new Date());
