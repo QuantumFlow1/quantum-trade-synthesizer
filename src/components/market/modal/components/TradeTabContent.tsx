@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -18,19 +19,31 @@ import { ArrowDownUp, Settings, AlertTriangle } from 'lucide-react';
 import { MarketData } from '@/components/market/types';
 
 interface TradeTabContentProps {
-  marketData: MarketData;
-  marketName: string | null; // marketName property
-  orderType: string; // orderType property
-  amount: string;
-  setAmount: (value: string) => void;
-  leverage: string;
-  setLeverage: (value: string) => void;
-  side: "buy" | "sell";
-  setSide: (value: "buy" | "sell") => void;
-  orderPrice: string;
-  setOrderPrice: (value: string) => void;
-  advancedOptions: boolean;
-  setAdvancedOptions: (value: boolean) => void;
+  marketData: any;
+  marketName: any;
+  orderType: any;
+  amount: any;
+  setAmount: any;
+  leverage: any;
+  setLeverage: any;
+  side: any;
+  setSide: any;
+  orderPrice: any;
+  setOrderPrice: any;
+  advancedOptions: any;
+  setAdvancedOptions: any;
+  // Add the missing prop
+  setOrderType: any;
+  // Add other props that might be missing based on the error
+  latestData?: any;
+  isPriceUp?: any;
+  change24h?: any;
+  handleBuyClick?: any;
+  handleSellClick?: any;
+  stopLoss?: any;
+  setStopLoss?: any;
+  takeProfit?: any;
+  setTakeProfit?: any;
 }
 
 export const TradeTabContent = ({
@@ -46,8 +59,19 @@ export const TradeTabContent = ({
   orderPrice,
   setOrderPrice,
   advancedOptions,
-  setAdvancedOptions
-}) => {
+  setAdvancedOptions,
+  // Include the new props in the component destructuring
+  setOrderType,
+  latestData,
+  isPriceUp,
+  change24h,
+  handleBuyClick,
+  handleSellClick,
+  stopLoss,
+  setStopLoss,
+  takeProfit,
+  setTakeProfit
+}: TradeTabContentProps) => {
   return (
     <Card className="w-full">
       <CardContent className="space-y-4">
@@ -91,6 +115,23 @@ export const TradeTabContent = ({
           </Select>
         </div>
 
+        {/* Add order type selection if setOrderType is available */}
+        {setOrderType && (
+          <div className="space-y-2">
+            <Label htmlFor="orderType">Order Type</Label>
+            <Select value={orderType} onValueChange={setOrderType}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Market" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="market">Market</SelectItem>
+                <SelectItem value="limit">Limit</SelectItem>
+                <SelectItem value="stop">Stop</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {advancedOptions && (
           <div className="space-y-2">
             <Label htmlFor="price">Order Price</Label>
@@ -104,6 +145,33 @@ export const TradeTabContent = ({
           </div>
         )}
 
+        {/* Add stop loss and take profit if they exist */}
+        {advancedOptions && setStopLoss && (
+          <div className="space-y-2">
+            <Label htmlFor="stopLoss">Stop Loss</Label>
+            <Input
+              id="stopLoss"
+              type="number"
+              placeholder="Stop Loss"
+              value={stopLoss}
+              onChange={(e) => setStopLoss(e.target.value)}
+            />
+          </div>
+        )}
+
+        {advancedOptions && setTakeProfit && (
+          <div className="space-y-2">
+            <Label htmlFor="takeProfit">Take Profit</Label>
+            <Input
+              id="takeProfit"
+              type="number"
+              placeholder="Take Profit"
+              value={takeProfit}
+              onChange={(e) => setTakeProfit(e.target.value)}
+            />
+          </div>
+        )}
+
         <div className="flex justify-between text-sm text-muted-foreground">
           <p>Estimated Fee: 0.0012 BTC</p>
           <p>
@@ -111,9 +179,21 @@ export const TradeTabContent = ({
           </p>
         </div>
 
-        <Button className="w-full" onClick={() => alert('Trade Placed!')}>
-          {side === "buy" ? "Buy" : "Sell"} {marketName}
-        </Button>
+        {/* Use buy/sell handlers if available */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button 
+            className="w-full bg-green-500 hover:bg-green-600" 
+            onClick={handleBuyClick || (() => alert('Buy Clicked!'))}
+          >
+            Buy {marketName}
+          </Button>
+          <Button 
+            className="w-full bg-red-500 hover:bg-red-600" 
+            onClick={handleSellClick || (() => alert('Sell Clicked!'))}
+          >
+            Sell {marketName}
+          </Button>
+        </div>
 
         <div className="mt-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
           <div className="flex items-center gap-2 text-yellow-400">
