@@ -34,9 +34,12 @@ export const TradingOrderSection = ({
 }: TradingOrderSectionProps) => {
   const { positions, isLoading: positionsLoading } = usePositions();
   const { positions: simulatedPositions, isLoading: simulatedPositionsLoading, closePosition } = useSimulatedPositions();
-  const { isInitialized: isAgentNetworkInitialized, activeAgents } = useAgentNetwork();
+  const { isInitialized: isAgentNetworkInitialized, activeAgents, refreshAgentState } = useAgentNetwork();
   
-  const [positionsTab, setPositionsTab] = useState("simulated"); // Default to simulated tab
+  const [positionsTab, setPositionsTab] = useState(() => {
+    // Initialize tab based on which positions are available
+    return simulatedPositions.length > 0 ? "simulated" : "real";
+  });
   const [localIsSimulationMode, setLocalIsSimulationMode] = useState(isSimulationMode);
   const [isKeySheetOpen, setIsKeySheetOpen] = useState(false);
   
@@ -62,7 +65,17 @@ export const TradingOrderSection = ({
   
   // Handle API key configuration save
   const handleApiKeySave = () => {
-    // After saving, we'll let the parent know to recheck the connection
+    // After saving, refresh the agent network state
+    refreshAgentState();
+    
+    toast({
+      title: "API Keys Saved",
+      description: "Your API keys have been saved successfully. Reconnecting to services...",
+      duration: 3000,
+    });
+    
+    // Close the sheet
+    setIsKeySheetOpen(false);
   };
 
   // Focus the simulated tab when simulation mode is enabled
@@ -85,7 +98,7 @@ export const TradingOrderSection = ({
           onToggle={handleSimulationToggle} 
         />
         
-        {isAgentNetworkInitialized && (
+        {isAgentNetworkInitialized && activeAgents.length > 0 && (
           <Badge variant="outline" className="flex items-center gap-1 px-2">
             <Network className="h-3 w-3" />
             <span className="text-xs">{activeAgents.length} AI Agents Active</span>
