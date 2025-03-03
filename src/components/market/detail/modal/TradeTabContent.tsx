@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -13,7 +12,7 @@ import { formatCurrency, formatPercentage } from '../../utils/formatters';
 
 interface TradeTabContentProps {
   marketData: MarketData;
-  marketName: string | null;
+  marketName: string | null; // Add marketName property
   amount: string;
   setAmount: (value: string) => void;
   leverage: string;
