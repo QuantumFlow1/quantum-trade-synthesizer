@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { ChatMessage } from '../types/chat';
-import { createChatMessage, generateAIResponse } from '../services/messageService';
+import { createChatMessage, generateResponse } from '../services/messageService';
 import { GrokSettings } from '../types/GrokSettings';
 
 interface UseSendMessageProps {
@@ -69,7 +69,18 @@ export function useSendMessage({
       console.log('Conversation history for API:', conversationHistory);
       
       try {
-        const response = await generateAIResponse(messageContent, conversationHistory, apiAvailable !== false, grokSettings);
+        // Get the API key for the selected model
+        const apiKey = getApiKeyForModel(grokSettings);
+        
+        // Use generateResponse instead of generateAIResponse
+        const response = await generateResponse(
+          conversationHistory, 
+          grokSettings.selectedModel,
+          apiKey,
+          grokSettings.temperature,
+          grokSettings.maxTokens
+        );
+        
         console.log('Received AI response:', response);
         
         if (!response) {
@@ -136,4 +147,22 @@ export function useSendMessage({
   }, [inputMessage, messages, apiAvailable, checkGrokAvailability, grokSettings, isAdminContext, setInputMessage, setIsProcessing, setMessages]);
 
   return { sendMessage };
+}
+
+// Helper function to get the appropriate API key based on the selected model
+function getApiKeyForModel(settings: GrokSettings): string {
+  switch (true) {
+    case settings.selectedModel.startsWith('grok'):
+      return settings.apiKeys.grokApiKey || '';
+    case settings.selectedModel.startsWith('claude'):
+      return settings.apiKeys.claudeApiKey || '';
+    case settings.selectedModel.startsWith('gemini'):
+      return settings.apiKeys.geminiApiKey || '';
+    case settings.selectedModel.startsWith('deepseek'):
+      return settings.apiKeys.deepseekApiKey || '';
+    case settings.selectedModel.startsWith('gpt'):
+      return settings.apiKeys.openaiApiKey || '';
+    default:
+      return '';
+  }
 }

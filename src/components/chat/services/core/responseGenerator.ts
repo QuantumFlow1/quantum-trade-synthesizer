@@ -1,12 +1,12 @@
 
 // This file handles the generation of responses from various LLM APIs
 
-import { claudeService } from "../claudeService";
-import { deepseekService } from "../deepseekService";
-import { fallbackService } from "../fallbackService";
-import { geminiService } from "../geminiService";
-import { grok3Service } from "../grok3Service";
-import { openaiService } from "../openaiService";
+import { generateClaudeResponse } from "../claudeService";
+import { generateDeepSeekResponse } from "../deepseekService";
+import { generateFallbackResponse } from "../fallbackService";
+import { generateGeminiResponse } from "../geminiService";
+import { generateGrok3Response } from "../grok3Service";
+import { generateOpenAIResponse } from "../openaiService";
 
 /**
  * Generates a response using the appropriate service based on the model name
@@ -40,60 +40,52 @@ export async function generateResponse(
       throw new Error("API key is required");
     }
 
+    // Get the last message content for services that need it
+    const inputMessage = messages[messages.length - 1].content;
+    // Create conversation history without the last message
+    const conversationHistory = messages.slice(0, -1);
+
     // Select the appropriate service based on the model name
     if (modelName.startsWith("grok")) {
-      const response = await grok3Service.generateResponse(
-        messages,
-        modelName,
-        apiKey,
-        temperature,
-        maxTokens
+      const response = await generateGrok3Response(
+        inputMessage,
+        conversationHistory,
+        { selectedModel: modelName, apiKeys: { grokApiKey: apiKey }, temperature, maxTokens }
       );
       return response;
     } else if (modelName.startsWith("claude")) {
-      const response = await claudeService.generateResponse(
-        messages,
-        modelName,
-        apiKey,
-        temperature,
-        maxTokens
+      const response = await generateClaudeResponse(
+        inputMessage,
+        conversationHistory,
+        { selectedModel: modelName, apiKeys: { claudeApiKey: apiKey }, temperature, maxTokens }
       );
       return response;
     } else if (modelName.startsWith("gemini")) {
-      const response = await geminiService.generateResponse(
-        messages,
-        modelName,
-        apiKey,
-        temperature,
-        maxTokens
+      const response = await generateGeminiResponse(
+        inputMessage,
+        conversationHistory,
+        { selectedModel: modelName, apiKeys: { geminiApiKey: apiKey }, temperature, maxTokens }
       );
       return response;
     } else if (modelName.startsWith("deepseek")) {
-      const response = await deepseekService.generateResponse(
-        messages,
-        modelName,
-        apiKey,
-        temperature,
-        maxTokens
+      const response = await generateDeepSeekResponse(
+        inputMessage,
+        conversationHistory,
+        { selectedModel: modelName, apiKeys: { deepseekApiKey: apiKey }, temperature, maxTokens }
       );
       return response;
     } else if (modelName.startsWith("gpt")) {
-      const response = await openaiService.generateResponse(
-        messages,
-        modelName,
-        apiKey,
-        temperature,
-        maxTokens
+      const response = await generateOpenAIResponse(
+        inputMessage,
+        conversationHistory,
+        { selectedModel: modelName, apiKeys: { openaiApiKey: apiKey }, temperature, maxTokens }
       );
       return response;
     } else {
       // Use fallback service for unknown models
-      const response = await fallbackService.generateResponse(
-        messages,
-        modelName,
-        apiKey,
-        temperature,
-        maxTokens
+      const response = await generateFallbackResponse(
+        inputMessage,
+        conversationHistory
       );
       return response;
     }

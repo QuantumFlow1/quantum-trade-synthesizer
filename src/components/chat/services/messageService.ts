@@ -1,5 +1,5 @@
 
 import { createChatMessage } from './utils/messageUtils';
-import { generateAIResponse } from './core/responseGenerator';
+import { generateResponse } from './core/responseGenerator';
 
-export { createChatMessage, generateAIResponse };
+export { createChatMessage, generateResponse };
