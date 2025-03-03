@@ -1,8 +1,9 @@
+
 import { useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, SendIcon, Loader2, Settings, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Bot, SendIcon, Loader2, Settings, Trash2, AlertTriangle, RefreshCw, Key } from 'lucide-react';
 import { DeepSeekMessage } from './deepseek/DeepSeekMessage';
 import { DeepSeekSettings } from './deepseek/DeepSeekSettings';
 import { DeepSeekEmptyState } from './deepseek/DeepSeekEmptyState';
@@ -35,12 +36,21 @@ export function DeepSeekChat() {
     }
   }, [messages]);
 
+  // Check if we have an API key
+  const hasApiKey = !!apiKey;
+
   return (
     <Card className="w-full h-[500px] flex flex-col shadow-lg">
       <CardHeader className="border-b py-3 px-4 flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-medium flex items-center">
           <Bot className="h-5 w-5 mr-2 text-blue-500" />
           DeepSeek Chat
+          {hasApiKey && (
+            <div className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full flex items-center">
+              <Key className="h-3 w-3 mr-1" />
+              API Key Set
+            </div>
+          )}
         </CardTitle>
         <div className="flex gap-2">
           {edgeFunctionStatus === 'unavailable' && (
@@ -74,6 +84,16 @@ export function DeepSeekChat() {
       </CardHeader>
       
       <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4">
+        {!hasApiKey && edgeFunctionStatus !== 'unavailable' && (
+          <Alert className="mb-2">
+            <Key className="h-4 w-4" />
+            <AlertTitle>API Key Required</AlertTitle>
+            <AlertDescription>
+              You need to set a DeepSeek API key to use this chat. Click the settings icon to add your API key.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {edgeFunctionStatus === 'unavailable' && (
           <Alert variant="destructive" className="mb-2">
             <AlertTriangle className="h-4 w-4" />
@@ -106,11 +126,11 @@ export function DeepSeekChat() {
           <Textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder={edgeFunctionStatus === 'unavailable' 
-              ? "DeepSeek service unavailable. Please try again later." 
-              : "Type your message..."}
+            placeholder={!hasApiKey ? "Please set API key in settings" : 
+                        edgeFunctionStatus === 'unavailable' ? "DeepSeek service unavailable" : 
+                        "Type your message..."}
             className="flex-1 resize-none"
-            disabled={isLoading || edgeFunctionStatus === 'unavailable'}
+            disabled={isLoading || edgeFunctionStatus === 'unavailable' || !hasApiKey}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -120,7 +140,7 @@ export function DeepSeekChat() {
           />
           <Button 
             onClick={sendMessage} 
-            disabled={!inputMessage.trim() || isLoading || edgeFunctionStatus === 'unavailable'} 
+            disabled={!inputMessage.trim() || isLoading || edgeFunctionStatus === 'unavailable' || !hasApiKey} 
             className="h-full"
           >
             {isLoading ? (

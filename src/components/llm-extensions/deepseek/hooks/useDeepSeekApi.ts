@@ -1,16 +1,33 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EdgeFunctionStatus } from '../../types/chatTypes';
 
 export function useDeepSeekApi() {
   const [isApiLoading, setIsApiLoading] = useState(false);
   const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<EdgeFunctionStatus>('checking');
 
+  // Listen for API key changes from other components
+  useEffect(() => {
+    const handleApiKeyUpdate = () => {
+      console.log('DeepSeek API key was updated, rechecking status');
+      checkDeepSeekApiStatus();
+    };
+
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+    };
+  }, []);
+
   /**
    * Checks if the DeepSeek API edge function is available
    */
   const checkDeepSeekApiStatus = async (): Promise<boolean> => {
     try {
+      // Get the API key from localStorage if available
+      const apiKey = localStorage.getItem('deepseekApiKey') || 'test';
+      
       const response = await fetch('/api/deepseek-response', {
         method: 'POST',
         headers: {
@@ -18,7 +35,7 @@ export function useDeepSeekApi() {
         },
         body: JSON.stringify({ 
           messages: [{ role: 'user', content: 'test' }],
-          apiKey: 'test'
+          apiKey
         }),
       });
       

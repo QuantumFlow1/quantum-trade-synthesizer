@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Check } from 'lucide-react';
+import { Save, Check, Key } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { validateApiKey } from '@/components/chat/api-keys/apiKeyUtils';
 
@@ -16,6 +16,7 @@ interface DeepSeekSettingsProps {
 export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSettingsProps) {
   const [key, setKey] = useState(apiKey);
   const [saved, setSaved] = useState(false);
+  const [keyExists, setKeyExists] = useState(false);
   
   // Load saved API key on component mount if not provided in props
   useEffect(() => {
@@ -24,9 +25,11 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
       if (savedKey) {
         setKey(savedKey);
         setApiKey(savedKey); // Update parent component with saved key
+        setKeyExists(true);
       }
     } else {
       setKey(apiKey);
+      setKeyExists(!!apiKey);
     }
   }, [apiKey, setApiKey]);
   
@@ -41,6 +44,7 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
     
     // Update parent component
     setApiKey(key);
+    setKeyExists(!!key);
     
     // Show saved animation
     setSaved(true);
@@ -56,9 +60,34 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
     window.dispatchEvent(new Event('apikey-updated'));
   };
   
+  const clearApiKey = () => {
+    localStorage.removeItem('deepseekApiKey');
+    setKey('');
+    setApiKey('');
+    setKeyExists(false);
+    
+    toast({
+      title: "API key removed",
+      description: "Your DeepSeek API key has been removed.",
+      duration: 3000,
+    });
+  };
+  
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium">DeepSeek Settings</h3>
+      
+      {keyExists && (
+        <div className="bg-green-50 p-3 rounded-md border border-green-200 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Key className="h-4 w-4 text-green-600" />
+            <p className="text-sm text-green-700">API key is configured</p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={clearApiKey} className="text-red-500 hover:text-red-700">
+            Remove
+          </Button>
+        </div>
+      )}
       
       <div className="space-y-2">
         <Label htmlFor="deepseek-api-key">DeepSeek API Key</Label>
