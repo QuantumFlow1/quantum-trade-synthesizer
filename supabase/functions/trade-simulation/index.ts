@@ -23,6 +23,10 @@ serve(async (req) => {
     const { simulation } = await req.json();
     console.log("Received simulation data:", simulation);
     
+    if (!simulation || !simulation.user_id) {
+      throw new Error("Invalid simulation data: user_id is required");
+    }
+    
     const { 
       user_id, 
       pair_id, 
@@ -32,6 +36,11 @@ serve(async (req) => {
       strategy = 'user-defined',
       simulation_type = 'daytrading'
     } = simulation;
+
+    // Validate required fields
+    if (!amount || !entry_price || !type) {
+      throw new Error("Missing required fields: amount, entry_price, or type");
+    }
 
     // Log the extracted values
     console.log("Processing simulation:", {

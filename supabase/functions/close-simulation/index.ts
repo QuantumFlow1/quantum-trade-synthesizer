@@ -49,7 +49,10 @@ serve(async (req) => {
       id,
       exit_price,
       pnl,
-      status: 'closed'
+      status: 'closed',
+      entry_price: simData.entry_price,
+      amount: simData.amount,
+      type: simData.type
     });
 
     // Update the simulation record

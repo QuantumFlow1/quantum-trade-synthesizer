@@ -16,6 +16,8 @@ interface SimulationToggleProps {
 }
 
 export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) => {
+  const isEnglish = localStorage.getItem('preferredLanguage') === 'en';
+
   return (
     <div className="flex items-center space-x-2">
       <Switch
@@ -24,7 +26,7 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
         id="simulation-mode"
       />
       <Label htmlFor="simulation-mode" className="cursor-pointer">
-        Simulatiemodus
+        {isEnglish ? "Simulation Mode" : "Simulatiemodus"}
       </Label>
       <TooltipProvider>
         <Tooltip>
@@ -33,8 +35,9 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
           </TooltipTrigger>
           <TooltipContent>
             <p className="max-w-xs">
-              In simulatiemodus worden orders niet echt uitgevoerd. <br />
-              Ideaal om strategieën te testen zonder risico.
+              {isEnglish 
+                ? "In simulation mode, orders are not actually executed. Ideal for testing strategies without risk."
+                : "In simulatiemodus worden orders niet echt uitgevoerd. Ideaal om strategieën te testen zonder risico."}
             </p>
           </TooltipContent>
         </Tooltip>
