@@ -22,6 +22,7 @@ export const useModalData = ({ marketName, marketData, onClose }: UseModalDataPr
   const [tradeHistory, setTradeHistory] = useState<TradeHistoryItem[]>([]);
   const [profitLoss, setProfitLoss] = useState<ProfitLossRecord[]>([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(true);
+  const [currentTab, setCurrentTab] = useState<string>("chart");
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -152,7 +153,7 @@ export const useModalData = ({ marketName, marketData, onClose }: UseModalDataPr
 
     checkPositions();
     fetchTradeHistory();
-  }, [user, marketName, isOpen, previousPrice, latestData.price, toast]);
+  }, [user, marketName, previousPrice, latestData.price, toast]);
 
   const handleBuyClick = async () => {
     if (!user) {
@@ -315,6 +316,8 @@ export const useModalData = ({ marketName, marketData, onClose }: UseModalDataPr
     isPriceUp,
     change24h,
     handleBuyClick,
-    handleSellClick
+    handleSellClick,
+    currentTab,
+    setCurrentTab
   };
 };

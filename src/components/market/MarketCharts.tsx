@@ -1,10 +1,11 @@
 
 import { useEffect, useState } from 'react';
 import { MarketChartView } from './MarketChartView';
-import { MarketDetailModal } from './MarketDetailModal';
+import { Dialog, DialogContent } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { ExternalLink, Maximize2, BarChart } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
+import { MarketData } from './types';
 
 interface ChartProps {
   data: any[];
@@ -62,12 +63,25 @@ export const MarketCharts = ({ data, isLoading, type }: ChartProps) => {
         <MarketChartView data={data} type={type} />
       </div>
 
-      <MarketDetailModal
-        isOpen={showModal}
-        onClose={handleCloseModal}
-        marketName={selectedMarket}
-        marketData={data}
-      />
+      {showModal && selectedMarket && (
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent className="max-w-4xl">
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-4">{selectedMarket} Details</h2>
+              <p className="text-muted-foreground">
+                Detailed information and charts for {selectedMarket} will appear here.
+              </p>
+              <Button 
+                className="mt-4" 
+                variant="outline" 
+                onClick={handleCloseModal}
+              >
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
