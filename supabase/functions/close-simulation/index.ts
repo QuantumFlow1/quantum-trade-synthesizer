@@ -25,6 +25,10 @@ serve(async (req) => {
     
     const { id, exit_price } = simulation;
 
+    if (!id || !exit_price) {
+      throw new Error("Missing required fields: id or exit_price");
+    }
+
     // Get the simulation first
     const { data: simData, error: getError } = await supabase
       .from('simulated_trades')

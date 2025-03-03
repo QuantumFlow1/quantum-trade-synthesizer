@@ -19,13 +19,14 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
   const isEnglish = localStorage.getItem('preferredLanguage') === 'en';
 
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center space-x-2 p-2 bg-green-500/10 border border-green-500/20 rounded-md">
       <Switch
         checked={enabled}
         onCheckedChange={onToggle}
         id="simulation-mode"
+        className={enabled ? "bg-green-500" : ""}
       />
-      <Label htmlFor="simulation-mode" className="cursor-pointer">
+      <Label htmlFor="simulation-mode" className="cursor-pointer font-medium">
         {isEnglish ? "Simulation Mode" : "Simulatiemodus"}
       </Label>
       <TooltipProvider>

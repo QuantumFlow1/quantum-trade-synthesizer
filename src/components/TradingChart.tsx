@@ -12,6 +12,7 @@ const TradingChart = () => {
   const [data, setData] = useState(generateTradingData());
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls(1);
+  const [forceSimulation, setForceSimulation] = useState(false);
 
   // Check the API status when the component mounts
   useEffect(() => {
@@ -19,6 +20,13 @@ const TradingChart = () => {
       try {
         console.log("Checking API status...");
         setApiStatus('checking');
+        
+        // Force API to be available when in simulation mode
+        if (forceSimulation) {
+          console.log("Simulation mode is active, setting API as available");
+          setApiStatus('available');
+          return;
+        }
         
         // Try to call a simple endpoint to check if the API is available
         const { data, error } = await supabase.functions.invoke('market-data-collector');
@@ -28,7 +36,7 @@ const TradingChart = () => {
           setApiStatus('unavailable');
           toast({
             title: "API Connection Issue",
-            description: "We're having trouble connecting to our trading services. Some features may be limited.",
+            description: "We're having trouble connecting to our trading services. Some features may be limited. Try using Simulation Mode.",
             variant: "destructive",
           });
         } else {
@@ -40,7 +48,7 @@ const TradingChart = () => {
         setApiStatus('unavailable');
         toast({
           title: "API Connection Failed",
-          description: "Unable to connect to trading services. Please try again later.",
+          description: "Unable to connect to trading services. Please try using Simulation Mode.",
           variant: "destructive",
         });
       }
@@ -53,6 +61,15 @@ const TradingChart = () => {
 
     // Clean up the interval when the component unmounts
     return () => clearInterval(intervalId);
+  }, [forceSimulation]);
+
+  useEffect(() => {
+    // Update the trading data every 5 seconds
+    const dataInterval = setInterval(() => {
+      setData(generateTradingData());
+    }, 5000);
+
+    return () => clearInterval(dataInterval);
   }, []);
 
   return (
@@ -69,7 +86,9 @@ const TradingChart = () => {
           />
         </div>
 
-        <TradingOrderSection apiStatus={apiStatus} />
+        <TradingOrderSection 
+          apiStatus={apiStatus} 
+        />
       </div>
     </div>
   );

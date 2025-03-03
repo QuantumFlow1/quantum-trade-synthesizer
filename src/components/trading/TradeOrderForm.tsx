@@ -12,9 +12,15 @@ import { SimulationToggle } from "./SimulationToggle";
 
 interface TradeOrderFormProps {
   apiStatus?: 'checking' | 'available' | 'unavailable';
+  isSimulationMode?: boolean;
+  onSimulationToggle?: (enabled: boolean) => void;
 }
 
-export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProps) => {
+export const TradeOrderForm = ({ 
+  apiStatus = 'unavailable', 
+  isSimulationMode = false,
+  onSimulationToggle
+}: TradeOrderFormProps) => {
   const [orderMode, setOrderMode] = useState<string>("standard");
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy");
   const [orderExecutionType, setOrderExecutionType] = useState<"market" | "limit" | "stop" | "stop_limit">("market");
@@ -28,7 +34,7 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
   const [advancedSignal, setAdvancedSignal] = useState<any>(null);
   const [localApiStatus, setLocalApiStatus] = useState<'checking' | 'available' | 'unavailable'>(apiStatus);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [isSimulationMode, setIsSimulationMode] = useState<boolean>(false);
+  const [localSimulationMode, setLocalSimulationMode] = useState<boolean>(isSimulationMode);
 
   const { toast } = useToast();
 
@@ -36,7 +42,10 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     if (apiStatus !== localApiStatus) {
       setLocalApiStatus(apiStatus);
     }
-  }, [apiStatus]);
+    if (isSimulationMode !== localSimulationMode) {
+      setLocalSimulationMode(isSimulationMode);
+    }
+  }, [apiStatus, isSimulationMode]);
 
   useEffect(() => {
     if (localApiStatus === 'checking') {
@@ -124,13 +133,27 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     }
   };
 
+  const handleToggleSimulation = (enabled: boolean) => {
+    setLocalSimulationMode(enabled);
+    if (onSimulationToggle) {
+      onSimulationToggle(enabled);
+    }
+    
+    toast({
+      title: enabled ? "Simulation Mode Activated" : "Simulation Mode Deactivated",
+      description: enabled 
+        ? "You can now trade with fake money to test strategies risk-free." 
+        : "Returned to normal trading mode.",
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (localApiStatus !== 'available') {
+    if (localApiStatus !== 'available' && !localSimulationMode) {
       toast({
         title: "Trading Niet Beschikbaar",
-        description: "Trading services zijn momenteel niet beschikbaar. Probeer het later opnieuw.",
+        description: "Trading services zijn momenteel niet beschikbaar. Probeer het later opnieuw of gebruik simulatiemodus.",
         variant: "destructive",
       });
       return;
@@ -138,7 +161,7 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     
     setIsSubmitting(true);
 
-    if (isSimulationMode) {
+    if (localSimulationMode) {
       handleSimulatedOrder();
     } else {
       setTimeout(() => {
@@ -166,16 +189,29 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
         }
       };
       
+      console.log("Sending simulation request:", simulationRequest);
+      
       const { data, error } = await supabase.functions.invoke('trade-simulation', {
         body: simulationRequest
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error response from trade-simulation:", error);
+        throw error;
+      }
+      
+      console.log("Simulation response:", data);
       
       toast({
         title: "Simulatie Gestart",
         description: `Uw ${orderType === "buy" ? "LONG" : "SHORT"} simulatie voor ${amount} BTC is succesvol gestart tegen $${currentPrice}.`,
       });
+      
+      if (onSimulationToggle) {
+        document.querySelector('[value="simulated"]')?.dispatchEvent(
+          new MouseEvent('click', { bubbles: true })
+        );
+      }
     } catch (error) {
       console.error("Error creating simulation:", error);
       toast({
@@ -221,12 +257,12 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     collaboratingAgents: ["TrendAnalyzer", "RiskProfiler", "VolatilityMonitor"]
   };
 
-  const isApiAvailable = localApiStatus === 'available';
+  const isApiAvailable = localApiStatus === 'available' || localSimulationMode;
   const isApiChecking = localApiStatus === 'checking' || isVerifying;
 
   return (
     <Card className="backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-      {isApiChecking && (
+      {isApiChecking && !localSimulationMode && (
         <div className="mb-4 p-2 bg-blue-500/10 rounded-md flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center">
             <RefreshCw className="h-4 w-4 mr-2 text-blue-500 animate-spin" />
@@ -235,11 +271,11 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
         </div>
       )}
       
-      {!isApiAvailable && !isApiChecking && (
+      {!isApiAvailable && !isApiChecking && !localSimulationMode && (
         <div className="mb-4 p-2 bg-red-500/10 rounded-md flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center">
             <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-            Trading services niet beschikbaar. U kunt de interface bekijken maar geen orders plaatsen.
+            Trading services niet beschikbaar. Activeer simulatiemodus om toch te kunnen handelen met nepgeld.
           </div>
           <Button 
             variant="ghost" 
@@ -255,15 +291,15 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
       
       <div className="mb-4">
         <SimulationToggle 
-          enabled={isSimulationMode} 
-          onToggle={setIsSimulationMode} 
+          enabled={localSimulationMode} 
+          onToggle={handleToggleSimulation} 
         />
       </div>
       
       <Tabs defaultValue="standard" onValueChange={setOrderMode}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">
-            {isSimulationMode ? "Simulatie Order" : "Order Formulier"}
+            {localSimulationMode ? "Simulatie Order" : "Order Formulier"}
           </h2>
           <TabsList>
             <TabsTrigger value="standard">Standaard</TabsTrigger>
@@ -293,7 +329,7 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
             onStopLossChange={setStopLoss}
             onTakeProfitChange={setTakeProfit}
             onSubmit={handleSubmit}
-            isSimulationMode={isSimulationMode}
+            isSimulationMode={localSimulationMode}
           />
         </TabsContent>
 
@@ -302,11 +338,11 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
             currentPrice={currentPrice}
             advancedSignal={advancedSignal}
             setAdvancedSignal={setAdvancedSignal}
-            apiEnabled={isApiAvailable}
+            apiEnabled={true}
             apiAvailable={isApiAvailable}
             onSignalApplied={handleSignalApplied}
             onSubmit={handleSubmit}
-            isSimulationMode={isSimulationMode}
+            isSimulationMode={localSimulationMode}
           />
         </TabsContent>
       </Tabs>
