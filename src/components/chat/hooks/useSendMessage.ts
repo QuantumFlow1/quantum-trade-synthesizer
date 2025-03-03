@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { ChatMessage } from '../types/chat';
 import { createChatMessage, generateResponse } from '../services/messageService';
-import { GrokSettings } from '../types/GrokSettings';
+import { GrokSettings, ModelId } from '../types/GrokSettings';
 
 interface UseSendMessageProps {
   isAdminContext: boolean;
@@ -153,7 +153,8 @@ export function useSendMessage({
 function getApiKeyForModel(settings: GrokSettings): string {
   switch (true) {
     case settings.selectedModel.startsWith('grok'):
-      return settings.apiKeys.grokApiKey || '';
+      // Grok doesn't need a special API key
+      return '';
     case settings.selectedModel.startsWith('claude'):
       return settings.apiKeys.claudeApiKey || '';
     case settings.selectedModel.startsWith('gemini'):

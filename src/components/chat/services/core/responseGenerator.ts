@@ -7,6 +7,7 @@ import { generateFallbackResponse } from "../fallbackService";
 import { generateGeminiResponse } from "../geminiService";
 import { generateGrok3Response } from "../grok3Service";
 import { generateOpenAIResponse } from "../openaiService";
+import { ModelId } from "../../types/GrokSettings";
 
 /**
  * Generates a response using the appropriate service based on the model name
@@ -19,7 +20,7 @@ import { generateOpenAIResponse } from "../openaiService";
  */
 export async function generateResponse(
   messages: Array<{ role: string; content: string }>,
-  modelName: string,
+  modelName: ModelId, // Updated type to ModelId
   apiKey: string,
   temperature: number = 0.7,
   maxTokens: number = 1000
@@ -50,35 +51,96 @@ export async function generateResponse(
       const response = await generateGrok3Response(
         inputMessage,
         conversationHistory,
-        { selectedModel: modelName, apiKeys: { grokApiKey: apiKey }, temperature, maxTokens }
+        { 
+          selectedModel: modelName, 
+          apiKeys: { 
+            // Fixed ApiKeySettings structure
+            openaiApiKey: "", 
+            claudeApiKey: "", 
+            geminiApiKey: "", 
+            deepseekApiKey: ""
+          }, 
+          temperature, 
+          maxTokens,
+          deepSearchEnabled: false,
+          thinkEnabled: false
+        }
       );
       return response;
     } else if (modelName.startsWith("claude")) {
       const response = await generateClaudeResponse(
         inputMessage,
         conversationHistory,
-        { selectedModel: modelName, apiKeys: { claudeApiKey: apiKey }, temperature, maxTokens }
+        { 
+          selectedModel: modelName, 
+          apiKeys: { 
+            openaiApiKey: "", 
+            claudeApiKey: apiKey, 
+            geminiApiKey: "", 
+            deepseekApiKey: "" 
+          }, 
+          temperature, 
+          maxTokens,
+          deepSearchEnabled: false,
+          thinkEnabled: false
+        }
       );
       return response;
     } else if (modelName.startsWith("gemini")) {
       const response = await generateGeminiResponse(
         inputMessage,
         conversationHistory,
-        { selectedModel: modelName, apiKeys: { geminiApiKey: apiKey }, temperature, maxTokens }
+        { 
+          selectedModel: modelName, 
+          apiKeys: { 
+            openaiApiKey: "", 
+            claudeApiKey: "", 
+            geminiApiKey: apiKey, 
+            deepseekApiKey: "" 
+          }, 
+          temperature, 
+          maxTokens,
+          deepSearchEnabled: false,
+          thinkEnabled: false
+        }
       );
       return response;
     } else if (modelName.startsWith("deepseek")) {
       const response = await generateDeepSeekResponse(
         inputMessage,
         conversationHistory,
-        { selectedModel: modelName, apiKeys: { deepseekApiKey: apiKey }, temperature, maxTokens }
+        { 
+          selectedModel: modelName, 
+          apiKeys: { 
+            openaiApiKey: "", 
+            claudeApiKey: "", 
+            geminiApiKey: "", 
+            deepseekApiKey: apiKey 
+          }, 
+          temperature, 
+          maxTokens,
+          deepSearchEnabled: false,
+          thinkEnabled: false
+        }
       );
       return response;
     } else if (modelName.startsWith("gpt")) {
       const response = await generateOpenAIResponse(
         inputMessage,
         conversationHistory,
-        { selectedModel: modelName, apiKeys: { openaiApiKey: apiKey }, temperature, maxTokens }
+        { 
+          selectedModel: modelName, 
+          apiKeys: { 
+            openaiApiKey: apiKey, 
+            claudeApiKey: "", 
+            geminiApiKey: "", 
+            deepseekApiKey: "" 
+          }, 
+          temperature, 
+          maxTokens,
+          deepSearchEnabled: false,
+          thinkEnabled: false
+        }
       );
       return response;
     } else {
