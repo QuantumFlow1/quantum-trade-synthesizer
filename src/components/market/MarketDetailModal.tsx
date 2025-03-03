@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MarketChartView } from "./MarketChartView";
 import { Button } from "../ui/button";
-import { ArrowDown, ArrowUp, ExternalLink, MousePointer, TrendingDown, TrendingUp, Link, Globe, Twitter, Info } from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, MousePointer, TrendingDown, TrendingUp, Link, Globe, Twitter, Info, BarChart } from "lucide-react";
 import { ChartData, MarketData } from "./types";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
@@ -38,7 +38,6 @@ export const MarketDetailModal = ({
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Create a more complete MarketData object for the UI
   const latestData = marketData[marketData.length - 1];
   const previousPrice = marketData.length > 1 ? marketData[marketData.length - 2].price : latestData.price;
   const isPriceUp = latestData.price > previousPrice;
@@ -55,7 +54,7 @@ export const MarketDetailModal = ({
     change24h: change24h,
     high24h: Math.max(...marketData.map(d => d.price)),
     low24h: Math.min(...marketData.map(d => d.price)),
-    marketCap: latestData.price * 19000000, // Rough estimate
+    marketCap: latestData.price * 19000000,
     totalVolume24h: latestData.volume,
     circulatingSupply: 19000000,
     totalSupply: 21000000,
@@ -69,7 +68,6 @@ export const MarketDetailModal = ({
     priceChange30d: change24h * 0.8,
   };
 
-  // Check if the user has positions for this market
   useEffect(() => {
     if (!user || !marketName) return;
 
@@ -115,7 +113,6 @@ export const MarketDetailModal = ({
     }
 
     try {
-      // Get the pair ID (using the symbol as identifier in this case)
       const { data: pairData, error: pairError } = await supabase
         .from("trading_pairs")
         .select("id")
@@ -126,7 +123,6 @@ export const MarketDetailModal = ({
 
       const pairId = pairData?.id || `${marketName.replace('/', '_')}_default`;
       
-      // Create a new trade order
       const { error: tradeError } = await supabase.from("trades").insert({
         user_id: user.id,
         pair_id: pairId,
@@ -138,7 +134,6 @@ export const MarketDetailModal = ({
 
       if (tradeError) throw tradeError;
 
-      // Call the update-positions edge function to process the trade
       const { error: updateError } = await supabase.functions.invoke("update-positions", {
         body: {
           trade: {
@@ -183,7 +178,6 @@ export const MarketDetailModal = ({
     }
 
     try {
-      // Get the pair ID (using the symbol as identifier in this case)
       const { data: pairData, error: pairError } = await supabase
         .from("trading_pairs")
         .select("id")
@@ -194,7 +188,6 @@ export const MarketDetailModal = ({
 
       const pairId = pairData?.id || `${marketName.replace('/', '_')}_default`;
       
-      // Create a new trade order
       const { error: tradeError } = await supabase.from("trades").insert({
         user_id: user.id,
         pair_id: pairId,
@@ -307,7 +300,7 @@ export const MarketDetailModal = ({
                     Twitter
                   </Button>
                   <Button variant="ghost" className="w-full justify-start" onClick={() => window.open(`https://www.tradingview.com/symbols/${marketName?.replace('/', '')}`, "_blank")}>
-                    <BarChart2 className="h-4 w-4 mr-2" />
+                    <BarChart className="h-4 w-4 mr-2" />
                     TradingView
                   </Button>
                 </div>
