@@ -1,160 +1,334 @@
 
-import { useState } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Coins, Shield, Lock } from "lucide-react";
-import { TokenBalanceCard } from "./TokenBalanceCard";
-import { TokenTradeForm } from "./TokenTradeForm";
-import { WalletConnection } from "./WalletConnection";
-import { Card } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Coins, Copy, ExternalLink, CheckCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-export const TestnetTokenTab = () => {
+export const TestnetTokenTab: React.FC = () => {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("ethereum");
   const [walletAddress, setWalletAddress] = useState<string>("");
-  const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [selectedNetwork, setSelectedNetwork] = useState<string>("sepolia");
-  const [securityScore, setSecurityScore] = useState<number>(0);
+  const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  const { toast } = useToast();
   
-  const handleConnect = (address: string, network: string) => {
-    setWalletAddress(address);
-    setIsConnected(true);
-    setSelectedNetwork(network);
-    // Calculate initial security score based on network
-    const networkScores: Record<string, number> = {
-      "sepolia": 78,
-      "goerli": 75,
-      "mumbai": 72,
-      "arbitrum-goerli": 80,
-      "bsc-testnet": 70
+  const handleNetworkChange = (network: string) => {
+    setActiveTab(network);
+  };
+
+  const handleCopyFaucetLink = () => {
+    navigator.clipboard.writeText(getFaucetLink(activeTab));
+    setCopySuccess(true);
+    toast({
+      title: "Link copied!",
+      description: "Faucet link copied to clipboard",
+    });
+    
+    setTimeout(() => setCopySuccess(false), 2000);
+  };
+  
+  const handleRequestTokens = () => {
+    if (!walletAddress) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter a wallet address",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    // Simulate API call
+    setTimeout(() => {
+      setIsLoading(false);
+      toast({
+        title: "Success!",
+        description: `Test tokens sent to ${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`,
+      });
+    }, 2000);
+  };
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setWalletAddress(e.target.value);
+  };
+  
+  const getFaucetLink = (network: string): string => {
+    const faucetLinks: Record<string, string> = {
+      ethereum: "https://goerlifaucet.com/",
+      polygon: "https://faucet.polygon.technology/",
+      arbitrum: "https://faucet.arbitrum.io/",
+      optimism: "https://faucet.quicknode.com/optimism/goerli",
+      base: "https://faucet.base.org/",
     };
-    setSecurityScore(networkScores[network] || 70);
+    
+    return faucetLinks[network] || "#";
   };
-  
-  const handleDisconnect = () => {
-    setWalletAddress("");
-    setIsConnected(false);
-    setSecurityScore(0);
+
+  const handleAddToMetaMask = (address: string, network: string) => {
+    // Implementation for adding token to MetaMask
+    // This would typically use the window.ethereum provider
+    console.log(`Adding token ${address} on ${network} to MetaMask`);
+    
+    toast({
+      title: "MetaMask Action",
+      description: `Adding test token to MetaMask on ${network}`,
+    });
   };
-  
-  const getSecurityColor = (score: number) => {
-    if (score >= 90) return "text-green-500";
-    if (score >= 70) return "text-blue-500";
-    if (score >= 40) return "text-yellow-500";
-    return "text-red-500";
-  };
-  
-  const getSecurityLevel = (score: number) => {
-    if (score >= 90) return "High";
-    if (score >= 70) return "Good";
-    if (score >= 40) return "Medium";
-    return "Low";
-  };
-  
+
   return (
-    <div className="space-y-6">
-      {!isConnected ? (
-        <Alert>
-          <Coins className="h-4 w-4" />
-          <AlertTitle>Connect your wallet securely</AlertTitle>
-          <AlertDescription>
-            Connect a Web3 wallet with enhanced security measures to interact with testnet tokens. 
-            You'll be able to view balances and execute secure trades on various testnets.
-          </AlertDescription>
-        </Alert>
-      ) : (
-        <Card className="p-4 bg-secondary/10 border border-white/10">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Shield className={`h-5 w-5 ${getSecurityColor(securityScore)}`} />
-              <h3 className="font-medium">Security Status</h3>
-            </div>
-            <div className={`text-sm font-medium ${getSecurityColor(securityScore)}`}>
-              {getSecurityLevel(securityScore)} Security ({securityScore}/100)
-            </div>
-          </div>
-          
-          <Progress 
-            value={securityScore} 
-            max={100} 
-            className="h-2 mb-2"
-            indicatorClassName={`${
-              securityScore >= 90 ? "bg-green-500" : 
-              securityScore >= 70 ? "bg-blue-500" : 
-              securityScore >= 40 ? "bg-yellow-500" : 
-              "bg-red-500"
-            }`}
-          />
-          
-          <div className="grid grid-cols-3 gap-2 text-xs mt-2">
-            <div className="flex flex-col items-center p-2 bg-secondary/20 rounded-md">
-              <div className="text-muted-foreground mb-1">Network</div>
-              <div className={getSecurityColor(securityScore)}>
-                {selectedNetwork.charAt(0).toUpperCase() + selectedNetwork.slice(1)} Testnet
-              </div>
-            </div>
-            <div className="flex flex-col items-center p-2 bg-secondary/20 rounded-md">
-              <div className="text-muted-foreground mb-1">Connection</div>
-              <div className="text-green-500">Secure</div>
-            </div>
-            <div className="flex flex-col items-center p-2 bg-secondary/20 rounded-md">
-              <div className="text-muted-foreground mb-1">Wallet</div>
-              <div className="text-xs truncate max-w-[100px]">
-                {walletAddress.substring(0, 4)}...{walletAddress.substring(walletAddress.length - 4)}
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-1">
-          <WalletConnection 
-            onConnect={handleConnect} 
-            onDisconnect={handleDisconnect} 
-          />
-        </div>
-        
-        <div className="md:col-span-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TokenBalanceCard
-              tokenSymbol="LOV"
-              tokenName="Lovable Token"
-              walletAddress={walletAddress}
-              isConnected={isConnected}
-              network={selectedNetwork}
-            />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Coins className="h-5 w-5 text-primary" />
+            Testnet Token Faucet
+          </CardTitle>
+          <CardDescription>
+            Request testnet tokens for development and testing on various networks
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={handleNetworkChange} className="w-full">
+            <TabsList className="grid grid-cols-5">
+              <TabsTrigger value="ethereum">Ethereum</TabsTrigger>
+              <TabsTrigger value="polygon">Polygon</TabsTrigger>
+              <TabsTrigger value="arbitrum">Arbitrum</TabsTrigger>
+              <TabsTrigger value="optimism">Optimism</TabsTrigger>
+              <TabsTrigger value="base">Base</TabsTrigger>
+            </TabsList>
             
-            <TokenBalanceCard
-              tokenSymbol="TST"
-              tokenName="Test Token"
-              walletAddress={walletAddress}
-              isConnected={isConnected}
-              network={selectedNetwork}
-            />
-          </div>
-        </div>
+            {["ethereum", "polygon", "arbitrum", "optimism", "base"].map((network) => (
+              <TabsContent key={network} value={network} className="space-y-4">
+                <div className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <label htmlFor="wallet-address" className="text-sm font-medium">
+                      Your Wallet Address
+                    </label>
+                    <Input
+                      id="wallet-address"
+                      placeholder="0x..."
+                      value={walletAddress}
+                      onChange={handleAddressChange}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between bg-secondary/20 p-3 rounded-md">
+                    <div>
+                      <p className="text-sm font-medium">External Faucet</p>
+                      <p className="text-xs text-muted-foreground">
+                        Get additional tokens from the official {network.charAt(0).toUpperCase() + network.slice(1)} faucet
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleCopyFaucetLink}
+                        className="flex items-center gap-1"
+                      >
+                        {copySuccess ? (
+                          <CheckCircle className="h-4 w-4" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                        Copy Link
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.open(getFaucetLink(network), "_blank")}
+                        className="flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Visit
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <Button
+                    className="w-full"
+                    onClick={handleRequestTokens}
+                    disabled={isLoading || !walletAddress}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Skeleton className="h-4 w-4 rounded-full mr-2" />
+                        Sending Tokens...
+                      </>
+                    ) : (
+                      "Request Test Tokens"
+                    )}
+                  </Button>
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </CardContent>
+        <CardFooter className="text-sm text-muted-foreground">
+          <p>
+            Testnet tokens have no real value and are only for development and testing purposes.
+          </p>
+        </CardFooter>
+      </Card>
+      
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Available Tokens</CardTitle>
+            <CardDescription>Testnet tokens you can request</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {getTestnetTokens(activeTab).map((token) => (
+                <div
+                  key={token.symbol}
+                  className="flex items-center justify-between p-3 border rounded-md"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="bg-primary/10 w-8 h-8 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-bold">{token.symbol.substring(0, 2)}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{token.name}</p>
+                      <div className="flex items-center gap-1">
+                        <Badge variant="outline" className="text-xs">
+                          {token.symbol}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {token.address.substring(0, 6)}...{token.address.substring(token.address.length - 4)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleAddToMetaMask(token.address, activeTab)}
+                    className="flex items-center gap-1"
+                  >
+                    <span className="text-xs">Add</span>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Network Details</CardTitle>
+            <CardDescription>Configuration for {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} testnet</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground">Network Name</p>
+                <p className="font-medium">{getNetworkInfo(activeTab).name}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">RPC URL</p>
+                <p className="font-medium truncate">{getNetworkInfo(activeTab).rpcUrl}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Chain ID</p>
+                <p className="font-medium">{getNetworkInfo(activeTab).chainId}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Currency Symbol</p>
+                <p className="font-medium">{getNetworkInfo(activeTab).symbol}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Block Explorer</p>
+                <a
+                  href={getNetworkInfo(activeTab).blockExplorer}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary font-medium flex items-center gap-1"
+                >
+                  {getNetworkInfo(activeTab).blockExplorer.replace("https://", "")}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-      
-      <TokenTradeForm
-        tokenSymbol="LOV"
-        isConnected={isConnected}
-        walletAddress={walletAddress}
-      />
-      
-      {isConnected && (
-        <div className="text-xs text-muted-foreground p-3 bg-secondary/10 rounded-md border border-white/5">
-          <div className="flex items-center gap-2 mb-2">
-            <Lock className="h-3 w-3" />
-            <span className="font-medium">Security Information</span>
-          </div>
-          <ul className="list-disc pl-5 space-y-1">
-            <li>All transactions are signed locally in your wallet</li>
-            <li>Your private keys never leave your device</li>
-            <li>Testnet tokens have no real value but use the same security protocols</li>
-            <li>Set appropriate security levels for production use</li>
-            <li>Consider using a hardware wallet for maximum security in production</li>
-          </ul>
-        </div>
-      )}
     </div>
   );
+};
+
+// Helper functions to provide network-specific data
+const getTestnetTokens = (network: string) => {
+  const tokens: Record<string, Array<{ name: string; symbol: string; address: string }>> = {
+    ethereum: [
+      { name: "Goerli ETH", symbol: "gETH", address: "0x0000000000000000000000000000000000000000" },
+      { name: "Test USDC", symbol: "tUSDC", address: "0x07865c6e87b9f70255377e024ace6630c1eaa37f" },
+      { name: "Test DAI", symbol: "tDAI", address: "0x11fe4b6ae13d2a6055c8d9cf65c55bac32b5d844" },
+    ],
+    polygon: [
+      { name: "Mumbai MATIC", symbol: "MATIC", address: "0x0000000000000000000000000000000000001010" },
+      { name: "Test USDT", symbol: "tUSDT", address: "0x3813e82e6f7098b9583fc0f33a962d02018b6803" },
+    ],
+    arbitrum: [
+      { name: "Arbitrum ETH", symbol: "aETH", address: "0x0000000000000000000000000000000000000000" },
+      { name: "Test USDC", symbol: "tUSDC", address: "0xfd064a18f3bf249cf1f87fc203e90d8f650f2d63" },
+    ],
+    optimism: [
+      { name: "Optimism ETH", symbol: "oETH", address: "0x0000000000000000000000000000000000000000" },
+      { name: "Test USDC", symbol: "tUSDC", address: "0x4dbcdf9b62e891a7cec5a2568c3f4faf9e8abe2b" },
+    ],
+    base: [
+      { name: "Base ETH", symbol: "bETH", address: "0x0000000000000000000000000000000000000000" },
+      { name: "Test USDC", symbol: "tUSDC", address: "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca" },
+    ],
+  };
+  
+  return tokens[network] || [];
+};
+
+const getNetworkInfo = (network: string) => {
+  const networkInfo: Record<string, { name: string; rpcUrl: string; chainId: number; symbol: string; blockExplorer: string }> = {
+    ethereum: {
+      name: "Goerli Testnet",
+      rpcUrl: "https://goerli.infura.io/v3/your-api-key",
+      chainId: 5,
+      symbol: "ETH",
+      blockExplorer: "https://goerli.etherscan.io",
+    },
+    polygon: {
+      name: "Mumbai Testnet",
+      rpcUrl: "https://rpc-mumbai.maticvigil.com",
+      chainId: 80001,
+      symbol: "MATIC",
+      blockExplorer: "https://mumbai.polygonscan.com",
+    },
+    arbitrum: {
+      name: "Arbitrum Goerli",
+      rpcUrl: "https://goerli-rollup.arbitrum.io/rpc",
+      chainId: 421613,
+      symbol: "ETH",
+      blockExplorer: "https://goerli.arbiscan.io",
+    },
+    optimism: {
+      name: "Optimism Goerli",
+      rpcUrl: "https://goerli.optimism.io",
+      chainId: 420,
+      symbol: "ETH",
+      blockExplorer: "https://goerli-optimism.etherscan.io",
+    },
+    base: {
+      name: "Base Goerli",
+      rpcUrl: "https://goerli.base.org",
+      chainId: 84531,
+      symbol: "ETH",
+      blockExplorer: "https://goerli.basescan.org",
+    },
+  };
+  
+  return networkInfo[network] || networkInfo.ethereum;
 };

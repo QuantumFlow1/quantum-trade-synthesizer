@@ -17,7 +17,6 @@ export const MarketPage = () => {
     sortField,
     sortDirection,
     handleSortChange,
-    error 
   } = useMarketData();
 
   const handleConnectWallet = () => {
@@ -28,9 +27,15 @@ export const MarketPage = () => {
     setWalletConnected(false);
   };
 
+  const handleRefresh = () => {
+    // This function will be called when the refresh button is clicked
+    console.log("Refreshing market data...");
+    // You could call fetchMarketData() here if it's exposed by useMarketData
+  };
+
   return (
     <div className="space-y-6">
-      <MarketHeader isLoading={isLoading} />
+      <MarketHeader isLoading={isLoading} onRefresh={handleRefresh} />
 
       <MarketTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
