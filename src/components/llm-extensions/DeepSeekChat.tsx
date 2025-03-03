@@ -26,6 +26,7 @@ export function DeepSeekChat() {
     toggleSettings,
     setShowSettings,
     checkEdgeFunctionStatus,
+    retryConnection,
     lastChecked
   } = useDeepSeekChat();
   
@@ -125,7 +126,7 @@ export function DeepSeekChat() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={checkEdgeFunctionStatus}
+                onClick={retryConnection}
                 className="mt-2"
               >
                 Retry Connection

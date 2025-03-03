@@ -32,13 +32,13 @@ export const LLMTabContent: React.FC<LLMTabContentProps> = ({
 
     switch (tabValue) {
       case 'deepseek':
-        return <DeepSeekChat connectionStatus={connectionStatus} />;
+        return <DeepSeekChat />;
       case 'openai':
-        return <OpenAIChat connectionStatus={connectionStatus} />;
+        return <OpenAIChat />;
       case 'grok':
-        return <GrokChat connectionStatus={connectionStatus} />;
+        return <GrokChat />;
       case 'claude':
-        return <ClaudeChat connectionStatus={connectionStatus} />;
+        return <ClaudeChat />;
       default:
         return null;
     }
