@@ -5,7 +5,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // Get environment variables for the API keys
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
-const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY'); // We need to add this
+const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
