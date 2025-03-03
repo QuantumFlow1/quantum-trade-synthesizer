@@ -32,13 +32,12 @@ export const MarketPage = () => {
   };
 
   const handleRefresh = () => {
-    // This function will be called when the refresh button is clicked
     console.log("Refreshing market data...");
     fetchMarketData();
   };
 
   // Check if marketData is not an array or empty
-  const hasError = !Array.isArray(marketData);
+  const hasError = !Array.isArray(marketData) || marketData.length === 0;
 
   return (
     <div className="space-y-6">

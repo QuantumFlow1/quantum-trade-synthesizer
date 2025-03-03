@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export const useMarketData = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [sortField, setSortField] = useState<string>("market");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedMarket, setSelectedMarket] = useState<string>("all");
@@ -16,41 +16,37 @@ export const useMarketData = () => {
   const fetchMarketData = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('market-data-collector');
+      const { data, error } = await supabase.functions.invoke('fetch-market-data');
       
       if (error) {
         throw error;
       }
       
-      if (data) {
-        // Ensure data is an array before setting it
-        if (Array.isArray(data)) {
-          // Type assertion to ensure data is treated as MarketData[]
-          setMarketData(data as MarketData[]);
-          
-          // Extract unique markets with proper type handling
-          const marketsArray = data as MarketData[];
-          const markets = [...new Set(marketsArray.map((item) => item.market))];
-          setUniqueMarkets(markets);
-        } else {
-          console.error("Market data is not an array:", data);
-          // Set empty array to prevent filter errors
-          setMarketData([]);
-          setUniqueMarkets([]);
-          toast({
-            title: "Data Error",
-            description: "Market data format is invalid. Please try again later.",
-            variant: "destructive",
-          });
-        }
+      if (data && Array.isArray(data)) {
+        console.log("Successfully received market data:", data.length, "items");
+        setMarketData(data as MarketData[]);
+        
+        // Extract unique markets
+        const markets = [...new Set(data.map((item: any) => item.market))];
+        setUniqueMarkets(markets.filter(Boolean) as string[]);
+        
+        toast({
+          title: "Market data updated",
+          description: `Successfully fetched data for ${data.length} markets`,
+          duration: 3000,
+        });
       } else {
-        // Handle case where data is null or undefined
-        setMarketData([]);
+        console.error("Invalid market data format:", data);
+        setMarketData([]); // Set to empty array if data is invalid
         setUniqueMarkets([]);
+        toast({
+          title: "Data Error",
+          description: "Market data format is invalid. Please try again later.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error fetching market data:", error);
-      // Set empty arrays to prevent filter errors
       setMarketData([]);
       setUniqueMarkets([]);
       toast({
@@ -84,8 +80,8 @@ export const useMarketData = () => {
       }
       
       // Handle string fields
-      const aValue = String(a[sortField as keyof MarketData]);
-      const bValue = String(b[sortField as keyof MarketData]);
+      const aValue = String(a[sortField as keyof MarketData] || '');
+      const bValue = String(b[sortField as keyof MarketData] || '');
       return sortDirection === "asc" 
         ? aValue.localeCompare(bValue) 
         : bValue.localeCompare(aValue);
@@ -113,13 +109,12 @@ export const useMarketData = () => {
   const sortedAndFilteredData = sortData(filteredData);
 
   return {
-    marketData,
+    marketData: sortedAndFilteredData,
     isLoading,
     sortField,
     sortDirection,
     selectedMarket,
     uniqueMarkets,
-    sortedAndFilteredData,
     fetchMarketData,
     toggleSortDirection,
     handleSortChange,
