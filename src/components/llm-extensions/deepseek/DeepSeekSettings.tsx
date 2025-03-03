@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Check, Key } from 'lucide-react';
+import { Save, Check, Key, X, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { validateApiKey } from '@/components/chat/api-keys/apiKeyUtils';
 
@@ -52,7 +52,7 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
     
     toast({
       title: "API key saved",
-      description: "Your DeepSeek API key has been saved.",
+      description: "Your DeepSeek API key has been saved. The connection will be tested automatically.",
       duration: 3000,
     });
     
@@ -71,6 +71,9 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
       description: "Your DeepSeek API key has been removed.",
       duration: 3000,
     });
+    
+    // Trigger custom event for other components
+    window.dispatchEvent(new Event('apikey-updated'));
   };
   
   return (
@@ -84,6 +87,7 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
             <p className="text-sm text-green-700">API key is configured</p>
           </div>
           <Button variant="ghost" size="sm" onClick={clearApiKey} className="text-red-500 hover:text-red-700">
+            <X className="h-4 w-4 mr-1" />
             Remove
           </Button>
         </div>
@@ -122,9 +126,20 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
         </Button>
       </div>
       
-      <div className="text-sm text-muted-foreground">
+      <div className="text-sm text-muted-foreground space-y-2">
         <p>DeepSeek is specialized in code generation and technical assistance.</p>
-        <p>You can get an API key from the <a href="https://platform.deepseek.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">DeepSeek Platform</a>.</p>
+        <p className="flex items-center">
+          You can get an API key from the 
+          <a 
+            href="https://platform.deepseek.com/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-blue-500 hover:underline flex items-center ml-1"
+          >
+            DeepSeek Platform
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </a>
+        </p>
       </div>
     </div>
   );

@@ -1,16 +1,21 @@
 
 import { EdgeFunctionStatus } from '../../types/chatTypes';
 
-export interface DeepSeekChatState {
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
+export interface UseDeepSeekChatReturn {
   messages: Message[];
   inputMessage: string;
   isLoading: boolean;
   showSettings: boolean;
-  apiKey: string;
   edgeFunctionStatus: EdgeFunctionStatus;
-}
-
-export interface DeepSeekChatActions {
+  apiKey: string;
+  lastChecked: Date | null;
   saveApiKey: (key: string) => void;
   setInputMessage: (message: string) => void;
   sendMessage: () => Promise<void>;
@@ -19,12 +24,3 @@ export interface DeepSeekChatActions {
   setShowSettings: (show: boolean) => void;
   checkEdgeFunctionStatus: () => Promise<void>;
 }
-
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
-export interface UseDeepSeekChatReturn extends DeepSeekChatState, DeepSeekChatActions {}

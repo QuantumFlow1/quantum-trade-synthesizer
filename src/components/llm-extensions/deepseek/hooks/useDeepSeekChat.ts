@@ -22,6 +22,7 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
   const {
     isApiLoading,
     edgeFunctionStatus,
+    lastChecked,
     checkDeepSeekApiStatus,
     sendMessageToDeepSeek,
   } = useDeepSeekApi();
@@ -115,6 +116,7 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
     showSettings,
     apiKey,
     edgeFunctionStatus,
+    lastChecked,
     saveApiKey,
     setInputMessage,
     sendMessage,

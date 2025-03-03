@@ -3,12 +3,13 @@ import { useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, SendIcon, Loader2, Settings, Trash2, AlertTriangle, RefreshCw, Key } from 'lucide-react';
+import { Bot, SendIcon, Loader2, Settings, Trash2, AlertTriangle, RefreshCw, Key, Check, XCircle } from 'lucide-react';
 import { DeepSeekMessage } from './deepseek/DeepSeekMessage';
 import { DeepSeekSettings } from './deepseek/DeepSeekSettings';
 import { DeepSeekEmptyState } from './deepseek/DeepSeekEmptyState';
 import { useDeepSeekChat } from './deepseek/hooks/useDeepSeekChat';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 
 export function DeepSeekChat() {
   const {
@@ -24,7 +25,8 @@ export function DeepSeekChat() {
     clearChat,
     toggleSettings,
     setShowSettings,
-    checkEdgeFunctionStatus
+    checkEdgeFunctionStatus,
+    lastChecked
   } = useDeepSeekChat();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,6 +40,14 @@ export function DeepSeekChat() {
 
   // Check if we have an API key
   const hasApiKey = !!apiKey;
+  
+  // Format last checked time
+  const formattedLastChecked = lastChecked ? 
+    new Intl.DateTimeFormat('default', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit'
+    }).format(lastChecked) : null;
 
   return (
     <Card className="w-full h-[500px] flex flex-col shadow-lg">
@@ -46,24 +56,33 @@ export function DeepSeekChat() {
           <Bot className="h-5 w-5 mr-2 text-blue-500" />
           DeepSeek Chat
           {hasApiKey && (
-            <div className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full flex items-center">
-              <Key className="h-3 w-3 mr-1" />
-              API Key Set
-            </div>
+            <Badge variant={edgeFunctionStatus === 'available' ? 'default' : 'outline'} className="ml-2">
+              {edgeFunctionStatus === 'available' ? (
+                <Check className="h-3 w-3 mr-1 text-green-500" />
+              ) : edgeFunctionStatus === 'checking' ? (
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              ) : (
+                <XCircle className="h-3 w-3 mr-1 text-red-500" />
+              )}
+              {edgeFunctionStatus === 'available' ? 'Connected' : 
+                edgeFunctionStatus === 'checking' ? 'Checking...' : 'Disconnected'}
+            </Badge>
           )}
         </CardTitle>
         <div className="flex gap-2">
-          {edgeFunctionStatus === 'unavailable' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={checkEdgeFunctionStatus}
-              title="Retry connection"
-              className="text-yellow-600"
-            >
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={checkEdgeFunctionStatus}
+            title="Check connection"
+            className={edgeFunctionStatus === 'available' ? 'text-green-600' : 'text-yellow-600'}
+          >
+            {edgeFunctionStatus === 'checking' ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
               <RefreshCw className="h-4 w-4" />
-            </Button>
-          )}
+            )}
+          </Button>
           <Button 
             variant="ghost" 
             size="sm"
@@ -94,13 +113,23 @@ export function DeepSeekChat() {
           </Alert>
         )}
         
-        {edgeFunctionStatus === 'unavailable' && (
+        {edgeFunctionStatus === 'unavailable' && hasApiKey && (
           <Alert variant="destructive" className="mb-2">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Service Unavailable</AlertTitle>
-            <AlertDescription>
-              The DeepSeek API service is currently unavailable. This might be due to a temporary issue or a deployment error. 
-              Please try again later or use a different AI model.
+            <AlertTitle>Connection Failed</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>
+                Unable to connect to the DeepSeek API. Please check your API key and try again.
+                {formattedLastChecked && <span className="block text-xs opacity-70">Last checked: {formattedLastChecked}</span>}
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={checkEdgeFunctionStatus}
+                className="mt-2"
+              >
+                Retry Connection
+              </Button>
             </AlertDescription>
           </Alert>
         )}
