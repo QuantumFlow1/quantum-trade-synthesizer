@@ -98,6 +98,27 @@ const guides: Guide[] = [
           'Start with smaller position sizes (0.5% of account per trade)',
           'Track performance metrics: win rate, win/loss ratio, drawdown'
         ]
+      },
+      {
+        title: 'Maximizing Platform Features',
+        content: [
+          'Master real-time market data visualizations (candlestick, line charts)',
+          'Practice different order types (market/limit/stop) in simulation mode',
+          'Combine AI trading insights with technical analysis for validation',
+          'Use external AI integrations (OpenAI GPT, Claude, Gemini) for news analysis',
+          'Leverage collaborative AI trading agents network for community insights',
+          'Regularly run risk assessment tools to optimize your portfolio'
+        ]
+      },
+      {
+        title: 'Comparative Strategy Analysis',
+        content: [
+          'Day Trading: Focus on 1m-15m charts with RSI/MACD and sentiment analysis',
+          'Swing Trading: Use 1h-4h charts with SMA/EMA and AI trade recommendations',
+          'Long-Term: Analyze 1d-1w charts with Bollinger Bands and portfolio optimization',
+          'Adapt your platform setup based on your chosen trading style',
+          'Consider diversifying across multiple approaches based on market conditions'
+        ]
       }
     ]
   },
