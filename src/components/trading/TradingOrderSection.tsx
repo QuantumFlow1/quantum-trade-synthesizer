@@ -7,8 +7,11 @@ import TransactionList from "@/components/TransactionList";
 import { usePositions } from "@/hooks/use-positions";
 import { useSimulatedPositions } from "@/hooks/use-simulated-positions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CircleCheckBig } from "lucide-react";
+import { AlertCircle, CircleCheckBig, Info } from "lucide-react";
 import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/components/ui/tabs";
+import { SimulationToggle } from "./SimulationToggle";
+import { Button } from "../ui/button";
+import { toast } from "@/hooks/use-toast";
 
 interface TradingOrderSectionProps {
   apiStatus: 'checking' | 'available' | 'unavailable';
@@ -23,15 +26,48 @@ export const TradingOrderSection = ({ apiStatus }: TradingOrderSectionProps) => 
   // Force API to be available for simulation mode
   const effectiveApiStatus = isSimulationMode ? 'available' : apiStatus;
 
+  // Handle toggle of simulation mode
+  const handleSimulationToggle = (enabled: boolean) => {
+    setIsSimulationMode(enabled);
+    if (enabled) {
+      toast({
+        title: "Simulation Mode Enabled",
+        description: "You can now test trading without using real funds",
+        duration: 3000,
+      });
+    }
+  };
+
+  // Focus the simulated tab when simulation mode is enabled
+  useEffect(() => {
+    if (isSimulationMode) {
+      setPositionsTab("simulated");
+    }
+  }, [isSimulationMode]);
+
   return (
     <div className="lg:col-span-1 space-y-6">
+      <SimulationToggle 
+        enabled={isSimulationMode} 
+        onToggle={handleSimulationToggle} 
+      />
+      
       {effectiveApiStatus === 'unavailable' && !isSimulationMode && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>API Connection Issue</AlertTitle>
           <AlertDescription>
             Trading services are currently unavailable. You can view data but trading functionality is limited.
-            Try enabling Simulation Mode to test trading without real money.
+            <div className="mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsSimulationMode(true)}
+                className="bg-white/10"
+              >
+                Enable Simulation Mode
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}
@@ -50,8 +86,9 @@ export const TradingOrderSection = ({ apiStatus }: TradingOrderSectionProps) => 
         <Alert variant="default" className="mb-4 bg-green-500/10 border-green-500">
           <CircleCheckBig className="h-4 w-4 text-green-500" />
           <AlertTitle>Simulation Mode Active</AlertTitle>
-          <AlertDescription>
-            Trading with simulated funds. No real money will be used.
+          <AlertDescription className="space-y-2">
+            <p>Trading with simulated funds. No real money will be used.</p>
+            <p className="text-sm text-muted-foreground"><Info className="h-3 w-3 inline mr-1" /> All trading functions work with fake currency in this mode.</p>
           </AlertDescription>
         </Alert>
       )}
