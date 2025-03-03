@@ -1,10 +1,14 @@
 
+import { useState } from "react";
 import { TradeOrderForm } from "./TradeOrderForm";
 import PositionsList from "./PositionsList";
+import SimulatedPositionsList from "./SimulatedPositionsList";
 import TransactionList from "@/components/TransactionList";
 import { usePositions } from "@/hooks/use-positions";
+import { useSimulatedPositions } from "@/hooks/use-simulated-positions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/components/ui/tabs";
 
 interface TradingOrderSectionProps {
   apiStatus: 'checking' | 'available' | 'unavailable';
@@ -12,6 +16,8 @@ interface TradingOrderSectionProps {
 
 export const TradingOrderSection = ({ apiStatus }: TradingOrderSectionProps) => {
   const { positions, isLoading: positionsLoading } = usePositions();
+  const { positions: simulatedPositions, isLoading: simulatedPositionsLoading, closePosition } = useSimulatedPositions();
+  const [positionsTab, setPositionsTab] = useState("real");
 
   return (
     <div className="lg:col-span-1 space-y-6">
@@ -36,10 +42,30 @@ export const TradingOrderSection = ({ apiStatus }: TradingOrderSectionProps) => 
       )}
       
       <TradeOrderForm apiStatus={apiStatus} />
+      
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold">Open Positions</h3>
-        <PositionsList positions={positions} isLoading={positionsLoading} />
+        <h3 className="text-xl font-semibold">Positions</h3>
+        
+        <Tabs value={positionsTab} onValueChange={setPositionsTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="real">Real Positions</TabsTrigger>
+            <TabsTrigger value="simulated">Simulated Positions</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="real" className="mt-4">
+            <PositionsList positions={positions} isLoading={positionsLoading} />
+          </TabsContent>
+          
+          <TabsContent value="simulated" className="mt-4">
+            <SimulatedPositionsList 
+              positions={simulatedPositions} 
+              isLoading={simulatedPositionsLoading}
+              onClosePosition={closePosition}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
+      
       <TransactionList />
     </div>
   );

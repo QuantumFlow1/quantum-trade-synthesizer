@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { OrderTypeSelector } from "../OrderTypeSelector";
@@ -29,6 +28,7 @@ interface StandardOrderFormProps {
     takeProfitRecommendation: number;
     collaboratingAgents: string[];
   };
+  isSimulationMode?: boolean;
   onOrderTypeChange: (value: "buy" | "sell") => void;
   onOrderExecutionTypeChange: (value: "market" | "limit" | "stop" | "stop_limit") => void;
   onAmountChange: (value: string) => void;
@@ -52,6 +52,7 @@ export const StandardOrderForm = ({
   takeProfitRecommendation,
   apiStatus = 'unavailable',
   aiAnalysis,
+  isSimulationMode = false,
   onOrderTypeChange,
   onOrderExecutionTypeChange,
   onAmountChange,
@@ -70,6 +71,14 @@ export const StandardOrderForm = ({
       />
       
       <form onSubmit={onSubmit} className="space-y-4 p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
+        {isSimulationMode && (
+          <div className="mb-2 p-2 bg-blue-500/10 rounded-md">
+            <p className="text-sm text-blue-500">
+              Simulatiemodus actief - Er worden geen echte orders geplaatst
+            </p>
+          </div>
+        )}
+        
         <OrderTypeSelector 
           value={orderType}
           onValueChange={onOrderTypeChange}
@@ -116,7 +125,7 @@ export const StandardOrderForm = ({
           }`}
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Verwerken..." : `Plaats ${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
+          {isSubmitting ? "Verwerken..." : `Plaats ${isSimulationMode ? "Gesimuleerde " : ""}${orderType.toUpperCase()} ${orderExecutionType.toUpperCase()} Order`}
         </Button>
       </form>
     </div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +8,7 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { fetchAdminApiKey } from "@/components/chat/services/utils/apiHelpers";
+import { SimulationToggle } from "./SimulationToggle";
 
 interface TradeOrderFormProps {
   apiStatus?: 'checking' | 'available' | 'unavailable';
@@ -28,27 +28,24 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
   const [advancedSignal, setAdvancedSignal] = useState<any>(null);
   const [localApiStatus, setLocalApiStatus] = useState<'checking' | 'available' | 'unavailable'>(apiStatus);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isSimulationMode, setIsSimulationMode] = useState<boolean>(false);
 
   const { toast } = useToast();
 
-  // Update local API status when prop changes
   useEffect(() => {
     if (apiStatus !== localApiStatus) {
       setLocalApiStatus(apiStatus);
     }
   }, [apiStatus]);
 
-  // Verify API status if it's checking
   useEffect(() => {
     if (localApiStatus === 'checking') {
       verifyApiStatus();
     }
   }, [localApiStatus]);
 
-  // Simulate fetching current price
   useEffect(() => {
     const interval = setInterval(() => {
-      // Simulate small price fluctuations
       const newPrice = currentPrice + (Math.random() * 200 - 100);
       setCurrentPrice(Math.round(newPrice * 100) / 100);
     }, 5000);
@@ -56,25 +53,21 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     return () => clearInterval(interval);
   }, [currentPrice]);
 
-  // Controleer of er API sleutels beschikbaar zijn
   const checkAPIAvailability = async () => {
     try {
-      // Controleer of er admin API keys beschikbaar zijn
       const hasOpenAI = await fetchAdminApiKey('openai');
       const hasClaude = await fetchAdminApiKey('claude');
       const hasGemini = await fetchAdminApiKey('gemini');
       const hasDeepseek = await fetchAdminApiKey('deepseek');
       
-      // Controleer of er user API keys in localStorage staan
       const openaiKey = localStorage.getItem('openaiApiKey');
       const claudeKey = localStorage.getItem('claudeApiKey');
       const geminiKey = localStorage.getItem('geminiApiKey');
       const deepseekKey = localStorage.getItem('deepseekApiKey');
       
-      // Als er ten minste één key beschikbaar is, dan kunnen we doorgaan
       const hasAnyKey = !!(hasOpenAI || hasClaude || hasGemini || hasDeepseek || 
                           openaiKey || claudeKey || geminiKey || deepseekKey);
-                          
+      
       console.log("TradeOrderForm: API sleutels beschikbaarheidscontrole:", {
         adminKeys: {
           openai: !!hasOpenAI,
@@ -107,7 +100,6 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
   const verifyApiStatus = async () => {
     setIsVerifying(true);
     try {
-      // Controleer eerst of er API sleutels beschikbaar zijn
       const hasKeys = await checkAPIAvailability();
       
       if (!hasKeys) {
@@ -117,7 +109,6 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
         return;
       }
       
-      // Nu proberen we de API te pingen
       const { data, error } = await supabase.functions.invoke('grok3-response', {
         body: { message: "ping", context: [] }
       });
@@ -136,7 +127,6 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if the API is unavailable
     if (localApiStatus !== 'available') {
       toast({
         title: "Trading Niet Beschikbaar",
@@ -148,14 +138,54 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     
     setIsSubmitting(true);
 
-    // Simulate API delay
-    setTimeout(() => {
-      toast({
-        title: "Order Geplaatst",
-        description: `Uw ${orderType === "buy" ? "KOOP" : "VERKOOP"} ${orderExecutionType.toUpperCase()} order voor ${amount} BTC is succesvol geplaatst.`,
+    if (isSimulationMode) {
+      handleSimulatedOrder();
+    } else {
+      setTimeout(() => {
+        toast({
+          title: "Order Geplaatst",
+          description: `Uw ${orderType === "buy" ? "KOOP" : "VERKOOP"} ${orderExecutionType.toUpperCase()} order voor ${amount} BTC is succesvol geplaatst.`,
+        });
+        setIsSubmitting(false);
+      }, 1500);
+    }
+  };
+
+  const handleSimulatedOrder = async () => {
+    try {
+      const simulationRequest = {
+        simulation: {
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          pair_id: "00000000-0000-0000-0000-000000000000",
+          type: orderType === "buy" ? "long" : "short",
+          amount: Number(amount),
+          entry_price: currentPrice,
+          strategy: orderMode === "standard" ? "manual" : 
+                   advancedSignal ? "ai-assisted" : "manual",
+          simulation_type: "daytrading"
+        }
+      };
+      
+      const { data, error } = await supabase.functions.invoke('trade-simulation', {
+        body: simulationRequest
       });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Simulatie Gestart",
+        description: `Uw ${orderType === "buy" ? "LONG" : "SHORT"} simulatie voor ${amount} BTC is succesvol gestart tegen $${currentPrice}.`,
+      });
+    } catch (error) {
+      console.error("Error creating simulation:", error);
+      toast({
+        title: "Simulatie Fout",
+        description: "Er is een fout opgetreden bij het starten van de simulatie. Probeer het later opnieuw.",
+        variant: "destructive",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   };
 
   const handleSignalApplied = (direction: string, stopLossValue: string, takeProfitValue: string) => {
@@ -172,7 +202,6 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     });
   };
 
-  // Generate recommended stop loss and take profit values
   const stopLossPercentage = orderType === "buy" ? 5 : 7;
   const takeProfitPercentage = orderType === "buy" ? 10 : 12;
   const stopLossRecommendation = orderType === "buy" 
@@ -182,7 +211,6 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
     ? currentPrice * (1 + takeProfitPercentage/100) 
     : currentPrice * (1 - takeProfitPercentage/100);
 
-  // Dummy AI analysis data
   const aiAnalysis = {
     confidence: 78,
     riskLevel: "Medium",
@@ -225,9 +253,18 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
         </div>
       )}
       
+      <div className="mb-4">
+        <SimulationToggle 
+          enabled={isSimulationMode} 
+          onToggle={setIsSimulationMode} 
+        />
+      </div>
+      
       <Tabs defaultValue="standard" onValueChange={setOrderMode}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Order Formulier</h2>
+          <h2 className="text-xl font-bold">
+            {isSimulationMode ? "Simulatie Order" : "Order Formulier"}
+          </h2>
           <TabsList>
             <TabsTrigger value="standard">Standaard</TabsTrigger>
             <TabsTrigger value="advanced">Geavanceerd</TabsTrigger>
@@ -256,6 +293,7 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
             onStopLossChange={setStopLoss}
             onTakeProfitChange={setTakeProfit}
             onSubmit={handleSubmit}
+            isSimulationMode={isSimulationMode}
           />
         </TabsContent>
 
@@ -268,6 +306,7 @@ export const TradeOrderForm = ({ apiStatus = 'unavailable' }: TradeOrderFormProp
             apiAvailable={isApiAvailable}
             onSignalApplied={handleSignalApplied}
             onSubmit={handleSubmit}
+            isSimulationMode={isSimulationMode}
           />
         </TabsContent>
       </Tabs>

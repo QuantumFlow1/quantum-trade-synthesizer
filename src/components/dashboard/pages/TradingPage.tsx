@@ -7,12 +7,17 @@ import { AIInsights } from "@/components/financial-advice/AIInsights";
 import { supabase } from "@/lib/supabase";
 import { TradeOrderForm } from "@/components/trading/TradeOrderForm";
 import PositionsList from "@/components/trading/PositionsList";
+import SimulatedPositionsList from "@/components/trading/SimulatedPositionsList";
 import { usePositions } from "@/hooks/use-positions";
+import { useSimulatedPositions } from "@/hooks/use-simulated-positions";
+import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/components/ui/tabs";
 
 export const TradingPage = () => {
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
   const [aiAdvice, setAiAdvice] = useState<string>("");
   const { positions, isLoading: positionsLoading } = usePositions();
+  const { positions: simulatedPositions, isLoading: simulatedPositionsLoading, closePosition } = useSimulatedPositions();
+  const [positionsTab, setPositionsTab] = useState("real");
 
   // Check API status when component mounts
   useEffect(() => {
@@ -71,7 +76,27 @@ export const TradingPage = () => {
             <AIInsights isOnline={apiStatus === 'available'} aiAdvice={aiAdvice} />
           </Card>
           
-          <PositionsList positions={positions} isLoading={positionsLoading} />
+          <Card className="backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
+            <h2 className="text-lg font-bold mb-4">Positions</h2>
+            <Tabs value={positionsTab} onValueChange={setPositionsTab}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="real">Real</TabsTrigger>
+                <TabsTrigger value="simulated">Simulated</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="real" className="mt-4">
+                <PositionsList positions={positions} isLoading={positionsLoading} />
+              </TabsContent>
+              
+              <TabsContent value="simulated" className="mt-4">
+                <SimulatedPositionsList 
+                  positions={simulatedPositions} 
+                  isLoading={simulatedPositionsLoading}
+                  onClosePosition={closePosition}
+                />
+              </TabsContent>
+            </Tabs>
+          </Card>
         </div>
       </div>
     </div>

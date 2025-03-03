@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AdvancedSignalPanel } from "./AdvancedSignalPanel";
@@ -12,6 +11,7 @@ interface AdvancedOrderFormProps {
   apiAvailable?: boolean;
   onSignalApplied: (direction: string, stopLoss: string, takeProfit: string) => void;
   onSubmit: (e: React.FormEvent) => void;
+  isSimulationMode?: boolean;
 }
 
 export const AdvancedOrderForm = ({ 
@@ -21,9 +21,9 @@ export const AdvancedOrderForm = ({
   apiEnabled,
   apiAvailable = false,
   onSignalApplied,
-  onSubmit 
+  onSubmit,
+  isSimulationMode = false
 }: AdvancedOrderFormProps) => {
-  // Dummy AI analyse data
   const aiAnalysis = {
     confidence: advancedSignal ? advancedSignal.confidence || 65 : 65,
     riskLevel: advancedSignal ? (advancedSignal.confidence > 70 ? "Laag" : "Gemiddeld") : "Gemiddeld",
@@ -46,6 +46,14 @@ export const AdvancedOrderForm = ({
       />
       
       <div className="p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
+        {isSimulationMode && (
+          <div className="mb-4 p-2 bg-blue-500/10 rounded-md">
+            <p className="text-sm text-blue-500">
+              Simulatiemodus actief - Er worden geen echte orders geplaatst
+            </p>
+          </div>
+        )}
+        
         <div className="mb-4 text-center">
           <h3 className="text-lg font-medium">AI Trading Assistant</h3>
           <p className="text-sm text-muted-foreground mt-1">
@@ -75,7 +83,7 @@ export const AdvancedOrderForm = ({
           onClick={onSubmit}
           disabled={!advancedSignal}
         >
-          {advancedSignal ? `Plaats ${advancedSignal.direction} Order` : "Wacht op signaal..."}
+          {advancedSignal ? `Plaats ${isSimulationMode ? "Gesimuleerde " : ""}${advancedSignal.direction} Order` : "Wacht op signaal..."}
         </Button>
       </div>
     </div>
