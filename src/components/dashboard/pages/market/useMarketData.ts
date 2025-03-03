@@ -23,16 +23,36 @@ export const useMarketData = () => {
       }
       
       if (data) {
-        // Type assertion to ensure data is treated as MarketData[]
-        setMarketData(data as MarketData[]);
-        
-        // Extract unique markets with proper type handling
-        const marketsArray = data as MarketData[];
-        const markets = [...new Set(marketsArray.map((item) => item.market))];
-        setUniqueMarkets(markets);
+        // Ensure data is an array before setting it
+        if (Array.isArray(data)) {
+          // Type assertion to ensure data is treated as MarketData[]
+          setMarketData(data as MarketData[]);
+          
+          // Extract unique markets with proper type handling
+          const marketsArray = data as MarketData[];
+          const markets = [...new Set(marketsArray.map((item) => item.market))];
+          setUniqueMarkets(markets);
+        } else {
+          console.error("Market data is not an array:", data);
+          // Set empty array to prevent filter errors
+          setMarketData([]);
+          setUniqueMarkets([]);
+          toast({
+            title: "Data Error",
+            description: "Market data format is invalid. Please try again later.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // Handle case where data is null or undefined
+        setMarketData([]);
+        setUniqueMarkets([]);
       }
     } catch (error) {
       console.error("Error fetching market data:", error);
+      // Set empty arrays to prevent filter errors
+      setMarketData([]);
+      setUniqueMarkets([]);
       toast({
         title: "Error",
         description: "Failed to fetch market data. Please try again later.",
@@ -53,6 +73,8 @@ export const useMarketData = () => {
   }, []);
 
   const sortData = (data: MarketData[]) => {
+    if (!Array.isArray(data) || data.length === 0) return [];
+    
     return [...data].sort((a, b) => {
       // Handle numeric fields
       if (["price", "volume", "change24h", "high24h", "low24h"].includes(sortField)) {
@@ -83,9 +105,10 @@ export const useMarketData = () => {
     }
   };
 
-  const filteredData = marketData.filter(item => 
-    selectedMarket === "all" || item.market === selectedMarket
-  );
+  // Add defensive checks to ensure marketData is always an array
+  const filteredData = Array.isArray(marketData) 
+    ? marketData.filter(item => selectedMarket === "all" || item.market === selectedMarket)
+    : [];
   
   const sortedAndFilteredData = sortData(filteredData);
 

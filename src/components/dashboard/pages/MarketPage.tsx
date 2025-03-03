@@ -7,6 +7,9 @@ import { TestnetTokenTab } from "./market/TestnetTokenTab";
 import { WalletConnection } from "./market/WalletConnection";
 import { useMarketData } from "./market/useMarketData";
 import { EnhancedMarketTab } from "./market/EnhancedMarketTab";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, RefreshCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const MarketPage = () => {
   const [activeTab, setActiveTab] = useState("coins");
@@ -17,6 +20,7 @@ export const MarketPage = () => {
     sortField,
     sortDirection,
     handleSortChange,
+    fetchMarketData
   } = useMarketData();
 
   const handleConnectWallet = () => {
@@ -30,8 +34,11 @@ export const MarketPage = () => {
   const handleRefresh = () => {
     // This function will be called when the refresh button is clicked
     console.log("Refreshing market data...");
-    // You could call fetchMarketData() here if it's exposed by useMarketData
+    fetchMarketData();
   };
+
+  // Check if marketData is not an array or empty
+  const hasError = !Array.isArray(marketData);
 
   return (
     <div className="space-y-6">
@@ -39,7 +46,26 @@ export const MarketPage = () => {
 
       <MarketTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {activeTab === "coins" && (
+      {hasError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading market data</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>We encountered an issue while loading the market data.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              className="w-fit"
+            >
+              <RefreshCcw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!hasError && activeTab === "coins" && (
         <MarketDataTable 
           data={marketData} 
           isLoading={isLoading} 
