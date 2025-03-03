@@ -1,13 +1,12 @@
 
 import { useEffect } from 'react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AI_MODELS, GrokSettings } from './types/GrokSettings';
-import { Search, Brain, Cpu } from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
 import { ApiKeyManager } from './ApiKeyManager';
 import { toast } from '@/hooks/use-toast';
+import { GrokSettings } from './types/GrokSettings';
+import { ModelSelector } from './settings/ModelSelector';
+import { TemperatureControl } from './settings/TemperatureControl';
+import { FeaturesToggle } from './settings/FeaturesToggle';
+import { AI_MODELS } from './types/GrokSettings';
 
 interface GrokChatSettingsProps {
   settings: GrokSettings;
@@ -143,72 +142,26 @@ export function GrokChatSettings({ settings, onSettingsChange }: GrokChatSetting
         onApiKeysChange={handleApiKeysChange}
       />
       
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center space-x-2">
-            <Cpu className="h-4 w-4 text-gray-600" />
-            <Label htmlFor="model-select" className="text-sm text-gray-700">AI Model</Label>
-          </div>
-          <span className="text-sm font-medium text-primary">{selectedModelInfo?.name || 'Onbekend model'}</span>
-        </div>
-        <Select 
-          value={settings.selectedModel} 
-          onValueChange={handleModelChange}
-        >
-          <SelectTrigger id="model-select" className="w-full">
-            <SelectValue placeholder="Selecteer AI model" />
-          </SelectTrigger>
-          <SelectContent>
-            {AI_MODELS.map(model => (
-              <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Model Selector */}
+      <ModelSelector 
+        selectedModel={settings.selectedModel}
+        onModelChange={handleModelChange}
+      />
       
-      {/* Temperatuur slider */}
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <Label htmlFor="temperature" className="text-sm text-gray-700">Temperatuur</Label>
-          <span className="text-sm font-medium text-primary">{settings.temperature?.toFixed(1) || '0.7'}</span>
-        </div>
-        <Slider
-          id="temperature"
-          min={0}
-          max={1}
-          step={0.1}
-          value={[settings.temperature || 0.7]}
-          onValueChange={handleTemperatureChange}
-        />
-      </div>
+      {/* Temperature Control */}
+      <TemperatureControl
+        temperature={settings.temperature || 0.7}
+        onTemperatureChange={handleTemperatureChange}
+      />
       
-      <h3 className="text-sm font-medium text-gray-700 mt-4 mb-3 pb-1 border-b">Grok Turbo Functies</h3>
-      
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Search className="h-4 w-4 text-gray-600" />
-          <Label htmlFor="deep-search" className="text-sm text-gray-700">Deep Search</Label>
-        </div>
-        <Switch 
-          id="deep-search"
-          checked={settings.deepSearchEnabled}
-          onCheckedChange={handleDeepSearchToggle}
-          disabled={settings.selectedModel !== 'grok3'}
-        />
-      </div>
-      
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Brain className="h-4 w-4 text-gray-600" />
-          <Label htmlFor="think" className="text-sm text-gray-700">Think</Label>
-        </div>
-        <Switch 
-          id="think"
-          checked={settings.thinkEnabled}
-          onCheckedChange={handleThinkToggle}
-          disabled={settings.selectedModel !== 'grok3'}
-        />
-      </div>
+      {/* Grok-specific Features */}
+      <FeaturesToggle
+        deepSearchEnabled={settings.deepSearchEnabled}
+        thinkEnabled={settings.thinkEnabled}
+        selectedModel={settings.selectedModel}
+        onDeepSearchToggle={handleDeepSearchToggle}
+        onThinkToggle={handleThinkToggle}
+      />
     </div>
   );
 }
