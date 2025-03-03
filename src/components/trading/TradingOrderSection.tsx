@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { TradeOrderForm } from "./TradeOrderForm";
 import PositionsList from "./PositionsList";
@@ -6,20 +7,25 @@ import TransactionList from "@/components/TransactionList";
 import { usePositions } from "@/hooks/use-positions";
 import { useSimulatedPositions } from "@/hooks/use-simulated-positions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, CircleCheckBig, Info } from "lucide-react";
+import { AlertCircle, CircleCheckBig, Info, Network } from "lucide-react";
 import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/components/ui/tabs";
 import { SimulationToggle } from "./SimulationToggle";
 import { Button } from "../ui/button";
 import { toast } from "@/hooks/use-toast";
 import { CollaborativeInsightsPanel } from "./CollaborativeInsightsPanel";
+import { useAgentNetwork } from "@/hooks/use-agent-network";
+import { Badge } from "../ui/badge";
 
 interface TradingOrderSectionProps {
   apiStatus: 'checking' | 'available' | 'unavailable';
+  marketData?: any;
 }
 
-export const TradingOrderSection = ({ apiStatus }: TradingOrderSectionProps) => {
+export const TradingOrderSection = ({ apiStatus, marketData }: TradingOrderSectionProps) => {
   const { positions, isLoading: positionsLoading } = usePositions();
   const { positions: simulatedPositions, isLoading: simulatedPositionsLoading, closePosition } = useSimulatedPositions();
+  const { isInitialized: isAgentNetworkInitialized, activeAgents } = useAgentNetwork();
+  
   const [positionsTab, setPositionsTab] = useState("simulated"); // Default to simulated tab
   const [isSimulationMode, setIsSimulationMode] = useState(false);
   
@@ -47,10 +53,19 @@ export const TradingOrderSection = ({ apiStatus }: TradingOrderSectionProps) => 
 
   return (
     <div className="lg:col-span-1 space-y-6">
-      <SimulationToggle 
-        enabled={isSimulationMode} 
-        onToggle={handleSimulationToggle} 
-      />
+      <div className="flex items-center justify-between">
+        <SimulationToggle 
+          enabled={isSimulationMode} 
+          onToggle={handleSimulationToggle} 
+        />
+        
+        {isAgentNetworkInitialized && (
+          <Badge variant="outline" className="flex items-center gap-1 px-2">
+            <Network className="h-3 w-3" />
+            <span className="text-xs">{activeAgents.length} AI Agents Active</span>
+          </Badge>
+        )}
+      </div>
       
       {effectiveApiStatus === 'unavailable' && !isSimulationMode && (
         <Alert variant="destructive" className="mb-4">
@@ -93,7 +108,7 @@ export const TradingOrderSection = ({ apiStatus }: TradingOrderSectionProps) => 
         </Alert>
       )}
       
-      <CollaborativeInsightsPanel />
+      <CollaborativeInsightsPanel currentData={marketData} />
       
       <TradeOrderForm 
         apiStatus={effectiveApiStatus} 
@@ -134,4 +149,4 @@ export const TradingOrderSection = ({ apiStatus }: TradingOrderSectionProps) => 
       <TransactionList />
     </div>
   );
-};
+}

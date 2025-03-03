@@ -25,11 +25,21 @@ export interface AgentTask {
   updatedAt: Date;
 }
 
+export interface CollaborationSession {
+  id: string;
+  status: 'active' | 'completed';
+  participants: string[];
+  createdAt: string;
+  completedAt?: string;
+  summary?: string;
+}
+
 export interface AgentNetworkState {
   availableAgents: Agent[];
   activeAgents: Agent[];
   messages: AgentMessage[];
   tasks: AgentTask[];
+  collaborationSessions: CollaborationSession[];
   isNetworkActive: boolean;
 }
 
@@ -39,6 +49,7 @@ const initialNetworkState: AgentNetworkState = {
   activeAgents: [],
   messages: [],
   tasks: [],
+  collaborationSessions: [],
   isNetworkActive: false
 };
 
@@ -95,6 +106,19 @@ export async function initializeAgentNetwork(): Promise<boolean> {
           successRate: 0.78,
           tasksCompleted: 56
         }
+      },
+      {
+        id: "sentiment-analyzer",
+        name: "Sentiment Analyzer",
+        status: "active",
+        type: "analyst",
+        description: "Analyzes market sentiment from news and social media",
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        performance: {
+          successRate: 0.82,
+          tasksCompleted: 45
+        }
       }
     ];
     
@@ -106,10 +130,21 @@ export async function initializeAgentNetwork(): Promise<boolean> {
       agent => agent.status === "active"
     );
     
-    networkState.isNetworkActive = true;
+    // Check the agent-network-coordinator status to ensure it's running
+    const { data, error } = await supabase.functions.invoke('agent-network-coordinator', {
+      body: { action: 'status' }
+    });
+    
+    if (error) {
+      console.error("Failed to connect to agent-network-coordinator:", error);
+      return false;
+    }
+    
+    console.log("Agent network coordinator status:", data);
+    networkState.isNetworkActive = data.status === "active";
     
     console.log(`Agent network initialized with ${networkState.activeAgents.length} active agents`);
-    return true;
+    return networkState.isNetworkActive;
   } catch (error) {
     console.error("Failed to initialize agent network:", error);
     return false;
@@ -134,20 +169,51 @@ function createAgentFromModel(model: typeof AI_MODELS[0]): Agent {
 }
 
 // Function to add a message between agents
-export function addAgentMessage(message: Omit<AgentMessage, 'id' | 'timestamp'>): AgentMessage {
-  const newMessage: AgentMessage = {
-    id: crypto.randomUUID(),
-    ...message,
-    timestamp: new Date()
-  };
-  
-  networkState.messages.push(newMessage);
-  
-  // Update last active timestamp for both agents
-  updateAgentActivity(message.fromAgent);
-  updateAgentActivity(message.toAgent);
-  
-  return newMessage;
+export async function sendAgentMessage(
+  fromAgentId: string, 
+  toAgentId: string, 
+  content: string, 
+  metadata?: Record<string, any>
+): Promise<AgentMessage | null> {
+  try {
+    // Send the message through the coordinator
+    const { data, error } = await supabase.functions.invoke('agent-network-coordinator', {
+      body: { 
+        action: 'send_message',
+        data: {
+          sender: fromAgentId,
+          receiver: toAgentId,
+          content: content
+        }
+      }
+    });
+    
+    if (error) {
+      console.error("Failed to send agent message:", error);
+      return null;
+    }
+    
+    // Create a local representation of the message
+    const newMessage: AgentMessage = {
+      id: data.messageId,
+      fromAgent: fromAgentId,
+      toAgent: toAgentId,
+      content: content,
+      timestamp: new Date(),
+      metadata
+    };
+    
+    networkState.messages.push(newMessage);
+    
+    // Update last active timestamp for both agents
+    updateAgentActivity(fromAgentId);
+    updateAgentActivity(toAgentId);
+    
+    return newMessage;
+  } catch (error) {
+    console.error("Error sending agent message:", error);
+    return null;
+  }
 }
 
 // Function to update agent activity timestamp
@@ -158,6 +224,77 @@ function updateAgentActivity(agentId: string) {
   }
 }
 
+// Function to fetch the latest messages from the coordinator
+export async function syncAgentMessages(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.functions.invoke('agent-network-coordinator', {
+      body: { action: 'get_messages' }
+    });
+    
+    if (error) {
+      console.error("Failed to sync agent messages:", error);
+      return false;
+    }
+    
+    // Map the messages to our format
+    const mappedMessages: AgentMessage[] = data.messages.map((msg: any) => ({
+      id: msg.id,
+      fromAgent: msg.sender,
+      toAgent: msg.receiver,
+      content: msg.content,
+      timestamp: new Date(msg.timestamp)
+    }));
+    
+    networkState.messages = mappedMessages;
+    return true;
+  } catch (error) {
+    console.error("Error syncing agent messages:", error);
+    return false;
+  }
+}
+
+// Function to create a task for an agent
+export async function createAgentTask(
+  agentId: string,
+  description: string,
+  priority: 'low' | 'medium' | 'high' = 'medium'
+): Promise<AgentTask | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('agent-network-coordinator', {
+      body: { 
+        action: 'create_task',
+        data: {
+          assignedTo: agentId,
+          description: description
+        }
+      }
+    });
+    
+    if (error) {
+      console.error("Failed to create agent task:", error);
+      return null;
+    }
+    
+    // Create a local representation of the task
+    const newTask: AgentTask = {
+      id: data.taskId,
+      agentId: agentId,
+      description: description,
+      status: 'pending',
+      priority: priority,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    networkState.tasks.push(newTask);
+    
+    return newTask;
+  } catch (error) {
+    console.error("Error creating agent task:", error);
+    return null;
+  }
+}
+
 // Function to create a collaborative trading analysis
 export async function generateCollaborativeTradingAnalysis(
   marketData: any, 
@@ -165,6 +302,10 @@ export async function generateCollaborativeTradingAnalysis(
 ): Promise<string> {
   if (!networkState.isNetworkActive) {
     await initializeAgentNetwork();
+  }
+  
+  if (!networkState.isNetworkActive) {
+    throw new Error("Agent network is not active");
   }
   
   try {
@@ -179,48 +320,23 @@ export async function generateCollaborativeTradingAnalysis(
       throw new Error("No analysis agents available");
     }
     
-    // Create a new task for market analysis
-    const analysisTask: AgentTask = {
-      id: crypto.randomUUID(),
-      agentId: primaryModelId,
-      description: "Generate collaborative market analysis",
-      status: 'pending',
-      priority: 'high',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
+    // Get the active agent IDs
+    const activeAgentIds = networkState.activeAgents.map(agent => agent.id);
     
-    networkState.tasks.push(analysisTask);
+    // Create analysis prompt based on market data
+    const analysisPrompt = `Generate a comprehensive trading analysis for the current market conditions. 
+    ${marketData ? `Current price: $${marketData.price || 'unknown'}. ` : ''}
+    Include insights on risk management, entry/exit points, and market sentiment.`;
     
-    // Update task status
-    analysisTask.status = 'in-progress';
-    analysisTask.updatedAt = new Date();
-    
-    // Simulate the primary agent collecting input from other agents
-    for (const analyst of analysts) {
-      if (analyst.id !== primaryModelId) {
-        // Create a message requesting input from this agent
-        addAgentMessage({
-          fromAgent: primaryModelId,
-          toAgent: analyst.id,
-          content: `Requesting analysis input on current market conditions.`
-        });
-        
-        // Simulate a response from this agent
-        addAgentMessage({
-          fromAgent: analyst.id,
-          toAgent: primaryModelId,
-          content: `Providing market analysis based on my specialization.`
-        });
-      }
-    }
-    
-    // Now use the Supabase function to get actual AI-generated advice
-    const { data, error } = await supabase.functions.invoke('generate-trading-advice', {
-      body: {
-        message: `Provide a comprehensive trading analysis for the current market conditions. Include insights on risk management, entry/exit points, and market sentiment.`,
-        userLevel: 'intermediate',
-        previousMessages: []
+    // Initiate collaborative analysis through the coordinator
+    const { data, error } = await supabase.functions.invoke('agent-network-coordinator', {
+      body: { 
+        action: 'coordinate_analysis',
+        data: {
+          prompt: analysisPrompt,
+          primaryModelId: primaryModelId,
+          modelIds: activeAgentIds
+        }
       }
     });
     
@@ -228,18 +344,17 @@ export async function generateCollaborativeTradingAnalysis(
       throw error;
     }
     
-    // Update task as completed
-    analysisTask.status = 'completed';
-    analysisTask.result = data.response;
-    analysisTask.updatedAt = new Date();
+    // Update local state based on coordinator response
+    await syncAgentMessages();
     
-    // Update agent performance
-    const primaryAgent = networkState.availableAgents.find(a => a.id === primaryModelId);
-    if (primaryAgent && primaryAgent.performance) {
-      primaryAgent.performance.tasksCompleted += 1;
-    }
+    // Update agent performance statistics
+    networkState.activeAgents.forEach(agent => {
+      if (agent.performance) {
+        agent.performance.tasksCompleted += 1;
+      }
+    });
     
-    return data.response;
+    return data.analysis;
   } catch (error) {
     console.error("Failed to generate collaborative trading analysis:", error);
     toast({
@@ -265,6 +380,26 @@ export function getAgentMessages(): AgentMessage[] {
 // Function to get all agent tasks
 export function getAgentTasks(): AgentTask[] {
   return networkState.tasks;
+}
+
+// Function to get all collaboration sessions
+export async function getCollaborationSessions(): Promise<CollaborationSession[]> {
+  try {
+    const { data, error } = await supabase.functions.invoke('agent-network-coordinator', {
+      body: { action: 'get_collaboration_sessions' }
+    });
+    
+    if (error) {
+      console.error("Failed to get collaboration sessions:", error);
+      return [];
+    }
+    
+    networkState.collaborationSessions = data.sessions;
+    return data.sessions;
+  } catch (error) {
+    console.error("Error getting collaboration sessions:", error);
+    return [];
+  }
 }
 
 // Function to activate or deactivate an agent

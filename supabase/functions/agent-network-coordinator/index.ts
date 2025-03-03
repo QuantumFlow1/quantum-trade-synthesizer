@@ -20,8 +20,19 @@ interface AgentTask {
   result?: string;
 }
 
+// Store messages and tasks in memory (would use a database in production)
 let messages: AgentMessage[] = [];
 let tasks: AgentTask[] = [];
+
+// Store active collaboration sessions
+let collaborationSessions: Record<string, {
+  id: string,
+  status: 'active' | 'completed',
+  participants: string[],
+  createdAt: string,
+  completedAt?: string,
+  summary?: string
+}> = {};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -41,7 +52,8 @@ serve(async (req) => {
             message: "Agent network coordinator is operational",
             agentCount: 6,
             messageCount: messages.length,
-            taskCount: tasks.length
+            taskCount: tasks.length,
+            sessionCount: Object.keys(collaborationSessions).length
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -123,19 +135,85 @@ serve(async (req) => {
         );
         
       case "get_messages":
+        const filteredMessages = data?.filter ? 
+          messages.filter(m => 
+            (data.filter.sender ? m.sender === data.filter.sender : true) && 
+            (data.filter.receiver ? m.receiver === data.filter.receiver : true)
+          ) : 
+          messages;
+          
         return new Response(
           JSON.stringify({ 
             status: "success", 
-            messages: messages
+            messages: filteredMessages
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
         
       case "get_tasks":
+        const filteredTasks = data?.filter ? 
+          tasks.filter(t => data.filter.assignedTo ? t.assignedTo === data.filter.assignedTo : true) : 
+          tasks;
+          
         return new Response(
           JSON.stringify({ 
             status: "success", 
-            tasks: tasks
+            tasks: filteredTasks
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+        
+      case "create_collaboration_session":
+        if (!data.participants || !Array.isArray(data.participants)) {
+          throw new Error("Missing required session fields");
+        }
+        
+        const sessionId = crypto.randomUUID();
+        collaborationSessions[sessionId] = {
+          id: sessionId,
+          status: 'active',
+          participants: data.participants,
+          createdAt: new Date().toISOString()
+        };
+        
+        return new Response(
+          JSON.stringify({ 
+            status: "success", 
+            message: "Collaboration session created successfully",
+            sessionId: sessionId
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+        
+      case "complete_collaboration_session":
+        if (!data.sessionId || !data.summary) {
+          throw new Error("Missing required session completion fields");
+        }
+        
+        if (!collaborationSessions[data.sessionId]) {
+          throw new Error("Collaboration session not found");
+        }
+        
+        collaborationSessions[data.sessionId] = {
+          ...collaborationSessions[data.sessionId],
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+          summary: data.summary
+        };
+        
+        return new Response(
+          JSON.stringify({ 
+            status: "success", 
+            message: "Collaboration session completed successfully"
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+        
+      case "get_collaboration_sessions":
+        return new Response(
+          JSON.stringify({ 
+            status: "success", 
+            sessions: Object.values(collaborationSessions)
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -143,13 +221,55 @@ serve(async (req) => {
       case "coordinate_analysis":
         console.log("Coordinating collaborative analysis");
         
+        // Create a collaboration session
+        const analysisSessionId = crypto.randomUUID();
+        const modelIds = data.modelIds || ["grok3", "market-analyzer", "risk-manager"];
+        
+        collaborationSessions[analysisSessionId] = {
+          id: analysisSessionId,
+          status: 'active',
+          participants: modelIds,
+          createdAt: new Date().toISOString()
+        };
+        
+        // Create tasks for each participating model
+        for (const modelId of modelIds) {
+          tasks.push({
+            id: crypto.randomUUID(),
+            assignedTo: modelId,
+            description: `Analyze ${data.prompt.substring(0, 50)}...`,
+            status: "pending",
+            createdAt: new Date().toISOString()
+          });
+          
+          // Create messages between coordinator and agents
+          if (modelId !== data.primaryModelId) {
+            messages.push({
+              id: crypto.randomUUID(),
+              sender: data.primaryModelId || "coordinator",
+              receiver: modelId,
+              content: `Please analyze: ${data.prompt.substring(0, 50)}...`,
+              timestamp: new Date().toISOString()
+            });
+          }
+        }
+        
         // Simulate multi-agent analysis coordination
-        const analysisResult = await generateMultiAgentAnalysis(data.prompt, data.modelId);
+        const analysisResult = await generateMultiAgentAnalysis(data.prompt, data.primaryModelId, modelIds);
+        
+        // Complete the session
+        collaborationSessions[analysisSessionId] = {
+          ...collaborationSessions[analysisSessionId],
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+          summary: analysisResult.substring(0, 200) + "..."
+        };
         
         return new Response(
           JSON.stringify({ 
             status: "success", 
-            analysis: analysisResult
+            analysis: analysisResult,
+            sessionId: analysisSessionId
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -174,8 +294,14 @@ serve(async (req) => {
 });
 
 // Function to simulate multi-agent collaborative analysis
-async function generateMultiAgentAnalysis(prompt: string, primaryModelId: string): Promise<string> {
+async function generateMultiAgentAnalysis(
+  prompt: string, 
+  primaryModelId: string,
+  participants: string[]
+): Promise<string> {
   try {
+    console.log(`Generating multi-agent analysis with ${participants.length} participants`);
+    
     // Create a fake task for tracking
     const taskId = crypto.randomUUID();
     const task: AgentTask = {
@@ -188,34 +314,37 @@ async function generateMultiAgentAnalysis(prompt: string, primaryModelId: string
     
     tasks.push(task);
     
-    // Simulate messages between agents
-    const agentIds = ["market-analyzer", "risk-manager", "trading-executor", primaryModelId];
+    // Generate a unique signature for each model to demonstrate their input
+    const modelContributions: Record<string, string> = {};
     
-    // Create some simulated inter-agent messages
-    for (let i = 0; i < agentIds.length; i++) {
-      if (agentIds[i] !== primaryModelId) {
-        // Message from coordinator to agent
-        messages.push({
-          id: crypto.randomUUID(),
-          sender: primaryModelId,
-          receiver: agentIds[i],
-          content: `Requesting analysis input for: ${prompt.substring(0, 50)}...`,
-          timestamp: new Date().toISOString()
-        });
-        
-        // Response from agent to coordinator
-        messages.push({
-          id: crypto.randomUUID(),
-          sender: agentIds[i],
-          receiver: primaryModelId,
-          content: `Providing ${agentIds[i]} specific analysis for the query`,
-          timestamp: new Date(Date.now() + 1000).toISOString()
-        });
+    // Simulate specific contributions from different agent types
+    for (const participant of participants) {
+      let contribution = "";
+      
+      if (participant === "market-analyzer") {
+        contribution = "Market analysis suggests trending patterns with significant volume indicating strong market interest.";
+      } else if (participant === "risk-manager") {
+        contribution = "Risk assessment: Medium risk profile with recommended stop-loss at key support levels.";
+      } else if (participant === "trading-executor") {
+        contribution = "Suggested entry points identified at previous resistance levels with scaled position sizing.";
+      } else {
+        // Generic contribution for other models
+        contribution = `${participant} model suggests considering a balanced approach with proper risk management.`;
       }
+      
+      modelContributions[participant] = contribution;
+      
+      // Add messages to simulate communication
+      messages.push({
+        id: crypto.randomUUID(),
+        sender: participant,
+        receiver: primaryModelId || "coordinator",
+        content: contribution,
+        timestamp: new Date(Date.now() + 1000).toISOString()
+      });
     }
     
-    // For now, just use the generate-trading-advice function
-    // In a more advanced implementation, we would collect and combine inputs from multiple agents
+    // For now, combine model contributions with the trading advice function
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-trading-advice`, {
       method: 'POST',
       headers: {
@@ -233,14 +362,20 @@ async function generateMultiAgentAnalysis(prompt: string, primaryModelId: string
     }
     
     const data = await response.json();
-    const result = data.response;
+    let result = data.response;
+    
+    // Add model contributions as "insights from collaborating agents" section
+    result += "\n\n## Insights from Collaborating Agents\n\n";
+    for (const [modelId, contribution] of Object.entries(modelContributions)) {
+      result += `- **${modelId}**: ${contribution}\n`;
+    }
     
     // Update task status
     const taskIndex = tasks.findIndex(t => t.id === taskId);
     if (taskIndex !== -1) {
       tasks[taskIndex].status = "completed";
       tasks[taskIndex].completedAt = new Date().toISOString();
-      tasks[taskIndex].result = result.substring(0, 100) + "...";
+      tasks[taskIndex].result = "Collaborative analysis completed successfully";
     }
     
     return result;

@@ -31,3 +31,6 @@ verify_jwt = false
 
 [functions.agent-network-coordinator]
 verify_jwt = false
+
+[functions.trading-analysis]
+verify_jwt = false

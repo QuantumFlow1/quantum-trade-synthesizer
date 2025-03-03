@@ -99,7 +99,6 @@ const TradingChart = () => {
         toast({
           title: "Connection Restored",
           description: "Successfully connected to trading services.",
-          // Change from "success" to "default" since "success" is not an allowed variant
           variant: "default",
         });
       }
@@ -160,7 +159,8 @@ const TradingChart = () => {
         </div>
 
         <TradingOrderSection 
-          apiStatus={apiStatus} 
+          apiStatus={apiStatus}
+          marketData={data}
         />
       </div>
     </div>
