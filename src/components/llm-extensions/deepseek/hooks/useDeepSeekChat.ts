@@ -1,171 +1,117 @@
 
-import { useState, useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
-import { Message } from '../types/deepseekChatTypes';
+import { useCallback, useEffect } from 'react';
+import { UseDeepSeekChatReturn, Message } from '../types/deepseekChatTypes';
+import { generateId, formatConversationHistory } from '../utils/deepseekChatUtils';
+import { useDeepSeekState } from './useDeepSeekState';
 import { useDeepSeekApi } from './useDeepSeekApi';
-import { 
-  generateId, 
-  formatConversationHistory,
-  loadMessagesFromStorage,
-  saveMessagesToStorage,
-  loadApiKeyFromStorage,
-  saveApiKeyToStorage
-} from '../utils/deepseekChatUtils';
-import { UseDeepSeekChatReturn } from '../types/deepseekChatTypes';
 
 export function useDeepSeekChat(): UseDeepSeekChatReturn {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  
-  const { 
-    edgeFunctionStatus, 
-    checkEdgeFunctionStatus, 
-    sendMessageToApi 
+  const {
+    messages,
+    setMessages,
+    inputMessage,
+    setInputMessage,
+    showSettings,
+    setShowSettings,
+    apiKey,
+    saveApiKey,
+    clearChat,
+    toggleSettings,
+  } = useDeepSeekState();
+
+  const {
+    isApiLoading,
+    edgeFunctionStatus,
+    checkDeepSeekApiStatus,
+    sendMessageToDeepSeek,
   } = useDeepSeekApi();
-  
-  // Load saved API key and messages from localStorage
+
+  // Check API status on mount
   useEffect(() => {
-    const savedApiKey = loadApiKeyFromStorage();
-    if (savedApiKey) {
-      console.log('Found saved DeepSeek API key in localStorage');
-      setApiKey(savedApiKey);
-    } else {
-      // Show settings if no API key is found
-      console.log('No DeepSeek API key found in localStorage');
-      setShowSettings(true);
-    }
-    
-    const savedMessages = loadMessagesFromStorage();
-    if (savedMessages.length > 0) {
-      setMessages(savedMessages);
-    }
-    
-    // Check edge function status
     checkEdgeFunctionStatus();
-    
-    // Listen for API key changes from other components
-    const handleApiKeyUpdate = () => {
-      const updatedKey = loadApiKeyFromStorage();
-      if (updatedKey && updatedKey !== apiKey) {
-        console.log('API key updated from another component');
-        setApiKey(updatedKey);
-      }
-    };
-    
-    window.addEventListener('apikey-updated', handleApiKeyUpdate);
-    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
-    
-    return () => {
-      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
-      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
-    };
   }, []);
 
-  // Save messages to localStorage when they change
-  useEffect(() => {
-    saveMessagesToStorage(messages);
-  }, [messages]);
+  /**
+   * Checks the status of the DeepSeek API edge function
+   */
+  const checkEdgeFunctionStatus = useCallback(async () => {
+    await checkDeepSeekApiStatus();
+  }, [checkDeepSeekApiStatus]);
 
-  // Save API key
-  const saveApiKey = (newApiKey: string) => {
-    setApiKey(newApiKey);
-    saveApiKeyToStorage(newApiKey);
-    
-    toast({
-      title: "API key saved",
-      description: "Your DeepSeek API key has been saved.",
-      duration: 3000,
-    });
-    
-    // Trigger custom event for other components
-    window.dispatchEvent(new Event('apikey-updated'));
-    
-    // Check edge function status again
-    checkEdgeFunctionStatus();
-  };
-
+  /**
+   * Sends a message to the DeepSeek API
+   */
   const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
-    
-    if (!apiKey && edgeFunctionStatus !== 'available') {
-      toast({
-        title: "API key required",
-        description: "Please set your DeepSeek API key in settings.",
-        variant: "destructive",
-      });
-      setShowSettings(true);
+    if (!inputMessage.trim() || !apiKey.trim() || isApiLoading) {
       return;
     }
 
-    // Add user message to chat
+    // Create a new user message
     const userMessage: Message = {
       id: generateId(),
       role: 'user',
       content: inputMessage,
       timestamp: new Date(),
     };
-    
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+
+    // Create a placeholder for the assistant's response
+    const assistantMessage: Message = {
+      id: generateId(),
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+    };
+
+    // Add messages to the state
+    const updatedMessages = [...messages, userMessage, assistantMessage];
+    setMessages(updatedMessages);
     setInputMessage('');
-    setIsLoading(true);
 
     try {
-      // Format conversation history for DeepSeek API
-      const history = formatConversationHistory(newMessages.slice(0, -1));
+      // Format messages for the API
+      const formattedMessages = formatConversationHistory(updatedMessages.slice(0, -1));
       
-      // Get response from API
-      const { response } = await sendMessageToApi(inputMessage, history, apiKey);
+      // Send the message to the API and get the response
+      const response = await sendMessageToDeepSeek(formattedMessages, apiKey);
       
-      // Add assistant response
-      const assistantMessage: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-      };
-
-      setMessages([...newMessages, assistantMessage]);
+      // Update the assistant's message with the response
+      setMessages(prevMessages => {
+        const newMessages = [...prevMessages];
+        const lastMessageIndex = newMessages.length - 1;
+        
+        if (lastMessageIndex >= 0 && newMessages[lastMessageIndex].role === 'assistant') {
+          newMessages[lastMessageIndex] = {
+            ...newMessages[lastMessageIndex],
+            content: response,
+          };
+        }
+        
+        return newMessages;
+      });
     } catch (error) {
-      console.error('DeepSeek API error:', error);
+      // If there's an error, update the assistant's message with an error message
+      setMessages(prevMessages => {
+        const newMessages = [...prevMessages];
+        const lastMessageIndex = newMessages.length - 1;
+        
+        if (lastMessageIndex >= 0 && newMessages[lastMessageIndex].role === 'assistant') {
+          newMessages[lastMessageIndex] = {
+            ...newMessages[lastMessageIndex],
+            content: 'Error: Unable to get a response from DeepSeek AI. Please check your API key and try again.',
+          };
+        }
+        
+        return newMessages;
+      });
       
-      // Add error message to chat
-      const errorMessage: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: error instanceof Error 
-          ? `Error: ${error.message}` 
-          : 'An unknown error occurred. Please try again.',
-        timestamp: new Date(),
-      };
-      
-      setMessages([...newMessages, errorMessage]);
-    } finally {
-      setIsLoading(false);
+      console.error('Error sending message:', error);
     }
-  };
-
-  const clearChat = () => {
-    setMessages([]);
-    localStorage.removeItem('deepseekChatMessages');
-    toast({
-      title: "Chat cleared",
-      description: "All messages have been removed.",
-      duration: 3000,
-    });
-  };
-
-  const toggleSettings = () => {
-    setShowSettings(!showSettings);
   };
 
   return {
     messages,
     inputMessage,
-    isLoading,
+    isLoading: isApiLoading,
     showSettings,
     apiKey,
     edgeFunctionStatus,
@@ -175,6 +121,6 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
     clearChat,
     toggleSettings,
     setShowSettings,
-    checkEdgeFunctionStatus
+    checkEdgeFunctionStatus,
   };
 }

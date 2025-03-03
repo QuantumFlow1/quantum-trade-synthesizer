@@ -1,79 +1,80 @@
 
 import { useState } from 'react';
-import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
 import { EdgeFunctionStatus } from '../../types/chatTypes';
 
 export function useDeepSeekApi() {
+  const [isApiLoading, setIsApiLoading] = useState(false);
   const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<EdgeFunctionStatus>('checking');
 
   /**
-   * Checks if the DeepSeek Edge Function is available
+   * Checks if the DeepSeek API edge function is available
    */
-  const checkEdgeFunctionStatus = async () => {
-    setEdgeFunctionStatus('checking');
-    
+  const checkDeepSeekApiStatus = async (): Promise<boolean> => {
     try {
-      // Try to ping the deepseek service
-      const { data, error } = await supabase.functions.invoke('deepseek-response', {
-        body: { ping: true }
+      const response = await fetch('/api/deepseek-response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          messages: [{ role: 'user', content: 'test' }],
+          apiKey: 'test'
+        }),
       });
       
-      if (error) {
-        console.error('DeepSeek edge function error:', error);
-        setEdgeFunctionStatus('unavailable');
-        return;
-      }
-      
-      if (data?.available) {
+      if (response.ok) {
         setEdgeFunctionStatus('available');
+        return true;
       } else {
+        console.error('DeepSeek API is not available:', await response.text());
         setEdgeFunctionStatus('unavailable');
+        return false;
       }
     } catch (error) {
-      console.error('Error checking DeepSeek availability:', error);
+      console.error('Error checking DeepSeek API status:', error);
       setEdgeFunctionStatus('unavailable');
+      return false;
     }
   };
 
   /**
    * Sends a message to the DeepSeek API
    */
-  const sendMessageToApi = async (
-    inputMessage: string,
-    history: Array<{ role: string; content: string }>,
-    apiKey: string
-  ) => {
+  const sendMessageToDeepSeek = async (messages: any[], apiKey: string): Promise<string> => {
+    setIsApiLoading(true);
+    
     try {
-      // Call the DeepSeek edge function
-      const { data, error } = await supabase.functions.invoke('deepseek-response', {
-        body: {
-          messages: [...history, { role: 'user', content: inputMessage }],
-          apiKey
-        }
+      const response = await fetch('/api/deepseek-response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages,
+          apiKey,
+        }),
       });
-      
-      if (error) {
-        throw error;
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error from DeepSeek API:', errorText);
+        throw new Error(`API request failed: ${errorText}`);
       }
-      
-      return { response: data.response || "I couldn't generate a response at this time." };
+
+      const data = await response.json();
+      return data.content || '';
     } catch (error) {
-      console.error('DeepSeek API error:', error);
-      
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get response",
-        variant: "destructive",
-      });
-      
+      console.error('Error sending message to DeepSeek:', error);
       throw error;
+    } finally {
+      setIsApiLoading(false);
     }
   };
 
   return {
+    isApiLoading,
     edgeFunctionStatus,
-    checkEdgeFunctionStatus,
-    sendMessageToApi
+    checkDeepSeekApiStatus,
+    sendMessageToDeepSeek,
   };
 }
