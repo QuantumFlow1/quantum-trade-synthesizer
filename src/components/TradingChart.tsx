@@ -4,13 +4,13 @@ import { useZoomControls } from "@/hooks/use-zoom-controls";
 import { PriceCards } from "./trading/PriceCards";
 import { TradingChartContent } from "./trading/TradingChartContent";
 import { TradingOrderSection } from "./trading/TradingOrderSection";
-import { generateTradingData } from "@/utils/tradingData";
+import { generateTradingData, TradingDataPoint } from "@/utils/tradingData";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { loadApiKeysFromStorage } from "@/components/chat/api-keys/apiKeyUtils";
 
 // Helper function to format market data to expected format
-const formatMarketData = (apiData) => {
+const formatMarketData = (apiData: any[]): TradingDataPoint[] => {
   if (!apiData || !Array.isArray(apiData)) {
     console.error("Invalid market data received:", apiData);
     return generateTradingData(); // Fallback to generated data
@@ -23,6 +23,12 @@ const formatMarketData = (apiData) => {
     
     // Generate compatible trading data format based on actual market data
     const formattedData = generateTradingData().map((item, index) => {
+      // Determine trend explicitly as "up" or "down" to satisfy TypeScript
+      const trend: "up" | "down" = 
+        mainAsset.change24h !== undefined 
+          ? (mainAsset.change24h >= 0 ? "up" : "down") 
+          : item.trend;
+          
       return {
         ...item,
         // Use actual price data if available
@@ -31,7 +37,7 @@ const formatMarketData = (apiData) => {
         high: mainAsset.high24h || (mainAsset.price ? mainAsset.price * 1.02 : item.high),
         low: mainAsset.low24h || (mainAsset.price ? mainAsset.price * 0.98 : item.low),
         volume: mainAsset.volume24h || item.volume,
-        trend: mainAsset.change24h >= 0 ? "up" : "down"
+        trend: trend
       };
     });
     
@@ -118,7 +124,7 @@ const TradingChart = () => {
         console.log("Raw market data received:", marketData);
         setRawMarketData(marketData);
         
-        // Format the data to match expected format
+        // Format the data to match expected format - ensuring type safety
         const formattedData = formatMarketData(marketData);
         setData(formattedData);
         return formattedData;
