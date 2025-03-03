@@ -1,4 +1,3 @@
-
 import { useRef, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,9 +6,8 @@ import { Bot, SendIcon, Loader2, Settings, Trash2, AlertTriangle, RefreshCw } fr
 import { DeepSeekMessage } from './deepseek/DeepSeekMessage';
 import { DeepSeekSettings } from './deepseek/DeepSeekSettings';
 import { DeepSeekEmptyState } from './deepseek/DeepSeekEmptyState';
-import { useDeepSeekChat } from './deepseek/useDeepSeekChat';
+import { useDeepSeekChat } from './deepseek/hooks/useDeepSeekChat';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { EdgeFunctionStatus } from './types/chatTypes';
 
 export function DeepSeekChat() {
   const {

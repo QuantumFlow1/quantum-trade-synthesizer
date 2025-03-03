@@ -1,21 +1,34 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { Message } from './types';
-import { EdgeFunctionStatus } from '../types/chatTypes';
-import { supabase } from '@/lib/supabase';
+import { Message } from '../types/deepseekChatTypes';
+import { useDeepSeekApi } from './useDeepSeekApi';
+import { 
+  generateId, 
+  formatConversationHistory,
+  loadMessagesFromStorage,
+  saveMessagesToStorage,
+  loadApiKeyFromStorage,
+  saveApiKeyToStorage
+} from '../utils/deepseekChatUtils';
+import { UseDeepSeekChatReturn } from '../types/deepseekChatTypes';
 
-export function useDeepSeekChat() {
+export function useDeepSeekChat(): UseDeepSeekChatReturn {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState('');
-  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<EdgeFunctionStatus>('checking');
+  
+  const { 
+    edgeFunctionStatus, 
+    checkEdgeFunctionStatus, 
+    sendMessageToApi 
+  } = useDeepSeekApi();
   
   // Load saved API key and messages from localStorage
   useEffect(() => {
-    const savedApiKey = localStorage.getItem('deepseekApiKey');
+    const savedApiKey = loadApiKeyFromStorage();
     if (savedApiKey) {
       console.log('Found saved DeepSeek API key in localStorage');
       setApiKey(savedApiKey);
@@ -25,13 +38,9 @@ export function useDeepSeekChat() {
       setShowSettings(true);
     }
     
-    const savedMessages = localStorage.getItem('deepseekChatMessages');
-    if (savedMessages) {
-      try {
-        setMessages(JSON.parse(savedMessages));
-      } catch (e) {
-        console.error('Error parsing saved DeepSeek messages:', e);
-      }
+    const savedMessages = loadMessagesFromStorage();
+    if (savedMessages.length > 0) {
+      setMessages(savedMessages);
     }
     
     // Check edge function status
@@ -39,7 +48,7 @@ export function useDeepSeekChat() {
     
     // Listen for API key changes from other components
     const handleApiKeyUpdate = () => {
-      const updatedKey = localStorage.getItem('deepseekApiKey');
+      const updatedKey = loadApiKeyFromStorage();
       if (updatedKey && updatedKey !== apiKey) {
         console.log('API key updated from another component');
         setApiKey(updatedKey);
@@ -57,20 +66,13 @@ export function useDeepSeekChat() {
 
   // Save messages to localStorage when they change
   useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem('deepseekChatMessages', JSON.stringify(messages));
-    }
+    saveMessagesToStorage(messages);
   }, [messages]);
 
-  // Generate a unique ID for messages
-  const generateId = () => {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2);
-  };
-  
   // Save API key
   const saveApiKey = (newApiKey: string) => {
     setApiKey(newApiKey);
-    localStorage.setItem('deepseekApiKey', newApiKey);
+    saveApiKeyToStorage(newApiKey);
     
     toast({
       title: "API key saved",
@@ -83,33 +85,6 @@ export function useDeepSeekChat() {
     
     // Check edge function status again
     checkEdgeFunctionStatus();
-  };
-  
-  // Check if the DeepSeek Edge Function is available
-  const checkEdgeFunctionStatus = async () => {
-    setEdgeFunctionStatus('checking');
-    
-    try {
-      // Try to ping the deepseek service
-      const { data, error } = await supabase.functions.invoke('deepseek-response', {
-        body: { ping: true }
-      });
-      
-      if (error) {
-        console.error('DeepSeek edge function error:', error);
-        setEdgeFunctionStatus('unavailable');
-        return;
-      }
-      
-      if (data?.available) {
-        setEdgeFunctionStatus('available');
-      } else {
-        setEdgeFunctionStatus('unavailable');
-      }
-    } catch (error) {
-      console.error('Error checking DeepSeek availability:', error);
-      setEdgeFunctionStatus('unavailable');
-    }
   };
 
   const sendMessage = async () => {
@@ -140,28 +115,16 @@ export function useDeepSeekChat() {
 
     try {
       // Format conversation history for DeepSeek API
-      const history = newMessages.slice(0, -1).map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
-        content: msg.content
-      }));
+      const history = formatConversationHistory(newMessages.slice(0, -1));
       
-      // Call the DeepSeek edge function
-      const { data, error } = await supabase.functions.invoke('deepseek-response', {
-        body: {
-          messages: [...history, { role: 'user', content: inputMessage }],
-          apiKey
-        }
-      });
-      
-      if (error) {
-        throw error;
-      }
+      // Get response from API
+      const { response } = await sendMessageToApi(inputMessage, history, apiKey);
       
       // Add assistant response
       const assistantMessage: Message = {
         id: generateId(),
         role: 'assistant',
-        content: data.response || "I couldn't generate a response at this time.",
+        content: response,
         timestamp: new Date(),
       };
 
@@ -180,12 +143,6 @@ export function useDeepSeekChat() {
       };
       
       setMessages([...newMessages, errorMessage]);
-      
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get response",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,6 @@
 
 import { Bot, AlertTriangle } from 'lucide-react';
-import { EdgeFunctionStatus } from './types';
+import { EdgeFunctionStatus } from '../types/chatTypes';
 
 interface DeepSeekEmptyStateProps {
   edgeFunctionStatus?: EdgeFunctionStatus;
