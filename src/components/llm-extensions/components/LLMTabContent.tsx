@@ -11,9 +11,15 @@ interface LLMTabContentProps {
   tabValue: 'deepseek' | 'openai' | 'grok' | 'claude';
   isEnabled: boolean;
   toggleLLM: (llm: 'deepseek' | 'openai' | 'grok' | 'claude') => void;
+  connectionStatus?: 'connected' | 'connecting' | 'disconnected' | 'error';
 }
 
-export const LLMTabContent: React.FC<LLMTabContentProps> = ({ tabValue, isEnabled, toggleLLM }) => {
+export const LLMTabContent: React.FC<LLMTabContentProps> = ({ 
+  tabValue, 
+  isEnabled, 
+  toggleLLM,
+  connectionStatus 
+}) => {
   const renderContent = () => {
     if (!isEnabled) {
       return (
@@ -26,13 +32,13 @@ export const LLMTabContent: React.FC<LLMTabContentProps> = ({ tabValue, isEnable
 
     switch (tabValue) {
       case 'deepseek':
-        return <DeepSeekChat />;
+        return <DeepSeekChat connectionStatus={connectionStatus} />;
       case 'openai':
-        return <OpenAIChat />;
+        return <OpenAIChat connectionStatus={connectionStatus} />;
       case 'grok':
-        return <GrokChat />;
+        return <GrokChat connectionStatus={connectionStatus} />;
       case 'claude':
-        return <ClaudeChat />;
+        return <ClaudeChat connectionStatus={connectionStatus} />;
       default:
         return null;
     }

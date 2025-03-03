@@ -7,7 +7,13 @@ import { LLMTabContent } from './components/LLMTabContent';
 import { useLLMExtensions } from './hooks/useLLMExtensions';
 
 export function LLMExtensions() {
-  const { activeTab, setActiveTab, enabledLLMs, toggleLLM } = useLLMExtensions();
+  const { 
+    activeTab, 
+    setActiveTab, 
+    enabledLLMs, 
+    connectionStatus,
+    toggleLLM 
+  } = useLLMExtensions();
   
   return (
     <Card className="col-span-full backdrop-blur-xl bg-secondary/10 border border-white/10 p-0 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
@@ -17,34 +23,39 @@ export function LLMExtensions() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="deepseek" className="w-full" onValueChange={setActiveTab}>
+        <Tabs defaultValue={activeTab} className="w-full" onValueChange={setActiveTab}>
           <LLMTabsList 
             enabledLLMs={enabledLLMs} 
-            toggleLLM={toggleLLM} 
+            toggleLLM={toggleLLM}
+            connectionStatus={connectionStatus} 
           />
           
           <LLMTabContent 
             tabValue="deepseek" 
             isEnabled={enabledLLMs.deepseek} 
-            toggleLLM={toggleLLM} 
+            toggleLLM={toggleLLM}
+            connectionStatus={connectionStatus.deepseek} 
           />
           
           <LLMTabContent 
             tabValue="openai" 
             isEnabled={enabledLLMs.openai} 
-            toggleLLM={toggleLLM} 
+            toggleLLM={toggleLLM}
+            connectionStatus={connectionStatus.openai} 
           />
           
           <LLMTabContent 
             tabValue="grok" 
             isEnabled={enabledLLMs.grok} 
-            toggleLLM={toggleLLM} 
+            toggleLLM={toggleLLM}
+            connectionStatus={connectionStatus.grok} 
           />
           
           <LLMTabContent 
             tabValue="claude" 
             isEnabled={enabledLLMs.claude} 
-            toggleLLM={toggleLLM} 
+            toggleLLM={toggleLLM}
+            connectionStatus={connectionStatus.claude} 
           />
         </Tabs>
       </CardContent>

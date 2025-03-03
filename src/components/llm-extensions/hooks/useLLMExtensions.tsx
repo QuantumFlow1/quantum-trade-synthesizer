@@ -11,6 +11,14 @@ export function useLLMExtensions() {
     claude: true
   });
   
+  // Connection status tracking for each LLM
+  const [connectionStatus, setConnectionStatus] = useState({
+    deepseek: 'disconnected',
+    openai: 'disconnected',
+    grok: 'disconnected',
+    claude: 'disconnected'
+  } as Record<string, 'connected' | 'connecting' | 'disconnected' | 'error'>);
+  
   // Load enabled states from localStorage on mount
   useEffect(() => {
     const savedStates = localStorage.getItem('enabledLLMs');
@@ -21,6 +29,44 @@ export function useLLMExtensions() {
         console.error('Error parsing saved LLM states:', e);
       }
     }
+    
+    // Check for API keys to determine connection status
+    const deepseekKey = localStorage.getItem('deepseekApiKey');
+    const openaiKey = localStorage.getItem('openaiApiKey');
+    const claudeKey = localStorage.getItem('claudeApiKey');
+    
+    // Update connection status based on available keys
+    setConnectionStatus(prev => ({
+      ...prev,
+      deepseek: deepseekKey ? 'connected' : 'disconnected',
+      openai: openaiKey ? 'connected' : 'disconnected',
+      claude: claudeKey ? 'connected' : 'disconnected',
+      // Grok doesn't need an API key
+      grok: 'connected'
+    }));
+  }, []);
+  
+  // Listen for API key updates
+  useEffect(() => {
+    const handleApiKeyUpdate = () => {
+      // Check for API keys to determine connection status
+      const deepseekKey = localStorage.getItem('deepseekApiKey');
+      const openaiKey = localStorage.getItem('openaiApiKey');
+      const claudeKey = localStorage.getItem('claudeApiKey');
+      
+      // Update connection status based on available keys
+      setConnectionStatus(prev => ({
+        ...prev,
+        deepseek: deepseekKey ? 'connected' : 'disconnected',
+        openai: openaiKey ? 'connected' : 'disconnected',
+        claude: claudeKey ? 'connected' : 'disconnected'
+      }));
+    };
+    
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+    };
   }, []);
   
   // Save enabled states to localStorage when they change
@@ -44,11 +90,24 @@ export function useLLMExtensions() {
       return newState;
     });
   };
+  
+  // Update connection status for a specific LLM
+  const updateConnectionStatus = (
+    llm: 'deepseek' | 'openai' | 'grok' | 'claude', 
+    status: 'connected' | 'connecting' | 'disconnected' | 'error'
+  ) => {
+    setConnectionStatus(prev => ({
+      ...prev,
+      [llm]: status
+    }));
+  };
 
   return {
     activeTab,
     setActiveTab,
     enabledLLMs,
-    toggleLLM
+    connectionStatus,
+    toggleLLM,
+    updateConnectionStatus
   };
 }

@@ -1,9 +1,10 @@
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { UseDeepSeekChatReturn, Message } from '../types/deepseekChatTypes';
 import { generateId, formatConversationHistory } from '../utils/deepseekChatUtils';
 import { useDeepSeekState } from './useDeepSeekState';
 import { useDeepSeekApi } from './useDeepSeekApi';
+import { toast } from '@/components/ui/use-toast';
 
 export function useDeepSeekChat(): UseDeepSeekChatReturn {
   const {
@@ -27,23 +28,77 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
     sendMessageToDeepSeek,
   } = useDeepSeekApi();
 
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected' | 'error'>('disconnected');
+
   // Check API status on mount
   useEffect(() => {
     checkEdgeFunctionStatus();
   }, []);
 
+  // Update connection status when API status changes
+  useEffect(() => {
+    if (isApiLoading) {
+      setConnectionStatus('connecting');
+    } else if (edgeFunctionStatus === 'available') {
+      if (apiKey) {
+        setConnectionStatus('connected');
+      } else {
+        setConnectionStatus('disconnected');
+      }
+    } else {
+      setConnectionStatus('error');
+    }
+  }, [isApiLoading, edgeFunctionStatus, apiKey]);
+
   /**
    * Checks the status of the DeepSeek API edge function
    */
   const checkEdgeFunctionStatus = useCallback(async () => {
-    await checkDeepSeekApiStatus();
-  }, [checkDeepSeekApiStatus]);
+    setConnectionStatus('connecting');
+    try {
+      await checkDeepSeekApiStatus();
+      if (apiKey) {
+        setConnectionStatus('connected');
+      } else {
+        setConnectionStatus('disconnected');
+      }
+    } catch (error) {
+      console.error('Error checking DeepSeek API status:', error);
+      setConnectionStatus('error');
+      toast({
+        title: "Connection Error",
+        description: "Could not connect to DeepSeek API. Please try again later.",
+        variant: "destructive"
+      });
+    }
+  }, [checkDeepSeekApiStatus, apiKey]);
+
+  /**
+   * Retry connection to the DeepSeek API
+   */
+  const retryConnection = async () => {
+    toast({
+      title: "Retrying connection",
+      description: "Attempting to reconnect to DeepSeek API...",
+    });
+    await checkEdgeFunctionStatus();
+  };
 
   /**
    * Sends a message to the DeepSeek API
    */
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !apiKey.trim() || isApiLoading) {
+    if (!inputMessage.trim() || isApiLoading) {
+      return;
+    }
+
+    if (!apiKey.trim()) {
+      toast({
+        title: "API Key Required",
+        description: "Please set your DeepSeek API key in the settings to use this model.",
+        variant: "destructive"
+      });
+      setShowSettings(true);
       return;
     }
 
@@ -89,6 +144,9 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
         
         return newMessages;
       });
+
+      // Update connection status to connected after successful response
+      setConnectionStatus('connected');
     } catch (error) {
       // If there's an error, update the assistant's message with an error message
       setMessages(prevMessages => {
@@ -106,6 +164,13 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
       });
       
       console.error('Error sending message:', error);
+      setConnectionStatus('error');
+      
+      toast({
+        title: "Failed to get response",
+        description: "Could not get a response from DeepSeek. Please check your API key and connection.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -117,6 +182,7 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
     apiKey,
     edgeFunctionStatus,
     lastChecked,
+    connectionStatus,
     saveApiKey,
     setInputMessage,
     sendMessage,
@@ -124,5 +190,6 @@ export function useDeepSeekChat(): UseDeepSeekChatReturn {
     toggleSettings,
     setShowSettings,
     checkEdgeFunctionStatus,
+    retryConnection,
   };
 }

@@ -16,6 +16,7 @@ export interface UseDeepSeekChatReturn {
   edgeFunctionStatus: EdgeFunctionStatus;
   apiKey: string;
   lastChecked: Date | null;
+  connectionStatus: 'connected' | 'connecting' | 'disconnected' | 'error';
   saveApiKey: (key: string) => void;
   setInputMessage: (message: string) => void;
   sendMessage: () => Promise<void>;
@@ -23,4 +24,5 @@ export interface UseDeepSeekChatReturn {
   toggleSettings: () => void;
   setShowSettings: (show: boolean) => void;
   checkEdgeFunctionStatus: () => Promise<void>;
+  retryConnection: () => Promise<void>;
 }
