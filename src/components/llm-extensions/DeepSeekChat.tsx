@@ -1,5 +1,5 @@
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,23 +14,25 @@ import { Badge } from '@/components/ui/badge';
 export function DeepSeekChat() {
   const {
     messages,
-    inputMessage,
-    isLoading,
-    showSettings,
+    isProcessing,
     edgeFunctionStatus,
-    apiKey,
-    saveApiKey,
-    setInputMessage,
+    lastChecked,
     sendMessage,
-    clearChat,
-    toggleSettings,
-    setShowSettings,
-    checkEdgeFunctionStatus,
-    retryConnection,
-    lastChecked
+    clearMessages,
+    checkApiStatus
   } = useDeepSeekChat();
   
+  const [inputMessage, setInputMessage] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load API key on component mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem('deepseekApiKey') || '';
+    setApiKey(savedKey);
+  }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -49,6 +51,26 @@ export function DeepSeekChat() {
       minute: '2-digit',
       second: '2-digit'
     }).format(lastChecked) : null;
+
+  const toggleSettings = () => {
+    setShowSettings(!showSettings);
+  };
+  
+  const saveApiKey = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem('deepseekApiKey', key);
+  };
+  
+  const handleSendMessage = () => {
+    if (inputMessage.trim()) {
+      sendMessage(inputMessage.trim());
+      setInputMessage('');
+    }
+  };
+  
+  const retryConnection = () => {
+    checkApiStatus();
+  };
 
   return (
     <Card className="w-full h-[500px] flex flex-col shadow-lg">
@@ -74,7 +96,7 @@ export function DeepSeekChat() {
           <Button
             variant="outline"
             size="sm"
-            onClick={checkEdgeFunctionStatus}
+            onClick={checkApiStatus}
             title="Check connection"
             className={edgeFunctionStatus === 'available' ? 'text-green-600' : 'text-yellow-600'}
           >
@@ -95,7 +117,7 @@ export function DeepSeekChat() {
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={clearChat}
+            onClick={clearMessages}
             title="Clear chat"
           >
             <Trash2 className="h-4 w-4" />
@@ -160,20 +182,20 @@ export function DeepSeekChat() {
                         edgeFunctionStatus === 'unavailable' ? "DeepSeek service unavailable" : 
                         "Type your message..."}
             className="flex-1 resize-none"
-            disabled={isLoading || edgeFunctionStatus === 'unavailable' || !hasApiKey}
+            disabled={isProcessing || edgeFunctionStatus === 'unavailable' || !hasApiKey}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                sendMessage();
+                handleSendMessage();
               }
             }}
           />
           <Button 
-            onClick={sendMessage} 
-            disabled={!inputMessage.trim() || isLoading || edgeFunctionStatus === 'unavailable' || !hasApiKey} 
+            onClick={handleSendMessage} 
+            disabled={!inputMessage.trim() || isProcessing || edgeFunctionStatus === 'unavailable' || !hasApiKey} 
             className="h-full"
           >
-            {isLoading ? (
+            {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <SendIcon className="h-4 w-4" />
