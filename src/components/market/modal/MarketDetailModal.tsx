@@ -52,6 +52,10 @@ export const MarketDetailModal = ({
     handleSellClick
   } = useModalData({ marketName, marketData, onClose });
 
+  // Add missing props that are required
+  const [side, setSide] = useState<"buy" | "sell">("buy");
+  const [orderPrice, setOrderPrice] = useState<string>("");
+
   useEffect(() => {
     // Reset tab to chart when opening modal
     if (isOpen) {
@@ -99,6 +103,10 @@ export const MarketDetailModal = ({
               setLeverage={setLeverage}
               orderType={orderType}
               setOrderType={setOrderType}
+              side={side}
+              setSide={setSide}
+              orderPrice={orderPrice}
+              setOrderPrice={setOrderPrice}
               latestData={latestData}
               isPriceUp={isPriceUp}
               change24h={change24h}
