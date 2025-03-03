@@ -13,6 +13,7 @@ import { EnhancedMarketDataTable } from '@/components/market/EnhancedMarketDataT
 import { MarketTrendsAnalysis } from '@/components/market/MarketTrendsAnalysis';
 import { EnhancedMarketDetail } from '@/components/market/EnhancedMarketDetail';
 import { MarketCharts } from '@/components/market/MarketCharts';
+import { supabase } from '@/lib/supabase';
 
 export const EnhancedMarketPage: React.FC = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
@@ -29,21 +30,23 @@ export const EnhancedMarketPage: React.FC = () => {
   const fetchMarketData = async () => {
     try {
       setIsRefreshing(true);
-      const response = await fetch('https://tfmlretexydslgowlkid.supabase.co/functions/v1/fetch-market-data');
+      // Use supabase client to call the market-data-collector function
+      const { data, error } = await supabase.functions.invoke('market-data-collector');
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch market data');
+      if (error) {
+        throw new Error(`Failed to fetch market data: ${error.message}`);
       }
       
-      const data = await response.json();
-      setMarketData(data);
-      filterData(data, searchTerm, activeTab);
-      
-      toast({
-        title: 'Market data updated',
-        description: `Successfully fetched data for ${data.length} markets`,
-        duration: 3000,
-      });
+      if (data) {
+        setMarketData(data as MarketData[]);
+        filterData(data as MarketData[], searchTerm, activeTab);
+        
+        toast({
+          title: 'Market data updated',
+          description: `Successfully fetched data for ${data.length} markets`,
+          duration: 3000,
+        });
+      }
     } catch (error) {
       console.error('Error fetching market data:', error);
       toast({
