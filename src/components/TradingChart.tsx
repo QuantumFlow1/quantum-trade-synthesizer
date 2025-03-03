@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useZoomControls } from "@/hooks/use-zoom-controls";
 import { PriceCards } from "./trading/PriceCards";
 import { TradingChartContent } from "./trading/TradingChartContent";
@@ -7,6 +7,7 @@ import { TradingOrderSection } from "./trading/TradingOrderSection";
 import { generateTradingData } from "@/utils/tradingData";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
+import { loadApiKeysFromStorage } from "@/components/chat/api-keys/apiKeyUtils";
 
 const TradingChart = () => {
   const [data, setData] = useState(generateTradingData());
@@ -14,6 +15,52 @@ const TradingChart = () => {
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls(1);
   const [forceSimulation, setForceSimulation] = useState(false);
   const [lastAPICheckTime, setLastAPICheckTime] = useState<Date | null>(null);
+  const [apiKeysAvailable, setApiKeysAvailable] = useState<boolean>(false);
+
+  // Check if any API keys are configured
+  const checkApiKeysAvailability = useCallback(() => {
+    // Check for user-set API keys in localStorage
+    const userKeys = loadApiKeysFromStorage();
+    const hasUserKeys = !!(userKeys.openaiApiKey || userKeys.claudeApiKey || 
+                         userKeys.geminiApiKey || userKeys.deepseekApiKey);
+    
+    console.log("User API keys availability check:", {
+      openai: !!userKeys.openaiApiKey,
+      claude: !!userKeys.claudeApiKey,
+      gemini: !!userKeys.geminiApiKey,
+      deepseek: !!userKeys.deepseekApiKey,
+      hasAnyKey: hasUserKeys
+    });
+    
+    // Also check for admin-set API keys in Supabase
+    const checkAdminKeys = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('check-api-keys', {
+          body: { service: 'grok3', checkSecret: true }
+        });
+        
+        if (error) {
+          console.error("Error checking admin API keys:", error);
+          return false;
+        }
+        
+        const hasAdminKeys = data?.secretSet === true;
+        console.log("Admin API keys availability:", hasAdminKeys);
+        
+        // Update state with combined result
+        const keysAvailable = hasUserKeys || hasAdminKeys;
+        setApiKeysAvailable(keysAvailable);
+        return keysAvailable;
+      } catch (err) {
+        console.error("Exception checking admin API keys:", err);
+        // If we can't check admin keys, fall back to user keys only
+        setApiKeysAvailable(hasUserKeys);
+        return hasUserKeys;
+      }
+    };
+    
+    return checkAdminKeys();
+  }, []);
 
   // Check the API status when the component mounts
   useEffect(() => {
@@ -26,6 +73,22 @@ const TradingChart = () => {
         if (forceSimulation) {
           console.log("Simulation mode is active, setting API as available");
           setApiStatus('available');
+          return;
+        }
+        
+        // First check if any API keys are configured
+        const hasApiKeys = await checkApiKeysAvailability();
+        
+        if (!hasApiKeys) {
+          console.log("No API keys available, setting API as unavailable");
+          setApiStatus('unavailable');
+          setLastAPICheckTime(new Date());
+          
+          toast({
+            title: "API Keys Missing",
+            description: "No API keys configured. Please set up API keys in settings or admin panel.",
+            variant: "destructive",
+          });
           return;
         }
         
@@ -69,7 +132,7 @@ const TradingChart = () => {
 
     // Clean up the interval when the component unmounts
     return () => clearInterval(intervalId);
-  }, [forceSimulation]);
+  }, [forceSimulation, checkApiKeysAvailability]);
 
   // Handle manual retry for API connection
   const handleRetryConnection = async () => {
@@ -80,6 +143,20 @@ const TradingChart = () => {
     
     try {
       setApiStatus('checking');
+      
+      // First ensure we have API keys configured
+      const hasApiKeys = await checkApiKeysAvailability();
+      
+      if (!hasApiKeys) {
+        setApiStatus('unavailable');
+        toast({
+          title: "API Keys Missing",
+          description: "No API keys configured. Please set up API keys in settings or admin panel.",
+          variant: "destructive",
+        });
+        setLastAPICheckTime(new Date());
+        return;
+      }
       
       const { data, error } = await supabase.functions.invoke('market-data-collector', {
         body: { action: 'status_check' }
@@ -115,6 +192,23 @@ const TradingChart = () => {
     setLastAPICheckTime(new Date());
   };
 
+  // Toggle simulation mode
+  const toggleSimulationMode = (enabled: boolean) => {
+    setForceSimulation(enabled);
+    
+    if (enabled) {
+      setApiStatus('available');
+      toast({
+        title: "Simulation Mode Enabled",
+        description: "Using simulated data for trading functionality.",
+        variant: "default",
+      });
+    } else {
+      // Re-check API status when disabling simulation
+      handleRetryConnection();
+    }
+  };
+
   useEffect(() => {
     // Update the trading data every 5 seconds
     const dataInterval = setInterval(() => {
@@ -133,16 +227,29 @@ const TradingChart = () => {
             <div>
               <h3 className="font-medium">Trading Services Unavailable</h3>
               <p className="text-sm text-muted-foreground">
-                Using simulation mode is recommended. {lastAPICheckTime && `Last check: ${lastAPICheckTime.toLocaleTimeString()}`}
+                {!apiKeysAvailable 
+                  ? "No API keys configured. Please set up API keys in settings or admin panel."
+                  : "Connection to trading services failed."
+                } {lastAPICheckTime && `Last check: ${lastAPICheckTime.toLocaleTimeString()}`}
               </p>
             </div>
           </div>
-          <button
-            onClick={handleRetryConnection}
-            className="px-3 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded-md text-sm font-medium text-yellow-700 transition-colors"
-          >
-            Retry Connection
-          </button>
+          <div className="flex gap-2">
+            {!apiKeysAvailable && (
+              <button
+                onClick={() => document.getElementById('api-keys-config-btn')?.click()}
+                className="px-3 py-1 bg-primary/20 hover:bg-primary/30 rounded-md text-sm font-medium text-primary-foreground transition-colors"
+              >
+                Configure API Keys
+              </button>
+            )}
+            <button
+              onClick={handleRetryConnection}
+              className="px-3 py-1 bg-yellow-500/20 hover:bg-yellow-500/30 rounded-md text-sm font-medium text-yellow-700 transition-colors"
+            >
+              Retry Connection
+            </button>
+          </div>
         </div>
       )}
       
@@ -161,6 +268,9 @@ const TradingChart = () => {
         <TradingOrderSection 
           apiStatus={apiStatus}
           marketData={data}
+          onSimulationToggle={toggleSimulationMode}
+          isSimulationMode={forceSimulation}
+          apiKeysAvailable={apiKeysAvailable}
         />
       </div>
     </div>

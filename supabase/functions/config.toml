@@ -34,3 +34,9 @@ verify_jwt = false
 
 [functions.trading-analysis]
 verify_jwt = false
+
+[functions.check-api-keys]
+verify_jwt = false
+
+[functions.deepseek-ping]
+verify_jwt = false

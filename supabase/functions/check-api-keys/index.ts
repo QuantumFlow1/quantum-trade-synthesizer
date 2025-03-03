@@ -4,6 +4,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const GROK3_API_KEY = Deno.env.get('GROK3_API_KEY');
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,6 +28,26 @@ serve(async (req) => {
     let available = false;
     let secretSet = false;
     
+    // Check if any API key is available
+    if (service === 'any') {
+      secretSet = !!(GROK3_API_KEY || OPENAI_API_KEY || CLAUDE_API_KEY || GEMINI_API_KEY || DEEPSEEK_API_KEY);
+      
+      return new Response(
+        JSON.stringify({ 
+          available: false, // We're just checking for secrets, not actual availability
+          secretSet,
+          keys: {
+            grok3: !!GROK3_API_KEY,
+            openai: !!OPENAI_API_KEY,
+            claude: !!CLAUDE_API_KEY,
+            gemini: !!GEMINI_API_KEY,
+            deepseek: !!DEEPSEEK_API_KEY
+          }
+        }),
+        { headers: corsHeaders }
+      );
+    }
+    
     if (service === 'grok3') {
       // First check if the secret is set
       secretSet = !!GROK3_API_KEY;
@@ -34,7 +57,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             available: false,
-            secretSet: secretSet
+            secretSet
           }),
           { headers: corsHeaders }
         );
@@ -90,6 +113,15 @@ serve(async (req) => {
       
       // Perform similar checks for OpenAI if needed
       // This is a placeholder for future OpenAI API validation
+      available = secretSet;
+    } else if (service === 'claude') {
+      secretSet = !!CLAUDE_API_KEY;
+      available = secretSet;
+    } else if (service === 'gemini') {
+      secretSet = !!GEMINI_API_KEY;
+      available = secretSet;
+    } else if (service === 'deepseek') {
+      secretSet = !!DEEPSEEK_API_KEY;
       available = secretSet;
     }
     
