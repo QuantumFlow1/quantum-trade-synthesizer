@@ -78,6 +78,9 @@ export interface ChartData {
   change?: number;
   high: number;
   low: number;
+  projected?: boolean;
+  projectedPrice?: number;
+  confidence?: number;
 }
 
 export interface ProfitLossRecord {
@@ -154,4 +157,12 @@ export interface MarketTrend {
   performance: number;
   topGainers: { symbol: string; change: number }[];
   topLosers: { symbol: string; change: number }[];
+}
+
+export interface HourlyProjection {
+  hour: number;
+  projectedPrice: number;
+  confidence: number;
+  trend: 'up' | 'down' | 'neutral';
+  volatility: 'low' | 'medium' | 'high';
 }
