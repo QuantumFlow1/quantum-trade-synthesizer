@@ -8,6 +8,22 @@ import { usePositions } from '@/hooks/use-positions';
 import { Activity, BarChart3, Eye, EyeOff, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+// Simple TransactionList component
+const TransactionList: React.FC = () => {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium">Recent Transactions</h3>
+        <Button variant="outline" size="sm">View All</Button>
+      </div>
+      <div className="text-center py-8 text-muted-foreground">
+        <p>No recent transactions found</p>
+        <p className="text-sm mt-2">Transactions will appear here after you make trades</p>
+      </div>
+    </div>
+  );
+};
+
 export const EnhancedMarketTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState('market');
   const { positions, isLoading } = usePositions();

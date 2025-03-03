@@ -14,8 +14,10 @@ import DashboardView from "./DashboardView";
 import ModelManagement from "./ModelManagement";
 import AIAgentsList from "./AIAgentsList";
 import ApiKeyManagement from "./ApiKeyManagement";
+import GuideResourcesTab from "./GuideResourcesTab";
 import { Agent } from "@/types/agent";
 import { useToast } from "@/hooks/use-toast";
+import { Book, BarChart2 } from "lucide-react";
 
 interface AdminPanelContentProps {
   userRole: string;
@@ -232,6 +234,10 @@ const AdminPanelContent = ({
           <TabsTrigger value="agents">AI Agents</TabsTrigger>
           <TabsTrigger value="models">Advies Modellen</TabsTrigger>
           <TabsTrigger value="apikeys">API Sleutels</TabsTrigger>
+          <TabsTrigger value="guides" className="flex items-center gap-1">
+            <Book className="h-4 w-4" />
+            <span>Guides</span>
+          </TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -302,6 +308,10 @@ const AdminPanelContent = ({
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+          </TabsContent>
+
+          <TabsContent value="guides">
+            <GuideResourcesTab />
           </TabsContent>
         </div>
       </Tabs>
