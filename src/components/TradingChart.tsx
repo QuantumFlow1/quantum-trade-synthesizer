@@ -99,7 +99,8 @@ const TradingChart = () => {
         toast({
           title: "Connection Restored",
           description: "Successfully connected to trading services.",
-          variant: "success",
+          // Change from "success" to "default" since "success" is not an allowed variant
+          variant: "default",
         });
       }
     } catch (error) {
