@@ -2,7 +2,13 @@
 import { SimulatedPosition } from "@/hooks/use-simulated-positions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, BellRing, TrendingUp, PlusCircle } from "lucide-react";
+import { AlertTriangle, BellRing, TrendingUp, PlusCircle, Clock, ArrowUpRight, ArrowDownRight, Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SimulatedPositionsListProps {
   positions: SimulatedPosition[];
@@ -19,6 +25,16 @@ const SimulatedPositionsList = ({
   selectedPositionId,
   onClosePosition
 }: SimulatedPositionsListProps) => {
+  
+  const getPositionDuration = (createdAt: string) => {
+    const created = new Date(createdAt);
+    const now = new Date();
+    const diffMs = now.getTime() - created.getTime();
+    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return `${diffHrs}h ${diffMins}m`;
+  };
   
   if (isLoading) {
     return (
@@ -41,6 +57,14 @@ const SimulatedPositionsList = ({
             <p className="text-sm text-muted-foreground max-w-[250px]">
               Simulated positions will appear here once you start trading in simulation mode
             </p>
+            <div className="bg-blue-50 p-3 rounded-md max-w-[90%] text-sm text-blue-700 border border-blue-100">
+              <p className="font-medium">Trading Guide Tips:</p>
+              <ul className="list-disc pl-4 mt-1">
+                <li>Use simulations to test different strategies</li>
+                <li>Monitor positions regularly</li>
+                <li>Set clear exit conditions</li>
+              </ul>
+            </div>
           </div>
         </div>
       </Card>
@@ -59,9 +83,16 @@ const SimulatedPositionsList = ({
         >
           <div className="flex justify-between items-start">
             <div>
-              <h4 className="font-medium">
-                Simulated {position.type === 'long' ? 'LONG' : 'SHORT'} #{position.id.slice(0, 8)}
-              </h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium">
+                  Simulated {position.type === 'long' ? 'LONG' : 'SHORT'} #{position.id.slice(0, 8)}
+                </h4>
+                <div className="flex items-center text-xs text-muted-foreground gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{getPositionDuration(position.created_at)}</span>
+                </div>
+              </div>
+              
               <div className="space-y-1 mt-2">
                 <p className="text-sm text-muted-foreground">
                   Amount: {position.amount}
@@ -72,15 +103,40 @@ const SimulatedPositionsList = ({
                 <p className="text-sm text-muted-foreground">
                   Current Price: ${position.current_price?.toFixed(2)}
                 </p>
-                <p
-                  className={`text-sm font-medium ${
-                    position.unrealized_pnl && position.unrealized_pnl >= 0
-                      ? "text-green-400"
-                      : "text-red-400"
-                  }`}
-                >
-                  Unrealized P&L: ${position.unrealized_pnl?.toFixed(2)}
-                </p>
+                <div className="flex items-center">
+                  <p
+                    className={`text-sm font-medium ${
+                      position.unrealized_pnl && position.unrealized_pnl >= 0
+                        ? "text-green-400 flex items-center"
+                        : "text-red-400 flex items-center"
+                    }`}
+                  >
+                    {position.unrealized_pnl && position.unrealized_pnl >= 0 ? (
+                      <ArrowUpRight className="h-3 w-3 mr-1" />
+                    ) : (
+                      <ArrowDownRight className="h-3 w-3 mr-1" />
+                    )}
+                    P&L: ${position.unrealized_pnl?.toFixed(2)}
+                  </p>
+                  
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="ml-2 cursor-help">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs text-sm">
+                          Trading Guide: Consider closing {position.type === 'long' ? 'LONG' : 'SHORT'} positions 
+                          {position.unrealized_pnl && position.unrealized_pnl >= 0 
+                            ? " when they show a profit of 5-10% to secure gains." 
+                            : " if they reach your predetermined stop loss level to manage risk."}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
               </div>
             </div>
             <Button
