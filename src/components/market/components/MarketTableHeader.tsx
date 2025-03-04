@@ -5,7 +5,7 @@ import {
   TableHeader, 
   TableRow 
 } from '@/components/ui/table';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { SortField, SortOrder } from '../hooks/useMarketTableSort';
 
 interface MarketTableHeaderProps {
@@ -19,41 +19,36 @@ export const MarketTableHeader: React.FC<MarketTableHeaderProps> = ({
   sortOrder,
   onSort
 }) => {
+  const getSortIcon = (field: SortField) => {
+    if (field !== sortField) return <ArrowUpDown className="ml-2 h-4 w-4 text-muted-foreground" />;
+    return sortOrder === 'asc' 
+      ? <ArrowUp className="ml-2 h-4 w-4 text-primary" /> 
+      : <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
+  };
+
+  const createSortableHeader = (field: SortField, label: string, className: string = '') => (
+    <TableHead className={className}>
+      <button 
+        className="flex items-center focus:outline-none" 
+        onClick={() => onSort(field)}
+        aria-label={`Sort by ${label}`}
+      >
+        {label}
+        {getSortIcon(field)}
+      </button>
+    </TableHead>
+  );
+
   return (
-    <TableHeader>
+    <TableHeader className="bg-muted/50 sticky top-0 z-10">
       <TableRow>
-        <TableHead className="w-10">#</TableHead>
+        <TableHead className="w-10">Rank</TableHead>
         <TableHead className="w-10"></TableHead>
-        <TableHead className="w-48">
-          <div className="flex items-center cursor-pointer" onClick={() => onSort('name')}>
-            Name
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </div>
-        </TableHead>
-        <TableHead className="text-right">
-          <div className="flex items-center justify-end cursor-pointer" onClick={() => onSort('price')}>
-            Price
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </div>
-        </TableHead>
-        <TableHead className="text-right">
-          <div className="flex items-center justify-end cursor-pointer" onClick={() => onSort('change24h')}>
-            24h %
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </div>
-        </TableHead>
-        <TableHead className="text-right">
-          <div className="flex items-center justify-end cursor-pointer" onClick={() => onSort('volume')}>
-            24h Volume
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </div>
-        </TableHead>
-        <TableHead className="text-right">
-          <div className="flex items-center justify-end cursor-pointer" onClick={() => onSort('marketCap')}>
-            Market Cap
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </div>
-        </TableHead>
+        {createSortableHeader('name', 'Name', 'w-48')}
+        {createSortableHeader('price', 'Price', 'text-right')}
+        {createSortableHeader('change24h', '24h %', 'text-right')}
+        {createSortableHeader('volume', '24h Volume', 'text-right')}
+        {createSortableHeader('marketCap', 'Market Cap', 'text-right')}
         <TableHead className="text-right w-32">Last 7 Days</TableHead>
       </TableRow>
     </TableHeader>

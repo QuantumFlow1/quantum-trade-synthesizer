@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { MarketData } from '../types';
 
 export type SortField = 'rank' | 'name' | 'price' | 'change24h' | 'volume' | 'marketCap';
@@ -9,20 +9,23 @@ export const useMarketTableSort = (favorites: string[]) => {
   const [sortField, setSortField] = useState<SortField>('rank');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
-  const handleSort = (field: SortField) => {
+  const handleSort = useCallback((field: SortField) => {
     if (field === sortField) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
       setSortOrder('asc');
     }
-  };
+  }, [sortField, sortOrder]);
 
-  const sortData = (data: MarketData[]): MarketData[] => {
+  const sortData = useCallback((data: MarketData[]): MarketData[] => {
     return [...data].sort((a, b) => {
       // Handle favorites first
-      if (favorites.includes(a.symbol) && !favorites.includes(b.symbol)) return -1;
-      if (!favorites.includes(a.symbol) && favorites.includes(b.symbol)) return 1;
+      const aIsFavorite = favorites.includes(a.symbol);
+      const bIsFavorite = favorites.includes(b.symbol);
+      
+      if (aIsFavorite && !bIsFavorite) return -1;
+      if (!aIsFavorite && bIsFavorite) return 1;
 
       // Then sort by selected field
       const fieldA = a[sortField] !== undefined ? a[sortField] : 0;
@@ -32,7 +35,7 @@ export const useMarketTableSort = (favorites: string[]) => {
       if (fieldA > fieldB) return sortOrder === 'asc' ? 1 : -1;
       return 0;
     });
-  };
+  }, [favorites, sortField, sortOrder]);
 
   return {
     sortField,
