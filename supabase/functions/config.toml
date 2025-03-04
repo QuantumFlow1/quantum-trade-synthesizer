@@ -14,6 +14,9 @@ verify_jwt = false
 [functions.send-2fa-code]
 verify_jwt = false
 
+[functions.submit-kyc]
+verify_jwt = false
+
 [functions.deepseek-response]
 verify_jwt = false
 
