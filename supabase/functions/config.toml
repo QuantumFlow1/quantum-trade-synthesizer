@@ -31,3 +31,6 @@ verify_jwt = false
 
 [functions.grok3-ping]
 verify_jwt = false
+
+[functions.offline-mode]
+verify_jwt = false

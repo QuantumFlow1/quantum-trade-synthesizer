@@ -4,11 +4,27 @@ import { toast } from '@/components/ui/use-toast';
 import { ChatMessage } from '../types/chat';
 import { loadChatHistory, saveChatHistory } from '../utils/storage';
 import { createChatMessage } from '../services/messageService';
+import { isOfflineMode } from '../services/utils/apiHelpers';
 
 export function useGrokMessages(isAdminContext = false) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(isOfflineMode());
+
+  // Set up listeners for online/offline status
+  useEffect(() => {
+    const handleOnline = () => setOfflineMode(false);
+    const handleOffline = () => setOfflineMode(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Load chat history from localStorage when component mounts
   useEffect(() => {
@@ -56,6 +72,7 @@ export function useGrokMessages(isAdminContext = false) {
     setInputMessage,
     isProcessing,
     setIsProcessing,
-    clearChat
+    clearChat,
+    offlineMode
   };
 }

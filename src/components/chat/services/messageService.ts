@@ -2,8 +2,9 @@
 import { AIModelType } from '../types/GrokSettings';
 import { generateDeepSeekResponse } from './deepseekService';
 import { generateOpenAIResponse } from './openaiService';
-import { processMessageText } from './utils/messageUtils';
+import { formatOfflineMessage, processMessageText } from './utils/messageUtils';
 import { supabase } from '@/lib/supabase';
+import { generateOfflineResponse, isOfflineMode } from './utils/apiHelpers';
 
 // Create a new chat message
 export const createChatMessage = (role: 'user' | 'assistant', content: string) => {
@@ -26,6 +27,14 @@ export const generateResponse = async (
   try {
     console.log('Generating response with model:', selectedModel);
     console.log('Conversation history length:', conversationHistory.length);
+    
+    // Check if we're in offline mode
+    if (isOfflineMode()) {
+      console.log('Running in offline mode, generating local response');
+      const userMessage = conversationHistory[conversationHistory.length - 1].content;
+      const offlineResponse = generateOfflineResponse(userMessage);
+      return formatOfflineMessage(offlineResponse);
+    }
     
     // Get the latest user message
     const userMessage = conversationHistory[conversationHistory.length - 1].content;
@@ -93,6 +102,14 @@ export const generateResponse = async (
     }
   } catch (error) {
     console.error('Error generating AI response:', error);
+    
+    // If we get an error and we're offline, return an offline message
+    if (isOfflineMode()) {
+      const userMessage = conversationHistory[conversationHistory.length - 1].content;
+      const offlineResponse = generateOfflineResponse(userMessage);
+      return formatOfflineMessage(offlineResponse);
+    }
+    
     throw error;
   }
 };
@@ -104,6 +121,14 @@ const callGrokEdgeFunction = async (
   try {
     console.log('Calling Grok3 edge function with conversation history:', 
       conversationHistory.length > 0 ? `${conversationHistory.length} messages` : 'empty history');
+    
+    // Check if we're offline
+    if (isOfflineMode()) {
+      console.log('Cannot call Grok3 edge function in offline mode');
+      const userMessage = conversationHistory[conversationHistory.length - 1].content;
+      const offlineResponse = generateOfflineResponse(userMessage);
+      return formatOfflineMessage(offlineResponse);
+    }
     
     const { data, error } = await supabase.functions.invoke('grok3-response', {
       body: { 
@@ -131,6 +156,14 @@ const callGrokEdgeFunction = async (
     return data.response;
   } catch (error) {
     console.error('Exception in callGrokEdgeFunction:', error);
+    
+    // If we catch an error and we're offline, generate a local response
+    if (isOfflineMode()) {
+      const userMessage = conversationHistory[conversationHistory.length - 1].content;
+      const offlineResponse = generateOfflineResponse(userMessage);
+      return formatOfflineMessage(offlineResponse);
+    }
+    
     throw error;
   }
 };

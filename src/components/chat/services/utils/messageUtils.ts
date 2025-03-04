@@ -27,3 +27,23 @@ export function processMessageText(text: string): string {
   
   return processedText;
 }
+
+/**
+ * Creates a properly formatted offline message with a consistent style
+ * 
+ * @param offlineMessage The offline message text
+ * @returns Formatted offline message with styling
+ */
+export function formatOfflineMessage(offlineMessage: string): string {
+  return `> **Offline Modus Actief**\n\n${offlineMessage}\n\n_Uw handelssysteem blijft beschikbaar met beperkte functionaliteit. Verbind opnieuw met internet voor volledige toegang tot alle functies._`;
+}
+
+/**
+ * Checks if a message was generated in offline mode
+ * 
+ * @param messageText The message text to check
+ * @returns Boolean indicating if this is an offline mode message
+ */
+export function isOfflineModeMessage(messageText: string): boolean {
+  return messageText.startsWith('> **Offline Modus Actief**');
+}
