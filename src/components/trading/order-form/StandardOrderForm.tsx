@@ -1,10 +1,10 @@
-import { useState } from "react";
+
+import { useTradeOrder } from "../context/TradeOrderContext";
 import { Button } from "@/components/ui/button";
 import { OrderTypeSelector } from "../OrderTypeSelector";
 import { OrderParameters } from "../OrderParameters";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { TradeOrder } from "../types";
 import { AIAnalysisPanel } from "./AIAnalysisPanel";
 
 interface StandardOrderFormProps {
@@ -30,12 +30,6 @@ interface StandardOrderFormProps {
   };
   isSimulationMode?: boolean;
   onOrderTypeChange: (value: "buy" | "sell") => void;
-  onOrderExecutionTypeChange: (value: "market" | "limit" | "stop" | "stop_limit") => void;
-  onAmountChange: (value: string) => void;
-  onLimitPriceChange: (value: string) => void;
-  onStopPriceChange: (value: string) => void;
-  onStopLossChange: (value: string) => void;
-  onTakeProfitChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
@@ -54,14 +48,17 @@ export const StandardOrderForm = ({
   aiAnalysis,
   isSimulationMode = false,
   onOrderTypeChange,
-  onOrderExecutionTypeChange,
-  onAmountChange,
-  onLimitPriceChange,
-  onStopPriceChange,
-  onStopLossChange,
-  onTakeProfitChange,
   onSubmit
 }: StandardOrderFormProps) => {
+  const { 
+    setOrderExecutionType,
+    setAmount,
+    setLimitPrice,
+    setStopPrice,
+    setStopLoss,
+    setTakeProfit
+  } = useTradeOrder();
+
   return (
     <div className="space-y-4">
       {/* AI Analyse Panel */}
@@ -88,7 +85,7 @@ export const StandardOrderForm = ({
           <Label>Order Uitvoering Type</Label>
           <Select 
             value={orderExecutionType}
-            onValueChange={(value: "market" | "limit" | "stop" | "stop_limit") => onOrderExecutionTypeChange(value)}
+            onValueChange={(value: "market" | "limit" | "stop" | "stop_limit") => setOrderExecutionType(value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecteer order type" />
@@ -109,11 +106,11 @@ export const StandardOrderForm = ({
           stopPrice={stopPrice}
           stopLoss={stopLoss}
           takeProfit={takeProfit}
-          onAmountChange={onAmountChange}
-          onLimitPriceChange={onLimitPriceChange}
-          onStopPriceChange={onStopPriceChange}
-          onStopLossChange={onStopLossChange}
-          onTakeProfitChange={onTakeProfitChange}
+          onAmountChange={setAmount}
+          onLimitPriceChange={setLimitPrice}
+          onStopPriceChange={setStopPrice}
+          onStopLossChange={setStopLoss}
+          onTakeProfitChange={setTakeProfit}
         />
 
         <Button 
