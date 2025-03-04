@@ -13,8 +13,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
-import { Users } from "lucide-react";
+import { Users, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
@@ -22,43 +23,47 @@ const Index = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error'>('checking');
+  const [isRetrying, setIsRetrying] = React.useState(false);
   
   useOAuthRedirect();
 
   // Check Supabase connection when component mounts
   React.useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        setConnectionStatus('checking');
-        const isConnected = await checkSupabaseConnection();
-        
-        if (isConnected) {
-          setConnectionStatus('connected');
-          toast({
-            title: "Verbinding geslaagd",
-            description: "Verbinding met Supabase is succesvol tot stand gebracht."
-          });
-        } else {
-          setConnectionStatus('error');
-          toast({
-            title: "Verbinding mislukt",
-            description: "Kan geen verbinding maken met Supabase, probeer het later opnieuw.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error("Fout bij het controleren van de verbinding:", error);
+    checkConnection();
+  }, []);
+  
+  const checkConnection = async () => {
+    try {
+      setConnectionStatus('checking');
+      setIsRetrying(true);
+      const isConnected = await checkSupabaseConnection();
+      
+      if (isConnected) {
+        setConnectionStatus('connected');
+        toast({
+          title: "Connection successful",
+          description: "Connected to the backend services successfully."
+        });
+      } else {
         setConnectionStatus('error');
         toast({
-          title: "Verbinding mislukt",
-          description: "Er is een fout opgetreden bij het controleren van de verbinding.",
+          title: "Connection issues",
+          description: "Some backend services are unavailable. Basic functionality may still work.",
           variant: "destructive",
         });
       }
-    };
-    
-    checkConnection();
-  }, [toast]);
+    } catch (error) {
+      console.error("Error checking connection:", error);
+      setConnectionStatus('error');
+      toast({
+        title: "Connection error",
+        description: "An error occurred while checking the connection.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRetrying(false);
+    }
+  };
 
   // Show loading screen while fetching profile
   if (user && !userProfile) {
@@ -83,6 +88,36 @@ const Index = () => {
             style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
             className="h-full w-full"
           >
+            {/* Connection status alert */}
+            {connectionStatus === 'error' && (
+              <Alert variant="destructive" className="max-w-md mx-auto mt-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Connection Issues</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>Some backend services are currently unavailable. Basic functionality may still work.</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={checkConnection}
+                    disabled={isRetrying}
+                    className="mt-2"
+                  >
+                    {isRetrying ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Checking connection...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Retry connection
+                      </>
+                    )}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {/* Quick Links for authenticated users */}
             <div className="fixed top-4 right-4 z-50 flex gap-2">
               {/* Users Dashboard Link - Only shown to admins */}
@@ -117,4 +152,3 @@ const Index = () => {
 };
 
 export default Index;
-

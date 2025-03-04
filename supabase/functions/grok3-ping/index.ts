@@ -42,8 +42,18 @@ serve(async (req) => {
       );
     }
     
+    // Get request data for debugging
+    const reqData = await req.json().catch(() => ({}));
+    console.log('Request data:', JSON.stringify({
+      isAvailabilityCheck: reqData.isAvailabilityCheck,
+      timestamp: reqData.timestamp,
+      retry: reqData.retry
+    }));
+    
     // Check if this is just an availability check, in which case we don't need to make an actual API call
-    const { isAvailabilityCheck = true, testApiCall = false } = await req.json().catch(() => ({ isAvailabilityCheck: true }));
+    const { isAvailabilityCheck = true, testApiCall = false, retry = 0 } = reqData;
+    
+    console.log(`Grok3 ping: availability check=${isAvailabilityCheck}, test API call=${testApiCall}, retry=${retry}`);
     
     // If testApiCall is true, we'll explicitly test the API key
     if (testApiCall || !isAvailabilityCheck) {
@@ -107,7 +117,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         status: 'available', 
-        message: 'Grok3 API key is configured with valid format' 
+        message: 'Grok3 API key is configured with valid format',
+        retryCount: retry 
       }),
       { headers: corsHeaders }
     );
