@@ -3,6 +3,7 @@ import { AIModelType } from '../types/GrokSettings';
 import { generateDeepSeekResponse } from './deepseekService';
 import { generateOpenAIResponse } from './openaiService';
 import { processMessageText } from './utils/messageUtils';
+import { supabase } from '@/lib/supabase';
 
 // Create a new chat message
 export const createChatMessage = (role: 'user' | 'assistant', content: string) => {
