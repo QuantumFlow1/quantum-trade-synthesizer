@@ -30,31 +30,48 @@ export const generateResponse = async (
     // Get the latest user message
     const userMessage = conversationHistory[conversationHistory.length - 1].content;
     
-    // Build complete settings object with all required properties
-    const settings = {
-      selectedModel,
-      temperature: temperature || 0.7,
-      maxTokens: maxTokens || 1024,
-      deepSearchEnabled: false, // Required property for GrokSettings
-      thinkEnabled: false,      // Required property for GrokSettings
-      apiKeys: {
-        openaiApiKey: selectedModel.startsWith('gpt') || selectedModel === 'openai' ? apiKey : undefined,
-        claudeApiKey: selectedModel.startsWith('claude') ? apiKey : undefined,
-        geminiApiKey: selectedModel.startsWith('gemini') ? apiKey : undefined,
-        deepseekApiKey: selectedModel.startsWith('deepseek') ? apiKey : undefined
-      }
-    };
-    
     // Process the message text for better formatting
     const processedMessage = processMessageText(userMessage);
     
     // Choose the appropriate service based on the model
     if (selectedModel.startsWith('gpt') || selectedModel === 'openai') {
       console.log('Using OpenAI service');
+      
+      // Build complete settings object with all required properties
+      const settings = {
+        selectedModel,
+        temperature: temperature || 0.7,
+        maxTokens: maxTokens || 1024,
+        deepSearchEnabled: false, // Required property for GrokSettings
+        thinkEnabled: false,      // Required property for GrokSettings
+        apiKeys: {
+          openaiApiKey: apiKey || undefined,
+          claudeApiKey: undefined,
+          geminiApiKey: undefined,
+          deepseekApiKey: undefined
+        }
+      };
+      
       return await generateOpenAIResponse(processedMessage, conversationHistory, settings);
     } 
     else if (selectedModel.startsWith('deepseek')) {
       console.log('Using DeepSeek service');
+      
+      // Build complete settings object with all required properties
+      const settings = {
+        selectedModel,
+        temperature: temperature || 0.7,
+        maxTokens: maxTokens || 1024,
+        deepSearchEnabled: false, // Required property for GrokSettings
+        thinkEnabled: false,      // Required property for GrokSettings
+        apiKeys: {
+          openaiApiKey: undefined,
+          claudeApiKey: undefined,
+          geminiApiKey: undefined,
+          deepseekApiKey: apiKey || undefined
+        }
+      };
+      
       return await generateDeepSeekResponse(processedMessage, conversationHistory, settings);
     } 
     else if (selectedModel.startsWith('claude')) {
@@ -85,6 +102,9 @@ const callGrokEdgeFunction = async (
   conversationHistory: Array<{ role: string; content: string }>
 ): Promise<string> => {
   try {
+    console.log('Calling Grok3 edge function with conversation history:', 
+      conversationHistory.length > 0 ? `${conversationHistory.length} messages` : 'empty history');
+    
     const { data, error } = await supabase.functions.invoke('grok3-response', {
       body: { 
         context: conversationHistory.slice(0, -1),
@@ -98,8 +118,12 @@ const callGrokEdgeFunction = async (
     }
     
     if (!data || !data.response) {
+      console.error('Invalid response from Grok API:', data);
       throw new Error('Invalid response from Grok API');
     }
+    
+    console.log('Received response from Grok3 edge function:', 
+      data.response ? `${data.response.substring(0, 50)}...` : 'empty response');
     
     return data.response;
   } catch (error) {
