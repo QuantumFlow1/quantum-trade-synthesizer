@@ -23,6 +23,7 @@ export const EnhancedMarketPage: React.FC = () => {
     isRefreshing,
     selectedMarket,
     showMarketDetail,
+    error,
     setShowMarketDetail,
     handleSearch,
     handleTabChange,
@@ -41,7 +42,7 @@ export const EnhancedMarketPage: React.FC = () => {
       console.error("Error getting market categories:", err);
       return [];
     }
-  }, [marketData]);
+  }, [marketData, getMarketCategories]);
 
   return (
     <div className="space-y-6">
@@ -59,7 +60,7 @@ export const EnhancedMarketPage: React.FC = () => {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error loading market data</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
-            <p>We couldn't load the market data. This might be a temporary issue.</p>
+            <p>{error || "We couldn't load the market data. This might be a temporary issue."}</p>
             <Button 
               variant="outline" 
               size="sm" 
@@ -86,12 +87,21 @@ export const EnhancedMarketPage: React.FC = () => {
               marketCategories={categories} 
             />
             
-            <TabsContent value={activeTab}>
+            <TabsContent value={activeTab} className="mt-2">
               <EnhancedMarketDataTable 
                 data={filteredData || []} 
                 onSelectMarket={handleSelectMarket} 
               />
             </TabsContent>
+            
+            {categories.map(category => (
+              <TabsContent key={category} value={category} className="mt-2">
+                <EnhancedMarketDataTable 
+                  data={filteredData || []} 
+                  onSelectMarket={handleSelectMarket} 
+                />
+              </TabsContent>
+            ))}
           </Tabs>
           
           <MarketDetailsDialog

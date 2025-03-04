@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { MarketData } from '@/components/market/types';
 import { supabase } from '@/lib/supabase';
@@ -13,44 +13,68 @@ export const useMarketDataState = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedMarket, setSelectedMarket] = useState<MarketData | null>(null);
   const [showMarketDetail, setShowMarketDetail] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
   
-  const fetchMarketData = async () => {
+  const fetchMarketData = useCallback(async () => {
     try {
       setIsRefreshing(true);
-      // Use supabase client to call the market-data-collector function
-      const { data, error } = await supabase.functions.invoke('market-data-collector');
+      setError(null);
       
-      if (error) {
-        throw new Error(`Failed to fetch market data: ${error.message}`);
+      console.log('Fetching market data...');
+      
+      // First try fetch-market-data function which has more detailed data
+      const { data: fetchData, error: fetchError } = await supabase.functions.invoke('fetch-market-data');
+      
+      if (fetchError) {
+        console.error('Error from fetch-market-data:', fetchError);
+        throw new Error(`Failed to fetch market data: ${fetchError.message}`);
       }
       
-      if (data && Array.isArray(data)) {
-        setMarketData(data as MarketData[]);
-        filterData(data as MarketData[], searchTerm, activeTab);
+      if (fetchData && Array.isArray(fetchData) && fetchData.length > 0) {
+        console.log('Successfully fetched data from fetch-market-data:', fetchData.length, 'items');
+        setMarketData(fetchData as MarketData[]);
+        filterData(fetchData as MarketData[], searchTerm, activeTab);
         
         toast({
           title: 'Market data updated',
-          description: `Successfully fetched data for ${data.length} markets`,
+          description: `Successfully fetched data for ${fetchData.length} markets`,
+          duration: 3000,
+        });
+        return;
+      }
+      
+      // If that fails, try the market-data-collector as fallback
+      console.log('No data from fetch-market-data, trying market-data-collector...');
+      const { data: collectorData, error: collectorError } = await supabase.functions.invoke('market-data-collector');
+      
+      if (collectorError) {
+        console.error('Error from market-data-collector:', collectorError);
+        throw new Error(`Fallback data fetch failed: ${collectorError.message}`);
+      }
+      
+      if (collectorData && Array.isArray(collectorData)) {
+        console.log('Successfully fetched data from market-data-collector:', collectorData.length, 'items');
+        setMarketData(collectorData as MarketData[]);
+        filterData(collectorData as MarketData[], searchTerm, activeTab);
+        
+        toast({
+          title: 'Market data updated',
+          description: `Successfully fetched fallback data for ${collectorData.length} markets`,
           duration: 3000,
         });
       } else {
         // Handle non-array data
-        console.error('Invalid market data format:', data);
-        setMarketData([]);
-        setFilteredData([]);
-        toast({
-          title: 'Data Error',
-          description: 'Market data format is invalid. Please try again later.',
-          variant: 'destructive',
-          duration: 5000,
-        });
+        console.error('Invalid market data format from both endpoints:', collectorData);
+        throw new Error('Market data format is invalid. Please try again later.');
       }
     } catch (error) {
       console.error('Error fetching market data:', error);
       setMarketData([]);
       setFilteredData([]);
+      setError(error instanceof Error ? error.message : 'Unknown error fetching market data');
+      
       toast({
         title: 'Error',
         description: 'Failed to fetch market data. Please try again later.',
@@ -61,7 +85,7 @@ export const useMarketDataState = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [searchTerm, activeTab, toast]);
   
   useEffect(() => {
     fetchMarketData();
@@ -72,7 +96,7 @@ export const useMarketDataState = () => {
     }, 60000);
     
     return () => clearInterval(refreshInterval);
-  }, []);
+  }, [fetchMarketData]);
   
   const filterData = (data: MarketData[], search: string, tab: string) => {
     if (!Array.isArray(data)) {
@@ -87,7 +111,7 @@ export const useMarketDataState = () => {
     if (search.trim() !== '') {
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(
-        item => item.symbol.toLowerCase().includes(searchLower) || 
+        item => item.symbol?.toLowerCase().includes(searchLower) || 
         (item.name && item.name.toLowerCase().includes(searchLower))
       );
     }
@@ -132,8 +156,7 @@ export const useMarketDataState = () => {
   const getMarketCategories = () => {
     const categories = new Set<string>();
     
-    if (!Array.isArray(marketData)) {
-      console.warn('getMarketCategories called with non-array marketData');
+    if (!Array.isArray(marketData) || marketData.length === 0) {
       return [];
     }
     
@@ -155,6 +178,7 @@ export const useMarketDataState = () => {
     isRefreshing,
     selectedMarket,
     showMarketDetail,
+    error,
     setShowMarketDetail,
     handleSearch,
     handleTabChange,
