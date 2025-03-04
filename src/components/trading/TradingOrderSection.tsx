@@ -13,7 +13,7 @@ import { SimulationToggle } from "./SimulationToggle";
 import { Button } from "../ui/button";
 import { toast } from "@/hooks/use-toast";
 import { CollaborativeInsightsPanel } from "./CollaborativeInsightsPanel";
-import { useAgentNetwork } from "@/hooks/use-agent-network";
+import { useAgentConnection } from "@/hooks/use-agent-connection";
 import { Badge } from "../ui/badge";
 import { AIKeyConfigSheet } from "@/components/dashboard/advice/AIKeyConfigSheet";
 
@@ -34,7 +34,7 @@ export const TradingOrderSection = ({
 }: TradingOrderSectionProps) => {
   const { positions, isLoading: positionsLoading } = usePositions();
   const { positions: simulatedPositions, isLoading: simulatedPositionsLoading, closePosition } = useSimulatedPositions();
-  const { isInitialized: isAgentNetworkInitialized, activeAgents, refreshAgentState } = useAgentNetwork();
+  const { isConnected, activeAgents } = useAgentConnection();
   
   const [positionsTab, setPositionsTab] = useState(() => {
     // Initialize tab based on which positions are available
@@ -65,9 +65,6 @@ export const TradingOrderSection = ({
   
   // Handle API key configuration save
   const handleApiKeySave = () => {
-    // After saving, refresh the agent network state
-    refreshAgentState();
-    
     toast({
       title: "API Keys Saved",
       description: "Your API keys have been saved successfully. Reconnecting to services...",
@@ -98,10 +95,10 @@ export const TradingOrderSection = ({
           onToggle={handleSimulationToggle} 
         />
         
-        {isAgentNetworkInitialized && activeAgents.length > 0 && (
+        {isConnected && activeAgents > 0 && (
           <Badge variant="outline" className="flex items-center gap-1 px-2">
             <Network className="h-3 w-3" />
-            <span className="text-xs">{activeAgents.length} AI Agents Active</span>
+            <span className="text-xs">{activeAgents} AI Agents Active</span>
           </Badge>
         )}
       </div>
@@ -168,7 +165,10 @@ export const TradingOrderSection = ({
         onSave={handleApiKeySave}
       />
       
-      <CollaborativeInsightsPanel currentData={marketData} />
+      <CollaborativeInsightsPanel 
+        currentData={marketData}
+        isSimulationMode={localIsSimulationMode}
+      />
       
       <TradeOrderForm 
         apiStatus={effectiveApiStatus} 
