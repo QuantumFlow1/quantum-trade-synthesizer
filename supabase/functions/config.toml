@@ -2,7 +2,16 @@
 # Supabase Edge Functions configuration
 project_id = "tfmlretexydslgowlkid"
 
-[functions.market-data-collector]
+[functions.log-api-call]
+verify_jwt = false
+
+[functions.log-transaction-audit]
+verify_jwt = false
+
+[functions.verify-2fa]
+verify_jwt = false
+
+[functions.send-2fa-code]
 verify_jwt = false
 
 [functions.deepseek-response]
@@ -22,25 +31,3 @@ verify_jwt = false
 
 [functions.generate-advice]
 verify_jwt = false
-
-[functions.trade-simulation]
-verify_jwt = false
-
-[functions.social-monitor]
-verify_jwt = false
-
-[functions.agent-network-coordinator]
-verify_jwt = false
-
-[functions.trading-analysis]
-verify_jwt = false
-
-[functions.check-api-keys]
-verify_jwt = false
-
-[functions.deepseek-ping]
-verify_jwt = false
-
-[functions.market-data-validator]
-verify_jwt = false
-
