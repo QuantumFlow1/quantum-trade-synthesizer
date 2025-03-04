@@ -250,6 +250,14 @@ export const useMarketDataState = () => {
       
       const change24h = parseFloat(((randomFactor - 1) * 100).toFixed(2));
       
+      // Calculate high/low for current price display
+      const highValue = parseFloat((price * (1 + Math.random() * 0.02)).toFixed(2));
+      const lowValue = parseFloat((price * (1 - Math.random() * 0.02)).toFixed(2));
+      
+      // Calculate high24h/low24h for 24-hour ranges
+      const high24h = parseFloat((price * (1 + Math.random() * 0.02)).toFixed(2));
+      const low24h = parseFloat((price * (1 - Math.random() * 0.02)).toFixed(2));
+
       return {
         market,
         symbol,
@@ -257,8 +265,10 @@ export const useMarketDataState = () => {
         price: parseFloat(price.toFixed(2)),
         volume: Math.floor(Math.random() * 10000000 + 1000000),
         change24h,
-        high24h: parseFloat((price * (1 + Math.random() * 0.02)).toFixed(2)),
-        low24h: parseFloat((price * (1 - Math.random() * 0.02)).toFixed(2)),
+        high: highValue,  // Add the missing high property
+        low: lowValue,    // Add the missing low property
+        high24h,
+        low24h,
         marketCap: parseFloat((price * (Math.random() * 1000000000 + 100000000)).toFixed(2)),
         timestamp: Date.now(),
         totalVolume24h: Math.floor(Math.random() * 10000000 + 1000000),
