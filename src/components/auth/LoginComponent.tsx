@@ -87,20 +87,21 @@ export const LoginComponent = () => {
       console.log('User created:', authData)
 
       if (authData.user) {
-        // Add the user role
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role: selectedRole
+        // Add entry to profiles table with role
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ 
+            role: selectedRole,
+            status: 'active'
           })
-
-        if (roleError) {
-          console.error('Error setting user role:', roleError)
-          throw roleError
+          .eq('id', authData.user.id)
+          
+        if (profileError) {
+          console.error('Error setting user profile role:', profileError)
+          throw profileError
         }
         
-        console.log('User role added:', selectedRole)
+        console.log('User role added to profile:', selectedRole)
       }
       
       toast({
