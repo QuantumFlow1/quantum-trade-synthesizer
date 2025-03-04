@@ -14,9 +14,17 @@ verify_jwt = false
 [functions.deepseek-response]
 verify_jwt = false
 
+[functions.deepseek-ping]
+verify_jwt = false
+
+[functions.openai-response]
+verify_jwt = false
+
 [functions.generate-advice]
 verify_jwt = false
 
 [functions.security-services]
 verify_jwt = false
 
+[functions.grok3-response]
+verify_jwt = false

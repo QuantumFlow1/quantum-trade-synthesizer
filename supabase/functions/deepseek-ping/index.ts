@@ -1,14 +1,9 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-// Get environment variables
-const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/json'
 };
 
 serve(async (req) => {
@@ -18,27 +13,20 @@ serve(async (req) => {
   }
 
   try {
-    // Parse the request body
-    const { apiKey } = await req.json();
+    console.log('DeepSeek ping: checking connection');
     
-    // Use API key from request or fall back to environment variable
-    const key = apiKey || DEEPSEEK_API_KEY;
+    // Get the API key from environment variable or request
+    const key = Deno.env.get('DEEPSEEK_API_KEY');
     
     if (!key) {
-      console.error('No DeepSeek API key provided');
+      console.log('DeepSeek ping: no API key available');
       return new Response(
-        JSON.stringify({ 
-          available: false, 
-          message: 'API key is required' 
-        }),
-        { 
-          status: 400, 
-          headers: corsHeaders 
-        }
+        JSON.stringify({ status: 'unavailable', message: 'No DeepSeek API key configured' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    // Make a test request to DeepSeek API
+    // Simple request to DeepSeek API to check if the API key is valid
     const response = await fetch('https://api.deepseek.com/v1/models', {
       method: 'GET',
       headers: {
@@ -48,42 +36,32 @@ serve(async (req) => {
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('DeepSeek API error:', errorText);
+      console.error('DeepSeek API connection check failed:', response.statusText);
       return new Response(
         JSON.stringify({ 
-          available: false, 
-          message: `API error: ${errorText}` 
+          status: 'error', 
+          message: `Connection failed: ${response.statusText}` 
         }),
-        { 
-          status: response.status, 
-          headers: corsHeaders 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    const data = await response.json();
-    console.log('DeepSeek API ping successful');
-    
+    console.log('DeepSeek API connection successful');
     return new Response(
-      JSON.stringify({
-        available: true,
-        message: 'DeepSeek API is available',
-        models: data.data?.length || 0
+      JSON.stringify({ 
+        status: 'available', 
+        message: 'DeepSeek API connection successful' 
       }),
-      { headers: corsHeaders }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error in deepseek-ping function:', error);
     return new Response(
       JSON.stringify({ 
-        available: false, 
-        message: error.message 
+        status: 'error', 
+        message: error.message || 'An error occurred while checking connection' 
       }),
-      { 
-        status: 500, 
-        headers: corsHeaders 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

@@ -19,9 +19,10 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { messages, apiKey } = await req.json();
+    const { message, context = [], model = 'deepseek-chat', maxTokens = 1000, temperature = 0.7, apiKey } = await req.json();
     
-    console.log(`DeepSeek API request with ${messages.length} messages`);
+    console.log(`DeepSeek API request with message length: ${message?.length}, context messages: ${context?.length}`);
+    console.log(`Using model: ${model}, temperature: ${temperature}, maxTokens: ${maxTokens}`);
     
     // Use API key from request or fall back to environment variable
     const key = apiKey || DEEPSEEK_API_KEY;
@@ -40,10 +41,15 @@ serve(async (req) => {
     }
     
     // Format the messages for DeepSeek API
-    const formattedMessages = messages.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
+    const formattedMessages = [...context];
+    
+    // Add current message if provided
+    if (message) {
+      formattedMessages.push({
+        role: 'user',
+        content: message
+      });
+    }
     
     // Make request to DeepSeek API
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -53,9 +59,10 @@ serve(async (req) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'deepseek-chat',
+        model: model,
         messages: formattedMessages,
-        temperature: 0.7
+        temperature: temperature,
+        max_tokens: maxTokens
       })
     });
     
@@ -78,7 +85,7 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({
-        content: data.choices[0].message.content
+        response: data.choices[0].message.content
       }),
       { headers: corsHeaders }
     );

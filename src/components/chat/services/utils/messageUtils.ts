@@ -1,42 +1,23 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { ChatMessage } from '../../types/chat';
-import { isAdminContext } from './apiHelpers';
-
-// Create a properly formatted chat message
-export const createChatMessage = (role: 'user' | 'assistant', content: string): ChatMessage => {
-  // Skip intensive operations in admin context
-  if (isAdminContext()) {
-    return {
-      id: 'admin-context-disabled',
-      role,
-      content: content || "Chat disabled in admin context",
-      timestamp: new Date(),
-    };
-  }
-
-  const newMessage = {
-    id: uuidv4(),
-    role,
-    content: content || "Error: Empty message content",
-    timestamp: new Date(),
-  };
-  console.log(`Created new ${role} message:`, newMessage);
-  return newMessage;
-};
-
-// Format conversation history for API requests
-export const formatConversationHistory = (conversationHistory: Array<{ role: string; content: string }>) => {
-  return conversationHistory.map(msg => ({
-    role: msg.role === 'user' ? 'user' : 'assistant',
-    content: msg.content
-  }));
-};
-
-// Process message text to ensure proper line breaks and formatting
-export const processMessageText = (text: string): string => {
+/**
+ * Processes message text to ensure proper line breaks and formatting
+ * 
+ * @param text The raw message text from the API
+ * @returns Properly formatted message text
+ */
+export function processMessageText(text: string): string {
   if (!text) return '';
   
-  // Ensure we have proper line breaks
-  return text.replace(/\\n/g, '\n');
-};
+  // Replace triple backticks code blocks with proper spacing
+  let processedText = text.replace(/```([\s\S]*?)```/g, (_, code) => {
+    return `\n\`\`\`${code}\`\`\`\n`;
+  });
+  
+  // Ensure proper line breaks for bullet points and numbered lists
+  processedText = processedText.replace(/(?<!\n)(\n[•\-\*\d]+\.)/g, '\n$1');
+  
+  // Ensure markdown headers have proper spacing
+  processedText = processedText.replace(/(?<!\n)(\n#{1,6}\s)/g, '\n$1');
+  
+  return processedText;
+}
