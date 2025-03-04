@@ -91,7 +91,7 @@ export const TradingOrderSection = ({
   }, [isSimulationMode]);
 
   return (
-    <div className="lg:col-span-1 space-y-6">
+    <div className="lg:col-span-1 space-y-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between">
         <SimulationToggle 
           enabled={localIsSimulationMode} 

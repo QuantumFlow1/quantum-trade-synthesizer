@@ -31,7 +31,7 @@ export const TradeConfirmationDialog: React.FC<TradeConfirmationDialogProps> = (
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle>Confirm {tradeType === "buy" ? "Buy" : "Sell"} Order</DialogTitle>
           <DialogDescription>
@@ -67,7 +67,7 @@ export const TradeConfirmationDialog: React.FC<TradeConfirmationDialogProps> = (
           </div>
         </div>
         
-        <DialogFooter>
+        <DialogFooter className="flex justify-center gap-4 sm:justify-center">
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>

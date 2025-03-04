@@ -18,7 +18,7 @@ export const PositionsDetailPanel: React.FC<PositionsDetailPanelProps> = ({
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
       <div>
         <h3 className="text-lg font-medium mb-4">Your Positions</h3>
         <PositionsList 

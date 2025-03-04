@@ -19,7 +19,9 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         className="min-h-screen p-6 space-y-6 bg-gradient-to-br from-background via-background/95 to-background/90"
         style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
       >
-        {children}
+        <div className="max-w-7xl mx-auto">
+          {children}
+        </div>
       </div>
       
       {/* Only show zoom controls on desktop */}

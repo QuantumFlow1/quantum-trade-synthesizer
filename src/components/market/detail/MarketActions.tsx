@@ -119,7 +119,7 @@ export const MarketActions: React.FC<MarketActionsProps> = ({ marketData, onClos
   };
 
   return (
-    <>
+    <div className="max-w-md mx-auto">
       <TradeForm 
         amount={amount}
         onAmountChange={handleAmountChange}
@@ -136,6 +136,6 @@ export const MarketActions: React.FC<MarketActionsProps> = ({ marketData, onClos
         amount={amount}
         marketData={marketData}
       />
-    </>
+    </div>
   );
 };

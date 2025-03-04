@@ -20,7 +20,7 @@ export const MarketPriceOverview: React.FC<MarketPriceOverviewProps> = ({ market
   const circulatingSupply = marketData.circulatingSupply || 0;
   
   return (
-    <div className={`flex flex-col ${isMobile ? 'space-y-4' : 'md:flex-row justify-between'} mb-6`}>
+    <div className={`flex flex-col ${isMobile ? 'space-y-4' : 'md:flex-row justify-between'} mb-6 max-w-4xl mx-auto`}>
       <div className="mb-4 md:mb-0">
         <div className="text-3xl font-bold">{formatCurrency(price)}</div>
         <div className={`flex items-center mt-1 ${
