@@ -183,9 +183,7 @@ const Index = () => {
               )}
             </div>
             
-            {isSuperAdmin ? (
-              <AdminPanel key="admin-panel" />
-            ) : userProfile?.role === "admin" ? (
+            {isAdmin ? (
               <AdminPanel key="admin-panel" />
             ) : (
               <UserDashboard key="user-dashboard" />

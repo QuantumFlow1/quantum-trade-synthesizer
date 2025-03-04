@@ -7,7 +7,7 @@ DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   email TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'viewer' CHECK (role IN ('admin', 'trader', 'viewer')),
+  role TEXT NOT NULL DEFAULT 'viewer' CHECK (role IN ('admin', 'trader', 'viewer', 'super_admin', 'lov_trader')),
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'pending', 'suspended')),
   trading_enabled BOOLEAN DEFAULT false,
   max_trade_amount NUMERIC,

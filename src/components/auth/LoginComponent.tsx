@@ -20,7 +20,7 @@ export const LoginComponent = () => {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<'viewer' | 'trader' | 'admin' | 'super_admin'>('viewer')
+  const [selectedRole, setSelectedRole] = useState<'viewer' | 'trader' | 'admin' | 'super_admin' | 'lov_trader'>('viewer')
   const [formError, setFormError] = useState<string | null>(null)
   const { signIn } = useAuth()
   const { toast } = useToast()
@@ -77,6 +77,8 @@ export const LoginComponent = () => {
     setIsLoading(true)
     try {
       console.log('Attempting to register with email:', email)
+      console.log('Selected role:', selectedRole)
+      
       // First create the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -165,7 +167,7 @@ export const LoginComponent = () => {
           {isRegistering && (
             <Select
               value={selectedRole}
-              onValueChange={(value: 'viewer' | 'trader' | 'admin' | 'super_admin') => setSelectedRole(value)}
+              onValueChange={(value: 'viewer' | 'trader' | 'admin' | 'super_admin' | 'lov_trader') => setSelectedRole(value)}
               disabled={isLoading}
             >
               <SelectTrigger className="w-full">
@@ -194,6 +196,12 @@ export const LoginComponent = () => {
                   <div className="flex items-center">
                     <ShieldAlert className="mr-2 h-4 w-4" />
                     Super Admin
+                  </div>
+                </SelectItem>
+                <SelectItem value="lov_trader">
+                  <div className="flex items-center">
+                    <Shield className="mr-2 h-4 w-4" />
+                    Lov Trader
                   </div>
                 </SelectItem>
               </SelectContent>
