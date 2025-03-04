@@ -37,6 +37,9 @@ export const AuthenticatedContent: React.FC<AuthenticatedContentProps> = ({
 
   console.log("User profile in AuthenticatedContent:", userProfile);
   console.log("Is admin?", isAdmin);
+  
+  // If no profile exists but we have a user, show admin panel as fallback (for debugging)
+  const showAdminPanel = isAdmin || !userProfile;
 
   return (
     <motion.div 
@@ -60,7 +63,7 @@ export const AuthenticatedContent: React.FC<AuthenticatedContentProps> = ({
       {/* Quick Links for authenticated users */}
       <QuickLinks isAdmin={isAdmin} />
       
-      {isAdmin ? (
+      {showAdminPanel ? (
         <AdminPanel key="admin-panel" />
       ) : (
         <UserDashboard key="user-dashboard" />

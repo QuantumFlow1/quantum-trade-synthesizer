@@ -48,21 +48,22 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
       console.log('User created:', authData)
 
       if (authData.user) {
-        // Add entry to profiles table with role
+        // Instead of updating, we INSERT a profile - this is critical because the trigger might not be working
         const { error: profileError } = await supabase
           .from('profiles')
-          .update({ 
+          .insert([{ 
+            id: authData.user.id,
+            email: email,
             role: finalRole,
-            status: 'active'
-          })
-          .eq('id', authData.user.id)
+            status: 'active' 
+          }])
           
         if (profileError) {
           console.error('Error setting user profile role:', profileError)
           throw profileError
         }
         
-        console.log('User role added to profile:', finalRole)
+        console.log('User profile created with role:', finalRole)
       }
       
       toast({

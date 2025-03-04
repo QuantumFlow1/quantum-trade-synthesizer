@@ -39,7 +39,7 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       
       console.log('Login successful:', data)
       
-      // Fetch user profile to check role
+      // Check if user profile exists
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -48,6 +48,23 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
         
       if (profileError) {
         console.error('Error fetching profile after login:', profileError)
+        // If profile doesn't exist, create one with default role based on email
+        const role = email === 'arturgabrielian4@gmail.com' ? 'super_admin' : 'admin'
+        
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: data.user.id,
+            email: email,
+            role: role,
+            status: 'active'
+          }])
+        
+        if (insertError) {
+          console.error('Error creating profile:', insertError)
+        } else {
+          console.log('Created profile for user with role:', role)
+        }
       } else {
         console.log('User profile after login:', profileData)
       }
@@ -75,6 +92,17 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
   // Admin login shortcut for testing
   const handleAdminLogin = async () => {
     setEmail("admin@example.com")
+    setPassword("admin123")
+    
+    // Wait for state to update, then submit
+    setTimeout(() => {
+      document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
+    }, 100)
+  }
+  
+  // Super admin login shortcut
+  const handleSuperAdminLogin = async () => {
+    setEmail("arturgabrielian4@gmail.com")
     setPassword("admin123")
     
     // Wait for state to update, then submit
@@ -141,6 +169,16 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
           disabled={isLoading}
         >
           Quick Admin Login
+        </Button>
+        
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full bg-amber-100 hover:bg-amber-200"
+          onClick={handleSuperAdminLogin}
+          disabled={isLoading}
+        >
+          Login as arturgabrielian4@gmail.com
         </Button>
       </form>
 
