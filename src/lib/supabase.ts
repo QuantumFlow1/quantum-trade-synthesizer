@@ -103,10 +103,14 @@ export const checkSupabaseConnection = async () => {
     // Test database connection first as it's the most critical
     console.log('Testing database connection...');
     try {
+      // Create a promise from the Supabase query
       const dbPromise = supabase
         .from('agent_collected_data')
         .select('count')
-        .limit(1);
+        .limit(1)
+        .then(result => {
+          return { data: result.data, error: result.error };
+        });
       
       const { data: dbData, error: dbError } = await withTimeout(
         dbPromise,
