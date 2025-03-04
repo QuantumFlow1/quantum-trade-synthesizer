@@ -1,83 +1,115 @@
 
+import { supabase } from '@/lib/supabase';
 import { GrokSettings } from '../types/GrokSettings';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
-import { getApiKey } from './utils/apiHelpers';
-import { processMessageText } from './utils/messageUtils';
 
 export const generateOpenAIResponse = async (
   inputMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
-  settings: GrokSettings
-): Promise<string> => {
+  settings?: GrokSettings
+) => {
+  console.log('Using OpenAI API...', { 
+    messageLength: inputMessage?.length,
+    historyLength: conversationHistory?.length,
+    model: settings?.selectedModel
+  });
+  
+  // Extract the OpenAI API key from settings
+  const apiKey = settings?.apiKeys?.openaiApiKey;
+  if (!apiKey) {
+    throw new Error('OpenAI API key is required. Please set it in the settings.');
+  }
+  
   try {
-    // Get the API key from settings, localStorage, or admin keys
-    const apiKey = await getApiKey('openai', settings.apiKeys.openaiApiKey);
-    
-    if (!apiKey) {
-      console.error('OpenAI API key is missing');
-      toast({
-        title: "Missing API Key",
-        description: "No OpenAI API key is available. Please set one in settings or contact an administrator.",
-        variant: "destructive"
-      });
-      throw new Error('OpenAI API key is missing');
-    }
-    
-    console.log('Calling OpenAI API with model:', settings.selectedModel);
-    
-    // Format conversation history
-    const messages = conversationHistory.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.content
-    }));
-    
-    // Add the new user message
-    messages.push({
-      role: 'user',
-      content: inputMessage
+    // Display toast to inform user that we're processing
+    toast({
+      title: "OpenAI API",
+      description: "Processing your request...",
+      duration: 3000,
     });
     
-    // Prepare request
-    const modelName = settings.selectedModel === 'openai' ? 'gpt-4o' : settings.selectedModel;
+    // Determine which model to use - default to gpt-3.5-turbo if not specified
+    const model = settings?.selectedModel?.startsWith('gpt-4') 
+      ? 'gpt-4' 
+      : settings?.selectedModel === 'gpt-3.5-turbo'
+        ? 'gpt-3.5-turbo'
+        : 'gpt-3.5-turbo';
     
-    try {
-      // Call Supabase Edge Function for OpenAI response
-      const { data, error } = await supabase.functions.invoke('openai-response', {
-        body: {
-          messages,
-          model: modelName,
-          temperature: settings.temperature || 0.7,
-          max_tokens: settings.maxTokens || 1024,
-          apiKey: apiKey
-        }
-      });
+    console.log(`OpenAI: Using model ${model}`);
+    
+    // Prepare API parameters
+    const apiParams = { 
+      messages: conversationHistory,
+      model: model,
+      max_tokens: settings?.maxTokens || 1000,
+      temperature: settings?.temperature || 0.7,
+      apiKey: apiKey
+    };
+    
+    console.log('Making request to OpenAI with params:', {
+      model: apiParams.model,
+      max_tokens: apiParams.max_tokens,
+      temperature: apiParams.temperature,
+      messagesCount: apiParams.messages?.length
+    });
+    
+    // Make direct request to OpenAI API
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: apiParams.model,
+        messages: apiParams.messages,
+        max_tokens: apiParams.max_tokens,
+        temperature: apiParams.temperature
+      })
+    });
+    
+    // Check for errors
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('OpenAI API error:', response.status, errorData);
       
-      if (error) {
-        console.error('OpenAI Supabase function error:', error);
-        throw new Error(`OpenAI API Error: ${error.message}`);
+      // Provide user-friendly error messages based on status code
+      if (response.status === 401) {
+        throw new Error('Invalid OpenAI API key. Please check your API key in settings.');
+      } else if (response.status === 429) {
+        throw new Error('OpenAI rate limit exceeded. Please try again later.');
+      } else if (response.status >= 500) {
+        throw new Error('OpenAI service is currently unavailable. Please try again later.');
+      } else {
+        throw new Error(errorData.error?.message || `OpenAI API error: ${response.status}`);
       }
-      
-      if (!data || !data.response) {
-        console.error('Invalid response from OpenAI API:', data);
-        throw new Error('Invalid response from OpenAI API');
-      }
-      
-      // Process the message to ensure proper line breaks and formatting
-      const processedResponse = processMessageText(data.response);
-      console.log('Processed OpenAI response:', processedResponse);
-      
-      return processedResponse;
-    } catch (innerError) {
-      console.error('Error during OpenAI API call:', innerError);
-      // Add more specific error handling for lockdown errors
-      if (innerError.message && innerError.message.includes('intrinsics')) {
-        throw new Error('Security restriction detected. Please try again with different parameters.');
-      }
-      throw innerError;
     }
+    
+    // Parse the response
+    const data = await response.json();
+    
+    // Check for valid response format
+    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      console.error('Invalid OpenAI response format:', data);
+      throw new Error('Received invalid response format from OpenAI API');
+    }
+    
+    console.log('OpenAI response received successfully');
+    return data.choices[0].message.content;
   } catch (error) {
-    console.error('Error generating OpenAI response:', error);
-    throw error;
+    console.error('Error in generateOpenAIResponse:', error);
+    
+    // Format user-friendly error message
+    let errorMessage = 'Error connecting to OpenAI API.';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    if (errorMessage.includes('API key')) {
+      errorMessage = 'Invalid OpenAI API key. Please check your API key in settings.';
+    }
+    
+    throw new Error(errorMessage);
   }
 };

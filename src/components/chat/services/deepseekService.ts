@@ -32,6 +32,16 @@ export const generateDeepSeekResponse = async (
       duration: 3000,
     });
     
+    // First check if the API is available by pinging it
+    const pingResponse = await supabase.functions.invoke('deepseek-ping', {
+      body: { apiKey: apiKey }
+    });
+    
+    if (pingResponse.error || (pingResponse.data?.status !== 'available')) {
+      console.error('DeepSeek API ping failed:', pingResponse.error || pingResponse.data?.message);
+      throw new Error(pingResponse.data?.message || 'DeepSeek API is currently unavailable');
+    }
+    
     // Prepare the request to the DeepSeek Edge Function
     const functionParams = { 
       message: inputMessage,
@@ -78,6 +88,12 @@ export const generateDeepSeekResponse = async (
     // Check if we received a valid response
     if (!response.data?.response) {
       console.error('Invalid DeepSeek response:', response.data);
+      
+      // If there's an error message in the response, show it
+      if (response.data?.error) {
+        throw new Error(`DeepSeek API error: ${response.data.error}`);
+      }
+      
       throw new Error('Invalid response from DeepSeek API. Please try again.');
     }
     

@@ -1,172 +1,132 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { EdgeFunctionStatus } from '../../types/chatTypes';
-import { toast } from '@/components/ui/use-toast';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/ui/use-toast';
 
 export function useDeepSeekApi() {
   const [isApiLoading, setIsApiLoading] = useState(false);
-  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<EdgeFunctionStatus>('checking');
+  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<'available' | 'unavailable' | 'checking'>('checking');
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
-
-  // Listen for API key changes from other components
-  useEffect(() => {
-    const handleApiKeyUpdate = () => {
-      console.log('DeepSeek API key was updated, rechecking status');
-      checkDeepSeekApiStatus();
-    };
-
-    window.addEventListener('apikey-updated', handleApiKeyUpdate);
-    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
+  
+  const checkDeepSeekApiStatus = useCallback(async () => {
+    setIsApiLoading(true);
+    setEdgeFunctionStatus('checking');
     
-    // Initial check when component mounts
-    if (edgeFunctionStatus === 'checking') {
-      checkDeepSeekApiStatus();
-    }
-    
-    return () => {
-      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
-      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
-    };
-  }, []);
-
-  /**
-   * Checks if the DeepSeek API edge function is available
-   */
-  const checkDeepSeekApiStatus = useCallback(async (): Promise<boolean> => {
     try {
-      setEdgeFunctionStatus('checking');
-      console.log('Checking DeepSeek API connection status...');
+      const deepseekApiKey = localStorage.getItem('deepseekApiKey');
       
-      // Get the API key from localStorage if available or fetch admin key
-      let apiKey = localStorage.getItem('deepseekApiKey');
-      
-      if (!apiKey) {
-        // Try to get admin key from Supabase
-        try {
-          const { data, error } = await supabase.functions.invoke('get-admin-key', {
-            body: { provider: 'deepseek' }
-          });
-          
-          if (!error && data?.key) {
-            apiKey = data.key;
-            console.log('Using admin DeepSeek API key');
-          }
-        } catch (keyError) {
-          console.error('Error fetching admin DeepSeek API key:', keyError);
-        }
-      }
-      
-      if (!apiKey) {
-        console.log('No DeepSeek API key found in localStorage or admin keys');
+      // If no API key is set, mark as unavailable
+      if (!deepseekApiKey) {
+        console.log('No DeepSeek API key found in localStorage');
         setEdgeFunctionStatus('unavailable');
+        setIsApiLoading(false);
+        setLastChecked(new Date());
         return false;
       }
       
-      console.log('Testing DeepSeek API connection with API key');
-      
-      const response = await fetch('/api/deepseek-response', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          messages: [{ role: 'user', content: 'connection test' }],
-          apiKey
-        }),
+      // Check DeepSeek API connection via ping function
+      const { data, error } = await supabase.functions.invoke('deepseek-ping', {
+        body: { apiKey: deepseekApiKey }
       });
       
-      const responseText = await response.text();
-      console.log('DeepSeek API connection test response:', response.status, responseText);
-      
-      if (response.ok) {
-        console.log('DeepSeek API connection successful');
-        setEdgeFunctionStatus('available');
-        setLastChecked(new Date());
-        
-        // Notify parent component about successful connection
-        window.dispatchEvent(new CustomEvent('connection-status-changed', {
-          detail: { provider: 'deepseek', status: 'connected' }
-        }));
-        
-        return true;
-      } else {
-        console.error('DeepSeek API is not available:', responseText);
+      if (error) {
+        console.error('Error checking DeepSeek API status:', error);
+        toast({
+          title: "Connection Error",
+          description: `Could not verify DeepSeek connection: ${error.message}`,
+          variant: "destructive"
+        });
         setEdgeFunctionStatus('unavailable');
-        
-        // Notify parent component about failed connection
-        window.dispatchEvent(new CustomEvent('connection-status-changed', {
-          detail: { provider: 'deepseek', status: 'error' }
-        }));
-        
+        setIsApiLoading(false);
+        setLastChecked(new Date());
         return false;
       }
-    } catch (error) {
-      console.error('Error checking DeepSeek API status:', error);
-      setEdgeFunctionStatus('unavailable');
       
-      // Notify parent component about error
-      window.dispatchEvent(new CustomEvent('connection-status-changed', {
-        detail: { provider: 'deepseek', status: 'error' }
-      }));
+      const isAvailable = data?.status === 'available';
+      setEdgeFunctionStatus(isAvailable ? 'available' : 'unavailable');
+      console.log(`DeepSeek API status: ${isAvailable ? 'available' : 'unavailable'}`);
       
-      return false;
-    } finally {
+      // Show toast with connection status
+      if (isAvailable) {
+        toast({
+          title: "DeepSeek Connected",
+          description: "Successfully connected to DeepSeek API.",
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: "DeepSeek Unavailable",
+          description: data?.message || "Could not connect to DeepSeek API.",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+      
       setLastChecked(new Date());
+      setIsApiLoading(false);
+      return isAvailable;
+    } catch (error) {
+      console.error('Exception checking DeepSeek API status:', error);
+      toast({
+        title: "Connection Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
+      setEdgeFunctionStatus('unavailable');
+      setIsApiLoading(false);
+      setLastChecked(new Date());
+      return false;
     }
   }, []);
-
-  /**
-   * Sends a message to the DeepSeek API
-   */
-  const sendMessageToDeepSeek = async (messages: any[], apiKey: string): Promise<string> => {
+  
+  const sendMessageToDeepSeek = useCallback(async (messages: Array<{role: string, content: string}>, apiKey: string) => {
     setIsApiLoading(true);
     
     try {
-      console.log('Sending message to DeepSeek API with messages length:', messages.length);
-      
-      if (!apiKey) {
-        throw new Error('DeepSeek API key is required');
-      }
-      
-      const response = await fetch('/api/deepseek-response', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages,
-          apiKey,
-        }),
+      // First ping the API to ensure it's available
+      const pingResponse = await supabase.functions.invoke('deepseek-ping', {
+        body: { apiKey: apiKey }
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error from DeepSeek API:', errorText);
-        throw new Error(`API request failed: ${errorText}`);
+      
+      if (pingResponse.error || pingResponse.data?.status !== 'available') {
+        throw new Error(pingResponse.data?.message || 'DeepSeek API is currently unavailable');
       }
-
-      try {
-        const data = await response.json();
-        console.log('Received successful response from DeepSeek API');
-        return data.content || '';
-      } catch (jsonError) {
-        console.error('Error parsing JSON response:', jsonError);
-        throw new Error('Invalid response format from DeepSeek API');
+      
+      // Call the DeepSeek Edge Function
+      const { data, error } = await supabase.functions.invoke('deepseek-response', {
+        body: { 
+          context: messages.slice(0, -1), // Previous messages
+          message: messages[messages.length - 1].content, // Current message
+          apiKey: apiKey
+        }
+      });
+      
+      if (error) {
+        console.error('Error calling DeepSeek API:', error);
+        throw new Error(error.message || 'Failed to get response from DeepSeek');
       }
+      
+      if (!data || !data.response) {
+        if (data?.error) {
+          throw new Error(`DeepSeek API error: ${data.error}`);
+        }
+        throw new Error('Invalid response from DeepSeek API');
+      }
+      
+      return data.response;
     } catch (error) {
-      console.error('Error sending message to DeepSeek:', error);
+      console.error('Exception sending message to DeepSeek:', error);
       throw error;
     } finally {
       setIsApiLoading(false);
     }
-  };
-
+  }, []);
+  
   return {
     isApiLoading,
     edgeFunctionStatus,
     lastChecked,
     checkDeepSeekApiStatus,
-    sendMessageToDeepSeek,
+    sendMessageToDeepSeek
   };
 }

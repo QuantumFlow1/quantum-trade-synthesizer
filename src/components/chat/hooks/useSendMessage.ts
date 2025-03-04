@@ -53,9 +53,18 @@ export function useSendMessage({
       
       setInputMessage('');
 
-      // If Grok3 API availability is unknown, check it
-      if (apiAvailable === null) {
-        await checkGrokAvailability();
+      // If Grok3 API availability is unknown or was previously unavailable, check it
+      if (apiAvailable === null || apiAvailable === false) {
+        const isAvailable = await checkGrokAvailability();
+        if (!isAvailable) {
+          setIsProcessing(false);
+          const errorMessage = createChatMessage(
+            'assistant',
+            'Sorry, the AI service is currently unavailable. Please try again later.'
+          );
+          setMessages([...updatedMessages, errorMessage]);
+          return;
+        }
       }
       
       console.log('Generating AI response with model:', grokSettings.selectedModel);
@@ -81,7 +90,7 @@ export function useSendMessage({
           grokSettings.maxTokens
         );
         
-        console.log('Received AI response:', response);
+        console.log('Received AI response:', response ? response.substring(0, 50) + '...' : 'undefined');
         
         if (!response) {
           console.error('Empty response received from AI');
@@ -108,7 +117,7 @@ export function useSendMessage({
         // Add error message to chat
         const errorMessage = createChatMessage(
           'assistant',
-          'Er is een fout opgetreden bij het genereren van een antwoord. Probeer het later opnieuw.'
+          `Error: ${apiError instanceof Error ? apiError.message : "Failed to generate a response"}`
         );
         
         setMessages([...updatedMessages, errorMessage]);
@@ -127,7 +136,7 @@ export function useSendMessage({
       // Add error message
       const errorMessage = createChatMessage(
         'assistant',
-        'Er is een fout opgetreden bij het genereren van een antwoord. Probeer het later opnieuw.'
+        `Error: ${error instanceof Error ? error.message : "An unexpected error occurred"}`
       );
       
       console.log('Adding error message to chat:', errorMessage);
@@ -136,8 +145,8 @@ export function useSendMessage({
       
       // Show error toast
       toast({
-        title: "Er is een fout opgetreden",
-        description: error instanceof Error ? error.message : "Kon geen antwoord genereren. Probeer het later opnieuw.",
+        title: "Error occurred",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
         duration: 5000
       });
@@ -153,7 +162,7 @@ export function useSendMessage({
 function getApiKeyForModel(settings: GrokSettings): string {
   switch (true) {
     case settings.selectedModel.startsWith('grok'):
-      // Grok doesn't need a special API key
+      // Grok doesn't need a client-side API key
       return '';
     case settings.selectedModel.startsWith('claude'):
       return settings.apiKeys.claudeApiKey || '';

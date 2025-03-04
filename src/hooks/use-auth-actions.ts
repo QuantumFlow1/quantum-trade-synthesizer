@@ -38,6 +38,45 @@ export const useAuthActions = () => {
     },
   }
 
+  const securityService = {
+    send2FACode: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke('security-services', {
+        body: { 
+          action: 'send_2fa_code',
+          userId 
+        }
+      })
+      
+      if (error) throw error
+      return data
+    },
+    
+    verify2FACode: async (userId: string, code: string) => {
+      const { data, error } = await supabase.functions.invoke('security-services', {
+        body: { 
+          action: 'verify_2fa_code',
+          userId,
+          code 
+        }
+      })
+      
+      if (error) throw error
+      return data?.verified || false
+    },
+    
+    checkAccountSecurity: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke('security-services', {
+        body: { 
+          action: 'check_account_security',
+          userId 
+        }
+      })
+      
+      if (error) throw error
+      return data
+    }
+  }
+
   const signOut = async () => {
     try {
       console.log("Signing out...")
@@ -72,5 +111,5 @@ export const useAuthActions = () => {
     }
   }
 
-  return { signIn, signOut }
+  return { signIn, signOut, securityService }
 }

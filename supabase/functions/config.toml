@@ -8,29 +8,26 @@ verify_jwt = false
 [functions.log-transaction-audit]
 verify_jwt = false
 
-[functions.verify-2fa]
-verify_jwt = false
-
-[functions.send-2fa-code]
-verify_jwt = false
-
 [functions.submit-kyc]
 verify_jwt = false
 
 [functions.deepseek-response]
 verify_jwt = false
 
-[functions.claude-response]
+[functions.deepseek-ping]
 verify_jwt = false
 
-[functions.gemini-response]
+[functions.openai-response]
+verify_jwt = false
+
+[functions.generate-advice]
+verify_jwt = false
+
+[functions.security-services]
 verify_jwt = false
 
 [functions.grok3-response]
 verify_jwt = false
 
-[functions.generate-trading-advice]
-verify_jwt = false
-
-[functions.generate-advice]
+[functions.grok3-ping]
 verify_jwt = false
