@@ -34,8 +34,8 @@ export const generateResponse = async (
       selectedModel,
       temperature: temperature || 0.7,
       maxTokens: maxTokens || 1024,
-      deepSearchEnabled: false, // Adding the missing required properties
-      thinkEnabled: false,      // Adding the missing required properties
+      deepSearchEnabled: false, // Required property for GrokSettings
+      thinkEnabled: false,      // Required property for GrokSettings
       apiKeys: {
         openaiApiKey: selectedModel.startsWith('gpt') || selectedModel === 'openai' ? apiKey : undefined,
         claudeApiKey: selectedModel.startsWith('claude') ? apiKey : undefined,
@@ -83,6 +83,26 @@ export const generateResponse = async (
 const callGrokEdgeFunction = async (
   conversationHistory: Array<{ role: string; content: string }>
 ): Promise<string> => {
-  // Placeholder implementation - replace with actual API call
-  return "I'm an AI assistant. How can I help you today?";
+  try {
+    const { data, error } = await supabase.functions.invoke('grok3-response', {
+      body: { 
+        context: conversationHistory.slice(0, -1),
+        message: conversationHistory[conversationHistory.length - 1].content
+      }
+    });
+    
+    if (error) {
+      console.error('Error calling Grok3 API:', error);
+      throw new Error(error.message || 'Failed to get response from Grok service');
+    }
+    
+    if (!data || !data.response) {
+      throw new Error('Invalid response from Grok API');
+    }
+    
+    return data.response;
+  } catch (error) {
+    console.error('Exception in callGrokEdgeFunction:', error);
+    throw error;
+  }
 };

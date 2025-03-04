@@ -28,3 +28,6 @@ verify_jwt = false
 
 [functions.grok3-response]
 verify_jwt = false
+
+[functions.grok3-ping]
+verify_jwt = false

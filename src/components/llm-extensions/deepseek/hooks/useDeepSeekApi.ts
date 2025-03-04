@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/ui/use-toast';
 
 export function useDeepSeekApi() {
   const [isApiLoading, setIsApiLoading] = useState(false);
@@ -30,6 +31,11 @@ export function useDeepSeekApi() {
       
       if (error) {
         console.error('Error checking DeepSeek API status:', error);
+        toast({
+          title: "Connection Error",
+          description: `Could not verify DeepSeek connection: ${error.message}`,
+          variant: "destructive"
+        });
         setEdgeFunctionStatus('unavailable');
         setIsApiLoading(false);
         setLastChecked(new Date());
@@ -39,11 +45,33 @@ export function useDeepSeekApi() {
       const isAvailable = data?.status === 'available';
       setEdgeFunctionStatus(isAvailable ? 'available' : 'unavailable');
       console.log(`DeepSeek API status: ${isAvailable ? 'available' : 'unavailable'}`);
+      
+      // Show toast with connection status
+      if (isAvailable) {
+        toast({
+          title: "DeepSeek Connected",
+          description: "Successfully connected to DeepSeek API.",
+          duration: 3000,
+        });
+      } else {
+        toast({
+          title: "DeepSeek Unavailable",
+          description: data?.message || "Could not connect to DeepSeek API.",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
+      
       setLastChecked(new Date());
       setIsApiLoading(false);
       return isAvailable;
     } catch (error) {
       console.error('Exception checking DeepSeek API status:', error);
+      toast({
+        title: "Connection Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive"
+      });
       setEdgeFunctionStatus('unavailable');
       setIsApiLoading(false);
       setLastChecked(new Date());
@@ -55,6 +83,15 @@ export function useDeepSeekApi() {
     setIsApiLoading(true);
     
     try {
+      // First ping the API to ensure it's available
+      const pingResponse = await supabase.functions.invoke('deepseek-ping', {
+        body: { apiKey: apiKey }
+      });
+      
+      if (pingResponse.error || pingResponse.data?.status !== 'available') {
+        throw new Error(pingResponse.data?.message || 'DeepSeek API is currently unavailable');
+      }
+      
       // Call the DeepSeek Edge Function
       const { data, error } = await supabase.functions.invoke('deepseek-response', {
         body: { 
@@ -70,6 +107,9 @@ export function useDeepSeekApi() {
       }
       
       if (!data || !data.response) {
+        if (data?.error) {
+          throw new Error(`DeepSeek API error: ${data.error}`);
+        }
         throw new Error('Invalid response from DeepSeek API');
       }
       

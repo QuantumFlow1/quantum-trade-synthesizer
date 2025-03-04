@@ -13,26 +13,25 @@ serve(async (req) => {
   }
 
   try {
-    console.log('DeepSeek ping: checking connection');
+    console.log('Grok3 ping: checking connection');
     
-    // Get the API key from request or environment
-    const { apiKey } = await req.json().catch(() => ({ apiKey: null }));
-    const key = apiKey || Deno.env.get('DEEPSEEK_API_KEY');
+    // Get the API key from environment
+    const key = Deno.env.get('GROK3_API_KEY');
     
     if (!key) {
-      console.log('DeepSeek ping: no API key available');
+      console.log('Grok3 ping: no API key available');
       return new Response(
         JSON.stringify({ 
           status: 'unavailable', 
-          message: 'No DeepSeek API key configured' 
+          message: 'No Grok3 API key configured' 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
     try {
-      // Simple request to DeepSeek API to check if the API key is valid
-      const response = await fetch('https://api.deepseek.com/v1/models', {
+      // Simple request to Grok API to check if the API key is valid
+      const response = await fetch('https://api.xai.com/v1/models', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${key}`,
@@ -43,7 +42,7 @@ serve(async (req) => {
       // Always check response.ok before trying to parse the JSON
       if (!response.ok) {
         const errorBody = await response.text();
-        console.error('DeepSeek API connection check failed:', response.status, response.statusText, errorBody);
+        console.error('Grok3 API connection check failed:', response.status, response.statusText, errorBody);
         
         return new Response(
           JSON.stringify({ 
@@ -54,20 +53,20 @@ serve(async (req) => {
         );
       }
       
-      console.log('DeepSeek API connection successful');
+      console.log('Grok3 API connection successful');
       return new Response(
         JSON.stringify({ 
           status: 'available', 
-          message: 'DeepSeek API connection successful' 
+          message: 'Grok3 API connection successful' 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } catch (fetchError) {
-      console.error('Fetch error in deepseek-ping function:', fetchError);
+      console.error('Fetch error in grok3-ping function:', fetchError);
       return new Response(
         JSON.stringify({ 
           status: 'unavailable', 
-          message: `Failed to connect to DeepSeek API: ${fetchError.message}` 
+          message: `Failed to connect to Grok3 API: ${fetchError.message}` 
         }),
         { 
           status: 500, 
@@ -76,7 +75,7 @@ serve(async (req) => {
       );
     }
   } catch (error) {
-    console.error('Error in deepseek-ping function:', error);
+    console.error('Error in grok3-ping function:', error);
     return new Response(
       JSON.stringify({ 
         status: 'error', 
