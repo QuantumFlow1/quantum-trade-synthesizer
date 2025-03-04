@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -37,7 +36,6 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
   const [loadingDecision, setLoadingDecision] = useState(false);
   const [riskScore, setRiskScore] = useState(35); // 0-100 scale
 
-  // Simulate agent recommendations and portfolio decisions
   useEffect(() => {
     if (currentData) {
       generateSimulatedRecommendations();
@@ -45,14 +43,12 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
   }, [currentData]);
 
   const generateSimulatedRecommendations = () => {
-    // Create simulated agent recommendations based on real market conditions
     const ticker = currentData?.symbol || "BTC";
     const currentPrice = currentData?.price || 45000;
     const randomSeed = Math.random();
     
     const actionTypes: TradeAction[] = ["BUY", "SELL", "HOLD", "SHORT", "COVER"];
     
-    // Generate recommendations from different agent types
     const newRecommendations: AgentRecommendation[] = [
       {
         agentId: "value-investor-001",
@@ -85,10 +81,8 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
     
     setAgentRecommendations(newRecommendations);
     
-    // Wait a moment before generating the portfolio decision
     setLoadingDecision(true);
     setTimeout(() => {
-      // Generate a portfolio decision based on agent recommendations
       const majorityAction = calculateMajorityAction(newRecommendations);
       const averageConfidence = Math.round(
         newRecommendations.reduce((sum, rec) => sum + rec.confidence, 0) / newRecommendations.length
@@ -115,7 +109,6 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
   };
 
   const calculateMajorityAction = (recommendations: AgentRecommendation[]): TradeAction => {
-    // Count occurrences of each action
     const actionCounts: Record<TradeAction, number> = {
       "BUY": 0,
       "SELL": 0,
@@ -128,7 +121,6 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
       actionCounts[rec.action]++;
     });
     
-    // Find the action with the most votes
     let majorityAction: TradeAction = "HOLD";
     let maxCount = 0;
     
@@ -151,7 +143,6 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
       variant: "success",
     });
     
-    // Reset after execution
     setPortfolioDecision(null);
     setAgentRecommendations([]);
   };
