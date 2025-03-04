@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '../utils/test-utils';
+import { render, screen, fireEvent } from '@/tests/utils/test-utils';
 import { PortfolioManager } from '@/components/trading/PortfolioManager';
 import { usePortfolioManager } from '@/components/trading/portfolio/usePortfolioManager';
 

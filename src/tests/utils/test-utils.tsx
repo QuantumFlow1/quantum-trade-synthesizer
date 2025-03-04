@@ -1,13 +1,13 @@
 
 import React, { ReactElement } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
-import { ToastProvider } from '@/components/ui/toast';
 
+// Add any providers that are needed for tests here
 const AllProviders = ({ children }: { children: React.ReactNode }) => {
   return (
-    <ToastProvider>
+    <>
       {children}
-    </ToastProvider>
+    </>
   );
 };
 
@@ -16,5 +16,8 @@ const customRender = (
   options?: Omit<RenderOptions, 'wrapper'>
 ) => render(ui, { wrapper: AllProviders, ...options });
 
+// Re-export everything from testing-library
 export * from '@testing-library/react';
+
+// Override render method
 export { customRender as render };
