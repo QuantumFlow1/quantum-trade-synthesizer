@@ -9,6 +9,9 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface SecuritySelectorProps {
   securityLevel: string;
@@ -21,6 +24,49 @@ export const SecuritySelector = ({
   setSecurityLevel,
   generateSecurityCode
 }: SecuritySelectorProps) => {
+  const [isResending, setIsResending] = useState(false);
+  const { toast } = useToast();
+  const [securityCode, setSecurityCode] = useState(() => generateSecurityCode());
+  
+  const handleResendCode = async () => {
+    setIsResending(true);
+    try {
+      // Get the current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+      
+      // Call the combined security-services function with the appropriate action
+      const { data, error } = await supabase.functions.invoke('security-services', {
+        body: { 
+          action: 'send_2fa_code',
+          userId: user.id
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Generate a new display code
+      setSecurityCode(generateSecurityCode());
+      
+      toast({
+        title: "Verification Code Sent",
+        description: "A new verification code has been sent to your registered contact method.",
+      });
+    } catch (error) {
+      console.error("Error sending verification code:", error);
+      toast({
+        title: "Failed to Send Code",
+        description: "There was a problem sending your verification code. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <div className="space-y-2">
       <Label htmlFor="security-level">Security Level</Label>
@@ -53,9 +99,15 @@ export const SecuritySelector = ({
             For your security, a verification code has been sent to your registered email or phone.
           </div>
           <div className="flex justify-between items-center">
-            <div className="font-mono font-bold">{generateSecurityCode()}</div>
-            <Button variant="outline" size="sm" className="text-xs">
-              <RefreshCw className="h-3 w-3 mr-1" />
+            <div className="font-mono font-bold">{securityCode}</div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-xs"
+              onClick={handleResendCode}
+              disabled={isResending}
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${isResending ? 'animate-spin' : ''}`} />
               Resend Code
             </Button>
           </div>
