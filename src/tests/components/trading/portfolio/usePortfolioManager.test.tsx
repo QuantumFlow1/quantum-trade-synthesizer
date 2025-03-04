@@ -54,7 +54,7 @@ describe('usePortfolioManager', () => {
 
   it('handles execute decision correctly', () => {
     const mockToast = vi.fn();
-    (useToast as jest.Mock).mockReturnValue({ toast: mockToast });
+    (useToast as ReturnType<typeof vi.fn>).mockReturnValue({ toast: mockToast });
     
     const mockData = { symbol: 'BTC', price: 45000 };
     const { result } = renderHook(() => usePortfolioManager(mockData));
@@ -79,7 +79,7 @@ describe('usePortfolioManager', () => {
 
   it('handles refresh analysis correctly', () => {
     const mockToast = vi.fn();
-    (useToast as jest.Mock).mockReturnValue({ toast: mockToast });
+    (useToast as ReturnType<typeof vi.fn>).mockReturnValue({ toast: mockToast });
     
     const mockData = { symbol: 'BTC', price: 45000 };
     const { result } = renderHook(() => usePortfolioManager(mockData));
@@ -91,7 +91,7 @@ describe('usePortfolioManager', () => {
     
     // Reset all mocks
     vi.resetAllMocks();
-    (useToast as jest.Mock).mockReturnValue({ toast: mockToast });
+    (useToast as ReturnType<typeof vi.fn>).mockReturnValue({ toast: mockToast });
     
     // Refresh the analysis
     act(() => {
@@ -126,7 +126,7 @@ describe('usePortfolioManager', () => {
     };
     
     // First set of recommendations should favor BUY
-    (Math.random as jest.Mock).mockReturnValueOnce(0.8) // value-investor -> BUY
+    (Math.random as ReturnType<typeof vi.fn>).mockReturnValueOnce(0.8) // value-investor -> BUY
                               .mockReturnValueOnce(0.6) // technical-analyst -> BUY
                               .mockReturnValueOnce(0.7); // sentiment-analyst -> BUY
     
@@ -142,7 +142,7 @@ describe('usePortfolioManager', () => {
     vi.resetAllMocks();
     
     // Second set of recommendations should favor SELL
-    (Math.random as jest.Mock).mockReturnValueOnce(0.3) // value-investor -> SELL
+    (Math.random as ReturnType<typeof vi.fn>).mockReturnValueOnce(0.3) // value-investor -> SELL
                               .mockReturnValueOnce(0.2) // technical-analyst -> SELL
                               .mockReturnValueOnce(0.2); // sentiment-analyst -> SELL
     

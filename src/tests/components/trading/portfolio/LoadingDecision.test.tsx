@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '../../utils/test-utils';
+import { render, screen } from '@/tests/utils/test-utils';
 import { LoadingDecision } from '@/components/trading/portfolio/LoadingDecision';
 
 describe('LoadingDecision', () => {

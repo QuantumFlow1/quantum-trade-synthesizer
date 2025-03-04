@@ -53,7 +53,7 @@ vi.mock('@/components/trading/portfolio/LoadingDecision', () => ({
 
 describe('PortfolioManager', () => {
   it('renders empty state when no recommendations', () => {
-    (usePortfolioManager as jest.Mock).mockReturnValue({
+    (usePortfolioManager as ReturnType<typeof vi.fn>).mockReturnValue({
       agentRecommendations: [],
       portfolioDecision: null,
       loadingDecision: false,
@@ -71,7 +71,7 @@ describe('PortfolioManager', () => {
   it('renders recommendations and decision when available', () => {
     const mockHandleExecute = vi.fn();
     
-    (usePortfolioManager as jest.Mock).mockReturnValue({
+    (usePortfolioManager as ReturnType<typeof vi.fn>).mockReturnValue({
       agentRecommendations: [
         { agentId: 'agent1', action: 'BUY' },
         { agentId: 'agent2', action: 'SELL' }
@@ -115,7 +115,7 @@ describe('PortfolioManager', () => {
   });
 
   it('renders loading state when loadingDecision is true', () => {
-    (usePortfolioManager as jest.Mock).mockReturnValue({
+    (usePortfolioManager as ReturnType<typeof vi.fn>).mockReturnValue({
       agentRecommendations: [
         { agentId: 'agent1', action: 'BUY' }
       ],
@@ -137,7 +137,7 @@ describe('PortfolioManager', () => {
   it('calls refresh analysis handler when refresh button is clicked', () => {
     const mockRefresh = vi.fn();
     
-    (usePortfolioManager as jest.Mock).mockReturnValue({
+    (usePortfolioManager as ReturnType<typeof vi.fn>).mockReturnValue({
       agentRecommendations: [],
       portfolioDecision: null,
       loadingDecision: false,
@@ -156,7 +156,7 @@ describe('PortfolioManager', () => {
   });
 
   it('disables refresh button when currentData is not available', () => {
-    (usePortfolioManager as jest.Mock).mockReturnValue({
+    (usePortfolioManager as ReturnType<typeof vi.fn>).mockReturnValue({
       agentRecommendations: [],
       portfolioDecision: null,
       loadingDecision: false,
@@ -174,7 +174,7 @@ describe('PortfolioManager', () => {
   it('handles simulation toggle correctly', () => {
     const mockToggle = vi.fn();
     
-    (usePortfolioManager as jest.Mock).mockReturnValue({
+    (usePortfolioManager as ReturnType<typeof vi.fn>).mockReturnValue({
       agentRecommendations: [],
       portfolioDecision: null,
       loadingDecision: false,

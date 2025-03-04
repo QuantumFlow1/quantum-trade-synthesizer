@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '../../utils/test-utils';
+import { render, screen, fireEvent } from '@/tests/utils/test-utils';
 import { EmptyAnalysisState } from '@/components/trading/portfolio/EmptyAnalysisState';
 
 describe('EmptyAnalysisState', () => {
