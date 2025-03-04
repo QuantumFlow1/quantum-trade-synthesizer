@@ -92,25 +92,48 @@ export const EnhancedMarketTab: React.FC = () => {
   );
 };
 
-// Simple error boundary component
+// Enhanced error boundary component with reset capability
 class ErrorBoundary extends React.Component<{
   children: React.ReactNode;
   fallback: React.ReactNode;
 }> {
-  state = { hasError: false };
+  state = { 
+    hasError: false,
+    error: null,
+    errorInfo: null 
+  };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: any) {
+    // Update state so the next render will show the fallback UI
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: any, errorInfo: any) {
-    console.error("Error in market component:", error, errorInfo);
+    // Log error details for debugging
+    console.error("Error in market component:", error);
+    console.error("Component stack:", errorInfo?.componentStack);
+    this.setState({ errorInfo });
+  }
+
+  // Method to reset the error boundary
+  resetErrorBoundary = () => {
+    this.setState({ 
+      hasError: false,
+      error: null,
+      errorInfo: null 
+    });
   }
 
   render() {
     if (this.state.hasError) {
+      // Try to recover automatically after 10 seconds
+      setTimeout(() => {
+        this.resetErrorBoundary();
+      }, 10000);
+      
       return this.props.fallback;
     }
+    
     return this.props.children;
   }
 }

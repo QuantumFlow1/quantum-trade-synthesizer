@@ -10,8 +10,9 @@ import { MarketDetailsDialog } from './enhanced/MarketDetailsDialog';
 import { LoadingState } from './enhanced/LoadingState';
 import { useMarketDataState } from './enhanced/useMarketDataState';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, WifiOff, Wifi } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ExtendedDataAlert } from '@/components/trading/charts/ExtendedDataAlert';
 
 export const EnhancedMarketPage: React.FC = () => {
   const {
@@ -24,6 +25,7 @@ export const EnhancedMarketPage: React.FC = () => {
     selectedMarket,
     showMarketDetail,
     error,
+    retryCount,
     setShowMarketDetail,
     handleSearch,
     handleTabChange,
@@ -32,9 +34,28 @@ export const EnhancedMarketPage: React.FC = () => {
     handleCloseMarketDetail,
     getMarketCategories
   } = useMarketDataState();
+  
+  // Online status tracking
+  const [isOnline, setIsOnline] = React.useState(navigator.onLine);
+  
+  React.useEffect(() => {
+    // Update online status
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Check if we have valid market data
   const hasValidData = Array.isArray(marketData) && marketData.length > 0;
+  
+  // Get market categories with error handling
   const categories = React.useMemo(() => {
     try {
       return getMarketCategories();
@@ -45,7 +66,42 @@ export const EnhancedMarketPage: React.FC = () => {
   }, [marketData, getMarketCategories]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {!isOnline && (
+        <Alert variant="warning" className="mb-4">
+          <WifiOff className="h-4 w-4" />
+          <AlertTitle>You're offline</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>You're currently offline. Some features may be limited or using cached data.</p>
+            <div className="flex items-center text-sm text-muted-foreground mt-2">
+              <span>Reconnecting automatically when network is available</span>
+              <span className="ml-2 flex-shrink-0">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                </span>
+              </span>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {isOnline && retryCount > 0 && (
+        <Alert variant="warning" className="mb-4">
+          <Wifi className="h-4 w-4" />
+          <AlertTitle>Reconnecting to market data</AlertTitle>
+          <AlertDescription className="flex items-center">
+            <p>Attempt {retryCount} of 3...</p>
+            <span className="ml-2 flex-shrink-0">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+              </span>
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <MarketHeader 
         searchTerm={searchTerm}
         onSearchChange={handleSearch}
@@ -56,7 +112,7 @@ export const EnhancedMarketPage: React.FC = () => {
       {isLoading ? (
         <LoadingState />
       ) : !hasValidData ? (
-        <Alert variant="destructive">
+        <Alert variant={error ? "destructive" : "warning"}>
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error loading market data</AlertTitle>
           <AlertDescription className="flex flex-col gap-2">
