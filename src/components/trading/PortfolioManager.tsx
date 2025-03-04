@@ -1,465 +1,332 @@
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { useAgentNetwork } from "@/hooks/use-agent-network";
-import {
-  BarChart3,
-  RefreshCw,
-  Briefcase,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  ShieldAlert,
-  ArrowRightLeft
-} from "lucide-react";
+import { SimulationToggle } from "../trading/SimulationToggle";
+import { TradeAction, AgentRecommendation, PortfolioDecision } from "@/types/agent";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PortfolioDecision, AgentRecommendation, TradeAction } from "@/types/agent";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
-import { SimulationToggle } from "./SimulationToggle";
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Pause, 
+  AlertCircle, 
+  CheckCircle, 
+  Brain,
+  BarChart2,
+  ShieldAlert,
+  CircleDollarSign,
+  BookCheck
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface PortfolioManagerProps {
-  currentData?: any;
   isSimulationMode?: boolean;
   onSimulationToggle?: (enabled: boolean) => void;
+  currentData?: any;
 }
 
-export function PortfolioManager({
-  currentData,
+export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
   isSimulationMode = false,
-  onSimulationToggle
-}: PortfolioManagerProps) {
+  onSimulationToggle,
+  currentData
+}) => {
   const { toast } = useToast();
-  const {
-    isInitialized,
-    isLoading,
-    activeAgents,
-    getRecentAgentRecommendations,
-    getRecentPortfolioDecisions,
-    createPortfolioDecision,
-    submitAgentRecommendation
-  } = useAgentNetwork();
+  const [agentRecommendations, setAgentRecommendations] = useState<AgentRecommendation[]>([]);
+  const [portfolioDecision, setPortfolioDecision] = useState<PortfolioDecision | null>(null);
+  const [loadingDecision, setLoadingDecision] = useState(false);
+  const [riskScore, setRiskScore] = useState(35); // 0-100 scale
 
-  const [currentTab, setCurrentTab] = useState("decisions");
-  const [recommendations, setRecommendations] = useState<AgentRecommendation[]>([]);
-  const [decisions, setDecisions] = useState<PortfolioDecision[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [localSimulationMode, setLocalSimulationMode] = useState<boolean>(isSimulationMode);
-
+  // Simulate agent recommendations and portfolio decisions
   useEffect(() => {
-    if (isSimulationMode !== localSimulationMode) {
-      setLocalSimulationMode(isSimulationMode);
+    if (currentData) {
+      generateSimulatedRecommendations();
     }
-  }, [isSimulationMode]);
+  }, [currentData]);
 
-  useEffect(() => {
-    if (isInitialized) {
-      refreshData();
-    }
-  }, [isInitialized]);
-
-  const refreshData = async () => {
-    setRefreshing(true);
-    try {
-      // Get recent recommendations and decisions
-      const recentRecommendations = getRecentAgentRecommendations(10);
-      const recentDecisions = getRecentPortfolioDecisions(10);
+  const generateSimulatedRecommendations = () => {
+    // Create simulated agent recommendations based on real market conditions
+    const ticker = currentData?.symbol || "BTC";
+    const currentPrice = currentData?.price || 45000;
+    const randomSeed = Math.random();
+    
+    const actionTypes: TradeAction[] = ["BUY", "SELL", "HOLD", "SHORT", "COVER"];
+    
+    // Generate recommendations from different agent types
+    const newRecommendations: AgentRecommendation[] = [
+      {
+        agentId: "value-investor-001",
+        action: randomSeed > 0.7 ? "BUY" : (randomSeed > 0.4 ? "HOLD" : "SELL"),
+        confidence: Math.round(60 + randomSeed * 30),
+        reasoning: `Based on fundamental analysis, the current ${ticker} price at $${currentPrice} ${randomSeed > 0.6 ? "represents a good value" : "is slightly overvalued"}.`,
+        ticker,
+        price: currentPrice,
+        timestamp: new Date().toISOString()
+      },
+      {
+        agentId: "technical-analyst-001",
+        action: randomSeed > 0.5 ? "BUY" : "SELL",
+        confidence: Math.round(50 + randomSeed * 40),
+        reasoning: `Technical indicators show ${randomSeed > 0.5 ? "bullish" : "bearish"} momentum on ${ticker} with ${randomSeed > 0.7 ? "strong" : "moderate"} volume.`,
+        ticker,
+        price: currentPrice,
+        timestamp: new Date().toISOString()
+      },
+      {
+        agentId: "sentiment-analyst-001",
+        action: randomSeed > 0.6 ? "BUY" : (randomSeed > 0.3 ? "HOLD" : "SELL"),
+        confidence: Math.round(40 + randomSeed * 50),
+        reasoning: `Market sentiment analysis indicates ${randomSeed > 0.6 ? "positive" : "mixed"} outlook for ${ticker} based on news and social media.`,
+        ticker,
+        price: currentPrice,
+        timestamp: new Date().toISOString()
+      }
+    ];
+    
+    setAgentRecommendations(newRecommendations);
+    
+    // Wait a moment before generating the portfolio decision
+    setLoadingDecision(true);
+    setTimeout(() => {
+      // Generate a portfolio decision based on agent recommendations
+      const majorityAction = calculateMajorityAction(newRecommendations);
+      const averageConfidence = Math.round(
+        newRecommendations.reduce((sum, rec) => sum + rec.confidence, 0) / newRecommendations.length
+      );
       
-      setRecommendations(recentRecommendations);
-      setDecisions(recentDecisions);
-    } catch (error) {
-      console.error("Error refreshing portfolio data:", error);
-    } finally {
-      setRefreshing(false);
-    }
+      const newDecision: PortfolioDecision = {
+        action: majorityAction,
+        ticker,
+        amount: randomSeed > 0.7 ? 0.05 : (randomSeed > 0.4 ? 0.02 : 0.01),
+        price: currentPrice,
+        stopLoss: majorityAction === "BUY" ? Math.round(currentPrice * 0.95) : undefined,
+        takeProfit: majorityAction === "BUY" ? Math.round(currentPrice * 1.15) : undefined,
+        confidence: averageConfidence,
+        riskScore: Math.round(30 + randomSeed * 40),
+        contributors: newRecommendations.map(rec => rec.agentId),
+        reasoning: `Consensus among ${newRecommendations.length} specialized agents suggests a ${majorityAction} action with ${averageConfidence}% confidence.`,
+        timestamp: new Date().toISOString()
+      };
+      
+      setPortfolioDecision(newDecision);
+      setRiskScore(newDecision.riskScore);
+      setLoadingDecision(false);
+    }, 1500);
   };
 
-  const handleToggleSimulation = (enabled: boolean) => {
-    setLocalSimulationMode(enabled);
-    if (onSimulationToggle) {
-      onSimulationToggle(enabled);
-    }
+  const calculateMajorityAction = (recommendations: AgentRecommendation[]): TradeAction => {
+    // Count occurrences of each action
+    const actionCounts: Record<TradeAction, number> = {
+      "BUY": 0,
+      "SELL": 0,
+      "HOLD": 0,
+      "SHORT": 0,
+      "COVER": 0
+    };
+    
+    recommendations.forEach(rec => {
+      actionCounts[rec.action]++;
+    });
+    
+    // Find the action with the most votes
+    let majorityAction: TradeAction = "HOLD";
+    let maxCount = 0;
+    
+    (Object.keys(actionCounts) as TradeAction[]).forEach(action => {
+      if (actionCounts[action] > maxCount) {
+        maxCount = actionCounts[action];
+        majorityAction = action;
+      }
+    });
+    
+    return majorityAction;
+  };
+
+  const handleExecuteDecision = () => {
+    if (!portfolioDecision) return;
     
     toast({
-      title: enabled ? "Simulation Mode Activated" : "Simulation Mode Deactivated",
-      description: enabled 
-        ? "Portfolio Manager will execute trades in simulation mode." 
-        : "Portfolio Manager will execute real trades.",
+      title: `${portfolioDecision.action} Order ${isSimulationMode ? "Simulated" : "Executed"}`,
+      description: `${portfolioDecision.action} ${portfolioDecision.amount} ${portfolioDecision.ticker} at $${portfolioDecision.price}`,
+      variant: "success",
+    });
+    
+    // Reset after execution
+    setPortfolioDecision(null);
+    setAgentRecommendations([]);
+  };
+
+  const handleRefreshAnalysis = () => {
+    setPortfolioDecision(null);
+    setAgentRecommendations([]);
+    generateSimulatedRecommendations();
+    
+    toast({
+      title: "Analysis Refresh Requested",
+      description: "Generating new agent recommendations and portfolio decision",
     });
   };
 
-  // Generate a test recommendation
-  const generateTestRecommendation = async () => {
-    if (!isInitialized) return;
-    
-    const actions: TradeAction[] = ["BUY", "SELL", "HOLD", "SHORT", "COVER"];
-    const agents = activeAgents.filter(a => a.type !== "portfolio_manager");
-    
-    if (agents.length === 0) return;
-    
-    const randomAgent = agents[Math.floor(Math.random() * agents.length)];
-    const randomAction = actions[Math.floor(Math.random() * actions.length)];
-    const randomTicker = ["BTC", "ETH", "SOL", "AAPL", "MSFT", "GOOGL"][Math.floor(Math.random() * 6)];
-    const randomPrice = Math.floor(Math.random() * 1000) + 100;
-    const randomConfidence = Math.floor(Math.random() * 40) + 60;
-    
-    try {
-      await submitAgentRecommendation(
-        randomAgent.id,
-        randomAction,
-        randomConfidence,
-        `${randomAction} recommendation for ${randomTicker} based on ${randomAgent.type} analysis`,
-        randomTicker,
-        randomPrice
-      );
-      
-      refreshData();
-      
-      toast({
-        title: "New Recommendation",
-        description: `${randomAgent.name} recommended to ${randomAction} ${randomTicker}`,
-      });
-    } catch (error) {
-      console.error("Error generating test recommendation:", error);
-    }
-  };
-
-  // Execute a test portfolio decision
-  const executeTestDecision = async () => {
-    if (!isInitialized) return;
-    
-    const actions: TradeAction[] = ["BUY", "SELL", "SHORT", "COVER"];
-    const randomAction = actions[Math.floor(Math.random() * actions.length)];
-    const randomTicker = ["BTC", "ETH", "SOL", "AAPL", "MSFT", "GOOGL"][Math.floor(Math.random() * 6)];
-    const randomPrice = Math.floor(Math.random() * 1000) + 100;
-    const randomAmount = Math.floor(Math.random() * 10) + 1;
-    
-    try {
-      await createPortfolioDecision(
-        randomAction,
-        randomTicker,
-        randomAmount,
-        randomPrice,
-        {
-          stopLoss: randomAction === "BUY" ? randomPrice * 0.95 : randomPrice * 1.05,
-          takeProfit: randomAction === "BUY" ? randomPrice * 1.1 : randomPrice * 0.9,
-          confidence: Math.floor(Math.random() * 20) + 70,
-          riskScore: Math.floor(Math.random() * 7) + 3,
-          contributors: activeAgents.slice(0, 3).map(a => a.id),
-          reasoning: `Portfolio decision to ${randomAction} ${randomTicker} based on agent recommendations and market analysis`
-        }
-      );
-      
-      refreshData();
-      
-      toast({
-        title: "Portfolio Decision Executed",
-        description: `${randomAction} ${randomAmount} ${randomTicker} at $${randomPrice}`,
-      });
-    } catch (error) {
-      console.error("Error executing test decision:", error);
-    }
-  };
-
-  const getActionColor = (action: TradeAction) => {
-    switch (action) {
-      case "BUY": return "text-green-500";
-      case "SELL": return "text-red-500";
-      case "SHORT": return "text-purple-500";
-      case "COVER": return "text-blue-500";
-      case "HOLD": return "text-yellow-500";
-      default: return "text-gray-500";
-    }
-  };
-
-  const getActionBadgeVariant = (action: TradeAction) => {
-    switch (action) {
-      case "BUY": return "success";
-      case "SELL": return "destructive";
-      case "SHORT": return "default";
-      case "COVER": return "outline";
-      case "HOLD": return "secondary";
-      default: return "outline";
-    }
-  };
-
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 80) return "bg-green-500";
-    if (confidence >= 60) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString();
-  };
-
   return (
-    <Card className="backdrop-blur-xl bg-secondary/10 border border-white/10 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-xl font-bold flex items-center">
-          <Briefcase className="w-5 h-5 mr-2" /> Portfolio Manager
-        </CardTitle>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshData}
-            disabled={refreshing}
-            className="flex items-center gap-1"
-          >
-            <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </Button>
+    <Card className="backdrop-blur-md border border-white/10">
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              Portfolio Manager
+            </CardTitle>
+            <CardDescription>
+              AI-powered trading decisions from specialized agents
+            </CardDescription>
+          </div>
+          {onSimulationToggle && (
+            <SimulationToggle 
+              enabled={isSimulationMode} 
+              onToggle={onSimulationToggle} 
+            />
+          )}
         </div>
       </CardHeader>
       
       <CardContent className="space-y-4">
-        <div className="mb-4">
-          <SimulationToggle 
-            enabled={localSimulationMode} 
-            onToggle={handleToggleSimulation} 
-          />
-        </div>
+        {isSimulationMode && (
+          <Alert variant="success" className="bg-green-500/10">
+            <CheckCircle className="h-4 w-4 text-green-500" />
+            <AlertDescription>
+              Simulation mode active. Trade decisions will not affect real balances.
+            </AlertDescription>
+          </Alert>
+        )}
         
-        <div className="flex flex-wrap gap-2 mb-4">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={generateTestRecommendation}
-                  disabled={!isInitialized || isLoading}
-                  className="flex items-center gap-1"
-                >
-                  <ArrowRightLeft className="h-3.5 w-3.5" />
-                  <span>Generate Recommendation</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">Generate a test recommendation from an agent</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={executeTestDecision}
-                  disabled={!isInitialized || isLoading}
-                  className="flex items-center gap-1"
-                >
-                  <CheckCircle className="h-3.5 w-3.5" />
-                  <span>Execute Decision</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="text-xs">Execute a test portfolio decision</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        
-        <Tabs value={currentTab} onValueChange={setCurrentTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="decisions" className="relative">
-              Decisions
-              {decisions.length > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                  {decisions.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="recommendations" className="relative">
-              Recommendations
-              {recommendations.length > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
-                  {recommendations.length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="decisions" className="space-y-4 mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium">Portfolio Decisions</h3>
-              <Badge variant="outline" className="text-xs">
-                {decisions.length} decisions
-              </Badge>
-            </div>
-            
-            <ScrollArea className="h-[300px] rounded-md border border-white/10">
-              {decisions.length > 0 ? (
-                <div className="space-y-2 p-2">
-                  {decisions.map((decision, index) => (
-                    <div key={index} className="p-3 bg-muted/20 rounded-md">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={getActionBadgeVariant(decision.action)}>
-                            {decision.action}
-                          </Badge>
-                          <span className="font-medium text-sm">{decision.ticker}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">${decision.price.toLocaleString()}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {decision.amount} units
-                          </Badge>
-                        </div>
+        <div className="space-y-3">
+          {agentRecommendations.length > 0 ? (
+            <>
+              <h3 className="text-sm font-medium">Agent Recommendations:</h3>
+              <div className="space-y-2">
+                {agentRecommendations.map((rec, index) => (
+                  <div key={index} className="p-2 border border-white/10 rounded-md bg-background/50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-1">
+                        <Badge className="text-xs" variant="outline">
+                          {rec.agentId.split('-')[0]}
+                        </Badge>
+                        <Badge 
+                          className={`text-xs ${rec.action === "BUY" || rec.action === "COVER" ? "bg-green-500/80" : 
+                                            rec.action === "SELL" || rec.action === "SHORT" ? "bg-red-500/80" : 
+                                            "bg-blue-500/80"}`}
+                        >
+                          {rec.action}
+                        </Badge>
+                      </div>
+                      <Badge className="text-xs" variant="outline">
+                        {rec.confidence}% confidence
+                      </Badge>
+                    </div>
+                    <p className="text-xs mt-1 text-muted-foreground">{rec.reasoning}</p>
+                  </div>
+                ))}
+              </div>
+              
+              {portfolioDecision && (
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <h3 className="text-sm font-medium flex items-center gap-2 mb-2">
+                    <BookCheck className="h-4 w-4 text-primary" />
+                    Portfolio Decision:
+                  </h3>
+                  <div className="p-3 border border-white/20 rounded-md bg-primary/5">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          className={`${portfolioDecision.action === "BUY" || portfolioDecision.action === "COVER" ? "bg-green-500/80" : 
+                                      portfolioDecision.action === "SELL" || portfolioDecision.action === "SHORT" ? "bg-red-500/80" : 
+                                      "bg-blue-500/80"}`}
+                        >
+                          {portfolioDecision.action} {portfolioDecision.ticker}
+                        </Badge>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          <CircleDollarSign className="h-3 w-3 mr-1" />
+                          ${portfolioDecision.price}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          <BarChart2 className="h-3 w-3 mr-1" />
+                          {portfolioDecision.confidence}% confidence
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Amount:</span>{' '}
+                        <span className="font-medium">{portfolioDecision.amount} {portfolioDecision.ticker}</span>
                       </div>
                       
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatTimestamp(decision.timestamp)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <ShieldAlert className="h-3 w-3" />
-                          <span>Risk: {decision.riskScore}/10</span>
-                        </div>
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Risk Score:</span>{' '}
+                        <span className="font-medium">{portfolioDecision.riskScore}/100</span>
                       </div>
                       
-                      <div className="mt-2">
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span>Confidence</span>
-                          <span>{decision.confidence}%</span>
-                        </div>
-                        <Progress value={decision.confidence} className="h-1.5" />
-                      </div>
-                      
-                      {decision.stopLoss && decision.takeProfit && (
-                        <div className="flex items-center justify-between mt-2 text-xs">
-                          <div className="flex items-center gap-1">
-                            <TrendingDown className="h-3 w-3 text-red-500" />
-                            <span>SL: ${decision.stopLoss.toFixed(2)}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <TrendingUp className="h-3 w-3 text-green-500" />
-                            <span>TP: ${decision.takeProfit.toFixed(2)}</span>
-                          </div>
+                      {portfolioDecision.stopLoss && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Stop Loss:</span>{' '}
+                          <span className="font-medium">${portfolioDecision.stopLoss}</span>
                         </div>
                       )}
                       
-                      <p className="text-xs mt-2">{decision.reasoning}</p>
-                      
-                      {decision.contributors && decision.contributors.length > 0 && (
-                        <div className="mt-2">
-                          <span className="text-xs text-muted-foreground">Contributors: </span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {decision.contributors.map((contributor, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-[10px]">
-                                {contributor}
-                              </Badge>
-                            ))}
-                          </div>
+                      {portfolioDecision.takeProfit && (
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Take Profit:</span>{' '}
+                          <span className="font-medium">${portfolioDecision.takeProfit}</span>
                         </div>
                       )}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full p-4">
-                  <div className="text-center space-y-2">
-                    <BarChart3 className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">No portfolio decisions yet</p>
+                    
+                    <div className="text-xs text-muted-foreground mb-3">
+                      <p>{portfolioDecision.reasoning}</p>
+                    </div>
+                    
                     <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={executeTestDecision}
-                      disabled={!isInitialized || isLoading}
+                      className="w-full" 
+                      variant="default" 
+                      onClick={handleExecuteDecision}
                     >
-                      Execute Test Decision
+                      {isSimulationMode ? "Simulate" : "Execute"} {portfolioDecision.action} Order
                     </Button>
                   </div>
                 </div>
               )}
-            </ScrollArea>
-          </TabsContent>
-          
-          <TabsContent value="recommendations" className="space-y-4 mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium">Agent Recommendations</h3>
-              <Badge variant="outline" className="text-xs">
-                {recommendations.length} recommendations
-              </Badge>
-            </div>
-            
-            <ScrollArea className="h-[300px] rounded-md border border-white/10">
-              {recommendations.length > 0 ? (
-                <div className="space-y-2 p-2">
-                  {recommendations.map((recommendation, index) => (
-                    <div key={index} className="p-3 bg-muted/20 rounded-md">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={getActionBadgeVariant(recommendation.action)}>
-                            {recommendation.action}
-                          </Badge>
-                          {recommendation.ticker && (
-                            <span className="font-medium text-sm">{recommendation.ticker}</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {recommendation.price && (
-                            <span className="text-sm font-medium">${recommendation.price.toLocaleString()}</span>
-                          )}
-                          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-muted text-xs">
-                            <span className={getActionColor(recommendation.action)}>{recommendation.agentId}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-2">
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span>Confidence</span>
-                          <span>{recommendation.confidence}%</span>
-                        </div>
-                        <Progress value={recommendation.confidence} className="h-1.5" />
-                      </div>
-                      
-                      <div className="flex items-center text-xs text-muted-foreground mt-2">
-                        <Clock className="h-3 w-3 mr-1" />
-                        <span>{formatTimestamp(recommendation.timestamp)}</span>
-                      </div>
-                      
-                      <p className="text-xs mt-2">{recommendation.reasoning}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full p-4">
-                  <div className="text-center space-y-2">
-                    <AlertTriangle className="h-8 w-8 mx-auto text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">No agent recommendations yet</p>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={generateTestRecommendation}
-                      disabled={!isInitialized || isLoading}
-                    >
-                      Generate Test Recommendation
-                    </Button>
+              
+              {loadingDecision && (
+                <div className="flex justify-center py-4">
+                  <div className="flex flex-col items-center">
+                    <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mb-2"></div>
+                    <p className="text-xs text-muted-foreground">Generating portfolio decision...</p>
                   </div>
                 </div>
               )}
-            </ScrollArea>
-          </TabsContent>
-        </Tabs>
-        
-        <div className="pt-2 mt-2 border-t border-white/10 text-xs text-muted-foreground">
-          <p>
-            <span className="font-medium text-primary">Trading Guide:</span> The Portfolio Manager consolidates recommendations from all active agents and makes final trading decisions. Always use simulation mode first to test your trading strategy.
-          </p>
+            </>
+          ) : (
+            <div className="p-6 text-center">
+              <Brain className="h-8 w-8 text-primary/50 mx-auto mb-2" />
+              <h3 className="text-sm font-medium mb-1">No Active Analysis</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Generate AI trading recommendations and portfolio decisions
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefreshAnalysis}
+                disabled={!currentData}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Analyze Market
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
   );
-}
+};

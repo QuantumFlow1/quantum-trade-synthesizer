@@ -16,7 +16,7 @@ export interface MarketData {
 }
 
 export interface TradeOrder {
-  type: "buy" | "sell";
+  type: "buy" | "sell" | "short" | "cover" | "hold";
   orderType: "market" | "limit" | "stop" | "stop_limit";
   amount: number;
   price: number;

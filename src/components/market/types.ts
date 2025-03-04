@@ -1,4 +1,3 @@
-
 export interface TradeSignal {
   type: 'LONG' | 'SHORT';
   entry: number;
@@ -23,6 +22,7 @@ export interface MarketData {
   totalVolume24h?: number;
   circulatingSupply?: number;
   totalSupply?: number;
+  maxSupply?: number;
   rank?: number;
   ath?: number;
   athDate?: string;
@@ -31,6 +31,8 @@ export interface MarketData {
   lastUpdated?: string;
   priceChange7d?: number;
   priceChange30d?: number;
+  change7d?: number;
+  change30d?: number;
 }
 
 export interface TradeOrder {
