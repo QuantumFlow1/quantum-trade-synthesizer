@@ -1,5 +1,5 @@
 
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
 import AdminPanel from "@/components/AdminPanel";
@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
-import { Users, AlertTriangle, RefreshCw, WifiOff } from "lucide-react";
+import { Users, AlertTriangle, RefreshCw, WifiOff, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -26,6 +26,21 @@ const Index = () => {
   const [isRetrying, setIsRetrying] = React.useState(false);
   
   useOAuthRedirect();
+
+  // Debug user profile
+  useEffect(() => {
+    if (user) {
+      console.log("Current user:", user);
+      console.log("User profile:", userProfile);
+      console.log("User role:", userProfile?.role);
+      
+      toast({
+        title: "User profile info",
+        description: `Role: ${userProfile?.role || 'Loading...'}`,
+        duration: 5000,
+      });
+    }
+  }, [user, userProfile, toast]);
 
   // Check if we're in offline/local development mode
   const isOfflineMode = window.location.hostname === 'localhost' || 
@@ -103,6 +118,17 @@ const Index = () => {
             style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
             className="h-full w-full"
           >
+            {/* User Role Debug Information */}
+            <Alert className="max-w-md mx-auto mt-4 mb-2">
+              <Info className="h-4 w-4" />
+              <AlertTitle>User Information</AlertTitle>
+              <AlertDescription>
+                <p><strong>Email:</strong> {userProfile?.email}</p>
+                <p><strong>Role:</strong> {userProfile?.role || 'No role assigned'}</p>
+                <p><strong>Should see admin panel:</strong> {isAdmin ? 'Yes' : 'No'}</p>
+              </AlertDescription>
+            </Alert>
+            
             {/* Connection status alert */}
             {connectionStatus === 'error' && (
               <Alert variant="destructive" className="max-w-md mx-auto mt-4">
