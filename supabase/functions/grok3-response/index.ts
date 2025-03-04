@@ -40,12 +40,27 @@ serve(async (req) => {
       );
     }
     
-    // Check for API key
+    // Verify API key is set
     if (!GROK3_API_KEY) {
       console.error('No Grok3 API key provided in environment');
       return new Response(
         JSON.stringify({ 
           error: 'API key not configured on server',
+          status: 'unavailable' 
+        }),
+        { 
+          status: 400, 
+          headers: corsHeaders 
+        }
+      );
+    }
+    
+    // Validate API key format (basic check)
+    if (!GROK3_API_KEY.startsWith('gsk_') && !GROK3_API_KEY.startsWith('sk-')) {
+      console.error('Invalid Grok3 API key format');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid API key format. Grok3 API keys should start with "gsk_" or "sk-"',
           status: 'unavailable' 
         }),
         { 
@@ -95,6 +110,23 @@ serve(async (req) => {
         try {
           const errorData = await response.json();
           console.error('Grok3 API error:', JSON.stringify(errorData));
+          
+          // Check specifically for invalid API key errors
+          if (response.status === 401 || 
+              (errorData?.error?.message && errorData.error.message.includes("API key"))) {
+            return new Response(
+              JSON.stringify({ 
+                error: "Invalid API Key. Please check your Grok3 API key and update it in the settings.",
+                details: errorData,
+                status: 'unauthorized'
+              }),
+              { 
+                status: 401, 
+                headers: corsHeaders 
+              }
+            );
+          }
+          
           errorMessage = errorData.error?.message || `Grok3 API error: ${response.status} ${response.statusText}`;
           errorDetails = errorData;
         } catch (e) {

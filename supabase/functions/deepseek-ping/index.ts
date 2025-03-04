@@ -31,6 +31,18 @@ serve(async (req) => {
       );
     }
     
+    // Basic validation of the API key format
+    if (!key.startsWith('sk-')) {
+      console.error('Invalid DeepSeek API key format');
+      return new Response(
+        JSON.stringify({ 
+          status: 'unavailable', 
+          message: 'Invalid API key format. DeepSeek API keys should start with "sk-"' 
+        }),
+        { headers: corsHeaders }
+      );
+    }
+    
     try {
       // Simple request to DeepSeek API to check if the API key is valid
       const response = await fetch('https://api.deepseek.com/v1/models', {
@@ -45,6 +57,17 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text().catch(() => 'Failed to read error response');
         console.error(`DeepSeek API connection check failed: ${response.status} ${response.statusText}`, errorText);
+        
+        // Check specifically for invalid API key (usually 401 Unauthorized)
+        if (response.status === 401) {
+          return new Response(
+            JSON.stringify({ 
+              status: 'unavailable', 
+              message: 'Invalid API Key. Please check your DeepSeek API key and update it in the settings.' 
+            }),
+            { headers: corsHeaders }
+          );
+        }
         
         return new Response(
           JSON.stringify({ 
