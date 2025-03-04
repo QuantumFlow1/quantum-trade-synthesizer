@@ -119,6 +119,9 @@ const callGrokEdgeFunction = async (
     
     if (!data || !data.response) {
       console.error('Invalid response from Grok API:', data);
+      if (data?.error) {
+        throw new Error(data.error);
+      }
       throw new Error('Invalid response from Grok API');
     }
     

@@ -18,7 +18,11 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const requestData = await req.json().catch(() => ({}));
+    const requestData = await req.json().catch((e) => {
+      console.error('Error parsing request JSON:', e);
+      return {};
+    });
+    
     const { message, context = [], isAvailabilityCheck = false } = requestData;
     
     console.log(`Grok3 API request received${isAvailabilityCheck ? ' (availability check)' : ''}`);
@@ -68,7 +72,8 @@ serve(async (req) => {
     
     try {
       // Make request to Grok3 API
-      console.log('Calling Grok3 API with formatted messages');
+      console.log('Calling Grok3 API with formatted messages:', JSON.stringify(formattedMessages).substring(0, 200) + '...');
+      
       const response = await fetch('https://api.xai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -85,11 +90,21 @@ serve(async (req) => {
       
       // Enhanced error handling for response
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Grok3 API error (${response.status} ${response.statusText}):`, errorText);
+        let errorMessage, errorDetails;
+        
+        try {
+          const errorData = await response.json();
+          console.error('Grok3 API error:', JSON.stringify(errorData));
+          errorMessage = errorData.error?.message || `Grok3 API error: ${response.status} ${response.statusText}`;
+          errorDetails = errorData;
+        } catch (e) {
+          const errorText = await response.text().catch(() => 'Failed to read error response');
+          console.error(`Grok3 API error (${response.status} ${response.statusText}):`, errorText);
+          errorMessage = `Grok3 API error: ${response.status} ${response.statusText}`;
+          errorDetails = errorText;
+        }
         
         // Provide user-friendly error message based on status code
-        let errorMessage = `Grok3 API error: ${response.status} ${response.statusText}`;
         if (response.status === 401 || response.status === 403) {
           errorMessage = 'Authentication failed. Please check your API key.';
         } else if (response.status === 429) {
@@ -101,7 +116,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             error: errorMessage, 
-            details: errorText,
+            details: errorDetails,
             status: 'error'
           }),
           { 
@@ -112,7 +127,7 @@ serve(async (req) => {
       }
       
       const data = await response.json();
-      console.log('Grok3 API response received');
+      console.log('Grok3 API response received:', JSON.stringify(data).substring(0, 200) + '...');
       
       // Verify that the response contains the expected structure
       if (!data || !data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
