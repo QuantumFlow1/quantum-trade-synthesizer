@@ -26,7 +26,13 @@ export const fetchMarketData = async (): Promise<FetchMarketDataResult> => {
       throw new Error(`Failed to fetch market data: ${fetchError.message}`);
     }
     
-    if (fetchData && Array.isArray(fetchData) && fetchData.length > 0) {
+    // Validate the data structure and ensure it includes crypto markets
+    const isValidData = fetchData && 
+                       Array.isArray(fetchData) && 
+                       fetchData.length > 0 &&
+                       fetchData.some(item => item.market === 'Crypto' || item.market === 'crypto');
+    
+    if (isValidData) {
       console.log('Successfully fetched data from fetch-market-data:', fetchData.length, 'items');
       
       toast({
@@ -43,7 +49,7 @@ export const fetchMarketData = async (): Promise<FetchMarketDataResult> => {
     }
     
     // If that fails, try the market-data-collector as fallback
-    console.log('No data from fetch-market-data, trying market-data-collector...');
+    console.log('No valid data from fetch-market-data, trying market-data-collector...');
     const { data: collectorData, error: collectorError } = await supabase.functions.invoke('market-data-collector');
     
     if (collectorError) {
@@ -51,7 +57,13 @@ export const fetchMarketData = async (): Promise<FetchMarketDataResult> => {
       throw new Error(`Fallback data fetch failed: ${collectorError.message}`);
     }
     
-    if (collectorData && Array.isArray(collectorData?.data)) {
+    // Validate the collector data structure
+    const isValidCollectorData = collectorData && 
+                                Array.isArray(collectorData?.data) && 
+                                collectorData.data.length > 0 &&
+                                collectorData.data.some(item => item.symbol && item.price);
+    
+    if (isValidCollectorData) {
       console.log('Successfully fetched data from market-data-collector:', collectorData.data.length, 'items');
       
       toast({
@@ -88,6 +100,13 @@ export const fetchMarketData = async (): Promise<FetchMarketDataResult> => {
     
     // Generate emergency data for error case
     const emergencyData = generateEmergencyMarketData();
+    
+    toast({
+      title: 'Market data fallback',
+      description: 'Using locally generated market data due to connection issues',
+      variant: 'warning',
+      duration: 5000,
+    });
     
     return {
       data: emergencyData,

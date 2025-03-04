@@ -24,7 +24,7 @@ export const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }
     }));
   };
 
-  // Format and prepare data
+  // Format and prepare data with proper fallbacks
   const priceChange24h = marketData.change24h || 0;
   // These properties might not exist in MarketData, so provide fallbacks
   const priceChange7d = marketData.priceChange7d || 0;
@@ -32,7 +32,7 @@ export const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }
   const allTimeHigh = marketData.ath || 0;
   const allTimeLow = marketData.atl || 0;
 
-  // Calculate ATH and ATL percentages
+  // Calculate ATH and ATL percentages with error prevention
   const athChangePercent = allTimeHigh > 0 
     ? ((marketData.price - allTimeHigh) / allTimeHigh) * 100 
     : 0;
@@ -134,7 +134,7 @@ export const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }
           <div className="mt-2 space-y-1">
             <StatItem 
               label="Market Cap" 
-              value={`$${formatLargeNumber(marketData.marketCap)}`} 
+              value={`$${formatLargeNumber(marketData.marketCap || 0)}`} 
             />
             <StatItem 
               label="24h Trading Volume" 
