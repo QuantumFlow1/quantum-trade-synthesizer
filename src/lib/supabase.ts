@@ -64,6 +64,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// Helper function to implement timeout for promises
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> => {
+  let timeoutId: NodeJS.Timeout;
+  
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+  
+  return Promise.race([
+    promise.then((result) => {
+      clearTimeout(timeoutId);
+      return result;
+    }),
+    timeoutPromise
+  ]);
+};
+
 // Enhanced connection check function with improved error handling and debugging
 export const checkSupabaseConnection = async () => {
   console.log('Starting Supabase connection check...');
@@ -84,11 +103,16 @@ export const checkSupabaseConnection = async () => {
     // Test database connection first as it's the most critical
     console.log('Testing database connection...');
     try {
-      const { data: dbData, error: dbError } = await supabase
+      const dbPromise = supabase
         .from('agent_collected_data')
         .select('count')
-        .limit(1)
-        .timeout(5000);
+        .limit(1);
+      
+      const { data: dbData, error: dbError } = await withTimeout(
+        dbPromise,
+        5000,
+        'Database connection timed out after 5 seconds'
+      );
       
       if (dbError) {
         console.error('Database connection error:', dbError);
@@ -105,9 +129,13 @@ export const checkSupabaseConnection = async () => {
       // Test edge function connection
       console.log('Testing market-data-collector function...');
       try {
-        const { data: marketData, error: marketError } = await supabase.functions
-          .invoke('market-data-collector')
-          .timeout(5000);
+        const marketDataPromise = supabase.functions.invoke('market-data-collector');
+        
+        const { data: marketData, error: marketError } = await withTimeout(
+          marketDataPromise,
+          5000,
+          'Market data collector function timed out after 5 seconds'
+        );
         
         if (marketError) {
           console.error('Market data collector error:', marketError);
@@ -131,9 +159,13 @@ export const checkSupabaseConnection = async () => {
         
         console.log('Grok3 API test parameters:', JSON.stringify(grokTestParams));
         
-        const { data: grokData, error: grokError } = await supabase.functions
-          .invoke('grok3-ping', grokTestParams)
-          .timeout(5000);
+        const grokApiPromise = supabase.functions.invoke('grok3-ping', grokTestParams);
+        
+        const { data: grokData, error: grokError } = await withTimeout(
+          grokApiPromise,
+          5000,
+          'Grok3 API connection timed out after 5 seconds'
+        );
         
         if (grokError) {
           console.error('Grok3 API connection error details:', grokError);
@@ -162,15 +194,19 @@ export const checkGrok3APIConfig = async () => {
   try {
     console.log('Checking Grok3 API configuration...');
     
-    const { data, error } = await supabase.functions
-      .invoke('grok3-ping', {
-        body: { 
-          isAvailabilityCheck: true,
-          timestamp: new Date().toISOString(), // Add timestamp to prevent caching
-          retryAttempt: Math.floor(Math.random() * 1000) // Add random value to prevent caching
-        }
-      })
-      .timeout(5000);
+    const grokApiPromise = supabase.functions.invoke('grok3-ping', {
+      body: { 
+        isAvailabilityCheck: true,
+        timestamp: new Date().toISOString(), // Add timestamp to prevent caching
+        retryAttempt: Math.floor(Math.random() * 1000) // Add random value to prevent caching
+      }
+    });
+    
+    const { data, error } = await withTimeout(
+      grokApiPromise,
+      5000,
+      'Grok3 API configuration check timed out after 5 seconds'
+    );
     
     if (error) {
       console.error('Grok3 API configuration error:', error);
