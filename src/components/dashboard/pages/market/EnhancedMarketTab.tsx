@@ -1,5 +1,5 @@
+
 import React, { useState } from 'react';
-import { EnhancedMarketPage } from '../EnhancedMarketPage';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PositionsList from '@/components/trading/PositionsList';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import TransactionList from '@/components/TransactionList';
 import { TransactionFilters } from '@/components/wallet/transactions/TransactionFilters';
 import { TransactionPagination } from '@/components/wallet/transactions/TransactionPagination';
+import { EnhancedMarketPage } from '@/components/dashboard/pages/market/EnhancedMarketPage';
 
 export const EnhancedMarketTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState('market');
