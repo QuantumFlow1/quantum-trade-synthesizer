@@ -33,7 +33,10 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
     setIsLoading(true)
     try {
       console.log('Attempting to register with email:', email)
-      console.log('Selected role:', selectedRole)
+      
+      // Special case for arturgabrielian4@gmail.com - set as super_admin
+      const finalRole = email === 'arturgabrielian4@gmail.com' ? 'super_admin' : selectedRole
+      console.log('Selected role:', finalRole)
       
       // First create the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -49,7 +52,7 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
         const { error: profileError } = await supabase
           .from('profiles')
           .update({ 
-            role: selectedRole,
+            role: finalRole,
             status: 'active'
           })
           .eq('id', authData.user.id)
@@ -59,7 +62,7 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
           throw profileError
         }
         
-        console.log('User role added to profile:', selectedRole)
+        console.log('User role added to profile:', finalRole)
       }
       
       toast({
@@ -85,6 +88,17 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
     setEmail(`admin${Math.floor(Math.random() * 10000)}@example.com`)
     setPassword("admin123")
     setSelectedRole('admin')
+    
+    // Wait for state to update, then submit
+    setTimeout(() => {
+      document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
+    }, 100)
+  }
+  
+  // Super admin registration shortcut
+  const handleSuperAdminRegister = () => {
+    setEmail("arturgabrielian4@gmail.com")
+    setPassword("admin123")
     
     // Wait for state to update, then submit
     setTimeout(() => {
@@ -156,6 +170,16 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
           disabled={isLoading}
         >
           Quick Admin Register
+        </Button>
+        
+        <Button
+          type="button" 
+          variant="outline"
+          className="w-full bg-amber-100 hover:bg-amber-200" 
+          onClick={handleSuperAdminRegister}
+          disabled={isLoading}
+        >
+          Set arturgabrielian4@gmail.com as Super Admin
         </Button>
       </form>
 
