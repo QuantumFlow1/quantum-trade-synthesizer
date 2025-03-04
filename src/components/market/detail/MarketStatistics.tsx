@@ -1,148 +1,186 @@
 
-import React from 'react';
-import { Info } from 'lucide-react';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { MarketData } from '../types';
-import { formatCurrency, formatDate, formatLargeNumber, formatPercentage } from '../utils/formatters';
+import { formatCurrency, formatLargeNumber, formatPercentage } from '../utils/formatters';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MarketStatisticsProps {
   marketData: MarketData;
 }
 
 export const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }) => {
+  const isMobile = useIsMobile();
+  const [expandedSections, setExpandedSections] = useState({
+    priceStats: true,
+    marketStats: !isMobile,
+    supplyStats: !isMobile
+  });
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  // Format and prepare data
+  const priceChange24h = marketData.change24h || 0;
+  const priceChange7d = marketData.change7d || 0;
+  const priceChange30d = marketData.change30d || 0;
+  const allTimeHigh = marketData.ath || 0;
+  const allTimeLow = marketData.atl || 0;
+
+  // Calculate ATH and ATL percentages
+  const athChangePercent = allTimeHigh > 0 
+    ? ((marketData.price - allTimeHigh) / allTimeHigh) * 100 
+    : 0;
+  
+  const atlChangePercent = allTimeLow > 0 
+    ? ((marketData.price - allTimeLow) / allTimeLow) * 100 
+    : 0;
+
+  // Helper function for stat item rendering
+  const StatItem = ({ label, value, additionalValue = null, isPositive = null, className = '' }) => (
+    <div className={`flex justify-between py-2 border-b border-secondary/20 ${className}`}>
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <div className="text-right">
+        <span className="font-medium">{value}</span>
+        {additionalValue && (
+          <span className={`ml-2 text-sm ${
+            isPositive === true 
+              ? 'text-green-500' 
+              : isPositive === false 
+                ? 'text-red-500' 
+                : 'text-muted-foreground'
+          }`}>
+            {additionalValue}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+
+  const SectionHeader = ({ title, isExpanded, onToggle }) => (
+    <div 
+      className="flex justify-between items-center py-3 cursor-pointer hover:bg-secondary/10 rounded-md px-2" 
+      onClick={onToggle}
+    >
+      <h3 className="font-semibold">{title}</h3>
+      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+    </div>
+  );
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Price Statistics</h3>
+    <div className="space-y-6">
+      {/* Price Statistics Section */}
+      <div className="bg-card/30 p-4 rounded-lg">
+        <SectionHeader 
+          title="Price Statistics" 
+          isExpanded={expandedSections.priceStats}
+          onToggle={() => toggleSection('priceStats')}
+        />
         
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <div className="flex items-center">
-              <span className="text-gray-600">Price</span>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3.5 w-3.5 ml-1 text-gray-400" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="text-xs">Current price in USD</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-            <span className="font-medium">{formatCurrency(marketData.price)}</span>
+        {expandedSections.priceStats && (
+          <div className="mt-2 space-y-1">
+            <StatItem 
+              label="Current Price" 
+              value={formatCurrency(marketData.price)} 
+            />
+            <StatItem 
+              label="24h Change" 
+              value={formatCurrency(marketData.price * (1 + priceChange24h / 100) - marketData.price)}
+              additionalValue={formatPercentage(priceChange24h)}
+              isPositive={priceChange24h > 0}
+            />
+            <StatItem 
+              label="7d Change" 
+              value={formatCurrency(marketData.price * (1 + priceChange7d / 100) - marketData.price)}
+              additionalValue={formatPercentage(priceChange7d)}
+              isPositive={priceChange7d > 0}
+            />
+            <StatItem 
+              label="30d Change" 
+              value={formatCurrency(marketData.price * (1 + priceChange30d / 100) - marketData.price)}
+              additionalValue={formatPercentage(priceChange30d)}
+              isPositive={priceChange30d > 0}
+            />
+            <StatItem 
+              label="All-Time High" 
+              value={formatCurrency(allTimeHigh)}
+              additionalValue={formatPercentage(athChangePercent)}
+              isPositive={athChangePercent > 0}
+            />
+            <StatItem 
+              label="All-Time Low" 
+              value={formatCurrency(allTimeLow)}
+              additionalValue={formatPercentage(atlChangePercent)}
+              isPositive={atlChangePercent > 0}
+            />
           </div>
-          
-          <div className="flex justify-between">
-            <div className="flex items-center">
-              <span className="text-gray-600">24h Low / High</span>
-            </div>
-            <span className="font-medium">
-              {formatCurrency(marketData.low24h)} / {formatCurrency(marketData.high24h)}
-            </span>
-          </div>
-          
-          <div className="flex justify-between">
-            <div className="flex items-center">
-              <span className="text-gray-600">All-Time High</span>
-            </div>
-            <div className="text-right">
-              <div className="font-medium">{formatCurrency(marketData.ath)}</div>
-              <div className="text-xs text-gray-500">{formatDate(marketData.athDate)}</div>
-            </div>
-          </div>
-          
-          <div className="flex justify-between">
-            <div className="flex items-center">
-              <span className="text-gray-600">All-Time Low</span>
-            </div>
-            <div className="text-right">
-              <div className="font-medium">{formatCurrency(marketData.atl)}</div>
-              <div className="text-xs text-gray-500">{formatDate(marketData.atlDate)}</div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
-      
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Market Stats</h3>
+
+      {/* Market Statistics Section */}
+      <div className="bg-card/30 p-4 rounded-lg">
+        <SectionHeader 
+          title="Market Statistics" 
+          isExpanded={expandedSections.marketStats}
+          onToggle={() => toggleSection('marketStats')}
+        />
         
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Market Cap</span>
-            <span className="font-medium">${formatLargeNumber(marketData.marketCap)}</span>
+        {expandedSections.marketStats && (
+          <div className="mt-2 space-y-1">
+            <StatItem 
+              label="Market Cap" 
+              value={`$${formatLargeNumber(marketData.marketCap)}`} 
+            />
+            <StatItem 
+              label="24h Trading Volume" 
+              value={`$${formatLargeNumber(marketData.volume || 0)}`}
+            />
+            <StatItem 
+              label="Market Cap Rank" 
+              value={`#${marketData.rank || '-'}`}
+            />
+            <StatItem 
+              label="Market Dominance" 
+              value={`${((marketData.marketCap / 1000000000000) * 100).toFixed(2)}%`}
+            />
           </div>
-          
-          <div className="flex justify-between">
-            <span className="text-gray-600">Volume (24h)</span>
-            <span className="font-medium">${formatLargeNumber(marketData.totalVolume24h)}</span>
-          </div>
-          
-          <div className="flex justify-between">
-            <div className="flex items-center">
-              <span className="text-gray-600">Volume / Market Cap</span>
-            </div>
-            <span className="font-medium">
-              {marketData.totalVolume24h && marketData.marketCap ? 
-                (marketData.totalVolume24h / marketData.marketCap).toFixed(4) : 'N/A'}
-            </span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-gray-600">Circulating Supply</span>
-            <span className="font-medium">{formatLargeNumber(marketData.circulatingSupply)}</span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-gray-600">Total Supply</span>
-            <span className="font-medium">{formatLargeNumber(marketData.totalSupply)}</span>
-          </div>
-        </div>
+        )}
       </div>
-      
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Performance</h3>
+
+      {/* Supply Statistics Section */}
+      <div className="bg-card/30 p-4 rounded-lg">
+        <SectionHeader 
+          title="Supply Information" 
+          isExpanded={expandedSections.supplyStats}
+          onToggle={() => toggleSection('supplyStats')}
+        />
         
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-600">24h</span>
-            <span className={`font-medium ${
-              (marketData.change24h || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-            }`}>
-              {formatPercentage(marketData.change24h)}
-            </span>
+        {expandedSections.supplyStats && (
+          <div className="mt-2 space-y-1">
+            <StatItem 
+              label="Circulating Supply" 
+              value={formatLargeNumber(marketData.circulatingSupply || 0)} 
+            />
+            <StatItem 
+              label="Total Supply" 
+              value={formatLargeNumber(marketData.totalSupply || 0)}
+            />
+            <StatItem 
+              label="Max Supply" 
+              value={formatLargeNumber(marketData.maxSupply || 0)}
+            />
+            <StatItem 
+              label="Supply Ratio" 
+              value={`${marketData.totalSupply && marketData.maxSupply ? 
+                ((Number(marketData.totalSupply) / Number(marketData.maxSupply)) * 100).toFixed(2) : 
+                '0'}%`}
+            />
           </div>
-          
-          <div className="flex justify-between">
-            <span className="text-gray-600">7d</span>
-            <span className={`font-medium ${
-              (marketData.priceChange7d || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-            }`}>
-              {formatPercentage(marketData.priceChange7d)}
-            </span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-gray-600">30d</span>
-            <span className={`font-medium ${
-              (marketData.priceChange30d || 0) >= 0 ? 'text-green-500' : 'text-red-500'
-            }`}>
-              {formatPercentage(marketData.priceChange30d)}
-            </span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-gray-600">Last Updated</span>
-            <span className="font-medium">
-              {marketData.lastUpdated ? formatDate(marketData.lastUpdated) : 'N/A'}
-            </span>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
