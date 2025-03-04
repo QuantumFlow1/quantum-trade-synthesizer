@@ -4,6 +4,8 @@ import { MarketData } from "@/components/market/types";
 export const generateEmergencyMarketData = (): MarketData[] => {
   console.log("Generating emergency market data as fallback");
   
+  const now = Date.now();
+  
   // Ensure we include Crypto market data in the emergency fallback
   const emergencyData: MarketData[] = [
     // Crypto markets
@@ -24,7 +26,14 @@ export const generateEmergencyMarketData = (): MarketData[] => {
       atl: 3000,
       athDate: "2021-11-10T00:00:00Z",
       atlDate: "2019-01-01T00:00:00Z",
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      // Add required fields
+      timestamp: now,
+      high: 47000,
+      low: 43000,
+      // Add 24h high and low for completeness
+      high24h: 47000,
+      low24h: 43000
     },
     {
       market: "Crypto",
@@ -43,7 +52,14 @@ export const generateEmergencyMarketData = (): MarketData[] => {
       atl: 80,
       athDate: "2021-11-08T00:00:00Z",
       atlDate: "2018-12-18T00:00:00Z",
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      // Add required fields
+      timestamp: now,
+      high: 2800,
+      low: 2400,
+      // Add 24h high and low for completeness
+      high24h: 2800,
+      low24h: 2400
     },
     {
       market: "Crypto",
@@ -62,7 +78,14 @@ export const generateEmergencyMarketData = (): MarketData[] => {
       atl: 0.5,
       athDate: "2021-11-06T00:00:00Z",
       atlDate: "2020-03-18T00:00:00Z",
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      // Add required fields
+      timestamp: now,
+      high: 140,
+      low: 100,
+      // Add 24h high and low for completeness
+      high24h: 140,
+      low24h: 100
     },
     
     // Stock markets
@@ -79,7 +102,14 @@ export const generateEmergencyMarketData = (): MarketData[] => {
       totalSupply: 16000000000,
       priceChange7d: 1.2 + (Math.random() * 2),
       priceChange30d: 3.5 + (Math.random() * 3),
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      // Add required fields
+      timestamp: now,
+      high: 190,
+      low: 175,
+      // Add 24h high and low for completeness
+      high24h: 190,
+      low24h: 175
     },
     {
       market: "NASDAQ",
@@ -94,7 +124,14 @@ export const generateEmergencyMarketData = (): MarketData[] => {
       totalSupply: 7400000000,
       priceChange7d: 0.8 + (Math.random() * 2),
       priceChange30d: 2.1 + (Math.random() * 3),
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      // Add required fields
+      timestamp: now,
+      high: 390,
+      low: 360,
+      // Add 24h high and low for completeness
+      high24h: 390,
+      low24h: 360
     }
   ];
   
