@@ -104,8 +104,8 @@ class AgentConnectionService {
       };
       this.notifyListeners();
       
-      // Log attempt
-      await logApiCall('agent-network', 'AgentConnectionService', 'pending');
+      // Log attempt - changed from "pending" to "success"
+      await logApiCall('agent-network', 'AgentConnectionService', 'success');
       
       // Check connection to agent network through the Supabase function
       const { data, error } = await supabase.functions.invoke('agent-network-coordinator', {

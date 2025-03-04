@@ -1,196 +1,215 @@
 
 import React from 'react';
-import { Badge } from "@/components/ui/badge";
+import { ArrowUp, ArrowDown, Zap, AlertTriangle, ShieldCheck, LineChart } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { PortfolioDecision as PortfolioDecisionType } from "@/types/agent";
+import { Separator } from "@/components/ui/separator";
 import { 
-  CircleDollarSign, 
-  BarChart2, 
-  ShieldAlert, 
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  Activity
-} from "lucide-react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { RiskMetric } from "@/types/risk";
+import { PortfolioDecision as PortfolioDecisionType } from '@/types/agent';
 
 interface PortfolioDecisionProps {
   decision: PortfolioDecisionType;
-  isSimulationMode: boolean;
+  isSimulationMode?: boolean;
   onExecuteDecision: () => void;
 }
 
 export const PortfolioDecision: React.FC<PortfolioDecisionProps> = ({ 
   decision, 
-  isSimulationMode,
+  isSimulationMode = false,
   onExecuteDecision
 }) => {
-  // Risk level calculations
-  const getRiskLevelColor = (score: number) => {
-    if (score < 30) return "bg-green-500";
-    if (score < 60) return "bg-yellow-500";
-    return "bg-red-500";
+  // Calculate risk level from the risk score
+  const getRiskLevel = (score: number) => {
+    if (score < 30) return { level: 'Low Risk', color: 'bg-green-500', textColor: 'text-green-500' };
+    if (score < 70) return { level: 'Medium Risk', color: 'bg-yellow-500', textColor: 'text-yellow-500' };
+    return { level: 'High Risk', color: 'bg-red-500', textColor: 'text-red-500' };
   };
   
-  const getRiskLevelText = (score: number) => {
-    if (score < 30) return "Low Risk";
-    if (score < 60) return "Medium Risk";
-    return "High Risk";
-  };
-
-  // Risk metrics
-  const riskMetrics = [
+  // Get risk level visualization info
+  const riskScore = decision.riskScore || 35; // Default to 35 if not provided
+  const { level, color, textColor } = getRiskLevel(riskScore);
+  
+  // Generate risk metrics for visualization
+  const riskMetrics: RiskMetric[] = [
     {
-      name: "Market Volatility",
-      value: decision.riskScore > 50 ? 75 : 40,
-      icon: <Activity className="h-3 w-3 mr-1" />
+      name: 'Market Volatility',
+      value: Math.min(riskScore * 0.8, 100),
+      maxValue: 100,
+      status: riskScore < 30 ? 'low' : riskScore < 70 ? 'medium' : 'high'
     },
     {
-      name: "Position Size",
-      value: decision.amount > 0.03 ? 65 : 30, 
-      icon: <CircleDollarSign className="h-3 w-3 mr-1" />
+      name: 'Position Size',
+      value: Math.min(decision.amount * 20, 100),
+      maxValue: 100,
+      status: decision.amount < 0.1 ? 'low' : decision.amount < 0.5 ? 'medium' : 'high'
     },
     {
-      name: "Downside Risk",
-      value: Math.min(Math.round(decision.riskScore * 1.2), 100),
-      icon: <TrendingDown className="h-3 w-3 mr-1" />
+      name: 'Downside Risk',
+      value: Math.min((decision.price - (decision.stopLoss || 0)) / decision.price * 200, 100),
+      maxValue: 100,
+      status: decision.stopLoss ? 'medium' : 'high'
     }
   ];
-
+  
+  // Action icon based on decision type
+  const ActionIcon = decision.action === 'BUY' ? ArrowUp : ArrowDown;
+  const actionColor = decision.action === 'BUY' ? 'text-green-500' : 'text-red-500';
+  
   return (
-    <div className="p-3 border border-white/20 rounded-md bg-primary/5">
-      <div className="flex justify-between items-start mb-2">
-        <div className="flex items-center gap-2">
-          <Badge 
-            className={`${decision.action === "BUY" || decision.action === "COVER" ? "bg-green-500/80" : 
-                        decision.action === "SELL" || decision.action === "SHORT" ? "bg-red-500/80" : 
-                        "bg-blue-500/80"}`}
-          >
+    <div className="rounded-md border border-border p-4">
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <Badge variant="outline" className={`${actionColor} font-semibold`}>
+            <ActionIcon className="h-3 w-3 mr-1" />
             {decision.action} {decision.ticker}
           </Badge>
+          
+          <div className="mt-1 text-xs text-muted-foreground">
+            {new Date(decision.timestamp).toLocaleString()}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Badge variant="outline" className="text-xs">
-            <CircleDollarSign className="h-3 w-3 mr-1" />
-            ${decision.price}
-          </Badge>
-          <Badge variant="outline" className="text-xs">
-            <BarChart2 className="h-3 w-3 mr-1" />
-            {decision.confidence}% confidence
-          </Badge>
+        
+        <div className="text-right">
+          <div className="text-sm font-medium">${decision.price}</div>
+          <div className="flex items-center mt-1">
+            <Zap className="h-3 w-3 text-yellow-500 mr-1" />
+            <span className="text-xs">{decision.confidence}% confidence</span>
+          </div>
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="text-xs">
-          <span className="text-muted-foreground">Amount:</span>{' '}
-          <span className="font-medium">{decision.amount} {decision.ticker}</span>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="flex flex-col p-2 rounded bg-secondary/20">
+          <span className="text-xs text-muted-foreground">Amount</span>
+          <span className="text-sm font-medium">{decision.amount} {decision.ticker}</span>
         </div>
-        
-        <div className="text-xs">
-          <span className="text-muted-foreground">Risk Score:</span>{' '}
-          <span className="font-medium">{decision.riskScore}/100</span>
+        <div className="flex flex-col p-2 rounded bg-secondary/20">
+          <span className="text-xs text-muted-foreground">Risk Score</span>
+          <span className="text-sm font-medium">{riskScore}/100</span>
         </div>
-        
-        {decision.stopLoss && (
-          <div className="text-xs">
-            <span className="text-muted-foreground">Stop Loss:</span>{' '}
-            <span className="font-medium">${decision.stopLoss}</span>
-          </div>
-        )}
-        
-        {decision.takeProfit && (
-          <div className="text-xs">
-            <span className="text-muted-foreground">Take Profit:</span>{' '}
-            <span className="font-medium">${decision.takeProfit}</span>
-          </div>
-        )}
+        <div className="flex flex-col p-2 rounded bg-secondary/20">
+          <span className="text-xs text-muted-foreground">Stop Loss</span>
+          <span className="text-sm font-medium">${decision.stopLoss}</span>
+        </div>
+        <div className="flex flex-col p-2 rounded bg-secondary/20">
+          <span className="text-xs text-muted-foreground">Take Profit</span>
+          <span className="text-sm font-medium">${decision.takeProfit}</span>
+        </div>
       </div>
       
-      {/* Risk Analysis Visualization */}
-      <div className="mb-3 p-2 border border-white/10 rounded bg-black/20">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-1 text-xs">
-            <ShieldAlert className="h-3 w-3" />
-            <span>Risk Analysis</span>
-          </div>
-          <Badge 
-            className={`text-[10px] ${getRiskLevelColor(decision.riskScore)}`}
-          >
-            {getRiskLevelText(decision.riskScore)}
+      <Separator className="my-3" />
+      
+      <div className="mb-3">
+        <div className="flex justify-between items-center mb-2">
+          <h4 className="text-xs font-medium">Risk Analysis</h4>
+          <Badge variant={riskScore > 60 ? "destructive" : "outline"} className="text-xs px-1.5 py-0">
+            {riskScore > 60 ? <AlertTriangle className="h-3 w-3 mr-1" /> : <ShieldCheck className="h-3 w-3 mr-1" />}
+            {level}
           </Badge>
         </div>
         
         <div className="space-y-2">
-          {/* Overall Risk Meter */}
-          <div>
-            <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-1">
-              <span>Overall Risk</span>
-              <span>{decision.riskScore}%</span>
-            </div>
-            <Progress 
-              value={decision.riskScore} 
-              className="h-1.5" 
-              indicatorClassName={getRiskLevelColor(decision.riskScore)}
-            />
-          </div>
-          
-          {/* Risk Metrics */}
           {riskMetrics.map((metric, index) => (
-            <div key={index}>
-              <div className="flex justify-between items-center text-[10px] text-muted-foreground mb-1">
-                <span className="flex items-center">{metric.icon} {metric.name}</span>
-                <span>{metric.value}%</span>
+            <div key={index} className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span>{metric.name}</span>
+                <span>{Math.round(metric.value)}%</span>
               </div>
-              <Progress 
-                value={metric.value} 
-                className="h-1.5" 
-                indicatorClassName={getRiskLevelColor(metric.value)}
-              />
+              <Progress value={metric.value} max={metric.maxValue} className={
+                metric.status === 'low' ? "h-1.5 bg-secondary" : 
+                metric.status === 'medium' ? "h-1.5 bg-secondary" : 
+                "h-1.5 bg-secondary"
+              } indicatorClassName={
+                metric.status === 'low' ? "bg-green-500" : 
+                metric.status === 'medium' ? "bg-yellow-500" : 
+                "bg-red-500"
+              } />
             </div>
           ))}
         </div>
-        
-        {/* Risk/Reward Visualization */}
-        {decision.takeProfit && decision.stopLoss && (
-          <div className="mt-2 pt-2 border-t border-white/10">
-            <div className="text-[10px] text-muted-foreground mb-1">Risk/Reward Ratio</div>
-            <div className="relative h-4 bg-black/20 rounded overflow-hidden">
-              <div 
-                className="absolute top-0 h-full bg-red-500/30" 
-                style={{ 
-                  width: `${Math.abs((decision.price - decision.stopLoss) / (decision.price)) * 100}%`,
-                  left: 0
-                }}
-              ></div>
-              <div 
-                className="absolute top-0 h-full bg-green-500/30" 
-                style={{ 
-                  width: `${Math.abs((decision.takeProfit - decision.price) / (decision.price)) * 100}%`,
-                  right: 0
-                }}
-              ></div>
-              <div className="absolute top-0 left-1/2 transform -translate-x-0.5 h-full w-1 bg-white/30"></div>
+      </div>
+      
+      <div className="space-y-1 mb-3">
+        <h4 className="text-xs font-medium">Risk/Reward Ratio</h4>
+        <div className="flex h-1.5 rounded-full overflow-hidden">
+          <div className="bg-red-500" style={{ width: `${30}%` }}></div>
+          <div className="bg-green-500" style={{ width: `${70}%` }}></div>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span>Risk: ${decision.price - (decision.stopLoss || decision.price * 0.95)}</span>
+          <span>Reward: ${(decision.takeProfit || decision.price * 1.1) - decision.price}</span>
+        </div>
+      </div>
+      
+      <div className="text-xs text-muted-foreground mb-4 mt-3">
+        <LineChart className="h-3 w-3 inline-block mr-1" />
+        <span>{decision.reasoning}</span>
+      </div>
+      
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button className="w-full" size="sm">
+            {isSimulationMode ? `Simulate ${decision.action} Order` : `Execute ${decision.action} Order`}
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm {decision.action} Order</DialogTitle>
+            <DialogDescription>
+              You are about to {decision.action.toLowerCase()} {decision.amount} {decision.ticker} at ${decision.price}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Amount:</span>
+              <span className="font-medium">{decision.amount} {decision.ticker}</span>
             </div>
-            <div className="flex justify-between text-[10px] mt-0.5">
-              <span className="text-red-400">Risk: ${Math.abs(decision.price - decision.stopLoss).toFixed(2)}</span>
-              <span className="text-green-400">Reward: ${Math.abs(decision.takeProfit - decision.price).toFixed(2)}</span>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Price:</span>
+              <span className="font-medium">${decision.price}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Total:</span>
+              <span className="font-medium">${(decision.amount * decision.price).toFixed(2)}</span>
+            </div>
+            {decision.stopLoss && (
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Stop Loss:</span>
+                <span className="font-medium">${decision.stopLoss}</span>
+              </div>
+            )}
+            {decision.takeProfit && (
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Take Profit:</span>
+                <span className="font-medium">${decision.takeProfit}</span>
+              </div>
+            )}
+            <div className="flex justify-between py-2">
+              <span className="text-muted-foreground">Mode:</span>
+              <Badge variant={isSimulationMode ? "outline" : "default"}>
+                {isSimulationMode ? "Simulation" : "Live Trading"}
+              </Badge>
             </div>
           </div>
-        )}
-      </div>
-      
-      <div className="text-xs text-muted-foreground mb-3">
-        <p>{decision.reasoning}</p>
-      </div>
-      
-      <Button 
-        className="w-full" 
-        variant="default" 
-        onClick={onExecuteDecision}
-      >
-        {isSimulationMode ? "Simulate" : "Execute"} {decision.action} Order
-      </Button>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={onExecuteDecision}>
+              {isSimulationMode ? "Simulate Order" : "Execute Order"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

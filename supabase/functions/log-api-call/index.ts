@@ -28,6 +28,11 @@ serve(async (req) => {
       timestamp
     } = await req.json();
 
+    // Validate the status type
+    if (!['success', 'error', 'pending'].includes(status)) {
+      throw new Error(`Invalid status: ${status}. Must be 'success', 'error', or 'pending'`);
+    }
+
     console.log("Logging API call:", {
       endpoint, 
       source, 

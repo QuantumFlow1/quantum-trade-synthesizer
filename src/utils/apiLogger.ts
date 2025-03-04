@@ -1,63 +1,47 @@
 
+/**
+ * Log API calls to Supabase
+ */
 import { supabase } from "@/lib/supabase";
 
+export type ApiCallStatus = 'success' | 'error' | 'pending';
+
 /**
- * Logs API calls to the api_logs table in Supabase and the console
+ * Log an API call to the server
  * 
  * @param endpoint The API endpoint or service name
- * @param source The source of the API call (component/function name)
- * @param status The status of the API call (success/error)
- * @param error_message Optional error message if the API call failed
+ * @param source The source of the API call (e.g., component name)
+ * @param status The status of the API call (success or error)
+ * @param error_message Optional error message
+ * @returns 
  */
 export const logApiCall = async (
-  endpoint: string,
-  source: string,
-  status: 'success' | 'error',
+  endpoint: string, 
+  source: string, 
+  status: ApiCallStatus, 
   error_message?: string
-) => {
-  const timestamp = new Date().toISOString();
-  
-  // First log to console for immediate feedback
-  console.log(`[API Call] ${endpoint} from ${source}: ${status}${error_message ? ' - ' + error_message : ''}`);
-  
+): Promise<boolean> => {
   try {
-    // Log to Supabase using the log-api-call edge function
-    await supabase.functions.invoke('log-api-call', {
+    // Try to use the log-api-call edge function
+    const { error } = await supabase.functions.invoke('log-api-call', {
       body: {
         endpoint,
         source,
         status,
         error_message,
-        timestamp
+        timestamp: new Date().toISOString()
       }
     });
-  } catch (error) {
-    // Don't let logging errors affect the application
-    console.error('Failed to log API call to Supabase:', error);
-  }
-};
-
-/**
- * Creates a wrapper function that automatically logs API calls
- * 
- * @param apiCall The API call function to wrap
- * @param endpoint The API endpoint or service name
- * @param source The source of the API call (component/function name)
- */
-export const withApiLogging = <T, Args extends any[]>(
-  apiCall: (...args: Args) => Promise<T>,
-  endpoint: string,
-  source: string
-) => {
-  return async (...args: Args): Promise<T> => {
-    try {
-      const result = await apiCall(...args);
-      await logApiCall(endpoint, source, 'success');
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await logApiCall(endpoint, source, 'error', errorMessage);
-      throw error;
+    
+    if (error) {
+      console.error('Error logging API call:', error.message);
+      return false;
     }
-  };
+    
+    return true;
+  } catch (e) {
+    // If the function fails, log to console
+    console.error('Failed to log API call:', e);
+    return false;
+  }
 };

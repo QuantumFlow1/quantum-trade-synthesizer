@@ -112,7 +112,7 @@ export const CollaborativeInsightsPanel = ({
         </div>
       </CardHeader>
       <CardContent>
-        {isSimulationMode && <SimulationAlert className="mb-4" />}
+        {isSimulationMode && <SimulationAlert />}
         
         <div className="mb-4 space-y-2">
           <div className="flex justify-between items-center">
@@ -137,7 +137,10 @@ export const CollaborativeInsightsPanel = ({
               <Skeleton className="h-16 w-full" />
             </div>
           ) : (
-            <EmptyAnalysisState />
+            <EmptyAnalysisState 
+              onRefreshAnalysis={handleRefreshAnalysis}
+              isDisabled={loadingDecision}
+            />
           )}
         </div>
         
@@ -149,9 +152,8 @@ export const CollaborativeInsightsPanel = ({
           ) : portfolioDecision ? (
             <PortfolioDecision 
               decision={portfolioDecision} 
-              riskScore={riskScore} 
-              onExecute={() => handleExecuteDecision(isSimulationMode)}
-              isSimulation={isSimulationMode}
+              onExecuteDecision={() => handleExecuteDecision(isSimulationMode)}
+              isSimulationMode={isSimulationMode}
             />
           ) : (
             <div className="text-center p-3 bg-secondary/20 rounded-md">
