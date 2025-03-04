@@ -11,11 +11,17 @@ import {
   createAgentTask,
   syncAgentMessages,
   getCollaborationSessions,
+  submitAgentRecommendation,
+  getAgentRecommendations,
+  getRecentAgentRecommendations,
+  createPortfolioDecision,
+  getPortfolioDecisions,
+  getRecentPortfolioDecisions,
   AgentMessage,
   AgentTask,
   CollaborationSession
 } from '@/services/agentNetwork';
-import { Agent } from '@/types/agent';
+import { Agent, AgentRecommendation, PortfolioDecision, TradeAction } from '@/types/agent';
 import { ModelId } from '@/components/chat/types/GrokSettings';
 
 export function useAgentNetwork() {
@@ -25,6 +31,8 @@ export function useAgentNetwork() {
   const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
   const [agentTasks, setAgentTasks] = useState<AgentTask[]>([]);
   const [collaborationSessions, setCollaborationSessions] = useState<CollaborationSession[]>([]);
+  const [recommendations, setRecommendations] = useState<AgentRecommendation[]>([]);
+  const [portfolioDecisions, setPortfolioDecisions] = useState<PortfolioDecision[]>([]);
   const [lastAnalysis, setLastAnalysis] = useState<string | null>(null);
   const [syncInterval, setSyncInterval] = useState<number | null>(null);
 
@@ -78,6 +86,8 @@ export function useAgentNetwork() {
     setActiveAgents(getActiveAgents());
     setAgentMessages(getAgentMessages());
     setAgentTasks(getAgentTasks());
+    setRecommendations(getAgentRecommendations());
+    setPortfolioDecisions(getPortfolioDecisions());
     
     // Sync with coordinator
     syncAgentState();
@@ -137,6 +147,61 @@ export function useAgentNetwork() {
     return success;
   }, [refreshAgentState]);
 
+  // Submit a recommendation from an agent
+  const submitRecommendation = useCallback(async (
+    agentId: string,
+    action: TradeAction,
+    confidence: number,
+    reasoning: string,
+    ticker?: string,
+    price?: number
+  ) => {
+    const recommendation = await submitAgentRecommendation(
+      agentId,
+      action,
+      confidence,
+      reasoning,
+      ticker,
+      price
+    );
+    
+    if (recommendation) {
+      refreshAgentState();
+      return recommendation;
+    }
+    return null;
+  }, [refreshAgentState]);
+
+  // Create a portfolio decision
+  const makePortfolioDecision = useCallback(async (
+    action: TradeAction,
+    ticker: string,
+    amount: number,
+    price: number,
+    options: {
+      stopLoss?: number;
+      takeProfit?: number;
+      confidence?: number;
+      riskScore?: number;
+      contributors?: string[];
+      reasoning?: string;
+    } = {}
+  ) => {
+    const decision = await createPortfolioDecision(
+      action,
+      ticker,
+      amount,
+      price,
+      options
+    );
+    
+    if (decision) {
+      refreshAgentState();
+      return decision;
+    }
+    return null;
+  }, [refreshAgentState]);
+
   return {
     isInitialized,
     isLoading,
@@ -144,12 +209,18 @@ export function useAgentNetwork() {
     agentMessages,
     agentTasks,
     collaborationSessions,
+    recommendations,
+    portfolioDecisions,
     lastAnalysis,
     generateAnalysis,
     sendMessage,
     createTask,
     toggleAgent,
     refreshAgentState,
-    syncAgentState
+    syncAgentState,
+    submitAgentRecommendation: submitRecommendation,
+    createPortfolioDecision: makePortfolioDecision,
+    getRecentAgentRecommendations,
+    getRecentPortfolioDecisions
   };
 }

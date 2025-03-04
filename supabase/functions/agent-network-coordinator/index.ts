@@ -20,9 +20,37 @@ interface AgentTask {
   result?: string;
 }
 
-// Store messages and tasks in memory (would use a database in production)
+interface AgentRecommendation {
+  id: string;
+  agentId: string;
+  action: "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
+  confidence: number;
+  reasoning: string;
+  ticker?: string;
+  price?: number;
+  timestamp: string;
+}
+
+interface PortfolioDecision {
+  id: string;
+  action: "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
+  ticker: string;
+  amount: number;
+  price: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  confidence: number;
+  riskScore: number;
+  contributors: string[];
+  reasoning: string;
+  timestamp: string;
+}
+
+// Store messages, tasks, recommendations and decisions in memory (would use a database in production)
 let messages: AgentMessage[] = [];
 let tasks: AgentTask[] = [];
+let recommendations: AgentRecommendation[] = [];
+let portfolioDecisions: PortfolioDecision[] = [];
 
 // Store active collaboration sessions
 let collaborationSessions: Record<string, {
@@ -50,9 +78,11 @@ serve(async (req) => {
           JSON.stringify({ 
             status: "active", 
             message: "Agent network coordinator is operational",
-            agentCount: 6,
+            agentCount: 10,
             messageCount: messages.length,
             taskCount: tasks.length,
+            recommendationCount: recommendations.length,
+            decisionCount: portfolioDecisions.length,
             sessionCount: Object.keys(collaborationSessions).length
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -130,6 +160,118 @@ serve(async (req) => {
           JSON.stringify({ 
             status: "success", 
             message: "Task updated successfully"
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      
+      case "submit_recommendation":
+        if (!data.agentId || !data.action || data.confidence === undefined || !data.reasoning) {
+          throw new Error("Missing required recommendation fields");
+        }
+        
+        const newRecommendation: AgentRecommendation = {
+          id: crypto.randomUUID(),
+          agentId: data.agentId,
+          action: data.action,
+          confidence: data.confidence,
+          reasoning: data.reasoning,
+          ticker: data.ticker,
+          price: data.price,
+          timestamp: new Date().toISOString()
+        };
+        
+        recommendations.push(newRecommendation);
+        
+        // Create a message from this agent to the portfolio manager
+        const recommendationMessage: AgentMessage = {
+          id: crypto.randomUUID(),
+          sender: data.agentId,
+          receiver: "portfolio-manager",
+          content: `New ${data.action} recommendation for ${data.ticker || 'the market'} with ${data.confidence}% confidence: ${data.reasoning}`,
+          timestamp: new Date().toISOString()
+        };
+        
+        messages.push(recommendationMessage);
+        
+        return new Response(
+          JSON.stringify({ 
+            status: "success", 
+            message: "Recommendation submitted successfully",
+            recommendationId: newRecommendation.id
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      
+      case "create_portfolio_decision":
+        if (!data.action || !data.ticker || data.amount === undefined || data.price === undefined) {
+          throw new Error("Missing required portfolio decision fields");
+        }
+        
+        const newDecision: PortfolioDecision = {
+          id: crypto.randomUUID(),
+          action: data.action,
+          ticker: data.ticker,
+          amount: data.amount,
+          price: data.price,
+          stopLoss: data.stopLoss,
+          takeProfit: data.takeProfit,
+          confidence: data.confidence || 75,
+          riskScore: data.riskScore || 5,
+          contributors: data.contributors || ["portfolio-manager"],
+          reasoning: data.reasoning || `Portfolio decision to ${data.action} ${data.ticker}`,
+          timestamp: new Date().toISOString()
+        };
+        
+        portfolioDecisions.push(newDecision);
+        
+        // Create a message from portfolio manager to trading executor
+        const decisionMessage: AgentMessage = {
+          id: crypto.randomUUID(),
+          sender: "portfolio-manager",
+          receiver: "trading-executor",
+          content: `Execute ${data.action} for ${data.amount} ${data.ticker} at $${data.price}. Stop loss: ${data.stopLoss}, Take profit: ${data.takeProfit}`,
+          timestamp: new Date().toISOString()
+        };
+        
+        messages.push(decisionMessage);
+        
+        return new Response(
+          JSON.stringify({ 
+            status: "success", 
+            message: "Portfolio decision created successfully",
+            decisionId: newDecision.id
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      
+      case "get_recommendations":
+        const filteredRecommendations = data?.filter ? 
+          recommendations.filter(r => 
+            (data.filter.agentId ? r.agentId === data.filter.agentId : true) && 
+            (data.filter.action ? r.action === data.filter.action : true)
+          ) : 
+          recommendations;
+          
+        return new Response(
+          JSON.stringify({ 
+            status: "success", 
+            recommendations: filteredRecommendations
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      
+      case "get_portfolio_decisions":
+        const filteredDecisions = data?.filter ? 
+          portfolioDecisions.filter(d => 
+            (data.filter.ticker ? d.ticker === data.filter.ticker : true) && 
+            (data.filter.action ? d.action === data.filter.action : true)
+          ) : 
+          portfolioDecisions;
+          
+        return new Response(
+          JSON.stringify({ 
+            status: "success", 
+            decisions: filteredDecisions
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -223,7 +365,7 @@ serve(async (req) => {
         
         // Create a collaboration session
         const analysisSessionId = crypto.randomUUID();
-        const modelIds = data.modelIds || ["grok3", "market-analyzer", "risk-manager"];
+        const modelIds = data.modelIds || ["grok3", "market-analyzer", "risk-manager", "portfolio-manager", "value-investor", "technical-expert", "fundamentals-expert", "valuation-expert"];
         
         collaborationSessions[analysisSessionId] = {
           id: analysisSessionId,
@@ -293,7 +435,7 @@ serve(async (req) => {
   }
 });
 
-// Function to simulate multi-agent collaborative analysis
+// Enhanced function to simulate multi-agent collaborative analysis with specialized agents
 async function generateMultiAgentAnalysis(
   prompt: string, 
   primaryModelId: string,
@@ -314,7 +456,7 @@ async function generateMultiAgentAnalysis(
     
     tasks.push(task);
     
-    // Generate a unique signature for each model to demonstrate their input
+    // Generate contributions from specialized agent types with more sophisticated responses
     const modelContributions: Record<string, string> = {};
     
     // Simulate specific contributions from different agent types
@@ -322,11 +464,23 @@ async function generateMultiAgentAnalysis(
       let contribution = "";
       
       if (participant === "market-analyzer") {
-        contribution = "Market analysis suggests trending patterns with significant volume indicating strong market interest.";
+        contribution = "Market analysis indicates a bullish divergence on the 4-hour chart with increasing volume. Key resistance levels at $45,200 and $46,800.";
       } else if (participant === "risk-manager") {
-        contribution = "Risk assessment: Medium risk profile with recommended stop-loss at key support levels.";
+        contribution = "Risk assessment: Medium risk profile with recommended stop-loss at $41,300. Current market volatility suggests a 2% position size maximum.";
       } else if (participant === "trading-executor") {
-        contribution = "Suggested entry points identified at previous resistance levels with scaled position sizing.";
+        contribution = "Executing orders with scaled entries at $42,800, $43,200, and $43,600 with proportional stop losses and trailing take profit targets.";
+      } else if (participant === "portfolio-manager") {
+        contribution = "Portfolio allocation suggests increasing cryptocurrency exposure by 3%. Current market conditions favor a 60/40 long/short ratio.";
+      } else if (participant === "value-investor") {
+        contribution = "Bill Ackman analysis: Current valuation metrics show assets trading at a 12% discount to intrinsic value. Accumulation strategy recommended.";
+      } else if (participant === "fundamentals-expert") {
+        contribution = "Warren Buffett analysis: Underlying fundamentals remain strong despite market fluctuations. Cash flow projections support continued growth.";
+      } else if (participant === "technical-expert") {
+        contribution = "Technical patterns indicate a potential cup and handle formation with a breakout target of $48,500. MACD shows positive momentum building.";
+      } else if (participant === "valuation-expert") {
+        contribution = "Valuation models (DCF, comparable analysis) suggest fair value of $46,200 with a potential upside of 8.5% from current levels.";
+      } else if (participant === "sentiment-analyzer") {
+        contribution = "Social sentiment analysis shows positive shift in market sentiment with 68% bullish signals across major platforms and decreasing FUD.";
       } else {
         // Generic contribution for other models
         contribution = `${participant} model suggests considering a balanced approach with proper risk management.`;
@@ -364,11 +518,65 @@ async function generateMultiAgentAnalysis(
     const data = await response.json();
     let result = data.response;
     
-    // Add model contributions as "insights from collaborating agents" section
-    result += "\n\n## Insights from Collaborating Agents\n\n";
-    for (const [modelId, contribution] of Object.entries(modelContributions)) {
-      result += `- **${modelId}**: ${contribution}\n`;
+    // Generate trading recommendations based on agent insights
+    const tradingRecommendations = [
+      "**Long BTC with entry at $42,800:** Set stop-loss at $41,300 and take-profit targets at $45,200 and $46,800.",
+      "**Add to existing positions:** Current market conditions suggest scaling into positions with 25% of total allocation per entry point.",
+      "**Hold cash reserves of 30%:** Maintain liquidity for potential pullbacks and new entry opportunities.",
+      "**Consider short positions on altcoins:** Hedge against overall market volatility while maintaining Bitcoin long exposure."
+    ];
+    
+    // Add Enhanced Multi-Agent Analysis section
+    result += "\n\n## Enhanced Multi-Agent Analysis\n\n";
+    result += "Our AI Hedge Fund architecture has analyzed current market conditions through multiple specialized agents:\n\n";
+    
+    // Add specialized sections by agent type
+    result += "### Market Sentiment & Technical Analysis\n";
+    if (modelContributions["sentiment-analyzer"]) {
+      result += `- ${modelContributions["sentiment-analyzer"]}\n`;
     }
+    if (modelContributions["technical-expert"]) {
+      result += `- ${modelContributions["technical-expert"]}\n`;
+    }
+    if (modelContributions["market-analyzer"]) {
+      result += `- ${modelContributions["market-analyzer"]}\n`;
+    }
+    
+    result += "\n### Fundamental & Valuation Analysis\n";
+    if (modelContributions["fundamentals-expert"]) {
+      result += `- ${modelContributions["fundamentals-expert"]}\n`;
+    }
+    if (modelContributions["valuation-expert"]) {
+      result += `- ${modelContributions["valuation-expert"]}\n`;
+    }
+    if (modelContributions["value-investor"]) {
+      result += `- ${modelContributions["value-investor"]}\n`;
+    }
+    
+    result += "\n### Risk & Portfolio Management\n";
+    if (modelContributions["risk-manager"]) {
+      result += `- ${modelContributions["risk-manager"]}\n`;
+    }
+    if (modelContributions["portfolio-manager"]) {
+      result += `- ${modelContributions["portfolio-manager"]}\n`;
+    }
+    if (modelContributions["trading-executor"]) {
+      result += `- ${modelContributions["trading-executor"]}\n`;
+    }
+    
+    // Add coordinated trading recommendations
+    result += "\n## Coordinated Trading Recommendations\n\n";
+    tradingRecommendations.forEach(rec => {
+      result += `- ${rec}\n`;
+    });
+    
+    // Add guide for simulation mode
+    result += "\n## Trading Simulation Guide\n\n";
+    result += "For optimal results, we recommend testing these strategies in simulation mode first:\n\n";
+    result += "1. **Start with low position sizes** to understand the volatility profile\n";
+    result += "2. **Monitor stop-loss levels** carefully to ensure risk management is effective\n";
+    result += "3. **Compare performance** of different entry/exit strategies before real execution\n";
+    result += "4. **Practice scaling in and out** of positions to optimize your profit-taking strategy\n";
     
     // Update task status
     const taskIndex = tasks.findIndex(t => t.id === taskId);
@@ -377,6 +585,20 @@ async function generateMultiAgentAnalysis(
       tasks[taskIndex].completedAt = new Date().toISOString();
       tasks[taskIndex].result = "Collaborative analysis completed successfully";
     }
+    
+    // Generate a sample recommendation
+    const sampleRecommendation: AgentRecommendation = {
+      id: crypto.randomUUID(),
+      agentId: "portfolio-manager",
+      action: "BUY",
+      confidence: 75,
+      reasoning: "Multi-agent analysis indicates favorable entry point with positive risk/reward ratio",
+      ticker: "BTC",
+      price: 42800,
+      timestamp: new Date().toISOString()
+    };
+    
+    recommendations.push(sampleRecommendation);
     
     return result;
   } catch (error) {

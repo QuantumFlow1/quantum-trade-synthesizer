@@ -1,7 +1,6 @@
-
 import { supabase } from "@/lib/supabase";
 import { AI_MODELS, ModelId } from "@/components/chat/types/GrokSettings";
-import { Agent } from "@/types/agent";
+import { Agent, AgentRecommendation, PortfolioDecision, TradeAction } from "@/types/agent";
 import { toast } from "@/hooks/use-toast";
 
 // Define types for agent communication
@@ -40,6 +39,8 @@ export interface AgentNetworkState {
   messages: AgentMessage[];
   tasks: AgentTask[];
   collaborationSessions: CollaborationSession[];
+  recommendations: AgentRecommendation[];
+  portfolioDecisions: PortfolioDecision[];
   isNetworkActive: boolean;
 }
 
@@ -50,6 +51,8 @@ const initialNetworkState: AgentNetworkState = {
   messages: [],
   tasks: [],
   collaborationSessions: [],
+  recommendations: [],
+  portfolioDecisions: [],
   isNetworkActive: false
 };
 
@@ -73,6 +76,7 @@ export async function initializeAgentNetwork(): Promise<boolean> {
         name: "Market Analyzer",
         status: "active",
         type: "analyst",
+        specialization: "technical",
         description: "Analyzes market trends and provides technical analysis",
         createdAt: new Date().toISOString(),
         lastActive: new Date().toISOString(),
@@ -112,12 +116,86 @@ export async function initializeAgentNetwork(): Promise<boolean> {
         name: "Sentiment Analyzer",
         status: "active",
         type: "analyst",
+        specialization: "sentiment",
         description: "Analyzes market sentiment from news and social media",
         createdAt: new Date().toISOString(),
         lastActive: new Date().toISOString(),
         performance: {
           successRate: 0.82,
           tasksCompleted: 45
+        }
+      },
+      {
+        id: "portfolio-manager",
+        name: "Portfolio Manager",
+        status: "active",
+        type: "portfolio_manager",
+        description: "Coordinates between risk signals and trade actions, optimizes portfolio allocation",
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        performance: {
+          successRate: 0.88,
+          tasksCompleted: 95,
+          winLossRatio: 1.7
+        }
+      },
+      {
+        id: "value-investor",
+        name: "Bill Ackman Agent",
+        status: "active",
+        type: "value_investor",
+        tradingStyle: "Activist Value Investing",
+        description: "Focuses on value investing with an activist approach",
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        performance: {
+          successRate: 0.80,
+          tasksCompleted: 62,
+          winLossRatio: 2.1
+        }
+      },
+      {
+        id: "fundamentals-expert",
+        name: "Warren Buffett Agent",
+        status: "active",
+        type: "fundamentals_analyst",
+        tradingStyle: "Value Investing",
+        description: "Analyzes company fundamentals with long-term investing focus",
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        performance: {
+          successRate: 0.91,
+          tasksCompleted: 74,
+          winLossRatio: 3.2
+        }
+      },
+      {
+        id: "technical-expert",
+        name: "Technical Pattern Specialist",
+        status: "active",
+        type: "technical_analyst",
+        specialization: "chart patterns",
+        description: "Specializes in identifying actionable chart patterns",
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        performance: {
+          successRate: 0.76,
+          tasksCompleted: 132,
+          winLossRatio: 1.4
+        }
+      },
+      {
+        id: "valuation-expert",
+        name: "Valuation Expert",
+        status: "active",
+        type: "valuation_expert",
+        description: "Determines fair value based on multiple valuation models",
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        performance: {
+          successRate: 0.83,
+          tasksCompleted: 58,
+          winLossRatio: 1.9
         }
       }
     ];
@@ -295,7 +373,137 @@ export async function createAgentTask(
   }
 }
 
-// Function to create a collaborative trading analysis
+// New function to submit trading recommendations from agents
+export async function submitAgentRecommendation(
+  agentId: string,
+  action: TradeAction,
+  confidence: number,
+  reasoning: string,
+  ticker?: string,
+  price?: number
+): Promise<AgentRecommendation | null> {
+  try {
+    const agent = networkState.availableAgents.find(a => a.id === agentId);
+    if (!agent) {
+      console.error(`Agent with id ${agentId} not found`);
+      return null;
+    }
+    
+    const recommendation: AgentRecommendation = {
+      agentId,
+      action,
+      confidence,
+      reasoning,
+      ticker,
+      price,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Add recommendation to state
+    networkState.recommendations.push(recommendation);
+    
+    // Inform the portfolio manager agent
+    await sendAgentMessage(
+      agentId,
+      "portfolio-manager",
+      `New ${action} recommendation for ${ticker || 'the market'} with ${confidence}% confidence. Reasoning: ${reasoning}`
+    );
+    
+    // Update agent activity
+    updateAgentActivity(agentId);
+    
+    // Return the created recommendation
+    return recommendation;
+  } catch (error) {
+    console.error("Error submitting agent recommendation:", error);
+    return null;
+  }
+}
+
+// New function to get all agent recommendations
+export function getAgentRecommendations(): AgentRecommendation[] {
+  return networkState.recommendations;
+}
+
+// New function to get recent agent recommendations
+export function getRecentAgentRecommendations(count: number = 5): AgentRecommendation[] {
+  return [...networkState.recommendations]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, count);
+}
+
+// New function to create portfolio decisions
+export async function createPortfolioDecision(
+  action: TradeAction,
+  ticker: string,
+  amount: number,
+  price: number,
+  options: {
+    stopLoss?: number;
+    takeProfit?: number;
+    confidence?: number;
+    riskScore?: number;
+    contributors?: string[];
+    reasoning?: string;
+  } = {}
+): Promise<PortfolioDecision | null> {
+  try {
+    const portfolioManagerId = "portfolio-manager";
+    const portfolioManager = networkState.availableAgents.find(a => a.id === portfolioManagerId);
+    
+    if (!portfolioManager) {
+      console.error("Portfolio manager agent not found");
+      return null;
+    }
+    
+    const decision: PortfolioDecision = {
+      action,
+      ticker,
+      amount,
+      price,
+      stopLoss: options.stopLoss,
+      takeProfit: options.takeProfit,
+      confidence: options.confidence || 70,
+      riskScore: options.riskScore || 5,
+      contributors: options.contributors || [portfolioManagerId],
+      reasoning: options.reasoning || `Portfolio manager decision to ${action} ${ticker}`,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Add decision to state
+    networkState.portfolioDecisions.push(decision);
+    
+    // Inform the trading executor agent
+    await sendAgentMessage(
+      portfolioManagerId,
+      "trading-executor",
+      `Execute ${action} for ${amount} ${ticker} at $${price}. Stop loss: ${decision.stopLoss}, Take profit: ${decision.takeProfit}`
+    );
+    
+    // Update agent activity
+    updateAgentActivity(portfolioManagerId);
+    
+    // Return the created decision
+    return decision;
+  } catch (error) {
+    console.error("Error creating portfolio decision:", error);
+    return null;
+  }
+}
+
+// New function to get all portfolio decisions
+export function getPortfolioDecisions(): PortfolioDecision[] {
+  return networkState.portfolioDecisions;
+}
+
+// New function to get recent portfolio decisions
+export function getRecentPortfolioDecisions(count: number = 5): PortfolioDecision[] {
+  return [...networkState.portfolioDecisions]
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, count);
+}
+
+// Enhanced collaborative trading analysis to include specialized agents
 export async function generateCollaborativeTradingAnalysis(
   marketData: any, 
   primaryModelId: ModelId = 'grok3'
@@ -311,12 +519,31 @@ export async function generateCollaborativeTradingAnalysis(
   try {
     console.log(`Generating collaborative trading analysis with primary model: ${primaryModelId}`);
     
-    // Get active analysis agents
+    // Get active analysis agents, prioritizing specialized agents
+    const specializedAgentTypes = [
+      "portfolio_manager", 
+      "value_investor", 
+      "technical_analyst", 
+      "fundamentals_analyst", 
+      "valuation_expert"
+    ];
+    
+    // Prioritize specialized agents
+    const specializedAgents = networkState.activeAgents.filter(
+      agent => specializedAgentTypes.includes(agent.type)
+    );
+    
+    // Include other analysts
     const analysts = networkState.activeAgents.filter(
       agent => agent.type === "analyst" || agent.id === primaryModelId
     );
     
-    if (analysts.length === 0) {
+    // Combine with priority given to specialized agents
+    const allContributors = [...specializedAgents, ...analysts.filter(
+      analyst => !specializedAgents.some(sa => sa.id === analyst.id)
+    )];
+    
+    if (allContributors.length === 0) {
       throw new Error("No analysis agents available");
     }
     
@@ -326,7 +553,7 @@ export async function generateCollaborativeTradingAnalysis(
     // Create analysis prompt based on market data
     const analysisPrompt = `Generate a comprehensive trading analysis for the current market conditions. 
     ${marketData ? `Current price: $${marketData.price || 'unknown'}. ` : ''}
-    Include insights on risk management, entry/exit points, and market sentiment.`;
+    Include insights on risk management, entry/exit points, market sentiment, and specialized perspectives from value investors, technical analysts, and fundamental analysts.`;
     
     // Initiate collaborative analysis through the coordinator
     const { data, error } = await supabase.functions.invoke('agent-network-coordinator', {
