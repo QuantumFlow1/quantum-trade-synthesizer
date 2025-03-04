@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { MarketData } from '@/components/market/types';
-import { supabase } from '@/lib/supabase';
+import { fetchMarketData } from './api/fetchMarketData';
+import { filterMarketData, getMarketCategories as getCategories } from './utils/filterMarketData';
 
 export const useMarketDataState = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
@@ -29,7 +30,7 @@ export const useMarketDataState = () => {
     };
   }, []);
   
-  const fetchMarketData = useCallback(async (retry = false) => {
+  const fetchMarketDataWithRetry = useCallback(async (retry = false) => {
     try {
       if (retry) {
         setRetryCount(prev => prev + 1);
@@ -40,68 +41,16 @@ export const useMarketDataState = () => {
       setIsRefreshing(true);
       setError(null);
       
-      console.log('Fetching market data...');
+      const result = await fetchMarketData();
       
-      // First try fetch-market-data function which has more detailed data
-      const { data: fetchData, error: fetchError } = await supabase.functions.invoke('fetch-market-data');
+      setMarketData(result.data);
+      filterData(result.data, searchTerm, activeTab);
       
-      if (fetchError) {
-        console.error('Error from fetch-market-data:', fetchError);
-        throw new Error(`Failed to fetch market data: ${fetchError.message}`);
-      }
-      
-      if (fetchData && Array.isArray(fetchData) && fetchData.length > 0) {
-        console.log('Successfully fetched data from fetch-market-data:', fetchData.length, 'items');
-        setMarketData(fetchData as MarketData[]);
-        filterData(fetchData as MarketData[], searchTerm, activeTab);
-        
-        toast({
-          title: 'Market data updated',
-          description: `Successfully fetched data for ${fetchData.length} markets`,
-          duration: 3000,
-        });
-        return;
-      }
-      
-      // If that fails, try the market-data-collector as fallback
-      console.log('No data from fetch-market-data, trying market-data-collector...');
-      const { data: collectorData, error: collectorError } = await supabase.functions.invoke('market-data-collector');
-      
-      if (collectorError) {
-        console.error('Error from market-data-collector:', collectorError);
-        throw new Error(`Fallback data fetch failed: ${collectorError.message}`);
-      }
-      
-      if (collectorData && Array.isArray(collectorData?.data)) {
-        console.log('Successfully fetched data from market-data-collector:', collectorData.data.length, 'items');
-        setMarketData(collectorData.data as MarketData[]);
-        filterData(collectorData.data as MarketData[], searchTerm, activeTab);
-        
-        toast({
-          title: 'Market data updated',
-          description: `Successfully fetched fallback data for ${collectorData.data.length} markets`,
-          duration: 3000,
-        });
-      } else if (collectorData && typeof collectorData === 'object') {
-        // Create some emergency backup market data if nothing else works
-        const emergencyData = generateEmergencyMarketData();
-        console.warn('Using emergency generated market data');
-        setMarketData(emergencyData);
-        filterData(emergencyData, searchTerm, activeTab);
-        
-        toast({
-          title: 'Using backup market data',
-          description: 'Using locally generated data as fallback',
-          variant: 'warning',
-          duration: 5000,
-        });
-      } else {
-        // Handle non-array data
-        console.error('Invalid market data format from both endpoints:', collectorData);
-        throw new Error('Market data format is invalid. Please try again later.');
+      if (result.error) {
+        setError(result.error);
       }
     } catch (error) {
-      console.error('Error fetching market data:', error);
+      console.error('Error in fetchMarketDataWithRetry:', error);
       
       // If we still have retries left, schedule another attempt
       if (retryCount < maxRetries) {
@@ -116,17 +65,11 @@ export const useMarketDataState = () => {
         // Set a new retry timer
         retryTimerRef.current = setTimeout(() => {
           console.log(`Executing retry attempt ${retryCount + 1}`);
-          fetchMarketData(true);
+          fetchMarketDataWithRetry(true);
         }, retryDelay);
         
         setError(`Unable to fetch market data. Retrying in ${retryDelay / 1000} seconds...`);
       } else {
-        // We've exhausted our retries, use emergency data
-        const emergencyData = generateEmergencyMarketData();
-        console.warn('Using emergency generated market data after failed retries');
-        setMarketData(emergencyData);
-        filterData(emergencyData, searchTerm, activeTab);
-        
         setError(error instanceof Error 
           ? `${error.message}. Using backup data.` 
           : 'Failed to fetch market data after multiple attempts. Using backup data.'
@@ -146,41 +89,20 @@ export const useMarketDataState = () => {
   }, [searchTerm, activeTab, toast, retryCount]);
   
   useEffect(() => {
-    fetchMarketData();
+    fetchMarketDataWithRetry();
     
     // Auto-refresh market data every 60 seconds
     const refreshInterval = setInterval(() => {
-      fetchMarketData();
+      fetchMarketDataWithRetry();
     }, 60000);
     
     return () => clearInterval(refreshInterval);
-  }, [fetchMarketData]);
+  }, [fetchMarketDataWithRetry]);
   
-  const filterData = (data: MarketData[], search: string, tab: string) => {
-    if (!Array.isArray(data)) {
-      console.error('filterData received non-array data:', data);
-      setFilteredData([]);
-      return;
-    }
-    
-    let filtered = [...data];
-    
-    // Apply search filter
-    if (search.trim() !== '') {
-      const searchLower = search.toLowerCase();
-      filtered = filtered.filter(
-        item => item.symbol?.toLowerCase().includes(searchLower) || 
-        (item.name && item.name.toLowerCase().includes(searchLower))
-      );
-    }
-    
-    // Apply tab filter
-    if (tab !== 'all') {
-      filtered = filtered.filter(item => item.market === tab);
-    }
-    
+  const filterData = useCallback((data: MarketData[], search: string, tab: string) => {
+    const filtered = filterMarketData(data, search, tab);
     setFilteredData(filtered);
-  };
+  }, []);
   
   useEffect(() => {
     if (Array.isArray(marketData)) {
@@ -188,7 +110,7 @@ export const useMarketDataState = () => {
     } else {
       setFilteredData([]);
     }
-  }, [searchTerm, activeTab, marketData]);
+  }, [searchTerm, activeTab, marketData, filterData]);
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -201,7 +123,7 @@ export const useMarketDataState = () => {
   const handleRefresh = () => {
     // Reset retry count when manually refreshing
     setRetryCount(0);
-    fetchMarketData();
+    fetchMarketDataWithRetry();
   };
   
   const handleSelectMarket = (market: MarketData) => {
@@ -214,69 +136,8 @@ export const useMarketDataState = () => {
   };
   
   const getMarketCategories = useCallback(() => {
-    const categories = new Set<string>();
-    
-    if (!Array.isArray(marketData) || marketData.length === 0) {
-      return [];
-    }
-    
-    marketData.forEach(item => {
-      if (item && item.market) {
-        categories.add(item.market);
-      }
-    });
-    
-    return Array.from(categories);
+    return getCategories(marketData);
   }, [marketData]);
-
-  // Generate emergency market data as a last resort
-  const generateEmergencyMarketData = (): MarketData[] => {
-    const markets = ['NYSE', 'NASDAQ', 'Crypto', 'AEX', 'DAX'];
-    const symbols = [
-      { market: 'NYSE', symbol: 'AAPL', name: 'Apple Inc.', basePrice: 180 },
-      { market: 'NYSE', symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 390 },
-      { market: 'NASDAQ', symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 142 },
-      { market: 'NASDAQ', symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 175 },
-      { market: 'Crypto', symbol: 'BTC/USD', name: 'Bitcoin', basePrice: 45000 },
-      { market: 'Crypto', symbol: 'ETH/USD', name: 'Ethereum', basePrice: 2500 },
-      { market: 'AEX', symbol: 'ASML', name: 'ASML Holding NV', basePrice: 850 },
-      { market: 'DAX', symbol: 'SAP', name: 'SAP SE', basePrice: 175 },
-    ];
-    
-    return symbols.map(({ market, symbol, name, basePrice }) => {
-      // Generate random price within a range
-      const randomFactor = 0.95 + Math.random() * 0.1;
-      const price = basePrice * randomFactor;
-      
-      const change24h = parseFloat(((randomFactor - 1) * 100).toFixed(2));
-      
-      // Calculate high/low for current price display
-      const highValue = parseFloat((price * (1 + Math.random() * 0.02)).toFixed(2));
-      const lowValue = parseFloat((price * (1 - Math.random() * 0.02)).toFixed(2));
-      
-      // Calculate high24h/low24h for 24-hour ranges
-      const high24h = parseFloat((price * (1 + Math.random() * 0.02)).toFixed(2));
-      const low24h = parseFloat((price * (1 - Math.random() * 0.02)).toFixed(2));
-
-      return {
-        market,
-        symbol,
-        name,
-        price: parseFloat(price.toFixed(2)),
-        volume: Math.floor(Math.random() * 10000000 + 1000000),
-        change24h,
-        high: highValue,  // Add the missing high property
-        low: lowValue,    // Add the missing low property
-        high24h,
-        low24h,
-        marketCap: parseFloat((price * (Math.random() * 1000000000 + 100000000)).toFixed(2)),
-        timestamp: Date.now(),
-        totalVolume24h: Math.floor(Math.random() * 10000000 + 1000000),
-        circulatingSupply: Math.floor(Math.random() * 1000000000 + 100000000),
-        lastUpdated: new Date().toISOString()
-      };
-    });
-  };
 
   return {
     marketData,
