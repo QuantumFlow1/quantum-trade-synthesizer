@@ -2,8 +2,7 @@
 import { AIModelType } from '../types/GrokSettings';
 import { generateDeepSeekResponse } from './deepseekService';
 import { generateOpenAIResponse } from './openaiService';
-
-// Import other service functions as needed
+import { processMessageText } from './utils/messageUtils';
 
 // Create a new chat message
 export const createChatMessage = (role: 'user' | 'assistant', content: string) => {
@@ -30,11 +29,13 @@ export const generateResponse = async (
     // Get the latest user message
     const userMessage = conversationHistory[conversationHistory.length - 1].content;
     
-    // Build settings object if needed
+    // Build complete settings object with all required properties
     const settings = {
       selectedModel,
       temperature: temperature || 0.7,
       maxTokens: maxTokens || 1024,
+      deepSearchEnabled: false, // Adding the missing required properties
+      thinkEnabled: false,      // Adding the missing required properties
       apiKeys: {
         openaiApiKey: selectedModel.startsWith('gpt') || selectedModel === 'openai' ? apiKey : undefined,
         claudeApiKey: selectedModel.startsWith('claude') ? apiKey : undefined,
@@ -43,14 +44,17 @@ export const generateResponse = async (
       }
     };
     
+    // Process the message text for better formatting
+    const processedMessage = processMessageText(userMessage);
+    
     // Choose the appropriate service based on the model
     if (selectedModel.startsWith('gpt') || selectedModel === 'openai') {
       console.log('Using OpenAI service');
-      return await generateOpenAIResponse(userMessage, conversationHistory, settings);
+      return await generateOpenAIResponse(processedMessage, conversationHistory, settings);
     } 
     else if (selectedModel.startsWith('deepseek')) {
       console.log('Using DeepSeek service');
-      return await generateDeepSeekResponse(userMessage, conversationHistory, settings);
+      return await generateDeepSeekResponse(processedMessage, conversationHistory, settings);
     } 
     else if (selectedModel.startsWith('claude')) {
       console.log('Using Claude service (not implemented)');

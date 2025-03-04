@@ -19,5 +19,11 @@ export function processMessageText(text: string): string {
   // Ensure markdown headers have proper spacing
   processedText = processedText.replace(/(?<!\n)(\n#{1,6}\s)/g, '\n$1');
   
+  // Fix improper line breaks within paragraphs
+  processedText = processedText.replace(/([^\n])\n([^\n\-\*\d•#])/g, '$1\n\n$2');
+  
+  // Ensure tables have proper spacing
+  processedText = processedText.replace(/(\|\s*[\w\s]+\s*\|)/g, '\n$1\n');
+  
   return processedText;
 }
