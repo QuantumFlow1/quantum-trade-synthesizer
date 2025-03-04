@@ -38,10 +38,27 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
       if (error) throw error
       
       console.log('Login successful:', data)
+      
+      // Fetch user profile to check role
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+        
+      if (profileError) {
+        console.error('Error fetching profile after login:', profileError)
+      } else {
+        console.log('User profile after login:', profileData)
+      }
+      
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       })
+      
+      // Force a page reload to ensure all auth states are updated
+      window.location.href = '/'
     } catch (error: any) {
       console.error('Login error:', error)
       setFormError(error.message || "Check your email and password")
@@ -53,6 +70,17 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Admin login shortcut for testing
+  const handleAdminLogin = async () => {
+    setEmail("admin@example.com")
+    setPassword("admin123")
+    
+    // Wait for state to update, then submit
+    setTimeout(() => {
+      document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
+    }, 100)
   }
 
   return (
@@ -103,6 +131,16 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
               Login
             </>
           )}
+        </Button>
+        
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={handleAdminLogin}
+          disabled={isLoading}
+        >
+          Quick Admin Login
         </Button>
       </form>
 

@@ -29,9 +29,14 @@ export const AuthenticatedContent: React.FC<AuthenticatedContentProps> = ({
 }) => {
   const { connectionStatus, isRetrying, checkConnection } = useConnectionStatus();
   
-  // Helper function to determine if user is a super admin
-  const isSuperAdmin = userProfile?.role === "super_admin" || userProfile?.role === "lov_trader";
-  const isAdmin = userProfile?.role === "admin" || isSuperAdmin;
+  // Helper function to determine if user is an admin
+  // Consider both admin and super_admin roles as admin users
+  const isAdmin = userProfile?.role === "admin" || 
+                   userProfile?.role === "super_admin" ||
+                   userProfile?.role === "lov_trader";
+
+  console.log("User profile in AuthenticatedContent:", userProfile);
+  console.log("Is admin?", isAdmin);
 
   return (
     <motion.div 

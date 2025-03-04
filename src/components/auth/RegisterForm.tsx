@@ -18,7 +18,7 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<UserRole>('viewer')
+  const [selectedRole, setSelectedRole] = useState<UserRole>('admin')
   const [formError, setFormError] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -80,6 +80,18 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
     }
   }
 
+  // Quick admin registration
+  const handleQuickAdminRegister = () => {
+    setEmail(`admin${Math.floor(Math.random() * 10000)}@example.com`)
+    setPassword("admin123")
+    setSelectedRole('admin')
+    
+    // Wait for state to update, then submit
+    setTimeout(() => {
+      document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
+    }, 100)
+  }
+
   return (
     <>
       {formError && (
@@ -134,6 +146,16 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
               Register
             </>
           )}
+        </Button>
+
+        <Button
+          type="button" 
+          variant="outline"
+          className="w-full" 
+          onClick={handleQuickAdminRegister}
+          disabled={isLoading}
+        >
+          Quick Admin Register
         </Button>
       </form>
 
