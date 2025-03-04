@@ -26,8 +26,9 @@ export const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }
 
   // Format and prepare data
   const priceChange24h = marketData.change24h || 0;
-  const priceChange7d = marketData.change7d || 0;
-  const priceChange30d = marketData.change30d || 0;
+  // These properties might not exist in MarketData, so provide fallbacks
+  const priceChange7d = marketData.priceChange7d || 0;
+  const priceChange30d = marketData.priceChange30d || 0;
   const allTimeHigh = marketData.ath || 0;
   const allTimeLow = marketData.atl || 0;
 
@@ -169,14 +170,15 @@ export const MarketStatistics: React.FC<MarketStatisticsProps> = ({ marketData }
               label="Total Supply" 
               value={formatLargeNumber(marketData.totalSupply || 0)}
             />
+            {/* maxSupply doesn't exist in MarketData, using totalSupply as fallback */}
             <StatItem 
               label="Max Supply" 
-              value={formatLargeNumber(marketData.maxSupply || 0)}
+              value={formatLargeNumber(marketData.totalSupply || 0)}
             />
             <StatItem 
               label="Supply Ratio" 
-              value={`${marketData.totalSupply && marketData.maxSupply ? 
-                ((Number(marketData.totalSupply) / Number(marketData.maxSupply)) * 100).toFixed(2) : 
+              value={`${marketData.totalSupply ? 
+                ((Number(marketData.circulatingSupply || 0) / Number(marketData.totalSupply)) * 100).toFixed(2) : 
                 '0'}%`}
             />
           </div>
