@@ -7,10 +7,11 @@ export function useApiAvailability(isAdminContext = false) {
   const [apiAvailable, setApiAvailable] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Check if the Grok3 API is available
-  const checkGrokAvailability = useCallback(async (): Promise<boolean> => {
-    if (isAdminContext) {
+  const checkGrokAvailability = useCallback(async (forceCheck = false): Promise<boolean> => {
+    if (isAdminContext && !forceCheck) {
       console.log('Skipping Grok3 API check in admin context');
       return false;
     }
@@ -25,11 +26,12 @@ export function useApiAvailability(isAdminContext = false) {
       const { data, error } = await supabase.functions.invoke('grok3-ping', {
         body: { 
           isAvailabilityCheck: true,
-          timestamp: new Date().toISOString() // Add timestamp to prevent caching
+          timestamp: new Date().toISOString(), // Add timestamp to prevent caching
+          retry: retryCount // Add retry count for debugging
         }
       });
       
-      console.log('Grok3 availability check result:', { data, error });
+      console.log('Grok3 availability check result:', { data, error, retryCount });
       
       if (error) {
         console.error('Grok3 API check error:', error);
@@ -82,7 +84,7 @@ export function useApiAvailability(isAdminContext = false) {
     } finally {
       setIsLoading(false);
     }
-  }, [isAdminContext]);
+  }, [isAdminContext, retryCount]);
 
   // Try to reconnect to the API
   const retryApiConnection = useCallback(async (): Promise<void> => {
@@ -92,7 +94,8 @@ export function useApiAvailability(isAdminContext = false) {
     }
     
     console.log('Retrying API connection...');
-    await checkGrokAvailability();
+    setRetryCount(prevCount => prevCount + 1);
+    await checkGrokAvailability(true);
   }, [checkGrokAvailability, isAdminContext]);
 
   // Check availability when the component mounts

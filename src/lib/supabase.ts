@@ -24,12 +24,32 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     fetch: (...args) => {
       // Add custom headers to avoid PREPARE statement issues
       const [url, options = {}] = args;
+      
+      // Add headers to prevent PREPARE statements
       options.headers = {
         ...options.headers,
         'X-Supabase-Prefer': 'tx=rollback',
         'X-Supabase-DB-No-Prepare': 'true'
       };
-      return fetch(url, options);
+      
+      // Add timeout to requests to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+      
+      options.signal = controller.signal;
+      
+      // Execute fetch with timeout
+      return fetch(url, options)
+        .then(response => {
+          clearTimeout(timeoutId);
+          return response;
+        })
+        .catch(error => {
+          clearTimeout(timeoutId);
+          console.error('Supabase fetch error:', error);
+          // Rethrow the error after logging
+          throw error;
+        });
     }
   }
 });
