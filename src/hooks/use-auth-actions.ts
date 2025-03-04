@@ -62,6 +62,18 @@ export const useAuthActions = () => {
       
       if (error) throw error
       return data?.verified || false
+    },
+    
+    checkAccountSecurity: async (userId: string) => {
+      const { data, error } = await supabase.functions.invoke('security-services', {
+        body: { 
+          action: 'check_account_security',
+          userId 
+        }
+      })
+      
+      if (error) throw error
+      return data
     }
   }
 

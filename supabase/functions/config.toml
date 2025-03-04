@@ -19,3 +19,4 @@ verify_jwt = false
 
 [functions.security-services]
 verify_jwt = false
+
