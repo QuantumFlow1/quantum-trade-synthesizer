@@ -11,7 +11,7 @@ export type ApiCallStatus = 'success' | 'error' | 'pending';
  * 
  * @param endpoint The API endpoint or service name
  * @param source The source of the API call (e.g., component name)
- * @param status The status of the API call (success or error)
+ * @param status The status of the API call (success, error, or pending)
  * @param error_message Optional error message
  * @returns 
  */

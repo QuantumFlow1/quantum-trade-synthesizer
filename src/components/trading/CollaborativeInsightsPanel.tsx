@@ -63,7 +63,7 @@ export const CollaborativeInsightsPanel = ({
           <div className="flex flex-col items-center justify-center py-6">
             <div className="mb-4 text-muted-foreground">
               <AlertCircle className="h-10 w-10 mx-auto mb-2" />
-              <p className="text-center">De agent network verbinding is niet beschikbaar</p>
+              <p className="text-center">Agent network connection unavailable</p>
             </div>
             <Button 
               variant="secondary" 
@@ -75,12 +75,12 @@ export const CollaborativeInsightsPanel = ({
               {isVerifying ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                  Verbinden...
+                  Connecting...
                 </>
               ) : (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Probeer opnieuw
+                  Try again
                 </>
               )}
             </Button>

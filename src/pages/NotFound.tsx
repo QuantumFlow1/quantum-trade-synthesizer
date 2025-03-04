@@ -22,10 +22,10 @@ const NotFound = () => {
             404
           </h1>
           <p className="text-xl text-muted-foreground">
-            Oeps! Deze pagina bestaat niet
+            Oops! This page doesn't exist
           </p>
           <p className="text-sm text-muted-foreground/80">
-            Het pad "{location.pathname}" kon niet worden gevonden
+            The path "{location.pathname}" could not be found
           </p>
         </div>
         
@@ -35,7 +35,7 @@ const NotFound = () => {
           className="bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-accent/50 transition-all duration-300 ease-in-out hover:scale-105"
         >
           <Home className="w-4 h-4 mr-2" />
-          Terug naar Home
+          Back to Home
         </Button>
       </div>
     </div>
@@ -43,4 +43,3 @@ const NotFound = () => {
 };
 
 export default NotFound;
-
