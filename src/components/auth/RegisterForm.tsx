@@ -18,7 +18,7 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<UserRole>('admin')
+  const [selectedRole, setSelectedRole] = useState<UserRole>('viewer')
   const [formError, setFormError] = useState<string | null>(null)
   const { toast } = useToast()
 
@@ -48,7 +48,7 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
       console.log('User created:', authData)
 
       if (authData.user) {
-        // Instead of updating, we INSERT a profile - this is critical because the trigger might not be working
+        // Insert a profile - this is critical because the trigger might not be working yet
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([{ 
@@ -180,7 +180,7 @@ export const RegisterForm = ({ onToggleMode }: RegisterFormProps) => {
           onClick={handleSuperAdminRegister}
           disabled={isLoading}
         >
-          Set arturgabrielian4@gmail.com as Super Admin
+          Register as arturgabrielian4@gmail.com
         </Button>
       </form>
 

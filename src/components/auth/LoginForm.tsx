@@ -48,8 +48,8 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
         
       if (profileError) {
         console.error('Error fetching profile after login:', profileError)
-        // If profile doesn't exist, create one with default role based on email
-        const role = email === 'arturgabrielian4@gmail.com' ? 'super_admin' : 'admin'
+        // If profile doesn't exist, create one with appropriate role based on email
+        const role = email === 'arturgabrielian4@gmail.com' ? 'super_admin' : 'viewer'
         
         const { error: insertError } = await supabase
           .from('profiles')

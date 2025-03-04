@@ -30,7 +30,7 @@ export const AuthenticatedContent: React.FC<AuthenticatedContentProps> = ({
   const { connectionStatus, isRetrying, checkConnection } = useConnectionStatus();
   
   // Helper function to determine if user is an admin
-  // Consider both admin and super_admin roles as admin users
+  // Consider admin, super_admin, and lov_trader roles as admin users
   const isAdmin = userProfile?.role === "admin" || 
                    userProfile?.role === "super_admin" ||
                    userProfile?.role === "lov_trader";

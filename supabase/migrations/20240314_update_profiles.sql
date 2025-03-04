@@ -21,17 +21,12 @@ BEGIN
   IF new.email = 'arturgabrielian4@gmail.com' THEN
     role_value := 'super_admin';
   ELSE
-    role_value := 'admin'; -- Default to admin for testing
+    role_value := 'viewer'; -- Default to viewer for regular users
   END IF;
 
-  -- Either insert or update the profile
+  -- Insert the profile
   INSERT INTO public.profiles (id, email, role, status)
-  VALUES (new.id, new.email, role_value, 'active')
-  ON CONFLICT (id) 
-  DO UPDATE SET
-    email = EXCLUDED.email,
-    role = EXCLUDED.role,
-    status = EXCLUDED.status;
+  VALUES (new.id, new.email, role_value, 'active');
   
   RETURN new;
 END;
