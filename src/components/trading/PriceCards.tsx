@@ -2,6 +2,7 @@
 import { TradingDataPoint } from "@/utils/tradingData";
 import { Card } from "@/components/ui/card";
 import { Activity, TrendingUp, TrendingDown } from "lucide-react";
+import { formatPrice, formatPercentage } from "@/utils/tradeCalculations";
 
 interface PriceCardsProps {
   data: TradingDataPoint[];
@@ -10,7 +11,7 @@ interface PriceCardsProps {
 export const PriceCards = ({ data }: PriceCardsProps) => {
   const latestPrice = data[data.length - 1].close;
   const priceChange = data[data.length - 1].close - data[0].close;
-  const percentageChange = ((priceChange / data[0].close) * 100).toFixed(2);
+  const percentageChange = ((priceChange / data[0].close) * 100);
   const isPositive = priceChange >= 0;
 
   return (
@@ -25,7 +26,7 @@ export const PriceCards = ({ data }: PriceCardsProps) => {
           )}
         </div>
         <div className="mt-2 text-2xl font-bold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
-          ${latestPrice.toFixed(2)}
+          {formatPrice(latestPrice)}
         </div>
       </Card>
 
@@ -37,7 +38,7 @@ export const PriceCards = ({ data }: PriceCardsProps) => {
         <div className={`mt-2 text-2xl font-bold ${
           isPositive ? "text-green-500" : "text-red-500"
         }`}>
-          {isPositive ? "+" : ""}{percentageChange}%
+          {formatPercentage(percentageChange)}
         </div>
       </Card>
 

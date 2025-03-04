@@ -1,4 +1,6 @@
 
+import { formatPrice, formatPercentage as formatPct, formatPriceChange } from '@/utils/tradeCalculations';
+
 /**
  * Formats a number as a currency with appropriate scaling (B, M, K)
  */
@@ -26,7 +28,7 @@ export const formatNumber = (num: number | undefined, decimals = 2): string => {
  */
 export const formatPercentage = (num: number | undefined): string => {
   if (num === undefined) return 'N/A';
-  return `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`;
+  return formatPct(num);
 };
 
 /**
