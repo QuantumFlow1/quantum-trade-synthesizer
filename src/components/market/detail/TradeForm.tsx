@@ -21,7 +21,7 @@ export const TradeForm: React.FC<TradeFormProps> = ({
   onExternalClick
 }) => {
   return (
-    <div className="mt-6 space-y-4 max-w-md mx-auto">
+    <div className="mt-6 space-y-4">
       <div className="flex items-center gap-2">
         <Label htmlFor="amount" className="w-24">Amount:</Label>
         <Input
@@ -35,11 +35,11 @@ export const TradeForm: React.FC<TradeFormProps> = ({
       </div>
       
       <div className="flex justify-center gap-4">
-        <Button className="bg-green-500 hover:bg-green-600 flex-1" onClick={onBuyClick}>
+        <Button className="bg-green-500 hover:bg-green-600" onClick={onBuyClick}>
           <DollarSign className="h-4 w-4 mr-2" />
           Buy
         </Button>
-        <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-50 flex-1" onClick={onSellClick}>
+        <Button variant="outline" className="text-red-500 border-red-500 hover:bg-red-50" onClick={onSellClick}>
           <DollarSign className="h-4 w-4 mr-2" />
           Sell
         </Button>

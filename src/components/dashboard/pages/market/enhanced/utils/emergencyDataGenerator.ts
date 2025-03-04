@@ -1,139 +1,54 @@
 
-import { MarketData } from "@/components/market/types";
+import { MarketData } from '@/components/market/types';
 
+/**
+ * Generates emergency market data as a fallback when API calls fail
+ * to ensure the application can still function with meaningful data
+ */
 export const generateEmergencyMarketData = (): MarketData[] => {
-  console.log("Generating emergency market data as fallback");
-  
-  const now = Date.now();
-  
-  // Ensure we include Crypto market data in the emergency fallback
-  const emergencyData: MarketData[] = [
-    // Crypto markets
-    {
-      market: "Crypto",
-      symbol: "BTC/USD",
-      name: "Bitcoin",
-      price: 45000 + (Math.random() * 2000),
-      change24h: -1.2 + (Math.random() * 3),
-      marketCap: 850000000000,
-      volume: 28000000000,
-      rank: 1,
-      circulatingSupply: 19000000,
-      totalSupply: 21000000,
-      priceChange7d: -3.5 + (Math.random() * 7),
-      priceChange30d: -5.2 + (Math.random() * 12),
-      ath: 69000,
-      atl: 3000,
-      athDate: "2021-11-10T00:00:00Z",
-      atlDate: "2019-01-01T00:00:00Z",
-      lastUpdated: new Date().toISOString(),
-      // Add required fields
-      timestamp: now,
-      high: 47000,
-      low: 43000,
-      // Add 24h high and low for completeness
-      high24h: 47000,
-      low24h: 43000
-    },
-    {
-      market: "Crypto",
-      symbol: "ETH/USD",
-      name: "Ethereum",
-      price: 2500 + (Math.random() * 300),
-      change24h: 0.8 + (Math.random() * 2),
-      marketCap: 310000000000,
-      volume: 15000000000,
-      rank: 2,
-      circulatingSupply: 120000000,
-      totalSupply: 120000000,
-      priceChange7d: 2.1 + (Math.random() * 5),
-      priceChange30d: -1.2 + (Math.random() * 8),
-      ath: 4800,
-      atl: 80,
-      athDate: "2021-11-08T00:00:00Z",
-      atlDate: "2018-12-18T00:00:00Z",
-      lastUpdated: new Date().toISOString(),
-      // Add required fields
-      timestamp: now,
-      high: 2800,
-      low: 2400,
-      // Add 24h high and low for completeness
-      high24h: 2800,
-      low24h: 2400
-    },
-    {
-      market: "Crypto",
-      symbol: "SOL/USD",
-      name: "Solana",
-      price: 110 + (Math.random() * 30),
-      change24h: 3.5 + (Math.random() * 4),
-      marketCap: 50000000000,
-      volume: 5000000000,
-      rank: 5,
-      circulatingSupply: 410000000,
-      totalSupply: 550000000,
-      priceChange7d: 8.2 + (Math.random() * 6),
-      priceChange30d: 15.3 + (Math.random() * 10),
-      ath: 260,
-      atl: 0.5,
-      athDate: "2021-11-06T00:00:00Z",
-      atlDate: "2020-03-18T00:00:00Z",
-      lastUpdated: new Date().toISOString(),
-      // Add required fields
-      timestamp: now,
-      high: 140,
-      low: 100,
-      // Add 24h high and low for completeness
-      high24h: 140,
-      low24h: 100
-    },
-    
-    // Stock markets
-    {
-      market: "NYSE",
-      symbol: "AAPL",
-      name: "Apple Inc.",
-      price: 180 + (Math.random() * 10),
-      change24h: 0.5 + (Math.random() * 1),
-      marketCap: 2950000000000,
-      volume: 8000000000,
-      rank: 1,
-      circulatingSupply: 16000000000,
-      totalSupply: 16000000000,
-      priceChange7d: 1.2 + (Math.random() * 2),
-      priceChange30d: 3.5 + (Math.random() * 3),
-      lastUpdated: new Date().toISOString(),
-      // Add required fields
-      timestamp: now,
-      high: 190,
-      low: 175,
-      // Add 24h high and low for completeness
-      high24h: 190,
-      low24h: 175
-    },
-    {
-      market: "NASDAQ",
-      symbol: "MSFT",
-      name: "Microsoft Corporation",
-      price: 370 + (Math.random() * 20),
-      change24h: 0.3 + (Math.random() * 1.5),
-      marketCap: 2750000000000,
-      volume: 6000000000,
-      rank: 2,
-      circulatingSupply: 7400000000,
-      totalSupply: 7400000000,
-      priceChange7d: 0.8 + (Math.random() * 2),
-      priceChange30d: 2.1 + (Math.random() * 3),
-      lastUpdated: new Date().toISOString(),
-      // Add required fields
-      timestamp: now,
-      high: 390,
-      low: 360,
-      // Add 24h high and low for completeness
-      high24h: 390,
-      low24h: 360
-    }
+  const markets = ['NYSE', 'NASDAQ', 'Crypto', 'AEX', 'DAX'];
+  const symbols = [
+    { market: 'NYSE', symbol: 'AAPL', name: 'Apple Inc.', basePrice: 180 },
+    { market: 'NYSE', symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 390 },
+    { market: 'NASDAQ', symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 142 },
+    { market: 'NASDAQ', symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 175 },
+    { market: 'Crypto', symbol: 'BTC/USD', name: 'Bitcoin', basePrice: 45000 },
+    { market: 'Crypto', symbol: 'ETH/USD', name: 'Ethereum', basePrice: 2500 },
+    { market: 'AEX', symbol: 'ASML', name: 'ASML Holding NV', basePrice: 850 },
+    { market: 'DAX', symbol: 'SAP', name: 'SAP SE', basePrice: 175 },
   ];
   
-  return emergencyData;
+  return symbols.map(({ market, symbol, name, basePrice }) => {
+    // Generate random price within a range
+    const randomFactor = 0.95 + Math.random() * 0.1;
+    const price = basePrice * randomFactor;
+    
+    const change24h = parseFloat(((randomFactor - 1) * 100).toFixed(2));
+    
+    // Calculate high/low for current price display
+    const highValue = parseFloat((price * (1 + Math.random() * 0.02)).toFixed(2));
+    const lowValue = parseFloat((price * (1 - Math.random() * 0.02)).toFixed(2));
+    
+    // Calculate high24h/low24h for 24-hour ranges
+    const high24h = parseFloat((price * (1 + Math.random() * 0.02)).toFixed(2));
+    const low24h = parseFloat((price * (1 - Math.random() * 0.02)).toFixed(2));
+
+    return {
+      market,
+      symbol,
+      name,
+      price: parseFloat(price.toFixed(2)),
+      volume: Math.floor(Math.random() * 10000000 + 1000000),
+      change24h,
+      high: highValue,
+      low: lowValue,
+      high24h,
+      low24h,
+      marketCap: parseFloat((price * (Math.random() * 1000000000 + 100000000)).toFixed(2)),
+      timestamp: Date.now(),
+      totalVolume24h: Math.floor(Math.random() * 10000000 + 1000000),
+      circulatingSupply: Math.floor(Math.random() * 1000000000 + 100000000),
+      lastUpdated: new Date().toISOString()
+    };
+  });
 };
