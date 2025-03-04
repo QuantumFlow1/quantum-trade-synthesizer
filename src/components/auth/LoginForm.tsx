@@ -89,26 +89,16 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
     }
   }
 
-  // Admin login shortcut for testing
-  const handleAdminLogin = async () => {
+  // Admin login shortcut for testing - only sets form values, doesn't auto-submit
+  const handleAdminLogin = () => {
     setEmail("admin@example.com")
     setPassword("admin123")
-    
-    // Wait for state to update, then submit
-    setTimeout(() => {
-      document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
-    }, 100)
   }
   
-  // Super admin login shortcut
-  const handleSuperAdminLogin = async () => {
+  // Super admin login shortcut - only sets form values, doesn't auto-submit
+  const handleSuperAdminLogin = () => {
     setEmail("arturgabrielian4@gmail.com")
     setPassword("admin123")
-    
-    // Wait for state to update, then submit
-    setTimeout(() => {
-      document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
-    }, 100)
   }
 
   return (
@@ -168,7 +158,7 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
           onClick={handleAdminLogin}
           disabled={isLoading}
         >
-          Quick Admin Login
+          Fill Admin Credentials
         </Button>
         
         <Button
@@ -178,7 +168,7 @@ export const LoginForm = ({ onToggleMode }: LoginFormProps) => {
           onClick={handleSuperAdminLogin}
           disabled={isLoading}
         >
-          Login as arturgabrielian4@gmail.com
+          Fill Super Admin Credentials
         </Button>
       </form>
 
