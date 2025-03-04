@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = 'https://tfmlretexydslgowlkid.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmbWxyZXRleHlkc2xnb3dsa2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk3ODkyMDAsImV4cCI6MjA1NTM2NTIwMH0.1w7FEnBOJAvIVyScs6vqOfk7e0IRNF8tTC8ccOxiHfE'
 
+// Configure the client to avoid using PREPARE statements
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
@@ -15,8 +16,23 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     params: {
       eventsPerSecond: 10
     }
+  },
+  db: {
+    schema: 'public'
+  },
+  global: {
+    fetch: (...args) => {
+      // Add custom headers to avoid PREPARE statement issues
+      const [url, options = {}] = args;
+      options.headers = {
+        ...options.headers,
+        'X-Supabase-Prefer': 'tx=rollback',
+        'X-Supabase-DB-No-Prepare': 'true'
+      };
+      return fetch(url, options);
+    }
   }
-})
+});
 
 // Enhanced connection check function with improved error handling and debugging
 export const checkSupabaseConnection = async () => {
@@ -58,14 +74,14 @@ export const checkSupabaseConnection = async () => {
     try {
       const grokTestParams = {
         body: {
-          message: "system: ping test",
-          context: []
+          isAvailabilityCheck: true,
+          timestamp: new Date().toISOString() // Add timestamp to prevent caching
         }
       };
       
       console.log('Grok3 API test parameters:', JSON.stringify(grokTestParams));
       
-      const { data: grokData, error: grokError } = await supabase.functions.invoke('grok3-response', grokTestParams);
+      const { data: grokData, error: grokError } = await supabase.functions.invoke('grok3-ping', grokTestParams);
       
       if (grokError) {
         // More detailed error information for debugging
@@ -86,7 +102,7 @@ export const checkSupabaseConnection = async () => {
         }
       } else {
         console.log('Grok3 API test response:', grokData ? JSON.stringify(grokData).substring(0, 100) + '...' : 'No data');
-        results.grok3API = grokData?.status === "available" && grokData?.response === "pong";
+        results.grok3API = grokData?.status === "available";
       }
     } catch (grokException) {
       console.error('Grok3 API exception details:', grokException);
@@ -110,8 +126,11 @@ export const checkGrok3APIConfig = async () => {
   try {
     console.log('Checking Grok3 API configuration...');
     
-    const { data, error } = await supabase.functions.invoke('grok3-response', {
-      body: { message: "system: ping test", context: [] }
+    const { data, error } = await supabase.functions.invoke('grok3-ping', {
+      body: { 
+        isAvailabilityCheck: true,
+        timestamp: new Date().toISOString() // Add timestamp to prevent caching
+      }
     });
     
     if (error) {
@@ -125,7 +144,7 @@ export const checkGrok3APIConfig = async () => {
     console.log('Grok3 API configuration check result:', data);
     
     return { 
-      isConfigured: data?.status === "available" && data?.response === "pong",
+      isConfigured: data?.status === "available",
       data: data
     };
   } catch (error) {

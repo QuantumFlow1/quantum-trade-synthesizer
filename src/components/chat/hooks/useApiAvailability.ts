@@ -21,8 +21,12 @@ export function useApiAvailability(isAdminContext = false) {
     
     try {
       // Use the Supabase Edge Function to check Grok3 availability
+      // This avoids direct database connections that might use PREPARE statements
       const { data, error } = await supabase.functions.invoke('grok3-ping', {
-        body: { isAvailabilityCheck: true }
+        body: { 
+          isAvailabilityCheck: true,
+          timestamp: new Date().toISOString() // Add timestamp to prevent caching
+        }
       });
       
       console.log('Grok3 availability check result:', { data, error });

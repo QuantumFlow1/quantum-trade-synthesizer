@@ -45,6 +45,7 @@ serve(async (req) => {
     
     try {
       // Simple request to DeepSeek API to check if the API key is valid
+      // Using fetch instead of direct database queries to avoid PREPARE statement issues
       const response = await fetch('https://api.deepseek.com/v1/models', {
         method: 'GET',
         headers: {

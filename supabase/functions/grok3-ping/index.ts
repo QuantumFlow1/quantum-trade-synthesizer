@@ -30,6 +30,18 @@ serve(async (req) => {
       );
     }
     
+    // Basic validation of the API key format
+    if (!GROK3_API_KEY.startsWith('gsk_') && !GROK3_API_KEY.startsWith('sk-')) {
+      console.error('Invalid Grok3 API key format');
+      return new Response(
+        JSON.stringify({ 
+          status: 'unavailable', 
+          message: 'Invalid API key format. Grok3 API keys should start with "gsk_" or "sk-"' 
+        }),
+        { headers: corsHeaders }
+      );
+    }
+    
     // Check if this is just an availability check, in which case we don't need to make an actual API call
     const { isAvailabilityCheck = true, testApiCall = false } = await req.json().catch(() => ({ isAvailabilityCheck: true }));
     
@@ -90,12 +102,12 @@ serve(async (req) => {
       }
     }
     
-    // For simple availability checks, just verify the API key exists
-    console.log('Simple availability check - API key exists');
+    // For simple availability checks, just verify the API key exists and has valid format
+    console.log('Simple availability check - API key exists with valid format');
     return new Response(
       JSON.stringify({ 
         status: 'available', 
-        message: 'Grok3 API key is configured' 
+        message: 'Grok3 API key is configured with valid format' 
       }),
       { headers: corsHeaders }
     );
