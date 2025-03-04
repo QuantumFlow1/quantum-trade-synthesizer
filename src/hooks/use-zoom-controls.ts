@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
 
@@ -53,9 +54,11 @@ export const useZoomControls = (initialScale = 1) => {
     };
 
     const handleWheel = (e: WheelEvent) => {
+      // Check if CTRL key is pressed during scroll - this is the standard zoom gesture
       if (e.ctrlKey) {
         e.preventDefault();
-        const newScale = setZoomLevel(scale - e.deltaY * 0.001);
+        const zoomFactor = 0.001; // Adjust sensitivity
+        const newScale = setZoomLevel(scale - e.deltaY * zoomFactor);
         
         if (Math.abs(newScale - scale) > 0.05) {
           toast({
@@ -97,6 +100,7 @@ export const useZoomControls = (initialScale = 1) => {
       }
     };
 
+    // Add all event listeners
     document.addEventListener('touchstart', handleTouchStart);
     document.addEventListener('touchmove', handleTouchMove);
     document.addEventListener('touchend', handleTouchEnd);

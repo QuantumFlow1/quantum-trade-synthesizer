@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ArrowUpRight, ArrowDownRight, MinusIcon } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { MarketData } from '../types';
 import { formatCurrency, formatLargeNumber, formatPercentage } from '../utils/formatters';
 import { useIsMobile } from '@/hooks/use-mobile';

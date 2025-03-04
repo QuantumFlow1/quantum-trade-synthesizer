@@ -6,6 +6,7 @@ import { MarketData } from '@/components/market/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { useZoomControls } from '@/hooks/use-zoom-controls';
 
 interface MarketDetailsDialogProps {
   selectedMarket: MarketData | null;
@@ -21,6 +22,7 @@ export const MarketDetailsDialog: React.FC<MarketDetailsDialogProps> = ({
   handleCloseMarketDetail
 }) => {
   const isMobile = useIsMobile();
+  const { scale } = useZoomControls();
   
   // Handle responsiveness
   useEffect(() => {
@@ -49,6 +51,7 @@ export const MarketDetailsDialog: React.FC<MarketDetailsDialogProps> = ({
       <DialogOverlay className="bg-background/80 backdrop-blur-sm" />
       <DialogContent 
         className={`${isMobile ? 'max-w-[95vw]' : 'max-w-4xl'} p-0 overflow-hidden rounded-lg border bg-background shadow-lg h-[85vh] overflow-y-auto`}
+        style={{ transform: `scale(${scale})`, transformOrigin: 'center' }}
       >
         {isValidMarketData ? (
           <EnhancedMarketDetail 

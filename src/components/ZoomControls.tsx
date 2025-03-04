@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
 import { ZoomIn, ZoomOut, Minimize2, Maximize2 } from "lucide-react";
-import { Tooltip } from "@/components/ui/tooltip";
 
 interface ZoomControlsProps {
   scale?: number;
@@ -25,11 +24,11 @@ export const ZoomControls = ({ scale = 1, onZoomIn, onZoomOut, onResetZoom }: Zo
         size="icon"
         onClick={onZoomIn}
         className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10 relative group"
-        title="Zoom In"
+        title="Zoom In (Ctrl + Mouse Wheel Up)"
       >
         <ZoomIn className="h-4 w-4" />
         <span className="absolute right-full mr-2 bg-black/80 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-          Zoom In
+          Zoom In (Ctrl + Mouse Wheel Up)
         </span>
       </Button>
       
@@ -38,11 +37,11 @@ export const ZoomControls = ({ scale = 1, onZoomIn, onZoomOut, onResetZoom }: Zo
         size="icon"
         onClick={onZoomOut}
         className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10 relative group"
-        title="Zoom Out"
+        title="Zoom Out (Ctrl + Mouse Wheel Down)"
       >
         <ZoomOut className="h-4 w-4" />
         <span className="absolute right-full mr-2 bg-black/80 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-          Zoom Out
+          Zoom Out (Ctrl + Mouse Wheel Down)
         </span>
       </Button>
       
@@ -51,11 +50,11 @@ export const ZoomControls = ({ scale = 1, onZoomIn, onZoomOut, onResetZoom }: Zo
         size="icon"
         onClick={onResetZoom}
         className="backdrop-blur-md bg-white/5 border-white/10 hover:bg-white/10 relative group"
-        title={scale !== 1 ? "Reset Zoom" : "Default Size"}
+        title={scale !== 1 ? "Reset Zoom (Ctrl + 0)" : "Default Size"}
       >
         {scale !== 1 ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         <span className="absolute right-full mr-2 bg-black/80 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-          {scale !== 1 ? "Reset Zoom" : "Default Size"}
+          {scale !== 1 ? "Reset Zoom (Ctrl + 0)" : "Default Size"}
         </span>
       </Button>
     </div>
