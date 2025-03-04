@@ -4,11 +4,10 @@ import { useToast } from "@/hooks/use-toast";
 import { StandardOrderForm } from "./order-form/StandardOrderForm";
 import { AdvancedOrderForm } from "./order-form/AdvancedOrderForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, RefreshCw } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
-import { fetchAdminApiKey } from "@/components/chat/services/utils/apiHelpers";
 import { SimulationToggle } from "./SimulationToggle";
+import { ApiStatusAlert } from "./components/ApiStatusAlert";
+import { useApiStatus } from "./hooks/useApiStatus";
+import { useSimulatedOrder } from "./hooks/useSimulatedOrder";
 
 interface TradeOrderFormProps {
   apiStatus?: 'checking' | 'available' | 'unavailable';
@@ -17,7 +16,7 @@ interface TradeOrderFormProps {
 }
 
 export const TradeOrderForm = ({ 
-  apiStatus = 'unavailable', 
+  apiStatus: externalApiStatus = 'unavailable', 
   isSimulationMode = false,
   onSimulationToggle
 }: TradeOrderFormProps) => {
@@ -29,29 +28,22 @@ export const TradeOrderForm = ({
   const [stopPrice, setStopPrice] = useState<string>("");
   const [stopLoss, setStopLoss] = useState<string>("");
   const [takeProfit, setTakeProfit] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [currentPrice, setCurrentPrice] = useState<number>(42000);
   const [advancedSignal, setAdvancedSignal] = useState<any>(null);
-  const [localApiStatus, setLocalApiStatus] = useState<'checking' | 'available' | 'unavailable'>(apiStatus);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [localSimulationMode, setLocalSimulationMode] = useState<boolean>(isSimulationMode);
-
+  
   const { toast } = useToast();
+  const { apiStatus: localApiStatus, isVerifying, verifyApiStatus } = useApiStatus(externalApiStatus);
+  const { isSubmitting, setIsSubmitting, handleSimulatedOrder } = useSimulatedOrder();
 
   useEffect(() => {
-    if (apiStatus !== localApiStatus) {
-      setLocalApiStatus(apiStatus);
+    if (externalApiStatus !== localApiStatus) {
+      // Sync with external API status if provided
     }
     if (isSimulationMode !== localSimulationMode) {
       setLocalSimulationMode(isSimulationMode);
     }
-  }, [apiStatus, isSimulationMode]);
-
-  useEffect(() => {
-    if (localApiStatus === 'checking') {
-      verifyApiStatus();
-    }
-  }, [localApiStatus]);
+  }, [externalApiStatus, isSimulationMode]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -61,77 +53,6 @@ export const TradeOrderForm = ({
 
     return () => clearInterval(interval);
   }, [currentPrice]);
-
-  const checkAPIAvailability = async () => {
-    try {
-      const hasOpenAI = await fetchAdminApiKey('openai');
-      const hasClaude = await fetchAdminApiKey('claude');
-      const hasGemini = await fetchAdminApiKey('gemini');
-      const hasDeepseek = await fetchAdminApiKey('deepseek');
-      
-      const openaiKey = localStorage.getItem('openaiApiKey');
-      const claudeKey = localStorage.getItem('claudeApiKey');
-      const geminiKey = localStorage.getItem('geminiApiKey');
-      const deepseekKey = localStorage.getItem('deepseekApiKey');
-      
-      const hasAnyKey = !!(hasOpenAI || hasClaude || hasGemini || hasDeepseek || 
-                          openaiKey || claudeKey || geminiKey || deepseekKey);
-      
-      console.log("TradeOrderForm: API sleutels beschikbaarheidscontrole:", {
-        adminKeys: {
-          openai: !!hasOpenAI,
-          claude: !!hasClaude,
-          gemini: !!hasGemini,
-          deepseek: !!hasDeepseek
-        },
-        localStorageKeys: {
-          openai: !!openaiKey,
-          claude: !!claudeKey,
-          gemini: !!geminiKey,
-          deepseek: !!deepseekKey
-        },
-        hasAnyKey
-      });
-      
-      if (!hasAnyKey) {
-        console.log("TradeOrderForm: Geen API sleutels beschikbaar");
-        setLocalApiStatus('unavailable');
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("TradeOrderForm: Fout bij controleren API sleutels:", error);
-      return false;
-    }
-  };
-
-  const verifyApiStatus = async () => {
-    setIsVerifying(true);
-    try {
-      const hasKeys = await checkAPIAvailability();
-      
-      if (!hasKeys) {
-        console.log("TradeOrderForm: Geen API sleutels beschikbaar");
-        setLocalApiStatus('unavailable');
-        setIsVerifying(false);
-        return;
-      }
-      
-      const { data, error } = await supabase.functions.invoke('grok3-response', {
-        body: { message: "ping", context: [] }
-      });
-      
-      if (error) throw error;
-      setLocalApiStatus('available');
-      console.log("TradeOrderForm: API is available");
-    } catch (error) {
-      console.error("TradeOrderForm: Failed to verify API status:", error);
-      setLocalApiStatus('unavailable');
-    } finally {
-      setIsVerifying(false);
-    }
-  };
 
   const handleToggleSimulation = (enabled: boolean) => {
     setLocalSimulationMode(enabled);
@@ -162,7 +83,7 @@ export const TradeOrderForm = ({
     setIsSubmitting(true);
 
     if (localSimulationMode) {
-      handleSimulatedOrder();
+      handleSimulatedOrder(orderType, amount, currentPrice, orderMode, advancedSignal);
     } else {
       setTimeout(() => {
         toast({
@@ -174,56 +95,6 @@ export const TradeOrderForm = ({
     }
   };
 
-  const handleSimulatedOrder = async () => {
-    try {
-      const simulationRequest = {
-        simulation: {
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          pair_id: "00000000-0000-0000-0000-000000000000",
-          type: orderType === "buy" ? "long" : "short",
-          amount: Number(amount),
-          entry_price: currentPrice,
-          strategy: orderMode === "standard" ? "manual" : 
-                   advancedSignal ? "ai-assisted" : "manual",
-          simulation_type: "daytrading"
-        }
-      };
-      
-      console.log("Sending simulation request:", simulationRequest);
-      
-      const { data, error } = await supabase.functions.invoke('trade-simulation', {
-        body: simulationRequest
-      });
-      
-      if (error) {
-        console.error("Error response from trade-simulation:", error);
-        throw error;
-      }
-      
-      console.log("Simulation response:", data);
-      
-      toast({
-        title: "Simulatie Gestart",
-        description: `Uw ${orderType === "buy" ? "LONG" : "SHORT"} simulatie voor ${amount} BTC is succesvol gestart tegen $${currentPrice}.`,
-      });
-      
-      if (onSimulationToggle) {
-        document.querySelector('[value="simulated"]')?.dispatchEvent(
-          new MouseEvent('click', { bubbles: true })
-        );
-      }
-    } catch (error) {
-      console.error("Error creating simulation:", error);
-      toast({
-        title: "Simulatie Fout",
-        description: "Er is een fout opgetreden bij het starten van de simulatie. Probeer het later opnieuw.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleSignalApplied = (direction: string, stopLossValue: string, takeProfitValue: string) => {
     setOrderType(direction.toLowerCase() as "buy" | "sell");
     setStopLoss(stopLossValue);
@@ -231,7 +102,7 @@ export const TradeOrderForm = ({
   };
 
   const handleRetryConnection = () => {
-    setLocalApiStatus('checking');
+    verifyApiStatus();
     toast({
       title: "Opnieuw verbinden",
       description: "Verbinding met trading services wordt gecontroleerd..."
@@ -262,32 +133,12 @@ export const TradeOrderForm = ({
 
   return (
     <Card className="backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-      {isApiChecking && !localSimulationMode && (
-        <div className="mb-4 p-2 bg-blue-500/10 rounded-md flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center">
-            <RefreshCw className="h-4 w-4 mr-2 text-blue-500 animate-spin" />
-            Controleren van verbinding met trading services...
-          </div>
-        </div>
-      )}
-      
-      {!isApiAvailable && !isApiChecking && !localSimulationMode && (
-        <div className="mb-4 p-2 bg-red-500/10 rounded-md flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center">
-            <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-            Trading services niet beschikbaar. Activeer simulatiemodus om toch te kunnen handelen met nepgeld.
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleRetryConnection}
-            className="text-xs"
-          >
-            <RefreshCw className="h-3 w-3 mr-1" />
-            Opnieuw proberen
-          </Button>
-        </div>
-      )}
+      <ApiStatusAlert 
+        isChecking={isApiChecking}
+        isAvailable={isApiAvailable}
+        onRetryConnection={handleRetryConnection}
+        simulationMode={localSimulationMode}
+      />
       
       <div className="mb-4">
         <SimulationToggle 
