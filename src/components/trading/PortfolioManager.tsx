@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -140,7 +141,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
     toast({
       title: `${portfolioDecision.action} Order ${isSimulationMode ? "Simulated" : "Executed"}`,
       description: `${portfolioDecision.action} ${portfolioDecision.amount} ${portfolioDecision.ticker} at $${portfolioDecision.price}`,
-      variant: "success",
+      variant: "default", // Changed from "success" to "default" to fix the type error
     });
     
     setPortfolioDecision(null);
