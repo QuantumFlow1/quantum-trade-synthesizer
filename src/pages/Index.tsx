@@ -13,7 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
-import { Users, AlertTriangle, RefreshCw } from "lucide-react";
+import { Users, AlertTriangle, RefreshCw, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -22,20 +22,35 @@ const Index = () => {
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error'>('checking');
+  const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error' | 'offline'>('checking');
   const [isRetrying, setIsRetrying] = React.useState(false);
   
   useOAuthRedirect();
 
+  // Check if we're in offline/local development mode
+  const isOfflineMode = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        !navigator.onLine;
+
   // Check Supabase connection when component mounts
   React.useEffect(() => {
+    if (isOfflineMode) {
+      setConnectionStatus('offline');
+      return;
+    }
     checkConnection();
-  }, []);
+  }, [isOfflineMode]);
   
   const checkConnection = async () => {
+    if (isOfflineMode) {
+      setConnectionStatus('offline');
+      return;
+    }
+    
     try {
       setConnectionStatus('checking');
       setIsRetrying(true);
+      
       const isConnected = await checkSupabaseConnection();
       
       if (isConnected) {
@@ -114,6 +129,17 @@ const Index = () => {
                       </>
                     )}
                   </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {/* Offline mode indicator */}
+            {connectionStatus === 'offline' && (
+              <Alert variant="warning" className="max-w-md mx-auto mt-4">
+                <WifiOff className="h-4 w-4" />
+                <AlertTitle>Offline Mode</AlertTitle>
+                <AlertDescription>
+                  Running in offline/local development mode. Some features requiring backend services will be limited.
                 </AlertDescription>
               </Alert>
             )}
