@@ -9,6 +9,9 @@ import { MarketTabList } from './enhanced/MarketTabList';
 import { MarketDetailsDialog } from './enhanced/MarketDetailsDialog';
 import { LoadingState } from './enhanced/LoadingState';
 import { useMarketDataState } from './enhanced/useMarketDataState';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export const EnhancedMarketPage: React.FC = () => {
   const {
@@ -29,6 +32,17 @@ export const EnhancedMarketPage: React.FC = () => {
     getMarketCategories
   } = useMarketDataState();
 
+  // Check if we have valid market data
+  const hasValidData = Array.isArray(marketData) && marketData.length > 0;
+  const categories = React.useMemo(() => {
+    try {
+      return getMarketCategories();
+    } catch (err) {
+      console.error("Error getting market categories:", err);
+      return [];
+    }
+  }, [marketData]);
+
   return (
     <div className="space-y-6">
       <MarketHeader 
@@ -40,6 +54,23 @@ export const EnhancedMarketPage: React.FC = () => {
       
       {isLoading ? (
         <LoadingState />
+      ) : !hasValidData ? (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading market data</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>We couldn't load the market data. This might be a temporary issue.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRefresh}
+              className="w-fit"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </AlertDescription>
+        </Alert>
       ) : (
         <>
           <MarketTrendCards 
@@ -52,12 +83,12 @@ export const EnhancedMarketPage: React.FC = () => {
           <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-8">
             <MarketTabList 
               activeTab={activeTab} 
-              marketCategories={getMarketCategories()} 
+              marketCategories={categories} 
             />
             
             <TabsContent value={activeTab}>
               <EnhancedMarketDataTable 
-                data={filteredData} 
+                data={filteredData || []} 
                 onSelectMarket={handleSelectMarket} 
               />
             </TabsContent>

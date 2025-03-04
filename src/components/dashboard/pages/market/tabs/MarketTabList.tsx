@@ -12,15 +12,18 @@ export const MarketTabList: React.FC<MarketTabListProps> = ({ activeTab }) => {
     <TabsList className="grid w-full grid-cols-3">
       <TabsTrigger value="market" className="flex items-center gap-2">
         <BarChart3 className="h-4 w-4" />
-        <span>Market Overview</span>
+        <span className="hidden sm:inline">Market Overview</span>
+        <span className="sm:hidden">Market</span>
       </TabsTrigger>
       <TabsTrigger value="positions" className="flex items-center gap-2">
         <TrendingUp className="h-4 w-4" />
-        <span>Positions</span>
+        <span className="hidden sm:inline">Positions</span>
+        <span className="sm:hidden">Positions</span>
       </TabsTrigger>
       <TabsTrigger value="transactions" className="flex items-center gap-2">
         <Activity className="h-4 w-4" />
-        <span>Transactions</span>
+        <span className="hidden sm:inline">Transactions</span>
+        <span className="sm:hidden">Tx</span>
       </TabsTrigger>
     </TabsList>
   );

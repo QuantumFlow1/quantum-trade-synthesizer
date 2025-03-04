@@ -26,7 +26,7 @@ export const useMarketDataState = () => {
         throw new Error(`Failed to fetch market data: ${error.message}`);
       }
       
-      if (data) {
+      if (data && Array.isArray(data)) {
         setMarketData(data as MarketData[]);
         filterData(data as MarketData[], searchTerm, activeTab);
         
@@ -35,9 +35,22 @@ export const useMarketDataState = () => {
           description: `Successfully fetched data for ${data.length} markets`,
           duration: 3000,
         });
+      } else {
+        // Handle non-array data
+        console.error('Invalid market data format:', data);
+        setMarketData([]);
+        setFilteredData([]);
+        toast({
+          title: 'Data Error',
+          description: 'Market data format is invalid. Please try again later.',
+          variant: 'destructive',
+          duration: 5000,
+        });
       }
     } catch (error) {
       console.error('Error fetching market data:', error);
+      setMarketData([]);
+      setFilteredData([]);
       toast({
         title: 'Error',
         description: 'Failed to fetch market data. Please try again later.',
@@ -62,6 +75,12 @@ export const useMarketDataState = () => {
   }, []);
   
   const filterData = (data: MarketData[], search: string, tab: string) => {
+    if (!Array.isArray(data)) {
+      console.error('filterData received non-array data:', data);
+      setFilteredData([]);
+      return;
+    }
+    
     let filtered = [...data];
     
     // Apply search filter
@@ -82,7 +101,11 @@ export const useMarketDataState = () => {
   };
   
   useEffect(() => {
-    filterData(marketData, searchTerm, activeTab);
+    if (Array.isArray(marketData)) {
+      filterData(marketData, searchTerm, activeTab);
+    } else {
+      setFilteredData([]);
+    }
   }, [searchTerm, activeTab, marketData]);
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,11 +131,18 @@ export const useMarketDataState = () => {
   
   const getMarketCategories = () => {
     const categories = new Set<string>();
+    
+    if (!Array.isArray(marketData)) {
+      console.warn('getMarketCategories called with non-array marketData');
+      return [];
+    }
+    
     marketData.forEach(item => {
-      if (item.market) {
+      if (item && item.market) {
         categories.add(item.market);
       }
     });
+    
     return Array.from(categories);
   };
 
