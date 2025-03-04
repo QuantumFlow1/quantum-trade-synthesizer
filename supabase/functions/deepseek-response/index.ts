@@ -19,10 +19,9 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { message, context = [], model = 'deepseek-chat', maxTokens = 1000, temperature = 0.7, apiKey } = await req.json();
+    const { messages, apiKey } = await req.json();
     
-    console.log(`DeepSeek API request with message length: ${message?.length}, context messages: ${context?.length}`);
-    console.log(`Using model: ${model}, temperature: ${temperature}, maxTokens: ${maxTokens}`);
+    console.log(`DeepSeek API request with ${messages.length} messages`);
     
     // Use API key from request or fall back to environment variable
     const key = apiKey || DEEPSEEK_API_KEY;
@@ -41,94 +40,53 @@ serve(async (req) => {
     }
     
     // Format the messages for DeepSeek API
-    const formattedMessages = [...context];
+    const formattedMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
     
-    // Add current message if provided
-    if (message) {
-      formattedMessages.push({
-        role: 'user',
-        content: message
-      });
-    }
+    // Make request to DeepSeek API
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: formattedMessages,
+        temperature: 0.7
+      })
+    });
     
-    try {
-      // Make request to DeepSeek API
-      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: formattedMessages,
-          temperature: temperature,
-          max_tokens: maxTokens
-        })
-      });
-      
-      // Enhanced error handling for response
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`DeepSeek API error (${response.status} ${response.statusText}):`, errorText);
-        
-        return new Response(
-          JSON.stringify({ 
-            error: `DeepSeek API error: ${response.status} ${response.statusText}`, 
-            details: errorText
-          }),
-          { 
-            status: 500, 
-            headers: corsHeaders 
-          }
-        );
-      }
-      
-      const data = await response.json();
-      console.log('DeepSeek API response received');
-      
-      // Verify that the response contains the expected structure
-      if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
-        console.error('Unexpected response format from DeepSeek API:', data);
-        return new Response(
-          JSON.stringify({ 
-            error: 'Invalid response format from DeepSeek API' 
-          }),
-          { 
-            status: 500, 
-            headers: corsHeaders 
-          }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({
-          response: data.choices[0].message.content
-        }),
-        { headers: corsHeaders }
-      );
-    } catch (apiError) {
-      console.error('API call error in deepseek-response function:', apiError);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('DeepSeek API error:', errorText);
       return new Response(
         JSON.stringify({ 
-          error: `API call error: ${apiError.message}` 
+          error: `API error: ${errorText}` 
         }),
         { 
-          status: 500, 
+          status: response.status, 
           headers: corsHeaders 
         }
       );
     }
+    
+    const data = await response.json();
+    console.log('DeepSeek API response received');
+    
+    return new Response(
+      JSON.stringify({
+        content: data.choices[0].message.content
+      }),
+      { headers: corsHeaders }
+    );
   } catch (error) {
     console.error('Error in deepseek-response function:', error);
     return new Response(
-      JSON.stringify({ 
-        error: `Server error: ${error.message}` 
-      }),
-      { 
-        status: 500, 
-        headers: corsHeaders 
-      }
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: corsHeaders }
     );
   }
 });
