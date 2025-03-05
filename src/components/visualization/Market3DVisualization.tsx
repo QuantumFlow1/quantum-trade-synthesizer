@@ -10,6 +10,20 @@ interface Market3DVisualizationProps {
   isSimulationMode?: boolean;
 }
 
+// Simple ErrorBoundary component for Canvas
+class ErrorBoundary extends React.Component<{
+  children: React.ReactNode;
+  onError: (error: Error) => void;
+}> {
+  componentDidCatch(error: Error) {
+    this.props.onError(error);
+  }
+
+  render() {
+    return this.props.children;
+  }
+}
+
 export const Market3DVisualization = ({ 
   data, 
   isSimulationMode = false 
@@ -93,19 +107,3 @@ export const Market3DVisualization = ({
     </div>
   );
 };
-
-// Simple ErrorBoundary component for Canvas
-class ErrorBoundary extends React.Component<{
-  children: React.ReactNode;
-  onError: (error: Error) => void;
-}> {
-  componentDidCatch(error: Error) {
-    this.props.onError(error);
-  }
-
-  render() {
-    return this.props.children;
-  }
-}
-
-import React from 'react';
