@@ -20,7 +20,7 @@ export const AIInsights = ({ isOnline, aiAdvice }: AIInsightsProps) => {
     if (!isOnline) {
       toast({
         title: "AI Service Offline",
-        description: "De AI service is momenteel niet beschikbaar. Probeer het later opnieuw.",
+        description: "The AI service is currently unavailable. Please try again later.",
         variant: "destructive",
       });
       return;
@@ -37,15 +37,15 @@ export const AIInsights = ({ isOnline, aiAdvice }: AIInsightsProps) => {
       if (data && data.advice) {
         setAdvice(data.advice);
         toast({
-          title: "AI Analyse Gegenereerd",
-          description: "Nieuwe trading inzichten zijn succesvol gegenereerd.",
+          title: "AI Analysis Generated",
+          description: "New trading insights have been successfully generated.",
         });
       }
     } catch (error) {
       console.error("Error generating AI advice:", error);
       toast({
-        title: "Generatie Mislukt",
-        description: "Kon geen AI analyse genereren. Probeer het later opnieuw.",
+        title: "Generation Failed",
+        description: "Could not generate AI analysis. Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -58,7 +58,7 @@ export const AIInsights = ({ isOnline, aiAdvice }: AIInsightsProps) => {
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-medium flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-blue-400" />
-          <span className="text-blue-400">{isOnline ? "AI Trading Inzichten" : "Trading Inzichten (Offline)"}</span>
+          <span className="text-blue-400">{isOnline ? "AI Trading Insights" : "Trading Insights (Offline)"}</span>
         </h3>
         <div className="flex items-center gap-2">
           <Button 
@@ -68,7 +68,7 @@ export const AIInsights = ({ isOnline, aiAdvice }: AIInsightsProps) => {
             onClick={() => setExpanded(!expanded)}
           >
             <ChevronRight className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} />
-            <span className="text-xs">{expanded ? "Minder" : "Meer"}</span>
+            <span className="text-xs">{expanded ? "Less" : "More"}</span>
           </Button>
           <Button
             variant="outline"
@@ -78,7 +78,7 @@ export const AIInsights = ({ isOnline, aiAdvice }: AIInsightsProps) => {
             disabled={isLoading || !isOnline}
           >
             <RefreshCcw className={`h-3.5 w-3.5 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-            <span className="text-xs">Genereer</span>
+            <span className="text-xs">Generate</span>
           </Button>
         </div>
       </div>
@@ -94,8 +94,8 @@ export const AIInsights = ({ isOnline, aiAdvice }: AIInsightsProps) => {
           <div className="p-3 rounded bg-blue-500/5 h-full flex items-center justify-center">
             <div className="text-sm text-muted-foreground text-center">
               {isOnline 
-                ? "Klik op \"Genereer\" voor gepersonaliseerd advies."
-                : "AI service is momenteel offline. Probeer het later opnieuw."}
+                ? "Click \"Generate\" for personalized advice."
+                : "AI service is currently offline. Please try again later."}
             </div>
           </div>
         )}

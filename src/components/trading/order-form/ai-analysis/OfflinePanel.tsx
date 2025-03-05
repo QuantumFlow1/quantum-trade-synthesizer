@@ -12,7 +12,7 @@ export const OfflinePanel = ({ onConnectClick }: OfflinePanelProps) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Brain className="w-5 h-5 text-muted-foreground" />
-          <h3 className="text-lg font-medium">AI Trading Analyse</h3>
+          <h3 className="text-lg font-medium">AI Trading Analysis</h3>
         </div>
         <div className="flex items-center gap-2 text-muted-foreground">
           <WifiOff className="w-4 h-4" />
@@ -22,12 +22,12 @@ export const OfflinePanel = ({ onConnectClick }: OfflinePanelProps) => {
       
       <div className="space-y-3 mb-4">
         <p className="text-sm text-muted-foreground">
-          AI analyse is momenteel niet beschikbaar. Verbind met de API om AI-analyses en aanbevelingen te ontvangen.
+          AI analysis is currently unavailable. Connect to the API to receive AI analyses and recommendations.
         </p>
         <div className="text-xs text-muted-foreground/70 space-y-1">
-          <p>• Realtime marktupdates elke 5-15 seconden</p>
-          <p>• AI-gestuurde handelsaanbevelingen</p>
-          <p>• Risico- en winstanalyse per trade</p>
+          <p>• Real-time market updates every 5-15 seconds</p>
+          <p>• AI-driven trading recommendations</p>
+          <p>• Risk and profit analysis per trade</p>
         </div>
       </div>
       
@@ -37,7 +37,7 @@ export const OfflinePanel = ({ onConnectClick }: OfflinePanelProps) => {
         className="w-full mb-4"
         onClick={onConnectClick}
       >
-        Verbind met AI Service
+        Connect to AI Service
       </Button>
     </>
   );

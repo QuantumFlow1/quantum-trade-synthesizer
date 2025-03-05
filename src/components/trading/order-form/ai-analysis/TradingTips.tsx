@@ -3,12 +3,12 @@ import { LanguageToggle } from "./LanguageToggle";
 import { useState } from "react";
 
 export const TradingTips = () => {
-  const [language, setLanguage] = useState<"nl" | "en">("nl");
+  const [language, setLanguage] = useState<"nl" | "en">("en");
   
   return (
     <div className="mt-4 p-3 bg-primary/5 rounded-md text-sm text-muted-foreground">
       <div className="flex justify-between items-center mb-2">
-        <h4 className="font-medium">Basis Trading Tips:</h4>
+        <h4 className="font-medium">Basic Trading Tips:</h4>
         <LanguageToggle 
           language={language}
           onLanguageChange={setLanguage}
