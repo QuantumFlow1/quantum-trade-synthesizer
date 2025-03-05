@@ -19,7 +19,7 @@ export const CoordinateSystem = ({ theme }: CoordinateSystemProps) => {
       
       {/* X-axis */}
       <line>
-        <bufferGeometry attach="geometry">
+        <bufferGeometry>
           <float32BufferAttribute 
             attach="attributes-position"
             count={2}
@@ -32,7 +32,7 @@ export const CoordinateSystem = ({ theme }: CoordinateSystemProps) => {
       
       {/* Y-axis */}
       <line>
-        <bufferGeometry attach="geometry">
+        <bufferGeometry>
           <float32BufferAttribute 
             attach="attributes-position"
             count={2}

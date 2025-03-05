@@ -45,7 +45,7 @@ export const VolumeIndicator = ({
         <sphereGeometry args={[size, 16, 16]} />
         <meshStandardMaterial 
           color={sphereColor} 
-          transparent 
+          transparent={true}
           opacity={theme === 'dark' ? 0.6 : 0.5} 
           emissive={sphereColor}
           emissiveIntensity={emissiveIntensity}

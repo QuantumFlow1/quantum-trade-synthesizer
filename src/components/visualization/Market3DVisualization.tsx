@@ -42,6 +42,9 @@ export const Market3DVisualization = ({
     setRenderError(`Error loading 3D visualization: ${error.message}`);
   };
   
+  // Ensure data is valid
+  const safeData = Array.isArray(data) && data.length > 0 ? data : [];
+  
   return (
     <div 
       ref={containerRef}
@@ -79,7 +82,7 @@ export const Market3DVisualization = ({
               preserveDrawingBuffer: true 
             }}
           >
-            <Scene data={data} />
+            <Scene data={safeData} />
           </Canvas>
         </ErrorBoundary>
       )}

@@ -35,7 +35,7 @@ export const Scene = ({ data }: SceneProps) => {
   // Calculate min/max for scaling
   const { maxPrice, minPrice, maxVolume } = useMemo(() => {
     try {
-      if (processedData.length === 0) {
+      if (!processedData || processedData.length === 0) {
         return { maxPrice: 100, minPrice: 0, maxVolume: 100 };
       }
       
@@ -49,6 +49,12 @@ export const Scene = ({ data }: SceneProps) => {
       return { maxPrice: 100, minPrice: 0, maxVolume: 100 };
     }
   }, [processedData]);
+  
+  // Safety check to ensure we have valid data
+  if (!processedData || !Array.isArray(processedData)) {
+    console.error("Invalid data format in Scene component");
+    return null;
+  }
   
   return (
     <>
