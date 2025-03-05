@@ -29,13 +29,13 @@ interface BelgianComplianceProviderProps {
 }
 
 export const BelgianComplianceProvider = ({ children }: BelgianComplianceProviderProps) => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile } = useAuth() || { user: null, userProfile: null };
   const { toast } = useToast();
   const [isSimulationRequired, setIsSimulationRequired] = useState(false);
   const [isQualifiedInvestor, setIsQualifiedInvestor] = useState(false);
   const [complianceLoaded, setComplianceLoaded] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
-  const userRoleInfo = getUserRoleInfo(userProfile);
+  const userRoleInfo = userProfile ? getUserRoleInfo(userProfile) : { isLovTrader: false, isAdmin: false };
 
   // Function to update user's qualified status
   const updateUserQualifiedStatus = async (isQualified: boolean): Promise<{success: boolean, message?: string}> => {
@@ -98,13 +98,13 @@ export const BelgianComplianceProvider = ({ children }: BelgianComplianceProvide
 
   useEffect(() => {
     const checkComplianceRequirements = async () => {
-      // If user isn't authenticated, don't proceed
-      if (!user) {
-        setComplianceLoaded(true);
-        return;
-      }
-
       try {
+        // If user isn't authenticated, don't proceed with compliance checks
+        if (!user) {
+          setComplianceLoaded(true);
+          return;
+        }
+
         // 1. Check if user is from Belgium (could be stored in profile or fetched)
         // In a real implementation, this would come from KYC or user profile data
         const storedCountry = localStorage.getItem("userCountry") || "Belgium";
@@ -130,12 +130,12 @@ export const BelgianComplianceProvider = ({ children }: BelgianComplianceProvide
             duration: 6000,
           });
         }
-        
-        setComplianceLoaded(true);
       } catch (error) {
         console.error("Error checking compliance requirements:", error);
         // Default to safest option in case of error
         setIsSimulationRequired(true);
+      } finally {
+        // Always mark as loaded even if there was an error
         setComplianceLoaded(true);
       }
     };
