@@ -17,12 +17,14 @@ import { WalletPage } from "./dashboard/pages/WalletPage";
 import { RiskPage } from "./dashboard/pages/RiskPage";
 import { AIToolsPage } from "./dashboard/pages/AIToolsPage";
 import { SettingsPage } from "./dashboard/pages/SettingsPage";
+import { VirtualEnvironmentDemo } from "./visualization/VirtualEnvironmentDemo";
 
 const UserDashboard = () => {
   const { userProfile, isLovTrader } = useAuth();
   const { toast } = useToast();
   const { visibleWidgets, setVisibleWidgets, apiStatus, setApiStatus } = useDashboard();
   const [activePage, setActivePage] = useState<string>("overview");
+  const [showVirtualEnvironment, setShowVirtualEnvironment] = useState<boolean>(false);
 
   useEffect(() => {
     // Check if API is available
@@ -53,6 +55,9 @@ const UserDashboard = () => {
     if (isLovTrader) {
       checkApiStatus();
       setVisibleWidgets(prev => ({ ...prev, apiAccess: true }));
+      
+      // Show virtual environment for lov_traders by default
+      setShowVirtualEnvironment(true);
     }
   }, [isLovTrader, setApiStatus, setVisibleWidgets]);
 
@@ -65,7 +70,12 @@ const UserDashboard = () => {
   const renderActivePage = () => {
     switch (activePage) {
       case "overview":
-        return <OverviewPage apiStatus={apiStatus} />;
+        return (
+          <>
+            {showVirtualEnvironment && <VirtualEnvironmentDemo />}
+            <OverviewPage apiStatus={apiStatus} />
+          </>
+        );
       case "market":
         return <MarketPage />;
       case "trading":
@@ -81,7 +91,12 @@ const UserDashboard = () => {
       case "settings":
         return <SettingsPage />;
       default:
-        return <OverviewPage apiStatus={apiStatus} />;
+        return (
+          <>
+            {showVirtualEnvironment && <VirtualEnvironmentDemo />}
+            <OverviewPage apiStatus={apiStatus} />
+          </>
+        );
     }
   };
 
