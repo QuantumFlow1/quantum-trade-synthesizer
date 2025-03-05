@@ -18,11 +18,11 @@ const TradingChart = () => {
   
   const { 
     data, 
-    marketData, 
-    fetchData, 
+    rawMarketData: marketData, 
+    fetchMarketData: fetchData, 
     apiStatus,
     apiKeysAvailable
-  } = useTradingChartData(isSimulationMode);  // Updated to pass the simulation mode
+  } = useTradingChartData(isSimulationMode);  // Pass the simulation mode flag
 
   // Fetch data when component mounts
   useEffect(() => {
