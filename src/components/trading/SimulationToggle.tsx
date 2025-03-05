@@ -8,21 +8,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon, Lightbulb, BookOpen, CheckCircle2, Lock, AlertCircle } from "lucide-react";
-import { useBelgianCompliance } from "./BelgianComplianceProvider";
+import { InfoIcon, Lightbulb, BookOpen, CheckCircle2 } from "lucide-react";
 
 interface SimulationToggleProps {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
-  disabled?: boolean; // Add disabled prop
 }
 
-export const SimulationToggle = ({ enabled, onToggle, disabled = false }: SimulationToggleProps) => {
+export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) => {
   const [isEnglish, setIsEnglish] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
-  const { isSimulationRequired, isQualifiedInvestor, userCountry } = useBelgianCompliance();
-  
-  const isBelgianUser = userCountry === "Belgium";
   
   useEffect(() => {
     const lang = localStorage.getItem('preferredLanguage');
@@ -38,10 +33,6 @@ export const SimulationToggle = ({ enabled, onToggle, disabled = false }: Simula
   }, [enabled]);
 
   const handleToggle = (value: boolean) => {
-    if (disabled && !value) {
-      // Don't allow turning off if disabled and trying to turn off
-      return;
-    }
     onToggle(value);
     if (value) {
       setShowGuide(true);
@@ -56,7 +47,6 @@ export const SimulationToggle = ({ enabled, onToggle, disabled = false }: Simula
         onCheckedChange={handleToggle}
         id="simulation-mode"
         className={enabled ? "bg-green-500" : ""}
-        disabled={disabled && !enabled} // Disable switch if required by compliance but allow toggling on
       />
       <Label htmlFor="simulation-mode" className="cursor-pointer font-medium">
         {isEnglish ? "Simulation Mode" : "Simulatiemodus"}
@@ -65,11 +55,7 @@ export const SimulationToggle = ({ enabled, onToggle, disabled = false }: Simula
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center">
-              {disabled && enabled ? (
-                <Lock className="h-4 w-4 text-amber-400 ml-2" />
-              ) : (
-                <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
-              )}
+              <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
               {enabled && (
                 <div className="ml-2 flex items-center text-xs text-green-600 font-medium">
                   <Lightbulb className="h-3 w-3 mr-1" />
@@ -79,32 +65,11 @@ export const SimulationToggle = ({ enabled, onToggle, disabled = false }: Simula
             </div>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            {disabled && enabled && isBelgianUser ? (
-              <div className="space-y-2">
-                <p>
-                  {isEnglish 
-                    ? "Simulation mode is required for Belgian retail investors under FSMA regulations. This allows you to practice trading without using real funds."
-                    : "Simulatiemodus is verplicht voor Belgische particuliere beleggers volgens FSMA-voorschriften. Hiermee kunt u oefenen met handelen zonder echt geld te gebruiken."}
-                </p>
-                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-sm font-medium flex items-center">
-                    <AlertCircle className="h-3 w-3 mr-1 text-amber-500" />
-                    {isEnglish ? "Qualification Options:" : "Kwalificatieopties:"}
-                  </p>
-                  <ul className="text-xs mt-1 list-disc pl-4">
-                    <li>{isEnglish ? "Verify as a qualified investor" : "Verifiëren als gekwalificeerde belegger"}</li>
-                    <li>{isEnglish ? "Professional entity status" : "Professionele entiteitsstatus"}</li>
-                    <li>{isEnglish ? "Portfolio value >€500,000" : "Portefeuillewaarde >€500.000"}</li>
-                  </ul>
-                </div>
-              </div>
-            ) : (
-              <p>
-                {isEnglish 
-                  ? "In simulation mode, orders are not actually executed. Ideal for testing strategies without risk. Our AI Hedge Fund guide recommends starting with simulations to develop effective trading strategies."
-                  : "In simulatiemodus worden orders niet echt uitgevoerd. Ideaal om strategieën te testen zonder risico. Onze AI Hedge Fund gids raadt aan om te beginnen met simulaties om effectieve handelsstrategieën te ontwikkelen."}
-              </p>
-            )}
+            <p>
+              {isEnglish 
+                ? "In simulation mode, orders are not actually executed. Ideal for testing strategies without risk. Our AI Hedge Fund guide recommends starting with simulations to develop effective trading strategies."
+                : "In simulatiemodus worden orders niet echt uitgevoerd. Ideaal om strategieën te testen zonder risico. Onze AI Hedge Fund gids raadt aan om te beginnen met simulaties om effectieve handelsstrategieën te ontwikkelen."}
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
