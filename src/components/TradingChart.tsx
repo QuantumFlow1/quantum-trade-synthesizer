@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useZoomControls } from "@/hooks/use-zoom-controls";
-import { useTradingChartData } from "@/components/trading/hooks/use-trading-chart-data";
+import { useTradingChartData } from "@/hooks/use-trading-chart-data";
 import { ViewModeTabs } from "@/components/trading/ViewModeTabs";
 import { StandardViewContent } from "@/components/trading/StandardViewContent";
 import { ThreeDViewContent } from "@/components/trading/ThreeDViewContent";
@@ -22,7 +22,7 @@ const TradingChart = () => {
     fetchData, 
     apiStatus,
     apiKeysAvailable
-  } = useTradingChartData();
+  } = useTradingChartData(isSimulationMode);  // Updated to pass the simulation mode
 
   // Fetch data when component mounts
   useEffect(() => {
