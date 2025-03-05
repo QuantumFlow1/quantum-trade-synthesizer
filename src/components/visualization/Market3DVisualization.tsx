@@ -16,6 +16,7 @@ export const Market3DVisualization = ({
 }: Market3DVisualizationProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [key, setKey] = useState(0); // Key for forcing canvas remount
+  const [renderError, setRenderError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Handle fullscreen toggle
@@ -25,15 +26,21 @@ export const Market3DVisualization = ({
     setKey(prev => prev + 1);
   };
   
-  // Force remount of Canvas when visibility changes
+  // Force remount of Canvas when visibility changes or component mounts
   useEffect(() => {
     // Short delay to ensure DOM is ready
     const timer = setTimeout(() => {
       setKey(prev => prev + 1);
-    }, 50);
+    }, 100);
     
     return () => clearTimeout(timer);
   }, []);
+  
+  // Error boundary for Canvas rendering
+  const handleCanvasError = (error: Error) => {
+    console.error("3D Visualization error:", error);
+    setRenderError(`Error loading 3D visualization: ${error.message}`);
+  };
   
   return (
     <div 
@@ -48,18 +55,34 @@ export const Market3DVisualization = ({
         isSimulationMode={isSimulationMode}
       />
       
-      <Canvas 
-        key={key} 
-        shadows 
-        camera={{ position: [0, 5, 14], fov: 50 }}
-        gl={{ 
-          antialias: true,
-          alpha: true,
-          preserveDrawingBuffer: true 
-        }}
-      >
-        <Scene data={data} />
-      </Canvas>
+      {renderError ? (
+        <div className="flex items-center justify-center h-full w-full text-red-400 p-8 text-center">
+          <div>
+            <p className="mb-2">{renderError}</p>
+            <button 
+              onClick={() => {setKey(prev => prev + 1); setRenderError(null);}}
+              className="px-4 py-2 bg-red-900/30 hover:bg-red-900/50 rounded-md text-white"
+            >
+              Retry Loading
+            </button>
+          </div>
+        </div>
+      ) : (
+        <ErrorBoundary onError={handleCanvasError}>
+          <Canvas 
+            key={key} 
+            shadows 
+            camera={{ position: [0, 5, 14], fov: 50 }}
+            gl={{ 
+              antialias: true,
+              alpha: true,
+              preserveDrawingBuffer: true 
+            }}
+          >
+            <Scene data={data} />
+          </Canvas>
+        </ErrorBoundary>
+      )}
       
       <div className="absolute bottom-2 left-2 text-xs text-gray-500">
         <span>Drag to rotate • Scroll to zoom</span>
@@ -67,3 +90,19 @@ export const Market3DVisualization = ({
     </div>
   );
 };
+
+// Simple ErrorBoundary component for Canvas
+class ErrorBoundary extends React.Component<{
+  children: React.ReactNode;
+  onError: (error: Error) => void;
+}> {
+  componentDidCatch(error: Error) {
+    this.props.onError(error);
+  }
+
+  render() {
+    return this.props.children;
+  }
+}
+
+import React from 'react';

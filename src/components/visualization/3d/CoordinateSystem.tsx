@@ -19,28 +19,28 @@ export const CoordinateSystem = ({ theme }: CoordinateSystemProps) => {
       
       {/* X-axis */}
       <line>
-        <bufferGeometry>
-          <bufferAttribute
+        <bufferGeometry attach="geometry">
+          <float32BufferAttribute 
             attach="attributes-position"
             count={2}
             array={new Float32Array([-15, -3, 0, 15, -3, 0])}
             itemSize={3}
           />
         </bufferGeometry>
-        <lineBasicMaterial color={xAxisColor} linewidth={2} />
+        <lineBasicMaterial color={xAxisColor} />
       </line>
       
       {/* Y-axis */}
       <line>
-        <bufferGeometry>
-          <bufferAttribute
+        <bufferGeometry attach="geometry">
+          <float32BufferAttribute 
             attach="attributes-position"
             count={2}
             array={new Float32Array([0, -3, 0, 0, 7, 0])}
             itemSize={3}
           />
         </bufferGeometry>
-        <lineBasicMaterial color={yAxisColor} linewidth={2} />
+        <lineBasicMaterial color={yAxisColor} />
       </line>
     </group>
   );
