@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text, Billboard, Environment, Stars } from "@react-three/drei";
@@ -127,19 +126,29 @@ const CoordinateSystem = () => {
       
       {/* X-axis */}
       <line>
-        <bufferGeometry attach="geometry" args={[new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(-15, -3, 0),
-          new THREE.Vector3(15, -3, 0)
-        ])]} />
+        <bufferGeometry 
+          attach="geometry" 
+          args={[
+            new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(-15, -3, 0),
+              new THREE.Vector3(15, -3, 0)
+            ])
+          ]} 
+        />
         <lineBasicMaterial attach="material" color="#4a9eff" linewidth={2} />
       </line>
       
       {/* Y-axis */}
       <line>
-        <bufferGeometry attach="geometry" args={[new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(0, -3, 0),
-          new THREE.Vector3(0, 7, 0)
-        ])]} />
+        <bufferGeometry 
+          attach="geometry" 
+          args={[
+            new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(0, -3, 0),
+              new THREE.Vector3(0, 7, 0)
+            ])
+          ]} 
+        />
         <lineBasicMaterial attach="material" color="#ff4a4a" linewidth={2} />
       </line>
     </group>

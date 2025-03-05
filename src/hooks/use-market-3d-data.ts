@@ -19,7 +19,7 @@ export const useMarket3DData = (data: TradingDataPoint[]) => {
       }
       
       const prevPoint = arr[index - 1];
-      const trend = point.close > prevPoint.close ? "up" : "down";
+      const trend = point.close > prevPoint.close ? "up" as const : "down" as const;
       
       return { ...point, trend };
     });

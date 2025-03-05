@@ -16,5 +16,5 @@ export interface TradingDataPoint {
   bollingerLower: number;
   stochastic: number;
   adx: number;
-  trend: "up" | "down";
+  trend: "up" | "down" | "neutral";
 }
