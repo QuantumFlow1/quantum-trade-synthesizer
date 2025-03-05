@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { TradeOrderForm } from "./TradeOrderForm";
 import PositionsList from "./PositionsList";
@@ -37,16 +36,13 @@ export const TradingOrderSection = ({
   const { isConnected, activeAgents } = useAgentConnection();
   
   const [positionsTab, setPositionsTab] = useState(() => {
-    // Initialize tab based on which positions are available
     return simulatedPositions.length > 0 ? "simulated" : "real";
   });
   const [localIsSimulationMode, setLocalIsSimulationMode] = useState(isSimulationMode);
   const [isKeySheetOpen, setIsKeySheetOpen] = useState(false);
   
-  // Force API to be available for simulation mode
   const effectiveApiStatus = localIsSimulationMode ? 'available' : apiStatus;
 
-  // Handle toggle of simulation mode
   const handleSimulationToggle = (enabled: boolean) => {
     setLocalIsSimulationMode(enabled);
     
@@ -63,7 +59,6 @@ export const TradingOrderSection = ({
     }
   };
   
-  // Handle API key configuration save
   const handleApiKeySave = () => {
     toast({
       title: "API Keys Saved",
@@ -71,18 +66,15 @@ export const TradingOrderSection = ({
       duration: 3000,
     });
     
-    // Close the sheet
     setIsKeySheetOpen(false);
   };
 
-  // Focus the simulated tab when simulation mode is enabled
   useEffect(() => {
     if (localIsSimulationMode) {
       setPositionsTab("simulated");
     }
   }, [localIsSimulationMode]);
   
-  // Sync with parent component's simulation mode
   useEffect(() => {
     setLocalIsSimulationMode(isSimulationMode);
   }, [isSimulationMode]);
