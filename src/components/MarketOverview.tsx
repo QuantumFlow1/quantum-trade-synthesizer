@@ -9,7 +9,7 @@ import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const MarketOverview = () => {
-  const { marketData, reconnect } = useMarketWebSocket();
+  const { marketData, reconnect, connectionStatus } = useMarketWebSocket();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
@@ -41,13 +41,19 @@ const MarketOverview = () => {
         return;
       }
 
-      // Extra validatie voor de data structuur
+      if (marketData.length === 0) {
+        console.log('Empty market data array received');
+        setErrorMessage("Lege marktdata ontvangen");
+        setHasError(true);
+        return;
+      }
+
+      // Validation for data structure
       const isValidData = marketData.every(item => 
         item && 
         typeof item.market === 'string' &&
         typeof item.symbol === 'string' &&
-        typeof item.price === 'number' &&
-        typeof item.volume === 'number'
+        typeof item.price === 'number'
       );
 
       if (!isValidData) {
@@ -89,13 +95,13 @@ const MarketOverview = () => {
   }
 
   // Error state with retry button
-  if (hasError) {
+  if (hasError || connectionStatus === 'disconnected') {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Er is een probleem opgetreden</AlertTitle>
         <AlertDescription className="flex flex-col gap-2">
-          <p>De marktdata kon niet correct worden verwerkt: {errorMessage}</p>
+          <p>De marktdata kon niet correct worden verwerkt: {errorMessage || "Verbinding verbroken"}</p>
           <Button 
             variant="outline" 
             size="sm" 
@@ -110,11 +116,8 @@ const MarketOverview = () => {
     );
   }
 
-  // Ensure marketData is an array and handle empty state
-  const marketDataArray = Array.isArray(marketData) ? marketData : [];
-
   // If no data after initial loading, show message
-  if (!marketDataArray.length && !isInitialLoading) {
+  if (!marketData.length) {
     return (
       <Alert>
         <AlertCircle className="h-4 w-4" />
@@ -135,7 +138,7 @@ const MarketOverview = () => {
     );
   }
 
-  const groupedData = marketDataArray.reduce((acc, item) => {
+  const groupedData = marketData.reduce((acc, item) => {
     if (!acc[item.market]) {
       acc[item.market] = [];
     }
@@ -161,33 +164,37 @@ const MarketOverview = () => {
           Wereldwijde Markten
         </h2>
         
-        <Tabs defaultValue={marketOrder[0]} className="w-full">
+        <Tabs defaultValue={marketOrder.find(market => groupedData[market]?.length > 0) || marketOrder[0]} className="w-full">
           <TabsList className="mb-6 bg-background/50 backdrop-blur-md relative flex flex-wrap gap-1">
             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
             {marketOrder.map((market) => (
-              <TabsTrigger 
-                key={market}
-                value={market} 
-                className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
-              >
-                {market}
-              </TabsTrigger>
+              groupedData[market]?.length > 0 && (
+                <TabsTrigger 
+                  key={market}
+                  value={market} 
+                  className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
+                >
+                  {market}
+                </TabsTrigger>
+              )
             ))}
           </TabsList>
 
           <div className="h-[500px] transition-transform will-change-transform duration-500 ease-out">
             {marketOrder.map((market) => (
-              <TabsContent 
-                key={market}
-                value={market} 
-                className="mt-0 h-full animate-in fade-in-50 duration-500 ease-out"
-              >
-                <MarketCharts 
-                  data={groupedData[market] || []} 
-                  isLoading={!marketDataArray.length} 
-                  type="overview" 
-                />
-              </TabsContent>
+              groupedData[market]?.length > 0 && (
+                <TabsContent 
+                  key={market}
+                  value={market} 
+                  className="mt-0 h-full animate-in fade-in-50 duration-500 ease-out"
+                >
+                  <MarketCharts 
+                    data={groupedData[market] || []} 
+                    isLoading={!marketData.length} 
+                    type="overview" 
+                  />
+                </TabsContent>
+              )
             ))}
           </div>
         </Tabs>

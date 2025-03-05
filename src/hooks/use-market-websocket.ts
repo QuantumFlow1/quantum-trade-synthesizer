@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { MarketData } from "@/components/market/types";
 import { useToast } from "./use-toast";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { generateEmergencyMarketData } from "@/components/dashboard/pages/market/enhanced/utils/emergencyDataGenerator";
 
 export const useMarketWebSocket = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
@@ -13,57 +14,69 @@ export const useMarketWebSocket = () => {
   const maxRetries = 3;
   const retryDelay = 5000; // 5 seconds
 
-  // Functie om initiële marktdata op te halen
+  // Function to fetch initial market data
   const fetchInitialData = useCallback(async () => {
     try {
       console.log('Fetching initial market data...');
       setConnectionStatus('connecting');
       
-      const { data, error } = await supabase.functions.invoke('market-data-collector');
+      // First, try fetch-market-data which is more detailed
+      const { data: fetchData, error: fetchError } = await supabase.functions.invoke('fetch-market-data');
       
-      if (error) {
-        console.error('Error fetching market data:', error);
-        throw error;
+      if (fetchError) {
+        console.error('Error from fetch-market-data:', fetchError);
+        throw new Error(`Failed to fetch market data: ${fetchError.message}`);
       }
-
-      // Valideer data voordat we het verwerken
-      if (!data) {
-        console.error('No data received from market-data-collector');
-        throw new Error('No market data received');
+      
+      if (fetchData && Array.isArray(fetchData) && fetchData.length > 0) {
+        console.log('Successfully received data from fetch-market-data:', fetchData.length, 'items');
+        setMarketData(fetchData as MarketData[]);
+        setConnectionStatus('connected');
+        setRetryCount(0); // Reset retry count on success
+        return true;
       }
-
-      if (!Array.isArray(data)) {
-        console.error('Received invalid market data format:', data);
-        throw new Error('Invalid data format received: data is not an array');
+      
+      // If that fails, try the market-data-collector as fallback
+      console.log('No data from fetch-market-data, trying market-data-collector...');
+      const { data: collectorData, error: collectorError } = await supabase.functions.invoke('market-data-collector');
+      
+      if (collectorError) {
+        console.error('Error from market-data-collector:', collectorError);
+        throw new Error(`Fallback data fetch failed: ${collectorError.message}`);
       }
-
-      // Extra validatie voor de datastructuur
-      const isValidDataStructure = data.every(item => 
-        item && 
-        typeof item.market === 'string' &&
-        typeof item.symbol === 'string' &&
-        typeof item.price === 'number' &&
-        typeof item.volume === 'number'
-      );
-
-      if (!isValidDataStructure) {
-        console.error('Invalid data structure in received data:', data);
-        throw new Error('Invalid data structure received');
+      
+      if (collectorData && collectorData.status === "success" && Array.isArray(collectorData.data)) {
+        console.log('Successfully received data from market-data-collector:', collectorData.data.length, 'items');
+        setMarketData(collectorData.data as MarketData[]);
+        setConnectionStatus('connected');
+        setRetryCount(0); // Reset retry count on success
+        return true;
       }
-
-      console.log('Successfully received market data:', data.length, 'items');
-      setMarketData(data as MarketData[]);
+      
+      // Create some emergency backup market data if nothing else works
+      console.warn('No valid data received, using emergency generated market data');
+      const emergencyData = generateEmergencyMarketData();
+      setMarketData(emergencyData);
       setConnectionStatus('connected');
-      setRetryCount(0); // Reset retry count on success
       
-      return true;
+      toast({
+        title: "Fallback marktdata geladen",
+        description: "Kon geen verbinding maken met marktdata services. Lokale backup data wordt getoond.",
+        variant: "warning",
+      });
+      
+      return false;
     } catch (error) {
       console.error('Market data fetch error:', error);
       setConnectionStatus('disconnected');
       
+      // Create emergency data for error case
+      const emergencyData = generateEmergencyMarketData();
+      setMarketData(emergencyData);
+      
       toast({
         title: "Data Error",
-        description: error instanceof Error ? error.message : "Could not fetch market data. Check your internet connection.",
+        description: error instanceof Error ? error.message : "Kon geen marktdata ophalen. Controleer uw internetverbinding.",
         variant: "destructive",
       });
       
@@ -71,35 +84,35 @@ export const useMarketWebSocket = () => {
     }
   }, [toast]);
 
-  // Functie om opnieuw te verbinden
+  // Function to reconnect
   const reconnect = useCallback(async () => {
     console.log('Attempting to reconnect to market data service...');
     setConnectionStatus('connecting');
     
     if (await fetchInitialData()) {
       toast({
-        title: "Connection Restored",
-        description: "Market data service connection has been restored.",
+        title: "Verbinding hersteld",
+        description: "Marktdata verbinding is hersteld.",
       });
     } else if (retryCount < maxRetries) {
       setRetryCount(prevCount => prevCount + 1);
       toast({
-        title: "Reconnection Failed",
-        description: `Retry ${retryCount + 1}/${maxRetries} failed. Trying again in ${retryDelay / 1000} seconds.`,
+        title: "Herverbinden mislukt",
+        description: `Poging ${retryCount + 1}/${maxRetries} mislukt. Opnieuw proberen over ${retryDelay / 1000} seconden.`,
         variant: "destructive",
       });
       
       setTimeout(reconnect, retryDelay);
     } else {
       toast({
-        title: "Connection Failed",
-        description: "Maximum retry attempts reached. Please try again later.",
+        title: "Verbinding mislukt",
+        description: "Maximaal aantal pogingen bereikt. Probeer het later opnieuw.",
         variant: "destructive",
       });
     }
   }, [fetchInitialData, retryCount, maxRetries, toast]);
 
-  // Websocket verbinding opzetten en initiële data ophalen
+  // Websocket setup and initial data fetch
   useEffect(() => {
     let isSubscribed = true;
     let currentChannel: RealtimeChannel | null = null;
@@ -108,11 +121,11 @@ export const useMarketWebSocket = () => {
       if (!isSubscribed) return;
       
       try {
-        // Eerste initiële data ophalen
-        const success = await fetchInitialData();
-        if (!success || !isSubscribed) return;
+        // First fetch initial data
+        await fetchInitialData();
+        if (!isSubscribed) return;
         
-        // Daarna realtime kanaal opzetten voor updates
+        // Then set up realtime channel for updates
         const channel = supabase
           .channel('market-updates')
           .on('broadcast', { event: 'market-data' }, (payload) => {
@@ -121,7 +134,7 @@ export const useMarketWebSocket = () => {
             console.log('Received market data update:', payload);
             if (payload.payload && Array.isArray(payload.payload)) {
               try {
-                // Valideer de ontvangen data
+                // Validate the received data
                 const newData = payload.payload as MarketData[];
                 const isValidData = newData.every(item => 
                   item &&
@@ -149,7 +162,7 @@ export const useMarketWebSocket = () => {
             } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
               setConnectionStatus('disconnected');
               
-              // Auto-retry bij onverwacht afsluiten van kanaal
+              // Auto-retry when channel unexpectedly closes
               if (retryCount < maxRetries) {
                 const nextRetry = retryCount + 1;
                 setRetryCount(nextRetry);
@@ -167,10 +180,10 @@ export const useMarketWebSocket = () => {
       }
     };
 
-    // Initialiseer verbinding
+    // Initialize connection
     setupConnection();
 
-    // Cleanup functie
+    // Cleanup function
     return () => {
       console.log('Cleaning up market data websocket...');
       isSubscribed = false;
