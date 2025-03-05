@@ -1,5 +1,4 @@
-
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useWebSocketConnection } from "./useWebSocketConnection";
 
@@ -62,6 +61,3 @@ export function useApiVerification() {
     verifyApiStatus
   };
 }
-
-// Add missing import
-import { useState } from "react";
