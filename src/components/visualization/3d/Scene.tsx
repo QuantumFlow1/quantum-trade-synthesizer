@@ -6,17 +6,30 @@ import { ThemeBasedLighting } from "./ThemeBasedLighting";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { OrbitControls, Stars, Environment } from "@react-three/drei";
 import { useThemeDetection } from "@/hooks/use-theme-detection";
+import { useState, useEffect } from "react";
 
 interface SceneProps {
   data: TradingDataPoint[];
 }
 
 export const Scene = ({ data }: SceneProps) => {
-  // Calculate min/max for scaling
-  const maxPrice = Math.max(...data.map(d => d.close));
-  const minPrice = Math.min(...data.map(d => d.close));
-  const maxVolume = Math.max(...data.map(d => d.volume));
+  const [processedData, setProcessedData] = useState<TradingDataPoint[]>([]);
   const theme = useThemeDetection();
+  
+  // Ensure data is processed before rendering
+  useEffect(() => {
+    if (data && data.length > 0) {
+      setProcessedData(data);
+    } else {
+      // If no data, create a fallback empty array
+      setProcessedData([]);
+    }
+  }, [data]);
+  
+  // Calculate min/max for scaling
+  const maxPrice = processedData.length > 0 ? Math.max(...processedData.map(d => d.close)) : 100;
+  const minPrice = processedData.length > 0 ? Math.min(...processedData.map(d => d.close)) : 0;
+  const maxVolume = processedData.length > 0 ? Math.max(...processedData.map(d => d.volume)) : 100;
   
   return (
     <>
@@ -27,13 +40,16 @@ export const Scene = ({ data }: SceneProps) => {
         <Stars radius={100} depth={50} count={1000} factor={4} fade speed={1} />
       )}
       
+      {/* Coordinate system */}
+      <CoordinateSystem theme={theme} />
+      
       {/* Price bars */}
-      {data.map((point, index) => (
+      {processedData.map((point, index) => (
         <PriceBar 
           key={`price-${index}`}
           point={point} 
           index={index} 
-          total={data.length} 
+          total={processedData.length} 
           maxPrice={maxPrice} 
           minPrice={minPrice}
           theme={theme}
@@ -41,18 +57,16 @@ export const Scene = ({ data }: SceneProps) => {
       ))}
       
       {/* Volume indicators */}
-      {data.map((point, index) => (
+      {processedData.map((point, index) => (
         <VolumeIndicator 
           key={`volume-${index}`}
           point={point} 
           index={index} 
-          total={data.length} 
+          total={processedData.length} 
           maxVolume={maxVolume}
           theme={theme}
         />
       ))}
-      
-      <CoordinateSystem theme={theme} />
       
       <OrbitControls 
         enableZoom={true} 

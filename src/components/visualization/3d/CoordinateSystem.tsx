@@ -7,20 +7,6 @@ interface CoordinateSystemProps {
 }
 
 export const CoordinateSystem = ({ theme }: CoordinateSystemProps) => {
-  // Create buffer geometries for lines
-  const xAxisPoints = [
-    new THREE.Vector3(-15, -3, 0),
-    new THREE.Vector3(15, -3, 0)
-  ];
-  
-  const yAxisPoints = [
-    new THREE.Vector3(0, -3, 0),
-    new THREE.Vector3(0, 7, 0)
-  ];
-  
-  const xAxisGeometry = new THREE.BufferGeometry().setFromPoints(xAxisPoints);
-  const yAxisGeometry = new THREE.BufferGeometry().setFromPoints(yAxisPoints);
-  
   // Theme-based colors
   const xAxisColor = theme === 'dark' ? "#4a9eff" : "#1d4ed8";
   const yAxisColor = theme === 'dark' ? "#ff4a4a" : "#dc2626";
@@ -32,20 +18,30 @@ export const CoordinateSystem = ({ theme }: CoordinateSystemProps) => {
       <gridHelper args={[30, 30, gridColor1, gridColor2]} position={[0, -3, 0]} />
       
       {/* X-axis */}
-      <primitive object={
-        new THREE.Line(
-          xAxisGeometry,
-          new THREE.LineBasicMaterial({ color: xAxisColor, linewidth: 2 })
-        )
-      } />
+      <line>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={new Float32Array([-15, -3, 0, 15, -3, 0])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color={xAxisColor} linewidth={2} />
+      </line>
       
       {/* Y-axis */}
-      <primitive object={
-        new THREE.Line(
-          yAxisGeometry,
-          new THREE.LineBasicMaterial({ color: yAxisColor, linewidth: 2 })
-        )
-      } />
+      <line>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={new Float32Array([0, -3, 0, 0, 7, 0])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial color={yAxisColor} linewidth={2} />
+      </line>
     </group>
   );
 };

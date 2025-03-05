@@ -22,10 +22,10 @@ export const VolumeIndicator = ({
 }: VolumeIndicatorProps) => {
   const mesh = useRef<THREE.Mesh>(null);
   const spread = 20;
-  const spacing = spread / total;
+  const spacing = total > 1 ? spread / total : spread;
   const position = index * spacing - (spread / 2);
   
-  const normalizedVolume = point.volume / maxVolume;
+  const normalizedVolume = maxVolume > 0 ? point.volume / maxVolume : 0.5;
   const size = Math.max(0.1, normalizedVolume * 0.7);
   
   // Theme-based colors

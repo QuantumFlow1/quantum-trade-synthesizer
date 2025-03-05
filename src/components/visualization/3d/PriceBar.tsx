@@ -27,12 +27,12 @@ export const PriceBar = ({
 }: PriceBarProps) => {
   const mesh = useRef<THREE.Mesh>(null);
   const spread = 20; // How spread out the bars are
-  const spacing = spread / total; // Distance between each bar
+  const spacing = total > 1 ? spread / total : spread; // Distance between each bar
   const position = index * spacing - (spread / 2); // Center the visualization
 
   // Scale height based on price relative to min/max
   const priceRange = maxPrice - minPrice;
-  const normalizedPrice = (point.close - minPrice) / priceRange;
+  const normalizedPrice = priceRange > 0 ? (point.close - minPrice) / priceRange : 0.5;
   const height = Math.max(0.1, normalizedPrice * maxHeight);
 
   // Theme-aware colors
@@ -68,7 +68,6 @@ export const PriceBar = ({
         <Text
           color={theme === 'dark' ? "#ffffff" : "#000000"}
           fontSize={0.3}
-          font="/fonts/Inter-Medium.woff"
           anchorY="bottom"
         >
           {point.close.toFixed(0)}

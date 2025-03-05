@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { Scene } from "./3d/Scene";
@@ -15,23 +15,49 @@ export const Market3DVisualization = ({
   isSimulationMode = false 
 }: Market3DVisualizationProps) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [key, setKey] = useState(0); // Key for forcing canvas remount
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Handle fullscreen toggle
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+    // Force canvas remount when toggling fullscreen
+    setKey(prev => prev + 1);
   };
   
+  // Force remount of Canvas when visibility changes
+  useEffect(() => {
+    // Short delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      setKey(prev => prev + 1);
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
   return (
-    <div className={`bg-black/90 rounded-lg overflow-hidden border border-gray-800 ${
-      isFullscreen ? "fixed inset-0 z-50" : "h-[500px]"
-    }`}>
+    <div 
+      ref={containerRef}
+      className={`bg-black/90 rounded-lg overflow-hidden border border-gray-800 ${
+        isFullscreen ? "fixed inset-0 z-50" : "h-[500px]"
+      }`}
+    >
       <VisualizationControls 
         isFullscreen={isFullscreen} 
         toggleFullscreen={toggleFullscreen}
         isSimulationMode={isSimulationMode}
       />
       
-      <Canvas shadows camera={{ position: [0, 5, 14], fov: 50 }}>
+      <Canvas 
+        key={key} 
+        shadows 
+        camera={{ position: [0, 5, 14], fov: 50 }}
+        gl={{ 
+          antialias: true,
+          alpha: true,
+          preserveDrawingBuffer: true 
+        }}
+      >
         <Scene data={data} />
       </Canvas>
       
