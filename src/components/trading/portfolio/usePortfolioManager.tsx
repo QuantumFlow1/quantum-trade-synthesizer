@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AgentRecommendation, PortfolioDecision, TradeAction } from "@/types/agent";
 
@@ -10,16 +10,26 @@ export const usePortfolioManager = (currentData: any) => {
   const [loadingDecision, setLoadingDecision] = useState(false);
   const [riskScore, setRiskScore] = useState(35); // 0-100 scale
 
+  // Effect to run analysis when currentData changes
   useEffect(() => {
     if (currentData) {
       generateSimulatedRecommendations();
     }
   }, [currentData]);
 
-  const generateSimulatedRecommendations = () => {
+  // Make this a memoized function so it can be safely used in useEffect and as a callback
+  const generateSimulatedRecommendations = useCallback(() => {
+    if (!currentData) {
+      console.log("No current data available for portfolio analysis");
+      return;
+    }
+    
+    setLoadingDecision(true);
     const ticker = currentData?.symbol || "BTC";
     const currentPrice = currentData?.price || 45000;
     const randomSeed = Math.random();
+    
+    console.log(`Generating recommendations for ${ticker} at $${currentPrice}`);
     
     const newRecommendations: AgentRecommendation[] = [
       {
@@ -51,9 +61,9 @@ export const usePortfolioManager = (currentData: any) => {
       }
     ];
     
+    console.log(`Generated ${newRecommendations.length} agent recommendations`);
     setAgentRecommendations(newRecommendations);
     
-    setLoadingDecision(true);
     setTimeout(() => {
       const majorityAction = calculateMajorityAction(newRecommendations);
       const averageConfidence = Math.round(
@@ -74,11 +84,12 @@ export const usePortfolioManager = (currentData: any) => {
         timestamp: new Date().toISOString()
       };
       
+      console.log(`Generated portfolio decision: ${majorityAction} with ${averageConfidence}% confidence`);
       setPortfolioDecision(newDecision);
       setRiskScore(newDecision.riskScore);
       setLoadingDecision(false);
     }, 1500);
-  };
+  }, [currentData, toast]);
 
   const calculateMajorityAction = (recommendations: AgentRecommendation[]): TradeAction => {
     const actionCounts: Record<TradeAction, number> = {
@@ -120,6 +131,7 @@ export const usePortfolioManager = (currentData: any) => {
   };
 
   const handleRefreshAnalysis = () => {
+    console.log("Refreshing portfolio analysis");
     setPortfolioDecision(null);
     setAgentRecommendations([]);
     generateSimulatedRecommendations();

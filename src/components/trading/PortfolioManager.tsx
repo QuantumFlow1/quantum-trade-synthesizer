@@ -10,6 +10,7 @@ import { RecommendationList } from "./portfolio/RecommendationList";
 import { PortfolioDecision } from "./portfolio/PortfolioDecision";
 import { LoadingDecision } from "./portfolio/LoadingDecision";
 import { usePortfolioManager } from "./portfolio/usePortfolioManager";
+import { useToast } from "@/hooks/use-toast";
 
 interface PortfolioManagerProps {
   isSimulationMode?: boolean;
@@ -22,8 +23,9 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
   onSimulationToggle,
   currentData
 }) => {
+  const { toast } = useToast();
   // Enable simulation mode by default if nothing is passed
-  const effectiveSimulationMode = isSimulationMode === undefined ? true : isSimulationMode;
+  const [localSimulationMode, setLocalSimulationMode] = useState(isSimulationMode === undefined ? true : isSimulationMode);
   
   const {
     agentRecommendations,
@@ -32,6 +34,22 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
     handleExecuteDecision,
     handleRefreshAnalysis
   } = usePortfolioManager(currentData);
+
+  // Handle simulation toggle locally if no external handler is provided
+  const handleSimulationToggle = (enabled: boolean) => {
+    setLocalSimulationMode(enabled);
+    if (onSimulationToggle) {
+      onSimulationToggle(enabled);
+    } else {
+      toast({
+        title: enabled ? "Simulation Mode Enabled" : "Simulation Mode Disabled",
+        description: enabled ? "Using simulated data for portfolio analysis" : "Using real market data for portfolio analysis",
+      });
+    }
+  };
+
+  // Use local simulation mode if no external state is provided
+  const effectiveSimulationMode = isSimulationMode === undefined ? localSimulationMode : isSimulationMode;
 
   return (
     <Card className="backdrop-blur-md border border-white/10">
@@ -46,10 +64,10 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
               AI-powered trading decisions from specialized agents
             </CardDescription>
           </div>
-          {onSimulationToggle && (
+          {(onSimulationToggle || isSimulationMode === undefined) && (
             <SimulationToggle 
               enabled={effectiveSimulationMode} 
-              onToggle={onSimulationToggle} 
+              onToggle={handleSimulationToggle} 
             />
           )}
         </div>
