@@ -8,6 +8,8 @@ export function useApiStatus(initialStatus: 'checking' | 'available' | 'unavaila
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>(initialStatus);
   const [isVerifying, setIsVerifying] = useState(false);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [wsConnection, setWsConnection] = useState<WebSocket | null>(null);
 
   const checkAPIAvailability = async () => {
     try {
@@ -55,6 +57,43 @@ export function useApiStatus(initialStatus: 'checking' | 'available' | 'unavaila
     }
   };
 
+  const setupWebSocketConnection = useCallback(() => {
+    if (wsConnection) {
+      // Close existing connection
+      wsConnection.close();
+    }
+    
+    // Due to CSP restrictions, we're using Supabase's Realtime system instead of direct WebSocket
+    // This provides a secure way to get real-time updates
+    try {
+      const channel = supabase.channel('market-data-status')
+        .on('broadcast', { event: 'status' }, (payload) => {
+          console.log('Received market data status update:', payload);
+          if (payload.payload && payload.payload.status) {
+            if (payload.payload.status === 'online') {
+              setApiStatus('available');
+            } else {
+              setApiStatus('unavailable');
+            }
+          }
+        })
+        .subscribe((status) => {
+          console.log('Market data channel status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to market data status channel');
+          }
+        });
+        
+      // We'll return a function to clean up the subscription
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (error) {
+      console.error('Error setting up WebSocket connection:', error);
+      return () => {};
+    }
+  }, [wsConnection]);
+
   const verifyApiStatus = useCallback(async () => {
     setIsVerifying(true);
     try {
@@ -63,6 +102,7 @@ export function useApiStatus(initialStatus: 'checking' | 'available' | 'unavaila
       if (!hasKeys) {
         console.log("No API keys available");
         setApiStatus('unavailable');
+        setFailedAttempts(prev => prev + 1);
         toast({
           title: "API service unavailable",
           description: "No API keys available. Please configure API keys in settings.",
@@ -81,6 +121,7 @@ export function useApiStatus(initialStatus: 'checking' | 'available' | 'unavaila
       if (error) {
         console.error("Failed to verify API status:", error);
         setApiStatus('unavailable');
+        setFailedAttempts(prev => prev + 1);
         toast({
           title: "Connection error",
           description: "Failed to connect to AI services: " + error.message,
@@ -89,14 +130,22 @@ export function useApiStatus(initialStatus: 'checking' | 'available' | 'unavaila
       } else if (data?.status === 'available') {
         console.log("API is available");
         setApiStatus('available');
+        setFailedAttempts(0);
+        
+        // Setup WebSocket connection for real-time updates
+        const cleanup = setupWebSocketConnection();
+        
         toast({
           title: "Connected to AI services",
           description: "Successfully connected to AI trading services.",
           duration: 3000
         });
+        
+        return cleanup;
       } else {
         console.error("API is unavailable:", data?.message);
         setApiStatus('unavailable');
+        setFailedAttempts(prev => prev + 1);
         toast({
           title: "API service unavailable",
           description: data?.message || "AI services are currently unavailable",
@@ -108,6 +157,7 @@ export function useApiStatus(initialStatus: 'checking' | 'available' | 'unavaila
     } catch (error) {
       console.error("Exception verifying API status:", error);
       setApiStatus('unavailable');
+      setFailedAttempts(prev => prev + 1);
       toast({
         title: "Connection error",
         description: "An unexpected error occurred while checking API status",
@@ -117,20 +167,36 @@ export function useApiStatus(initialStatus: 'checking' | 'available' | 'unavaila
     } finally {
       setIsVerifying(false);
     }
-  }, []);
+    
+    // Return empty cleanup function
+    return () => {};
+  }, [setupWebSocketConnection]);
 
   // Check API status on component mount
   useEffect(() => {
     if (apiStatus === 'checking') {
-      verifyApiStatus();
+      const cleanup = verifyApiStatus();
+      return cleanup;
     }
-  }, [apiStatus, verifyApiStatus]);
+    
+    // Set up automatic retry for failed connections
+    if (apiStatus === 'unavailable' && failedAttempts < 3) {
+      const retryDelay = Math.min(5000 * (failedAttempts + 1), 30000); // Exponential backoff
+      const timer = setTimeout(() => {
+        console.log(`Automatic retry attempt ${failedAttempts + 1} after ${retryDelay/1000}s`);
+        verifyApiStatus();
+      }, retryDelay);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [apiStatus, verifyApiStatus, failedAttempts]);
 
   return {
     apiStatus,
     setApiStatus,
     isVerifying,
     verifyApiStatus,
-    lastChecked
+    lastChecked,
+    failedAttempts
   };
 }

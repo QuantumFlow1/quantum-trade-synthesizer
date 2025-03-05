@@ -20,9 +20,16 @@ export const OfflinePanel = ({ onConnectClick }: OfflinePanelProps) => {
         </div>
       </div>
       
-      <p className="text-sm text-muted-foreground mb-4">
-        AI analyse is momenteel niet beschikbaar. Verbind met de API om AI-analyses en aanbevelingen te ontvangen.
-      </p>
+      <div className="space-y-3 mb-4">
+        <p className="text-sm text-muted-foreground">
+          AI analyse is momenteel niet beschikbaar. Verbind met de API om AI-analyses en aanbevelingen te ontvangen.
+        </p>
+        <div className="text-xs text-muted-foreground/70 space-y-1">
+          <p>• Realtime marktupdates elke 5-15 seconden</p>
+          <p>• AI-gestuurde handelsaanbevelingen</p>
+          <p>• Risico- en winstanalyse per trade</p>
+        </div>
+      </div>
       
       <Button 
         variant="outline" 

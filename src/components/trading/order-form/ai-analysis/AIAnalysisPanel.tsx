@@ -5,7 +5,8 @@ import { OfflinePanel } from "./OfflinePanel";
 import { TradingTips } from "./TradingTips";
 import { ApiKeySheet } from "./ApiKeySheet";
 import { useApiKeyManager } from "./hooks/useApiKeyManager";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useApiStatus } from "@/components/trading/hooks/useApiStatus";
 
 interface AIAnalysisPanelProps {
   aiAnalysis?: {
@@ -24,16 +25,29 @@ export const AIAnalysisPanel = ({
   aiAnalysis, 
   isOnline = false 
 }: AIAnalysisPanelProps) => {
-  // Use local state for online status so we can update it from the hook
-  const [localIsOnline, setLocalIsOnline] = useState(isOnline);
+  // Use the API status hook to manage connection state
+  const { 
+    apiStatus, 
+    isVerifying, 
+    verifyApiStatus, 
+    lastChecked 
+  } = useApiStatus(isOnline ? 'available' : 'checking');
   
   // Now we need to pass the setLocalIsOnline function to the hook
   const { 
     showApiKeySheet, 
     apiKeyStatus, 
     handleOpenApiKeySheet, 
-    handleCloseApiKeySheet 
+    handleCloseApiKeySheet,
+    saveApiKeys
   } = useApiKeyManager();
+
+  // When API keys are saved, verify the status
+  useEffect(() => {
+    if (apiKeyStatus === 'available' && apiStatus === 'unavailable') {
+      verifyApiStatus();
+    }
+  }, [apiKeyStatus, apiStatus, verifyApiStatus]);
 
   if (!aiAnalysis) {
     return (
@@ -44,23 +58,50 @@ export const AIAnalysisPanel = ({
             <h3 className="text-lg font-medium">AI Trading Analyse</h3>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <WifiOff className="w-4 h-4" />
-            <span className="text-sm">Offline</span>
+            {isVerifying ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full" />
+                <span className="text-sm">Checking</span>
+              </div>
+            ) : (
+              <>
+                <WifiOff className="w-4 h-4" />
+                <span className="text-sm">Offline</span>
+              </>
+            )}
           </div>
         </div>
         
-        <p className="text-sm text-muted-foreground mb-4">
-          AI analyse is momenteel niet beschikbaar. Verbind met de API om AI-analyses en aanbevelingen te ontvangen.
-        </p>
+        <div className="space-y-3 mb-4">
+          <p className="text-sm text-muted-foreground">
+            AI analyse is momenteel niet beschikbaar. Verbind met de API om AI-analyses en aanbevelingen te ontvangen.
+          </p>
+          <div className="text-xs text-muted-foreground/70 space-y-1">
+            <p>• Realtime marktupdates elke 5-15 seconden</p>
+            <p>• AI-gestuurde handelsaanbevelingen</p>
+            <p>• Risico- en winstanalyse per trade</p>
+          </div>
+        </div>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full mb-4"
+          onClick={handleOpenApiKeySheet}
+        >
+          Verbind met AI Service
+        </Button>
         
         <TradingTips />
       </div>
     );
   }
 
+  const isConnected = apiStatus === 'available';
+
   return (
     <div className="p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
-      {localIsOnline ? (
+      {isConnected ? (
         <OnlinePanel analysis={aiAnalysis} />
       ) : (
         <OfflinePanel onConnectClick={handleOpenApiKeySheet} />
@@ -72,7 +113,11 @@ export const AIAnalysisPanel = ({
         isOpen={showApiKeySheet}
         onClose={handleCloseApiKeySheet}
         apiKeyStatus={apiKeyStatus}
+        onSave={saveApiKeys}
       />
     </div>
   );
 };
+
+// Add the Button import
+import { Button } from "@/components/ui/button";
