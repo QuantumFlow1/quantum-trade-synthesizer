@@ -1,9 +1,9 @@
 
-import { useState, useEffect } from "react";
-import { Brain } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { OfflinePanel } from "./OfflinePanel";
+import { Brain, Wifi, WifiOff } from "lucide-react";
 import { OnlinePanel } from "./OnlinePanel";
+import { OfflinePanel } from "./OfflinePanel";
+import { TradingTips } from "./TradingTips";
+import { ApiKeySheet } from "./ApiKeySheet";
 import { useApiKeyManager } from "./hooks/useApiKeyManager";
 
 interface AIAnalysisPanelProps {
@@ -12,81 +12,57 @@ interface AIAnalysisPanelProps {
     riskLevel: string;
     recommendation: string;
     expectedProfit: string;
-    stopLossRecommendation: number;
-    takeProfitRecommendation: number;
+    stopLossRecommendation?: number;
+    takeProfitRecommendation?: number;
     collaboratingAgents: string[];
   };
   isOnline?: boolean;
 }
 
-export const AIAnalysisPanel = ({ aiAnalysis, isOnline = false }: AIAnalysisPanelProps) => {
-  const [localIsOnline, setLocalIsOnline] = useState<boolean>(isOnline);
-  
-  // Sync with prop changes
-  useEffect(() => {
-    setLocalIsOnline(isOnline);
-  }, [isOnline]);
+export const AIAnalysisPanel = ({ 
+  aiAnalysis, 
+  isOnline = false 
+}: AIAnalysisPanelProps) => {
+  const { showApiKeySheet, apiKeyStatus, handleOpenApiKeySheet, handleCloseApiKeySheet } = useApiKeyManager();
 
-  const { 
-    checkAPIAvailability,
-    handleManualUpdate,
-    isChecking,
-    isKeySheetOpen,
-    setIsKeySheetOpen,
-    openaiKey,
-    setOpenaiKey,
-    claudeKey,
-    setClaudeKey,
-    geminiKey,
-    setGeminiKey,
-    deepseekKey,
-    setDeepseekKey,
-    saveApiKeys,
-    loadSavedKeys
-  } = useApiKeyManager({ setLocalIsOnline });
-  
-  // Load saved keys and check API availability on mount
-  useEffect(() => {
-    if (!isOnline) {
-      checkAPIAvailability();
-    }
-    
-    loadSavedKeys();
-  }, []);
-
-  const defaultAnalysis = {
-    confidence: 0,
-    riskLevel: "Onbekend",
-    recommendation: "Niet beschikbaar",
-    expectedProfit: "Niet beschikbaar",
-    stopLossRecommendation: 0,
-    takeProfitRecommendation: 0,
-    collaboratingAgents: ["Geen actieve agents"]
-  };
-
-  const analysis = aiAnalysis || defaultAnalysis;
+  if (!aiAnalysis) {
+    return (
+      <div className="p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-muted-foreground" />
+            <h3 className="text-lg font-medium">AI Trading Analyse</h3>
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <WifiOff className="w-4 h-4" />
+            <span className="text-sm">Offline</span>
+          </div>
+        </div>
+        
+        <p className="text-sm text-muted-foreground mb-4">
+          AI analyse is momenteel niet beschikbaar. Verbind met de API om AI-analyses en aanbevelingen te ontvangen.
+        </p>
+        
+        <TradingTips />
+      </div>
+    );
+  }
 
   return (
-    <Card className="p-4 bg-secondary/10 backdrop-blur-xl border border-white/10">
-      {!localIsOnline ? (
-        <OfflinePanel
-          isKeySheetOpen={isKeySheetOpen}
-          setIsKeySheetOpen={setIsKeySheetOpen}
-          openaiKey={openaiKey}
-          setOpenaiKey={setOpenaiKey}
-          claudeKey={claudeKey}
-          setClaudeKey={setClaudeKey}
-          geminiKey={geminiKey}
-          setGeminiKey={setGeminiKey}
-          deepseekKey={deepseekKey}
-          setDeepseekKey={setDeepseekKey}
-          saveApiKeys={saveApiKeys}
-          handleManualUpdate={handleManualUpdate}
-          isChecking={isChecking}
-        />
+    <div className="p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
+      {isOnline ? (
+        <OnlinePanel analysis={aiAnalysis} />
       ) : (
-        <OnlinePanel analysis={analysis} />
+        <OfflinePanel onConnectClick={handleOpenApiKeySheet} />
       )}
-    </Card>
+      
+      <TradingTips />
+      
+      <ApiKeySheet
+        isOpen={showApiKeySheet}
+        onClose={handleCloseApiKeySheet}
+        apiKeyStatus={apiKeyStatus}
+      />
+    </div>
   );
 };
