@@ -41,7 +41,7 @@ export const VolumeIndicator = ({
   
   return (
     <group position={[position, -2, 0]}>
-      <mesh ref={mesh}>
+      <mesh ref={mesh} castShadow>
         <sphereGeometry args={[size, 16, 16]} />
         <meshStandardMaterial 
           color={sphereColor} 

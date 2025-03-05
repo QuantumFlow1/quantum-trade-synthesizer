@@ -22,9 +22,7 @@ export const CoordinateSystem = ({ theme }: CoordinateSystemProps) => {
         <bufferGeometry>
           <float32BufferAttribute 
             attach="attributes-position"
-            count={2}
-            array={new Float32Array([-15, -3, 0, 15, -3, 0])}
-            itemSize={3}
+            args={[new Float32Array([-15, -3, 0, 15, -3, 0]), 3]}
           />
         </bufferGeometry>
         <lineBasicMaterial color={xAxisColor} />
@@ -35,9 +33,7 @@ export const CoordinateSystem = ({ theme }: CoordinateSystemProps) => {
         <bufferGeometry>
           <float32BufferAttribute 
             attach="attributes-position"
-            count={2}
-            array={new Float32Array([0, -3, 0, 0, 7, 0])}
-            itemSize={3}
+            args={[new Float32Array([0, -3, 0, 0, 7, 0]), 3]}
           />
         </bufferGeometry>
         <lineBasicMaterial color={yAxisColor} />

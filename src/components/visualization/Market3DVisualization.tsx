@@ -15,11 +15,20 @@ class ErrorBoundary extends React.Component<{
   children: React.ReactNode;
   onError: (error: Error) => void;
 }> {
+  state = { hasError: false };
+  
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  
   componentDidCatch(error: Error) {
     this.props.onError(error);
   }
 
   render() {
+    if (this.state.hasError) {
+      return null; // Render nothing on error, the parent will handle display
+    }
     return this.props.children;
   }
 }
@@ -95,6 +104,7 @@ export const Market3DVisualization = ({
               alpha: true,
               preserveDrawingBuffer: true 
             }}
+            style={{ width: '100%', height: '100%' }}
           >
             <Scene data={safeData} />
           </Canvas>

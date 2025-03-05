@@ -50,10 +50,30 @@ export const Scene = ({ data }: SceneProps) => {
     }
   }, [processedData]);
   
-  // Safety check to ensure we have valid data
-  if (!processedData || !Array.isArray(processedData)) {
-    console.error("Invalid data format in Scene component");
-    return null;
+  // If no data, show a placeholder
+  if (!processedData || !Array.isArray(processedData) || processedData.length === 0) {
+    return (
+      <>
+        <ThemeBasedLighting />
+        <CoordinateSystem theme={theme} />
+        {theme === 'dark' && (
+          <Stars radius={100} depth={50} count={1000} factor={4} fade speed={1} />
+        )}
+        <mesh position={[0, 0, 0]}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color={theme === 'dark' ? "#4a9eff" : "#1d4ed8"} />
+        </mesh>
+        <OrbitControls 
+          enableZoom={true} 
+          enablePan={true} 
+          rotateSpeed={0.5}
+          zoomSpeed={0.7}
+          minDistance={5}
+          maxDistance={30}
+        />
+        <Environment preset={theme === "dark" ? "night" : "sunset"} />
+      </>
+    );
   }
   
   return (
@@ -69,7 +89,7 @@ export const Scene = ({ data }: SceneProps) => {
       <CoordinateSystem theme={theme} />
       
       {/* Price bars */}
-      {processedData.length > 0 && processedData.map((point, index) => (
+      {processedData.map((point, index) => (
         <PriceBar 
           key={`price-${index}`}
           point={point} 
@@ -82,7 +102,7 @@ export const Scene = ({ data }: SceneProps) => {
       ))}
       
       {/* Volume indicators */}
-      {processedData.length > 0 && processedData.map((point, index) => (
+      {processedData.map((point, index) => (
         <VolumeIndicator 
           key={`volume-${index}`}
           point={point} 

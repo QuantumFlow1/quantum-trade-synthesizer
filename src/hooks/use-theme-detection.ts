@@ -1,30 +1,42 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export type ColorTheme = 'light' | 'dark';
 
-export function useThemeDetection() {
+export const useThemeDetection = (): ColorTheme => {
   const [theme, setTheme] = useState<ColorTheme>('dark');
 
   useEffect(() => {
-    // Check if user prefers dark mode
-    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    // Set initial theme
-    setTheme(darkModeMediaQuery.matches ? 'dark' : 'light');
-    
-    // Add listener for theme changes
-    const themeChangeHandler = (e: MediaQueryListEvent) => {
-      setTheme(e.matches ? 'dark' : 'light');
+    // Check for user preference in localStorage
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'light' || storedTheme === 'dark') {
+      setTheme(storedTheme);
+    } else {
+      // Check for system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setTheme(prefersDark ? 'dark' : 'light');
+    }
+
+    // Listen for theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      const localTheme = localStorage.getItem('theme');
+      if (!localTheme) {
+        setTheme(e.matches ? 'dark' : 'light');
+      }
     };
-    
-    darkModeMediaQuery.addEventListener('change', themeChangeHandler);
-    
-    // Clean up
+
+    // Modern browsers
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+    }
+
     return () => {
-      darkModeMediaQuery.removeEventListener('change', themeChangeHandler);
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      }
     };
   }, []);
 
   return theme;
-}
+};

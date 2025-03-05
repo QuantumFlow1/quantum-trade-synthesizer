@@ -54,7 +54,7 @@ export const PriceBar = ({
 
   return (
     <group position={[position, height / 2, 0]}>
-      <mesh ref={mesh}>
+      <mesh ref={mesh} castShadow receiveShadow>
         <boxGeometry args={[0.4, height, 0.4]} />
         <meshStandardMaterial 
           color={color} 

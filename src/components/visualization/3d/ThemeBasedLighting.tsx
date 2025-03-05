@@ -14,6 +14,7 @@ export const ThemeBasedLighting = () => {
         position={[10, 10, 10]} 
         intensity={theme === 'dark' ? 0.7 : 1.2} 
         color={theme === 'dark' ? "#8b5cf6" : "#4a9eff"} 
+        castShadow
       />
       
       {/* Secondary fill light */}
