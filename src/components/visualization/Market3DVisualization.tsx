@@ -1,6 +1,7 @@
+
 import { useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Billboard } from "@react-three/drei";
+import { OrbitControls, Text, Billboard, Environment, Stars } from "@react-three/drei";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { BarChart3, Activity, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,9 @@ const PriceBar = ({
   useFrame((state) => {
     if (mesh.current) {
       mesh.current.rotation.y = Math.sin(state.clock.getElapsedTime() * 0.2) * 0.02;
+      
+      // Add subtle hover effect
+      mesh.current.position.y = Math.sin(state.clock.getElapsedTime() * 0.5 + index * 0.2) * 0.05 + height / 2;
     }
   });
 
@@ -51,7 +55,13 @@ const PriceBar = ({
     <group position={[position, height / 2, 0]}>
       <mesh ref={mesh}>
         <boxGeometry args={[0.4, height, 0.4]} />
-        <meshStandardMaterial color={color} />
+        <meshStandardMaterial 
+          color={color} 
+          emissive={color} 
+          emissiveIntensity={0.2} 
+          roughness={0.3}
+          metalness={0.7}
+        />
       </mesh>
       <Billboard position={[0, height + 0.5, 0]}>
         <Text
@@ -78,6 +88,7 @@ const VolumeIndicator = ({
   total: number; 
   maxVolume: number;
 }) => {
+  const mesh = useRef<THREE.Mesh>(null);
   const spread = 20;
   const spacing = spread / total;
   const position = index * spacing - (spread / 2);
@@ -85,12 +96,52 @@ const VolumeIndicator = ({
   const normalizedVolume = point.volume / maxVolume;
   const size = Math.max(0.1, normalizedVolume * 0.7);
   
+  useFrame((state) => {
+    if (mesh.current) {
+      mesh.current.rotation.x = state.clock.getElapsedTime() * 0.3;
+      mesh.current.rotation.z = state.clock.getElapsedTime() * 0.2;
+    }
+  });
+  
   return (
     <group position={[position, -2, 0]}>
-      <mesh>
+      <mesh ref={mesh}>
         <sphereGeometry args={[size, 16, 16]} />
-        <meshStandardMaterial color="#8b5cf6" transparent opacity={0.6} />
+        <meshStandardMaterial 
+          color="#8b5cf6" 
+          transparent 
+          opacity={0.6} 
+          emissive="#8b5cf6"
+          emissiveIntensity={0.3}
+        />
       </mesh>
+    </group>
+  );
+};
+
+// Add a coordinate grid to help with spatial understanding
+const CoordinateSystem = () => {
+  return (
+    <group>
+      <gridHelper args={[30, 30, "#304050", "#203040"]} position={[0, -3, 0]} />
+      
+      {/* X-axis */}
+      <line>
+        <bufferGeometry attach="geometry" args={[new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-15, -3, 0),
+          new THREE.Vector3(15, -3, 0)
+        ])]} />
+        <lineBasicMaterial attach="material" color="#4a9eff" linewidth={2} />
+      </line>
+      
+      {/* Y-axis */}
+      <line>
+        <bufferGeometry attach="geometry" args={[new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, -3, 0),
+          new THREE.Vector3(0, 7, 0)
+        ])]} />
+        <lineBasicMaterial attach="material" color="#ff4a4a" linewidth={2} />
+      </line>
     </group>
   );
 };
@@ -105,6 +156,9 @@ const Scene = ({ data }: { data: TradingDataPoint[] }) => {
     <>
       <ambientLight intensity={0.5} />
       <pointLight position={[10, 10, 10]} intensity={1} />
+      <spotLight position={[-10, 15, 10]} angle={0.15} penumbra={1} intensity={0.5} castShadow />
+      
+      <Stars radius={100} depth={50} count={1000} factor={4} fade speed={1} />
       
       {/* Price bars */}
       {data.map((point, index) => (
@@ -129,9 +183,18 @@ const Scene = ({ data }: { data: TradingDataPoint[] }) => {
         />
       ))}
       
-      {/* Grid and reference elements */}
-      <gridHelper args={[30, 30, "#304050", "#203040"]} position={[0, -3, 0]} />
-      <OrbitControls enableZoom={true} enablePan={true} />
+      <CoordinateSystem />
+      
+      <OrbitControls 
+        enableZoom={true} 
+        enablePan={true} 
+        rotateSpeed={0.5}
+        zoomSpeed={0.7}
+        minDistance={5}
+        maxDistance={30}
+      />
+      
+      <Environment preset="sunset" />
     </>
   );
 };
@@ -146,7 +209,7 @@ export const Market3DVisualization = ({ data, isSimulationMode }: Market3DVisual
   
   return (
     <div className={`bg-black/90 rounded-lg overflow-hidden border border-gray-800 ${
-      isFullscreen ? "fixed inset-0 z-50" : "h-[400px]"
+      isFullscreen ? "fixed inset-0 z-50" : "h-[500px]"
     }`}>
       <div className="flex justify-between items-center p-2 bg-black/50 border-b border-gray-800">
         <div className="flex items-center gap-2">
@@ -170,7 +233,7 @@ export const Market3DVisualization = ({ data, isSimulationMode }: Market3DVisual
         </div>
       </div>
       
-      <Canvas camera={{ position: [0, 5, 14], fov: 50 }}>
+      <Canvas shadows camera={{ position: [0, 5, 14], fov: 50 }}>
         <Scene data={data} />
       </Canvas>
       

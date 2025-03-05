@@ -6,7 +6,8 @@ import { TradingDataPoint } from "@/utils/tradingData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, BarChart3, Zap, Info } from "lucide-react";
+import { TrendingUp, BarChart3, Zap, Info, Cube } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface Market3DViewProps {
   data: TradingDataPoint[];
@@ -22,12 +23,15 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
   };
   
   return (
-    <Card className="bg-background/60 backdrop-blur-sm">
+    <Card className="bg-background/60 backdrop-blur-sm border border-purple-500/20">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Market Visualization
+            <Cube className="h-5 w-5 text-purple-500" />
+            <span>3D Market Visualization</span>
+            <Badge variant="outline" className="ml-2 bg-purple-500/10 text-purple-400 border-purple-500/30">
+              Beta
+            </Badge>
           </CardTitle>
           
           <Button variant="ghost" size="sm" className="h-7 gap-1">
