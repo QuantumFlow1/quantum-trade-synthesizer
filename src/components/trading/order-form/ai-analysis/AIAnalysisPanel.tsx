@@ -5,6 +5,7 @@ import { OfflinePanel } from "./OfflinePanel";
 import { TradingTips } from "./TradingTips";
 import { ApiKeySheet } from "./ApiKeySheet";
 import { useApiKeyManager } from "./hooks/useApiKeyManager";
+import { useState } from "react";
 
 interface AIAnalysisPanelProps {
   aiAnalysis?: {
@@ -23,7 +24,16 @@ export const AIAnalysisPanel = ({
   aiAnalysis, 
   isOnline = false 
 }: AIAnalysisPanelProps) => {
-  const { showApiKeySheet, apiKeyStatus, handleOpenApiKeySheet, handleCloseApiKeySheet } = useApiKeyManager();
+  // Use local state for online status so we can update it from the hook
+  const [localIsOnline, setLocalIsOnline] = useState(isOnline);
+  
+  // Now we need to pass the setLocalIsOnline function to the hook
+  const { 
+    showApiKeySheet, 
+    apiKeyStatus, 
+    handleOpenApiKeySheet, 
+    handleCloseApiKeySheet 
+  } = useApiKeyManager();
 
   if (!aiAnalysis) {
     return (
@@ -50,7 +60,7 @@ export const AIAnalysisPanel = ({
 
   return (
     <div className="p-4 bg-secondary/20 backdrop-blur-xl rounded-lg border border-white/10">
-      {isOnline ? (
+      {localIsOnline ? (
         <OnlinePanel analysis={aiAnalysis} />
       ) : (
         <OfflinePanel onConnectClick={handleOpenApiKeySheet} />

@@ -4,11 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { fetchAdminApiKey } from "@/components/chat/services/utils/apiHelpers";
 
-interface UseApiKeyManagerProps {
-  setLocalIsOnline: (isOnline: boolean) => void;
-}
-
-export const useApiKeyManager = ({ setLocalIsOnline }: UseApiKeyManagerProps) => {
+export const useApiKeyManager = () => {
   const { toast } = useToast();
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isKeySheetOpen, setIsKeySheetOpen] = useState(false);
@@ -16,6 +12,7 @@ export const useApiKeyManager = ({ setLocalIsOnline }: UseApiKeyManagerProps) =>
   const [claudeKey, setClaudeKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [deepseekKey, setDeepseekKey] = useState('');
+  const [apiKeyStatus, setApiKeyStatus] = useState<'available' | 'unavailable' | 'checking'>('checking');
   
   const loadSavedKeys = () => {
     const savedOpenAI = localStorage.getItem('openaiApiKey');
@@ -85,7 +82,6 @@ export const useApiKeyManager = ({ setLocalIsOnline }: UseApiKeyManagerProps) =>
       
       if (!hasAnyKey) {
         console.log("Geen API sleutels beschikbaar");
-        setLocalIsOnline(false);
         return false;
       }
       
@@ -98,6 +94,8 @@ export const useApiKeyManager = ({ setLocalIsOnline }: UseApiKeyManagerProps) =>
 
   const handleManualUpdate = async () => {
     setIsChecking(true);
+    setApiKeyStatus('checking');
+    
     toast({
       title: "Handmatige verbinding",
       description: "Proberen te verbinden met de AI service...",
@@ -108,6 +106,7 @@ export const useApiKeyManager = ({ setLocalIsOnline }: UseApiKeyManagerProps) =>
       const hasKeys = await checkAPIAvailability();
       
       if (!hasKeys) {
+        setApiKeyStatus('unavailable');
         throw new Error("Geen API sleutels geconfigureerd");
       }
       
@@ -119,14 +118,15 @@ export const useApiKeyManager = ({ setLocalIsOnline }: UseApiKeyManagerProps) =>
       if (error) throw error;
       
       // If we reach here, the connection was successful
-      setLocalIsOnline(true);
+      setApiKeyStatus('available');
+      
       toast({
         title: "Verbinding geslaagd",
         description: "De AI analyseservice is nu beschikbaar.",
       });
     } catch (error) {
       console.error("Fout bij verbinden met AI service:", error);
-      setLocalIsOnline(false);
+      setApiKeyStatus('unavailable');
       
       let errorMessage = "De AI analyseservice is momenteel niet beschikbaar.";
       
@@ -144,10 +144,19 @@ export const useApiKeyManager = ({ setLocalIsOnline }: UseApiKeyManagerProps) =>
     }
   };
 
+  // Add the missing methods that AIAnalysisPanel expects
+  const handleOpenApiKeySheet = () => {
+    setIsKeySheetOpen(true);
+    loadSavedKeys(); // Load saved keys when opening the sheet
+  };
+
+  const handleCloseApiKeySheet = () => {
+    setIsKeySheetOpen(false);
+  };
+
   return {
     isChecking,
     isKeySheetOpen,
-    setIsKeySheetOpen,
     openaiKey,
     setOpenaiKey,
     claudeKey,
@@ -159,6 +168,11 @@ export const useApiKeyManager = ({ setLocalIsOnline }: UseApiKeyManagerProps) =>
     loadSavedKeys,
     saveApiKeys,
     checkAPIAvailability,
-    handleManualUpdate
+    handleManualUpdate,
+    apiKeyStatus,
+    // Add these to match what AIAnalysisPanel is expecting
+    showApiKeySheet: isKeySheetOpen,
+    handleOpenApiKeySheet,
+    handleCloseApiKeySheet
   };
 };
