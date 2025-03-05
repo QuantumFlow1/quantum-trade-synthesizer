@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useZoomControls } from "@/hooks/use-zoom-controls";
 import { PriceCards } from "./trading/PriceCards";
@@ -8,22 +7,20 @@ import { generateTradingData, TradingDataPoint } from "@/utils/tradingData";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { loadApiKeysFromStorage } from "@/components/chat/api-keys/apiKeyUtils";
+import { Market3DView } from "./visualization/Market3DView";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BarChart2, Activity, Box, LayoutGrid } from "lucide-react";
 
-// Helper function to format market data to expected format
 const formatMarketData = (apiData: any[]): TradingDataPoint[] => {
   if (!apiData || !Array.isArray(apiData)) {
     console.error("Invalid market data received:", apiData);
     return generateTradingData(); // Fallback to generated data
   }
   
-  // Convert the API response to the expected format
   try {
-    // Extract the first item (usually BTC) as our main trading asset
     const mainAsset = apiData[0] || {};
     
-    // Generate compatible trading data format based on actual market data
     const formattedData = generateTradingData().map((item, index) => {
-      // Determine trend explicitly as "up" or "down" to satisfy TypeScript
       const trendValue: "up" | "down" = 
         mainAsset.change24h !== undefined 
           ? (mainAsset.change24h >= 0 ? "up" : "down") 
@@ -31,7 +28,6 @@ const formatMarketData = (apiData: any[]): TradingDataPoint[] => {
           
       return {
         ...item,
-        // Use actual price data if available
         open: mainAsset.price ? mainAsset.price * (0.99 + Math.random() * 0.02) : item.open,
         close: mainAsset.price || item.close,
         high: mainAsset.high24h || (mainAsset.price ? mainAsset.price * 1.02 : item.high),
@@ -56,10 +52,9 @@ const TradingChart = () => {
   const [lastAPICheckTime, setLastAPICheckTime] = useState<Date | null>(null);
   const [apiKeysAvailable, setApiKeysAvailable] = useState<boolean>(false);
   const [rawMarketData, setRawMarketData] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<"standard" | "3d" | "combined">("standard");
 
-  // Check if any API keys are configured
   const checkApiKeysAvailability = useCallback(() => {
-    // Check for user-set API keys in localStorage
     const userKeys = loadApiKeysFromStorage();
     const hasUserKeys = !!(userKeys.openaiApiKey || userKeys.claudeApiKey || 
                          userKeys.geminiApiKey || userKeys.deepseekApiKey);
@@ -72,7 +67,6 @@ const TradingChart = () => {
       hasAnyKey: hasUserKeys
     });
     
-    // Also check for admin-set API keys in Supabase
     const checkAdminKeys = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('check-api-keys', {
@@ -87,13 +81,11 @@ const TradingChart = () => {
         const hasAdminKeys = data?.secretSet === true;
         console.log("Admin API keys availability:", hasAdminKeys);
         
-        // Update state with combined result
         const keysAvailable = hasUserKeys || hasAdminKeys;
         setApiKeysAvailable(keysAvailable);
         return keysAvailable;
       } catch (err) {
         console.error("Exception checking admin API keys:", err);
-        // If we can't check admin keys, fall back to user keys only
         setApiKeysAvailable(hasUserKeys);
         return hasUserKeys;
       }
@@ -102,7 +94,6 @@ const TradingChart = () => {
     return checkAdminKeys();
   }, []);
 
-  // Fetch market data from API with validation
   const fetchMarketData = async () => {
     try {
       if (forceSimulation) {
@@ -111,7 +102,6 @@ const TradingChart = () => {
         return generatedData;
       }
       
-      // First fetch raw market data
       const { data: marketData, error } = await supabase.functions.invoke('market-data-collector');
       
       if (error) {
@@ -125,14 +115,12 @@ const TradingChart = () => {
         console.log("Raw market data received:", marketData);
         setRawMarketData(marketData);
         
-        // Send the raw data to our validator service
         const { data: validationResult, error: validationError } = await supabase.functions.invoke('market-data-validator', {
           body: { marketData, source: 'market-data-collector' }
         });
         
         if (validationError) {
           console.error("Error validating market data:", validationError);
-          // Fall back to our local formatting
           const formattedData = formatMarketData(marketData);
           setData(formattedData);
           return formattedData;
@@ -159,21 +147,18 @@ const TradingChart = () => {
     }
   };
 
-  // Check the API status when the component mounts
   useEffect(() => {
     const checkApiStatus = async () => {
       try {
         console.log("Checking API status...");
         setApiStatus('checking');
         
-        // Force API to be available when in simulation mode
         if (forceSimulation) {
           console.log("Simulation mode is active, setting API as available");
           setApiStatus('available');
           return;
         }
         
-        // First check if any API keys are configured
         const hasApiKeys = await checkApiKeysAvailability();
         
         if (!hasApiKeys) {
@@ -189,7 +174,6 @@ const TradingChart = () => {
           return;
         }
         
-        // Try to call a simple endpoint to check if the API is available
         const { data, error } = await supabase.functions.invoke('market-data-collector', {
           body: { action: 'status_check' }
         });
@@ -209,7 +193,6 @@ const TradingChart = () => {
           setApiStatus('available');
           setLastAPICheckTime(new Date());
           
-          // Fetch initial market data
           await fetchMarketData();
         }
       } catch (error) {
@@ -227,14 +210,11 @@ const TradingChart = () => {
 
     checkApiStatus();
 
-    // Set up a periodic check every 60 seconds
     const intervalId = setInterval(checkApiStatus, 60000);
 
-    // Clean up the interval when the component unmounts
     return () => clearInterval(intervalId);
   }, [forceSimulation, checkApiKeysAvailability]);
 
-  // Handle manual retry for API connection
   const handleRetryConnection = async () => {
     toast({
       title: "Checking Connection",
@@ -244,7 +224,6 @@ const TradingChart = () => {
     try {
       setApiStatus('checking');
       
-      // First ensure we have API keys configured
       const hasApiKeys = await checkApiKeysAvailability();
       
       if (!hasApiKeys) {
@@ -274,7 +253,6 @@ const TradingChart = () => {
         console.log("API is available after retry:", data);
         setApiStatus('available');
         
-        // Fetch fresh market data
         await fetchMarketData();
         
         toast({
@@ -296,7 +274,6 @@ const TradingChart = () => {
     setLastAPICheckTime(new Date());
   };
 
-  // Toggle simulation mode
   const toggleSimulationMode = (enabled: boolean) => {
     setForceSimulation(enabled);
     
@@ -308,13 +285,11 @@ const TradingChart = () => {
         variant: "default",
       });
     } else {
-      // Re-check API status when disabling simulation
       handleRetryConnection();
     }
   };
 
   useEffect(() => {
-    // Update the trading data every 5 seconds
     const dataInterval = setInterval(() => {
       if (forceSimulation) {
         setData(generateTradingData());
@@ -363,24 +338,98 @@ const TradingChart = () => {
       
       <PriceCards data={data} />
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <TradingChartContent 
-            scale={scale}
-            handleZoomIn={handleZoomIn}
-            handleZoomOut={handleZoomOut}
-            handleResetZoom={handleResetZoom}
+      <div className="flex justify-end mb-2">
+        <Tabs 
+          value={viewMode} 
+          onValueChange={(value) => setViewMode(value as "standard" | "3d" | "combined")}
+          className="bg-background/40 backdrop-blur-sm border border-border/30 rounded-md"
+        >
+          <TabsList className="p-1">
+            <TabsTrigger value="standard" className="flex items-center gap-1.5 px-3 py-1.5">
+              <Activity className="h-4 w-4" />
+              <span>Standard</span>
+            </TabsTrigger>
+            <TabsTrigger value="3d" className="flex items-center gap-1.5 px-3 py-1.5">
+              <Box className="h-4 w-4" />
+              <span>3D View</span>
+            </TabsTrigger>
+            <TabsTrigger value="combined" className="flex items-center gap-1.5 px-3 py-1.5">
+              <LayoutGrid className="h-4 w-4" />
+              <span>Combined</span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {viewMode === "standard" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <TradingChartContent 
+              scale={scale}
+              handleZoomIn={handleZoomIn}
+              handleZoomOut={handleZoomOut}
+              handleResetZoom={handleResetZoom}
+            />
+          </div>
+
+          <TradingOrderSection 
+            apiStatus={apiStatus}
+            marketData={rawMarketData}
+            onSimulationToggle={toggleSimulationMode}
+            isSimulationMode={forceSimulation}
+            apiKeysAvailable={apiKeysAvailable}
           />
         </div>
+      )}
+      
+      {viewMode === "3d" && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <Market3DView 
+              data={data}
+              isSimulationMode={forceSimulation}
+            />
+          </div>
 
-        <TradingOrderSection 
-          apiStatus={apiStatus}
-          marketData={rawMarketData}
-          onSimulationToggle={toggleSimulationMode}
-          isSimulationMode={forceSimulation}
-          apiKeysAvailable={apiKeysAvailable}
-        />
-      </div>
+          <TradingOrderSection 
+            apiStatus={apiStatus}
+            marketData={rawMarketData}
+            onSimulationToggle={toggleSimulationMode}
+            isSimulationMode={forceSimulation}
+            apiKeysAvailable={apiKeysAvailable}
+          />
+        </div>
+      )}
+      
+      {viewMode === "combined" && (
+        <div className="grid grid-cols-1 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TradingChartContent 
+              scale={scale}
+              handleZoomIn={handleZoomIn}
+              handleZoomOut={handleZoomOut}
+              handleResetZoom={handleResetZoom}
+            />
+            
+            <Market3DView 
+              data={data}
+              isSimulationMode={forceSimulation}
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-3">
+              <TradingOrderSection 
+                apiStatus={apiStatus}
+                marketData={rawMarketData}
+                onSimulationToggle={toggleSimulationMode}
+                isSimulationMode={forceSimulation}
+                apiKeysAvailable={apiKeysAvailable}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
