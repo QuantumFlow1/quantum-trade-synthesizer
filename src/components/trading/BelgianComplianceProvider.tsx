@@ -9,6 +9,8 @@ type ComplianceContextType = {
   isQualifiedInvestor: boolean;
   complianceLoaded: boolean;
   userCountry: string | null;
+  updateUserQualifiedStatus: (isQualified: boolean) => Promise<{success: boolean, message?: string}>;
+  checkQualificationStatus: () => Promise<{success: boolean, message?: string}>;
 };
 
 const ComplianceContext = createContext<ComplianceContextType>({
@@ -16,6 +18,8 @@ const ComplianceContext = createContext<ComplianceContextType>({
   isQualifiedInvestor: false,
   complianceLoaded: false,
   userCountry: null,
+  updateUserQualifiedStatus: async () => ({success: false}),
+  checkQualificationStatus: async () => ({success: false}),
 });
 
 export const useBelgianCompliance = () => useContext(ComplianceContext);
@@ -32,6 +36,65 @@ export const BelgianComplianceProvider = ({ children }: BelgianComplianceProvide
   const [complianceLoaded, setComplianceLoaded] = useState(false);
   const [userCountry, setUserCountry] = useState<string | null>(null);
   const userRoleInfo = getUserRoleInfo(userProfile);
+
+  // Function to update user's qualified status
+  const updateUserQualifiedStatus = async (isQualified: boolean): Promise<{success: boolean, message?: string}> => {
+    if (!user) {
+      return { success: false, message: "User not authenticated" };
+    }
+    
+    try {
+      // In a real implementation, this would call an API endpoint to update the user's status
+      // For this demo, we'll simulate a successful update
+      setIsQualifiedInvestor(isQualified);
+      setIsSimulationRequired(!isQualified);
+      
+      // Save to local storage for persistence (in real app, this would be saved to database)
+      localStorage.setItem("userQualifiedStatus", isQualified ? "true" : "false");
+      
+      return { 
+        success: true, 
+        message: "Qualification status updated successfully" 
+      };
+    } catch (error) {
+      console.error("Error updating qualified status:", error);
+      return { 
+        success: false, 
+        message: "Failed to update qualification status" 
+      };
+    }
+  };
+  
+  // Function to check if user meets qualification criteria
+  const checkQualificationStatus = async (): Promise<{success: boolean, message?: string}> => {
+    if (!user) {
+      return { success: false, message: "User not authenticated" };
+    }
+    
+    try {
+      // In a real implementation, this would verify the user's documentation and qualifications
+      // For this demo, we'll simulate the verification process with a success
+      
+      // Add a short delay to simulate processing
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Update the user's qualified status
+      const result = await updateUserQualifiedStatus(true);
+      
+      toast({
+        title: "Qualification Successful",
+        description: "Your account has been verified as a qualified investor.",
+      });
+      
+      return result;
+    } catch (error) {
+      console.error("Error checking qualification status:", error);
+      return { 
+        success: false, 
+        message: "Verification process failed. Please try again later." 
+      };
+    }
+  };
 
   useEffect(() => {
     const checkComplianceRequirements = async () => {
@@ -50,8 +113,9 @@ export const BelgianComplianceProvider = ({ children }: BelgianComplianceProvide
         const isBelgianUser = storedCountry === "Belgium";
         
         // 2. Check if user is a qualified investor (beyond retail)
-        // In a real implementation, this would be determined through proper KYC
-        const isQualified = userRoleInfo.isLovTrader || userRoleInfo.isAdmin;
+        // First check stored preference, then role
+        const storedQualifiedStatus = localStorage.getItem("userQualifiedStatus");
+        const isQualified = storedQualifiedStatus === "true" || userRoleInfo.isLovTrader || userRoleInfo.isAdmin;
         setIsQualifiedInvestor(isQualified);
         
         // 3. Determine if simulation is required based on country and investor qualification
@@ -85,7 +149,9 @@ export const BelgianComplianceProvider = ({ children }: BelgianComplianceProvide
         isSimulationRequired,
         isQualifiedInvestor,
         complianceLoaded,
-        userCountry
+        userCountry,
+        updateUserQualifiedStatus,
+        checkQualificationStatus
       }}
     >
       {children}

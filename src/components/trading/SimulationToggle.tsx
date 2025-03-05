@@ -8,7 +8,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon, Lightbulb, BookOpen, CheckCircle2, Lock } from "lucide-react";
+import { InfoIcon, Lightbulb, BookOpen, CheckCircle2, Lock, AlertCircle } from "lucide-react";
+import { useBelgianCompliance } from "./BelgianComplianceProvider";
 
 interface SimulationToggleProps {
   enabled: boolean;
@@ -19,6 +20,9 @@ interface SimulationToggleProps {
 export const SimulationToggle = ({ enabled, onToggle, disabled = false }: SimulationToggleProps) => {
   const [isEnglish, setIsEnglish] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
+  const { isSimulationRequired, isQualifiedInvestor, userCountry } = useBelgianCompliance();
+  
+  const isBelgianUser = userCountry === "Belgium";
   
   useEffect(() => {
     const lang = localStorage.getItem('preferredLanguage');
@@ -75,12 +79,25 @@ export const SimulationToggle = ({ enabled, onToggle, disabled = false }: Simula
             </div>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            {disabled && enabled ? (
-              <p>
-                {isEnglish 
-                  ? "Simulation mode is required for Belgian retail investors under FSMA regulations. This allows you to practice trading without using real funds."
-                  : "Simulatiemodus is verplicht voor Belgische particuliere beleggers volgens FSMA-voorschriften. Hiermee kunt u oefenen met handelen zonder echt geld te gebruiken."}
-              </p>
+            {disabled && enabled && isBelgianUser ? (
+              <div className="space-y-2">
+                <p>
+                  {isEnglish 
+                    ? "Simulation mode is required for Belgian retail investors under FSMA regulations. This allows you to practice trading without using real funds."
+                    : "Simulatiemodus is verplicht voor Belgische particuliere beleggers volgens FSMA-voorschriften. Hiermee kunt u oefenen met handelen zonder echt geld te gebruiken."}
+                </p>
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm font-medium flex items-center">
+                    <AlertCircle className="h-3 w-3 mr-1 text-amber-500" />
+                    {isEnglish ? "Qualification Options:" : "Kwalificatieopties:"}
+                  </p>
+                  <ul className="text-xs mt-1 list-disc pl-4">
+                    <li>{isEnglish ? "Verify as a qualified investor" : "Verifiëren als gekwalificeerde belegger"}</li>
+                    <li>{isEnglish ? "Professional entity status" : "Professionele entiteitsstatus"}</li>
+                    <li>{isEnglish ? "Portfolio value >€500,000" : "Portefeuillewaarde >€500.000"}</li>
+                  </ul>
+                </div>
+              </div>
             ) : (
               <p>
                 {isEnglish 
