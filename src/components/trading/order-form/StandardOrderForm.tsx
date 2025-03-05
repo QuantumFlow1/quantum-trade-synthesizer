@@ -5,7 +5,7 @@ import { OrderParameters } from "../OrderParameters";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TradeOrder } from "../types";
-import { AIAnalysisPanel } from "./AIAnalysisPanel";
+import { AIAnalysisPanel } from "./ai-analysis";
 
 interface StandardOrderFormProps {
   orderType: "buy" | "sell";

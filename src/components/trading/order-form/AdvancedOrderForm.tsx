@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { AdvancedSignalPanel } from "./AdvancedSignalPanel";
-import { AIAnalysisPanel } from "./AIAnalysisPanel";
+import { AIAnalysisPanel } from "./ai-analysis";
 
 interface AdvancedOrderFormProps {
   currentPrice: number;
