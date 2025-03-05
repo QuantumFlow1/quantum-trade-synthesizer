@@ -21,7 +21,7 @@ const formatMarketData = (apiData: any[]): TradingDataPoint[] => {
     const mainAsset = apiData[0] || {};
     
     const formattedData = generateTradingData().map((item, index) => {
-      const trendValue: "up" | "down" = 
+      const trendValue: "up" | "down" | "neutral" = 
         mainAsset.change24h !== undefined 
           ? (mainAsset.change24h >= 0 ? "up" : "down") 
           : item.trend;

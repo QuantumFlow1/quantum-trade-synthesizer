@@ -1,4 +1,3 @@
-
 export interface TradingDataPoint {
   name: string;
   open: number;
