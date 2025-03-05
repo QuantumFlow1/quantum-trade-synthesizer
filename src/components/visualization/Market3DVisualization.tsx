@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { Scene } from "./3d/Scene";
@@ -8,29 +8,6 @@ import { VisualizationControls } from "./3d/VisualizationControls";
 interface Market3DVisualizationProps {
   data: TradingDataPoint[];
   isSimulationMode?: boolean;
-}
-
-// Simple ErrorBoundary component for Canvas
-class ErrorBoundary extends React.Component<{
-  children: React.ReactNode;
-  onError: (error: Error) => void;
-}> {
-  state = { hasError: false };
-  
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  
-  componentDidCatch(error: Error) {
-    this.props.onError(error);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return null; // Render nothing on error, the parent will handle display
-    }
-    return this.props.children;
-  }
 }
 
 export const Market3DVisualization = ({ 
@@ -104,7 +81,6 @@ export const Market3DVisualization = ({
               alpha: true,
               preserveDrawingBuffer: true 
             }}
-            style={{ width: '100%', height: '100%' }}
           >
             <Scene data={safeData} />
           </Canvas>
@@ -117,3 +93,19 @@ export const Market3DVisualization = ({
     </div>
   );
 };
+
+// Simple ErrorBoundary component for Canvas
+class ErrorBoundary extends React.Component<{
+  children: React.ReactNode;
+  onError: (error: Error) => void;
+}> {
+  componentDidCatch(error: Error) {
+    this.props.onError(error);
+  }
+
+  render() {
+    return this.props.children;
+  }
+}
+
+import React from 'react';
