@@ -18,15 +18,19 @@ export function useApiStatus(initialStatus: 'checking' | 'available' | 'unavaila
   useEffect(() => {
     let cleanupFunction = () => {};
     
-    if (apiStatus === 'checking') {
-      // We need to handle the async nature of verifyApiStatus
-      const performCheck = async () => {
-        const cleanup = await verifyApiStatus(setApiStatus, wsConnection);
-        cleanupFunction = cleanup;
-      };
-      
-      performCheck();
-    }
+    const performCheck = async () => {
+      if (apiStatus === 'checking') {
+        try {
+          const cleanup = await verifyApiStatus(setApiStatus, wsConnection);
+          cleanupFunction = cleanup;
+        } catch (error) {
+          console.error("Error performing API check:", error);
+          setApiStatus('unavailable');
+        }
+      }
+    };
+    
+    performCheck();
     
     // Set up automatic retry for failed connections
     let retryTimer: NodeJS.Timeout | null = null;

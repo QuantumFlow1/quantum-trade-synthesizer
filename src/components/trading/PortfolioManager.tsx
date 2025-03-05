@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, BookCheck } from "lucide-react";
@@ -22,6 +22,9 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
   onSimulationToggle,
   currentData
 }) => {
+  // Enable simulation mode by default if nothing is passed
+  const effectiveSimulationMode = isSimulationMode === undefined ? true : isSimulationMode;
+  
   const {
     agentRecommendations,
     portfolioDecision,
@@ -45,7 +48,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
           </div>
           {onSimulationToggle && (
             <SimulationToggle 
-              enabled={isSimulationMode} 
+              enabled={effectiveSimulationMode} 
               onToggle={onSimulationToggle} 
             />
           )}
@@ -53,7 +56,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {isSimulationMode && <SimulationAlert />}
+        {effectiveSimulationMode && <SimulationAlert />}
         
         <div className="space-y-3">
           {agentRecommendations.length > 0 ? (
@@ -69,8 +72,8 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
                   </h3>
                   <PortfolioDecision 
                     decision={portfolioDecision} 
-                    isSimulationMode={isSimulationMode}
-                    onExecuteDecision={() => handleExecuteDecision(isSimulationMode)}
+                    isSimulationMode={effectiveSimulationMode}
+                    onExecuteDecision={() => handleExecuteDecision(effectiveSimulationMode)}
                   />
                 </div>
               )}

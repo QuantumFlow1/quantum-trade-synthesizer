@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +26,6 @@ export const ApiKeySheet = ({
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('openai');
 
-  // Load saved API keys when the sheet opens
   useEffect(() => {
     if (isOpen) {
       const savedOpenAI = localStorage.getItem('openaiApiKey') || '';
@@ -45,13 +43,11 @@ export const ApiKeySheet = ({
   const handleSave = () => {
     setIsSaving(true);
     
-    // Save API keys to localStorage
     if (openaiKey) localStorage.setItem('openaiApiKey', openaiKey);
     if (claudeKey) localStorage.setItem('claudeApiKey', claudeKey);
     if (geminiKey) localStorage.setItem('geminiApiKey', geminiKey);
     if (deepseekKey) localStorage.setItem('deepseekApiKey', deepseekKey);
     
-    // Call the onSave callback if provided
     if (onSave) {
       onSave({
         openai: openaiKey,
@@ -61,10 +57,9 @@ export const ApiKeySheet = ({
       });
     }
     
-    // Simulate saving delay
     setTimeout(() => {
       setIsSaving(false);
-      onClose(); // Close the sheet after saving
+      onClose();
     }, 1000);
   };
 

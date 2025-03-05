@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
 export function useApiKeyManager() {
@@ -25,9 +25,9 @@ export function useApiKeyManager() {
   }, []);
 
   // Initialize by checking for existing API keys
-  useState(() => {
+  useEffect(() => {
     checkLocalApiKeys();
-  });
+  }, [checkLocalApiKeys]);
 
   const handleOpenApiKeySheet = useCallback(() => {
     setShowApiKeySheet(true);
