@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Text, Billboard } from "@react-three/drei";
@@ -6,6 +5,7 @@ import { TradingDataPoint } from "@/utils/tradingData";
 import { BarChart3, Activity, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import * as THREE from "three";
 
 interface Market3DVisualizationProps {
   data: TradingDataPoint[];
