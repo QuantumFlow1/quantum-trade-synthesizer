@@ -11,12 +11,14 @@ export interface ApiKeySheetProps {
   isOpen: boolean;
   onClose: () => void;
   apiKeyStatus: 'available' | 'unavailable' | 'checking';
+  onSave?: (keys: { openai: string; claude: string; gemini: string; deepseek: string }) => void;
 }
 
 export const ApiKeySheet = ({
   isOpen,
   onClose,
-  apiKeyStatus
+  apiKeyStatus,
+  onSave
 }: ApiKeySheetProps) => {
   const [openaiKey, setOpenaiKey] = useState('');
   const [claudeKey, setClaudeKey] = useState('');
@@ -49,13 +51,20 @@ export const ApiKeySheet = ({
     if (geminiKey) localStorage.setItem('geminiApiKey', geminiKey);
     if (deepseekKey) localStorage.setItem('deepseekApiKey', deepseekKey);
     
+    // Call the onSave callback if provided
+    if (onSave) {
+      onSave({
+        openai: openaiKey,
+        claude: claudeKey,
+        gemini: geminiKey,
+        deepseek: deepseekKey
+      });
+    }
+    
     // Simulate saving delay
     setTimeout(() => {
       setIsSaving(false);
       onClose(); // Close the sheet after saving
-      
-      // Reload the page to apply changes (or you could call a function to refresh API status)
-      window.location.reload();
     }, 1000);
   };
 
