@@ -32,14 +32,20 @@ export const CoordinateSystem = ({ theme }: CoordinateSystemProps) => {
       <gridHelper args={[30, 30, gridColor1, gridColor2]} position={[0, -3, 0]} />
       
       {/* X-axis */}
-      <line geometry={xAxisGeometry}>
-        <lineBasicMaterial attach="material" color={xAxisColor} linewidth={2} />
-      </line>
+      <primitive object={
+        new THREE.Line(
+          xAxisGeometry,
+          new THREE.LineBasicMaterial({ color: xAxisColor, linewidth: 2 })
+        )
+      } />
       
       {/* Y-axis */}
-      <line geometry={yAxisGeometry}>
-        <lineBasicMaterial attach="material" color={yAxisColor} linewidth={2} />
-      </line>
+      <primitive object={
+        new THREE.Line(
+          yAxisGeometry,
+          new THREE.LineBasicMaterial({ color: yAxisColor, linewidth: 2 })
+        )
+      } />
     </group>
   );
 };
