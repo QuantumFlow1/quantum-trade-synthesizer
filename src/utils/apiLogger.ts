@@ -35,6 +35,16 @@ export const logApiCall = async (
     
     if (error) {
       console.error('Error logging API call:', error.message);
+      
+      // Create fallback logging to console when the edge function fails
+      console.info('API Log Fallback:', {
+        endpoint,
+        source,
+        status,
+        error_message,
+        timestamp: new Date().toISOString()
+      });
+      
       return false;
     }
     
@@ -42,6 +52,35 @@ export const logApiCall = async (
   } catch (e) {
     // If the function fails, log to console
     console.error('Failed to log API call:', e);
+    
+    // Create fallback logging to console
+    console.info('API Log Fallback:', {
+      endpoint,
+      source,
+      status,
+      error_message,
+      timestamp: new Date().toISOString()
+    });
+    
     return false;
   }
+};
+
+/**
+ * Create a simple console-only logger that doesn't require the edge function
+ * Use this as a fallback when the main logger isn't working
+ */
+export const logApiCallLocal = (
+  endpoint: string,
+  source: string,
+  status: ApiCallStatus,
+  error_message?: string
+): void => {
+  console.info('API Call (Local):', {
+    endpoint,
+    source,
+    status,
+    error_message,
+    timestamp: new Date().toISOString()
+  });
 };

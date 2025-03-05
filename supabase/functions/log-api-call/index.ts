@@ -41,39 +41,80 @@ serve(async (req) => {
       timestamp
     });
 
-    // Insert the log entry
-    const { data, error } = await supabase
-      .from('api_logs')
-      .insert({
-        endpoint,
-        source,
-        status,
-        error_message,
-        timestamp: timestamp || new Date().toISOString(),
-        request_ip: req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'unknown',
-        user_agent: req.headers.get('user-agent') || 'unknown'
-      });
+    try {
+      // Try to insert the log entry
+      const { data, error } = await supabase
+        .from('api_logs')
+        .insert({
+          endpoint,
+          source,
+          status,
+          error_message,
+          timestamp: timestamp || new Date().toISOString(),
+          request_ip: req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent') || 'unknown'
+        });
 
-    if (error) {
-      console.error("Error logging API call:", error);
-      throw error;
-    }
-
-    console.log("API call logged successfully");
-
-    return new Response(
-      JSON.stringify({ success: true }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
+      if (error) {
+        console.error("Error logging API call:", error);
+        
+        // If the table doesn't exist yet, return a specific response
+        if (error.code === '42P01') {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              message: "The api_logs table does not exist yet. Please run migrations first." 
+            }),
+            { 
+              status: 503,
+              headers: { 
+                ...corsHeaders,
+                'Content-Type': 'application/json'
+              } 
+            }
+          );
+        }
+        
+        throw error;
       }
-    );
+
+      console.log("API call logged successfully");
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+    } catch (dbError) {
+      // If database operation fails, fallback to console logging only
+      console.error("Database error:", dbError);
+      console.log("Fallback: Logging to console only");
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          message: "Could not write to database. Logged to console only." 
+        }),
+        { 
+          status: 207, // Partial success
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          } 
+        }
+      );
+    }
   } catch (error) {
-    console.error('Error logging API call:', error);
+    console.error('Error processing API log request:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        success: false 
+      }),
       { 
         status: 400,
         headers: { 
