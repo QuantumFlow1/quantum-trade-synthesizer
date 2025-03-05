@@ -8,14 +8,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { InfoIcon, Lightbulb, BookOpen, CheckCircle2 } from "lucide-react";
+import { InfoIcon, Lightbulb, BookOpen, CheckCircle2, Lock } from "lucide-react";
 
 interface SimulationToggleProps {
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
+  disabled?: boolean; // Add disabled prop
 }
 
-export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) => {
+export const SimulationToggle = ({ enabled, onToggle, disabled = false }: SimulationToggleProps) => {
   const [isEnglish, setIsEnglish] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
   
@@ -33,6 +34,10 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
   }, [enabled]);
 
   const handleToggle = (value: boolean) => {
+    if (disabled && !value) {
+      // Don't allow turning off if disabled and trying to turn off
+      return;
+    }
     onToggle(value);
     if (value) {
       setShowGuide(true);
@@ -47,6 +52,7 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
         onCheckedChange={handleToggle}
         id="simulation-mode"
         className={enabled ? "bg-green-500" : ""}
+        disabled={disabled && !enabled} // Disable switch if required by compliance but allow toggling on
       />
       <Label htmlFor="simulation-mode" className="cursor-pointer font-medium">
         {isEnglish ? "Simulation Mode" : "Simulatiemodus"}
@@ -55,7 +61,11 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center">
-              <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+              {disabled && enabled ? (
+                <Lock className="h-4 w-4 text-amber-400 ml-2" />
+              ) : (
+                <InfoIcon className="h-4 w-4 text-muted-foreground cursor-help" />
+              )}
               {enabled && (
                 <div className="ml-2 flex items-center text-xs text-green-600 font-medium">
                   <Lightbulb className="h-3 w-3 mr-1" />
@@ -65,11 +75,19 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
             </div>
           </TooltipTrigger>
           <TooltipContent className="max-w-xs">
-            <p>
-              {isEnglish 
-                ? "In simulation mode, orders are not actually executed. Ideal for testing strategies without risk. Our AI Hedge Fund guide recommends starting with simulations to develop effective trading strategies."
-                : "In simulatiemodus worden orders niet echt uitgevoerd. Ideaal om strategieën te testen zonder risico. Onze AI Hedge Fund gids raadt aan om te beginnen met simulaties om effectieve handelsstrategieën te ontwikkelen."}
-            </p>
+            {disabled && enabled ? (
+              <p>
+                {isEnglish 
+                  ? "Simulation mode is required for Belgian retail investors under FSMA regulations. This allows you to practice trading without using real funds."
+                  : "Simulatiemodus is verplicht voor Belgische particuliere beleggers volgens FSMA-voorschriften. Hiermee kunt u oefenen met handelen zonder echt geld te gebruiken."}
+              </p>
+            ) : (
+              <p>
+                {isEnglish 
+                  ? "In simulation mode, orders are not actually executed. Ideal for testing strategies without risk. Our AI Hedge Fund guide recommends starting with simulations to develop effective trading strategies."
+                  : "In simulatiemodus worden orders niet echt uitgevoerd. Ideaal om strategieën te testen zonder risico. Onze AI Hedge Fund gids raadt aan om te beginnen met simulaties om effectieve handelsstrategieën te ontwikkelen."}
+              </p>
+            )}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

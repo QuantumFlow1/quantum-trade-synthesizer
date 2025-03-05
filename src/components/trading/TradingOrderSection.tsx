@@ -11,11 +11,13 @@ import { AlertCircle, CircleCheckBig, Info, Network, Key } from "lucide-react";
 import { Tabs, TabsList, TabsContent, TabsTrigger } from "@/components/ui/tabs";
 import { SimulationToggle } from "./SimulationToggle";
 import { Button } from "../ui/button";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { CollaborativeInsightsPanel } from "./CollaborativeInsightsPanel";
 import { useAgentConnection } from "@/hooks/use-agent-connection";
 import { Badge } from "../ui/badge";
 import { AIKeyConfigSheet } from "@/components/dashboard/advice/AIKeyConfigSheet";
+import { BelgianComplianceInfo } from "./BelgianComplianceInfo";
+import { useBelgianCompliance } from "./BelgianComplianceProvider";
 
 interface TradingOrderSectionProps {
   apiStatus: 'checking' | 'available' | 'unavailable';
@@ -35,12 +37,15 @@ export const TradingOrderSection = ({
   const { positions, isLoading: positionsLoading } = usePositions();
   const { positions: simulatedPositions, isLoading: simulatedPositionsLoading, closePosition } = useSimulatedPositions();
   const { isConnected, activeAgents } = useAgentConnection();
+  const { isSimulationRequired } = useBelgianCompliance();
   
   const [positionsTab, setPositionsTab] = useState(() => {
     // Initialize tab based on which positions are available
     return simulatedPositions.length > 0 ? "simulated" : "real";
   });
-  const [localIsSimulationMode, setLocalIsSimulationMode] = useState(isSimulationMode);
+  
+  // Use compliance requirement to force simulation mode if needed
+  const [localIsSimulationMode, setLocalIsSimulationMode] = useState(isSimulationMode || isSimulationRequired);
   const [isKeySheetOpen, setIsKeySheetOpen] = useState(false);
   
   // Force API to be available for simulation mode
@@ -48,13 +53,23 @@ export const TradingOrderSection = ({
 
   // Handle toggle of simulation mode
   const handleSimulationToggle = (enabled: boolean) => {
+    // Don't allow turning off simulation if required by compliance
+    if (isSimulationRequired && !enabled) {
+      useToast().toast({
+        title: "Simulation Mode Required",
+        description: "Due to Belgian regulations, simulation mode cannot be disabled for retail investors.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLocalIsSimulationMode(enabled);
     
     if (onSimulationToggle) {
       onSimulationToggle(enabled);
     } else {
       if (enabled) {
-        toast({
+        useToast().toast({
           title: "Simulation Mode Enabled",
           description: "You can now test trading without using real funds",
           duration: 3000,
@@ -65,7 +80,7 @@ export const TradingOrderSection = ({
   
   // Handle API key configuration save
   const handleApiKeySave = () => {
-    toast({
+    useToast().toast({
       title: "API Keys Saved",
       description: "Your API keys have been saved successfully. Reconnecting to services...",
       duration: 3000,
@@ -82,17 +97,20 @@ export const TradingOrderSection = ({
     }
   }, [localIsSimulationMode]);
   
-  // Sync with parent component's simulation mode
+  // Sync with parent component's simulation mode and compliance requirements
   useEffect(() => {
-    setLocalIsSimulationMode(isSimulationMode);
-  }, [isSimulationMode]);
+    setLocalIsSimulationMode(isSimulationMode || isSimulationRequired);
+  }, [isSimulationMode, isSimulationRequired]);
 
   return (
     <div className="lg:col-span-1 space-y-6">
+      <BelgianComplianceInfo />
+      
       <div className="flex items-center justify-between">
         <SimulationToggle 
           enabled={localIsSimulationMode} 
           onToggle={handleSimulationToggle} 
+          disabled={isSimulationRequired}
         />
         
         {isConnected && activeAgents > 0 && (
@@ -181,7 +199,7 @@ export const TradingOrderSection = ({
         
         <Tabs value={positionsTab} onValueChange={setPositionsTab}>
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="real">Real Positions</TabsTrigger>
+            <TabsTrigger value="real" disabled={isSimulationRequired}>Real Positions</TabsTrigger>
             <TabsTrigger value="simulated" className={simulatedPositions.length > 0 ? "relative" : ""}>
               Simulated Positions
               {simulatedPositions.length > 0 && (
