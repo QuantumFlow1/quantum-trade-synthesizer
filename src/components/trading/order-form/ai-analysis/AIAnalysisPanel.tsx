@@ -1,4 +1,3 @@
-
 import { Brain, Wifi, WifiOff } from "lucide-react";
 import { OnlinePanel } from "./OnlinePanel";
 import { OfflinePanel } from "./OfflinePanel";
@@ -6,7 +5,7 @@ import { TradingTips } from "./TradingTips";
 import { ApiKeySheet } from "./ApiKeySheet";
 import { useApiKeyManager } from "./hooks/useApiKeyManager";
 import { useState, useEffect } from "react";
-import { useApiStatus } from "@/components/trading/hooks/useApiStatus";
+import { useApiStatus } from "@/components/trading/hooks/api-status";
 
 interface AIAnalysisPanelProps {
   aiAnalysis?: {
@@ -119,5 +118,4 @@ export const AIAnalysisPanel = ({
   );
 };
 
-// Add the Button import
 import { Button } from "@/components/ui/button";

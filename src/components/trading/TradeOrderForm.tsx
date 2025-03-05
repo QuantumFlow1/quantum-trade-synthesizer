@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -6,7 +7,7 @@ import { AdvancedOrderForm } from "./order-form/AdvancedOrderForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SimulationToggle } from "./SimulationToggle";
 import { ApiStatusAlert } from "./components/ApiStatusAlert";
-import { useApiStatus } from "./hooks/useApiStatus";
+import { useApiStatus } from "./hooks/api-status";
 import { useSimulatedOrder } from "./hooks/useSimulatedOrder";
 
 interface TradeOrderFormProps {
