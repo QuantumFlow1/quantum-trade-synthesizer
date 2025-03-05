@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { Scene } from "./3d/Scene";
