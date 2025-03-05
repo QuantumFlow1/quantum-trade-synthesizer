@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { Billboard, Text } from "@react-three/drei";
 import { TradingDataPoint } from "@/utils/tradingData";
 import * as THREE from "three";
+import { ColorTheme } from "@/hooks/use-theme-detection";
 
 interface PriceBarProps {
   point: TradingDataPoint;
@@ -12,6 +13,7 @@ interface PriceBarProps {
   maxPrice: number;
   minPrice: number;
   maxHeight?: number;
+  theme: ColorTheme;
 }
 
 export const PriceBar = ({
@@ -20,7 +22,8 @@ export const PriceBar = ({
   total,
   maxPrice,
   minPrice,
-  maxHeight = 10
+  maxHeight = 10,
+  theme
 }: PriceBarProps) => {
   const mesh = useRef<THREE.Mesh>(null);
   const spread = 20; // How spread out the bars are
@@ -32,8 +35,12 @@ export const PriceBar = ({
   const normalizedPrice = (point.close - minPrice) / priceRange;
   const height = Math.max(0.1, normalizedPrice * maxHeight);
 
+  // Theme-aware colors
+  const getUpColor = () => theme === 'dark' ? "#10b981" : "#059669";
+  const getDownColor = () => theme === 'dark' ? "#ef4444" : "#dc2626";
+  
   // Color based on trend
-  const color = point.trend === "up" ? "#10b981" : "#ef4444";
+  const color = point.trend === "up" ? getUpColor() : getDownColor();
 
   // Add subtle animation
   useFrame((state) => {
@@ -52,14 +59,14 @@ export const PriceBar = ({
         <meshStandardMaterial 
           color={color} 
           emissive={color} 
-          emissiveIntensity={0.2} 
-          roughness={0.3}
-          metalness={0.7}
+          emissiveIntensity={theme === 'dark' ? 0.3 : 0.1} 
+          roughness={theme === 'dark' ? 0.3 : 0.5}
+          metalness={theme === 'dark' ? 0.7 : 0.5}
         />
       </mesh>
       <Billboard position={[0, height + 0.5, 0]}>
         <Text
-          color="#ffffff"
+          color={theme === 'dark' ? "#ffffff" : "#000000"}
           fontSize={0.3}
           font="/fonts/Inter-Medium.woff"
           anchorY="bottom"

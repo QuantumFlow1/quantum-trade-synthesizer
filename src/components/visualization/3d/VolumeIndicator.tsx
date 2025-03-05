@@ -3,19 +3,22 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { TradingDataPoint } from "@/utils/tradingData";
 import * as THREE from "three";
+import { ColorTheme } from "@/hooks/use-theme-detection";
 
 interface VolumeIndicatorProps {
   point: TradingDataPoint;
   index: number;
   total: number;
   maxVolume: number;
+  theme: ColorTheme;
 }
 
 export const VolumeIndicator = ({
   point,
   index,
   total,
-  maxVolume
+  maxVolume,
+  theme
 }: VolumeIndicatorProps) => {
   const mesh = useRef<THREE.Mesh>(null);
   const spread = 20;
@@ -24,6 +27,10 @@ export const VolumeIndicator = ({
   
   const normalizedVolume = point.volume / maxVolume;
   const size = Math.max(0.1, normalizedVolume * 0.7);
+  
+  // Theme-based colors
+  const sphereColor = theme === 'dark' ? '#8b5cf6' : '#6d28d9';
+  const emissiveIntensity = theme === 'dark' ? 0.3 : 0.1;
   
   useFrame((state) => {
     if (mesh.current) {
@@ -37,11 +44,11 @@ export const VolumeIndicator = ({
       <mesh ref={mesh}>
         <sphereGeometry args={[size, 16, 16]} />
         <meshStandardMaterial 
-          color="#8b5cf6" 
+          color={sphereColor} 
           transparent 
-          opacity={0.6} 
-          emissive="#8b5cf6"
-          emissiveIntensity={0.3}
+          opacity={theme === 'dark' ? 0.6 : 0.5} 
+          emissive={sphereColor}
+          emissiveIntensity={emissiveIntensity}
         />
       </mesh>
     </group>
