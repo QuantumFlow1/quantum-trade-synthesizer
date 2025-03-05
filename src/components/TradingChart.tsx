@@ -1,95 +1,102 @@
 
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useZoomControls } from "@/hooks/use-zoom-controls";
-import { PriceCards } from "./trading/PriceCards";
-import { useTradingChartData } from "@/hooks/use-trading-chart-data";
-import { ApiConnectionWarning } from "./trading/ApiConnectionWarning";
-import { ViewModeTabs } from "./trading/ViewModeTabs";
-import { StandardViewContent } from "./trading/StandardViewContent";
-import { ThreeDViewContent } from "./trading/ThreeDViewContent";
-import { CombinedViewContent } from "./trading/CombinedViewContent";
-import { toast } from "@/hooks/use-toast";
+import { useTradingChartData } from "@/components/trading/hooks/use-trading-chart-data";
+import { ViewModeTabs } from "@/components/trading/ViewModeTabs";
+import { StandardViewContent } from "@/components/trading/StandardViewContent";
+import { ThreeDViewContent } from "@/components/trading/ThreeDViewContent";
+import { CombinedViewContent } from "@/components/trading/CombinedViewContent";
+import { ApiStatusIndicator } from "@/components/trading/ApiStatusIndicator";
+import { ZoomControlPanel } from "@/components/trading/ZoomControlPanel";
+import { useViewMode } from "@/hooks/use-view-mode";
+import { SimulationToggle } from "@/components/trading/SimulationToggle";
 
 const TradingChart = () => {
-  const [forceSimulation, setForceSimulation] = useState(false);
-  const [viewMode, setViewMode] = useState<"standard" | "3d" | "combined">("standard");
-  const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls(1);
+  const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
+  const { viewMode, handleViewModeChange } = useViewMode();
+  const [isSimulationMode, setIsSimulationMode] = useState(false);
   
-  const {
-    data,
+  const { 
+    data, 
+    marketData, 
+    fetchData, 
     apiStatus,
-    lastAPICheckTime,
-    apiKeysAvailable,
-    rawMarketData,
-    handleRetryConnection
-  } = useTradingChartData(forceSimulation);
+    apiKeysAvailable
+  } = useTradingChartData();
 
-  const toggleSimulationMode = (enabled: boolean) => {
-    setForceSimulation(enabled);
-    
-    if (enabled) {
-      toast({
-        title: "Simulation Mode Enabled",
-        description: "Using simulated data for trading functionality.",
-        variant: "default",
-      });
-    } else {
-      handleRetryConnection();
-    }
+  // Fetch data when component mounts
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Simulation mode toggle handler
+  const handleSimulationToggle = (enabled: boolean) => {
+    setIsSimulationMode(enabled);
   };
 
   return (
-    <div className="space-y-6">
-      <ApiConnectionWarning
-        apiStatus={apiStatus}
-        apiKeysAvailable={apiKeysAvailable}
-        lastAPICheckTime={lastAPICheckTime}
-        onRetryConnection={handleRetryConnection}
+    <div className="p-4 rounded-xl backdrop-blur-sm bg-background/60 relative">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Market Analysis</h2>
+        <SimulationToggle 
+          enabled={isSimulationMode} 
+          onToggle={handleSimulationToggle} 
+        />
+      </div>
+
+      <ApiStatusIndicator 
+        apiStatus={apiStatus} 
+        isSimulationMode={isSimulationMode} 
       />
-      
-      <PriceCards data={data} />
-      
-      <ViewModeTabs
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
+
+      <ZoomControlPanel 
+        scale={scale}
+        handleZoomIn={handleZoomIn}
+        handleZoomOut={handleZoomOut}
+        handleResetZoom={handleResetZoom}
+      />
+
+      <ViewModeTabs 
+        viewMode={viewMode} 
+        onViewModeChange={handleViewModeChange} 
       />
 
       {viewMode === "standard" && (
-        <StandardViewContent
+        <StandardViewContent 
           scale={scale}
           handleZoomIn={handleZoomIn}
           handleZoomOut={handleZoomOut}
           handleResetZoom={handleResetZoom}
           apiStatus={apiStatus}
-          marketData={rawMarketData}
-          onSimulationToggle={toggleSimulationMode}
-          isSimulationMode={forceSimulation}
+          marketData={marketData}
+          onSimulationToggle={handleSimulationToggle}
+          isSimulationMode={isSimulationMode}
           apiKeysAvailable={apiKeysAvailable}
         />
       )}
-      
+
       {viewMode === "3d" && (
-        <ThreeDViewContent
+        <ThreeDViewContent 
           data={data}
           apiStatus={apiStatus}
-          marketData={rawMarketData}
-          onSimulationToggle={toggleSimulationMode}
-          isSimulationMode={forceSimulation}
+          marketData={marketData}
+          onSimulationToggle={handleSimulationToggle}
+          isSimulationMode={isSimulationMode}
           apiKeysAvailable={apiKeysAvailable}
         />
       )}
-      
+
       {viewMode === "combined" && (
-        <CombinedViewContent
+        <CombinedViewContent 
           data={data}
           scale={scale}
           handleZoomIn={handleZoomIn}
           handleZoomOut={handleZoomOut}
           handleResetZoom={handleResetZoom}
           apiStatus={apiStatus}
-          marketData={rawMarketData}
-          onSimulationToggle={toggleSimulationMode}
-          isSimulationMode={forceSimulation}
+          marketData={marketData}
+          onSimulationToggle={handleSimulationToggle}
+          isSimulationMode={isSimulationMode}
           apiKeysAvailable={apiKeysAvailable}
         />
       )}
