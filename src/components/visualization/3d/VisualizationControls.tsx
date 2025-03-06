@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useThemeDetection } from "@/hooks/use-theme-detection";
-import { Eye, EyeOff, RotateCcw, LucideZoomIn, LucideZoomOut, Maximize2, Cube } from "lucide-react";
+import { Eye, EyeOff, RotateCcw, LucideZoomIn, LucideZoomOut, Maximize2, Box } from "lucide-react";
 
 export const VisualizationControls = () => {
   const [showPrices, setShowPrices] = useState(true);
@@ -43,7 +43,7 @@ export const VisualizationControls = () => {
                 className={controlClass}
                 onClick={() => setShowVolume(!showVolume)}
               >
-                <Cube size={16} />
+                <Box size={16} />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right">

@@ -52,11 +52,10 @@ export const Market3DVisualization = ({
         isFullscreen ? "fixed inset-0 z-50" : "h-[500px]"
       }`}
     >
-      <VisualizationControls 
-        isFullscreen={isFullscreen} 
-        toggleFullscreen={toggleFullscreen}
-        isSimulationMode={isSimulationMode}
-      />
+      {/* Rendering the basic controls as it is for now */}
+      <div className="absolute bottom-2 left-2 z-10">
+        <VisualizationControls />
+      </div>
       
       {renderError ? (
         <div className="flex items-center justify-center h-full w-full text-red-400 p-8 text-center">
