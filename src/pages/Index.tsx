@@ -1,3 +1,4 @@
+
 import React, { Suspense } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
@@ -12,9 +13,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
-import { Users, MessageSquare } from "lucide-react";
+import { Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useEnvironment } from "@/contexts/EnvironmentContext";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
@@ -22,8 +22,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error'>('checking');
-  const environmentContext = useEnvironment();
-
+  
   useOAuthRedirect();
 
   // Check Supabase connection when component mounts
@@ -86,6 +85,7 @@ const Index = () => {
           >
             {/* Quick Links for authenticated users */}
             <div className="fixed top-4 right-4 z-50 flex gap-2">
+              {/* Users Dashboard Link - Only shown to admins */}
               {isAdmin && (
                 <Link to="/admin/users">
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
@@ -94,12 +94,6 @@ const Index = () => {
                   </Button>
                 </Link>
               )}
-              <Link to="/chat">
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  <span>AI Chat</span>
-                </Button>
-              </Link>
             </div>
             
             {isSuperAdmin ? (
@@ -123,3 +117,4 @@ const Index = () => {
 };
 
 export default Index;
+
