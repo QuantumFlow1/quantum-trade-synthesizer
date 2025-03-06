@@ -1,5 +1,6 @@
 
 import { LeaderboardData, LeaderboardEntry } from '@/types/gamification';
+import { EnvironmentType } from '@/types/virtual-environment';
 
 // Utility function to create a mock user entry
 export const createMockUser = (
@@ -8,7 +9,7 @@ export const createMockUser = (
   totalPoints: number,
   level: number,
   badgeCount: number,
-  environmentMastery: string[],
+  environmentMastery: EnvironmentType[],
   tradingSuccess: number,
   learningCompletion: number
 ): LeaderboardEntry => ({

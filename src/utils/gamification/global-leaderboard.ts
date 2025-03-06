@@ -1,5 +1,6 @@
 
 import { LeaderboardEntry } from '@/types/gamification';
+import { EnvironmentType } from '@/types/virtual-environment';
 import { createMockUser } from './leaderboard-types';
 
 // Create mock global leaderboard data
@@ -10,7 +11,7 @@ export const globalLeaderboardData: LeaderboardEntry[] = [
     980,
     10,
     8,
-    ['trading-floor', 'command-center', 'financial-garden'],
+    ['trading-floor', 'command-center', 'financial-garden'] as EnvironmentType[],
     87,
     92
   ),
@@ -20,7 +21,7 @@ export const globalLeaderboardData: LeaderboardEntry[] = [
     875,
     9,
     7,
-    ['trading-floor', 'financial-garden'],
+    ['trading-floor', 'financial-garden'] as EnvironmentType[],
     82,
     85
   ),
@@ -30,7 +31,7 @@ export const globalLeaderboardData: LeaderboardEntry[] = [
     750,
     8,
     6,
-    ['trading-floor', 'office-tower'],
+    ['trading-floor', 'office-tower'] as EnvironmentType[],
     78,
     80
   ),
@@ -40,7 +41,7 @@ export const globalLeaderboardData: LeaderboardEntry[] = [
     690,
     7,
     5,
-    ['trading-floor'],
+    ['trading-floor'] as EnvironmentType[],
     73,
     68
   ),
@@ -50,7 +51,7 @@ export const globalLeaderboardData: LeaderboardEntry[] = [
     620,
     7,
     4,
-    ['command-center'],
+    ['command-center'] as EnvironmentType[],
     70,
     65
   ),
@@ -60,7 +61,7 @@ export const globalLeaderboardData: LeaderboardEntry[] = [
     580,
     6,
     3,
-    [],
+    [] as EnvironmentType[],
     65,
     60
   ),
@@ -70,7 +71,7 @@ export const globalLeaderboardData: LeaderboardEntry[] = [
     520,
     6,
     3,
-    [],
+    [] as EnvironmentType[],
     62,
     55
   )

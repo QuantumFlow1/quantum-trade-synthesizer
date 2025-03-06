@@ -11,7 +11,7 @@ export const tradingFloorLeaderboard: LeaderboardEntry[] = [
     320,
     10,
     8,
-    ['trading-floor'],
+    ['trading-floor'] as EnvironmentType[],
     87,
     92
   ),
@@ -21,7 +21,7 @@ export const tradingFloorLeaderboard: LeaderboardEntry[] = [
     290,
     9,
     7,
-    ['trading-floor'],
+    ['trading-floor'] as EnvironmentType[],
     82,
     85
   ),
@@ -31,7 +31,7 @@ export const tradingFloorLeaderboard: LeaderboardEntry[] = [
     240,
     7,
     5,
-    ['trading-floor'],
+    ['trading-floor'] as EnvironmentType[],
     73,
     68
   )
@@ -45,7 +45,7 @@ export const officeTowerLeaderboard: LeaderboardEntry[] = [
     280,
     8,
     6,
-    ['office-tower'],
+    ['office-tower'] as EnvironmentType[],
     78,
     80
   ),
@@ -55,7 +55,7 @@ export const officeTowerLeaderboard: LeaderboardEntry[] = [
     180,
     7,
     5,
-    [],
+    [] as EnvironmentType[],
     73,
     68
   )
@@ -69,7 +69,7 @@ export const financialGardenLeaderboard: LeaderboardEntry[] = [
     300,
     10,
     8,
-    ['financial-garden'],
+    ['financial-garden'] as EnvironmentType[],
     87,
     92
   ),
@@ -79,7 +79,7 @@ export const financialGardenLeaderboard: LeaderboardEntry[] = [
     270,
     9,
     7,
-    ['financial-garden'],
+    ['financial-garden'] as EnvironmentType[],
     82,
     85
   )
@@ -93,7 +93,7 @@ export const commandCenterLeaderboard: LeaderboardEntry[] = [
     280,
     10,
     8,
-    ['command-center'],
+    ['command-center'] as EnvironmentType[],
     87,
     92
   ),
@@ -103,7 +103,7 @@ export const commandCenterLeaderboard: LeaderboardEntry[] = [
     250,
     7,
     4,
-    ['command-center'],
+    ['command-center'] as EnvironmentType[],
     70,
     65
   )
@@ -117,7 +117,7 @@ export const educationalCampusLeaderboard: LeaderboardEntry[] = [
     220,
     10,
     8,
-    [],
+    [] as EnvironmentType[],
     87,
     92
   )
@@ -131,7 +131,7 @@ export const personalOfficeLeaderboard: LeaderboardEntry[] = [
     180,
     9,
     7,
-    [],
+    [] as EnvironmentType[],
     82,
     85
   )
@@ -145,7 +145,7 @@ export const tradingHubLeaderboard: LeaderboardEntry[] = [
     190,
     8,
     6,
-    [],
+    [] as EnvironmentType[],
     78,
     80
   )
