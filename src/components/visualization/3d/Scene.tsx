@@ -1,19 +1,17 @@
 
 import { useState } from "react";
-import { PriceBar } from "./PriceBar";
-import { VolumeIndicator } from "./VolumeIndicator";
-import { CoordinateSystem } from "./CoordinateSystem";
-import { ThemeBasedLighting } from "./ThemeBasedLighting";
-import { SpotlightSystem } from "./SpotlightSystem";
-import { MarketSentiment } from "./MarketSentiment";
-import { GroundPlane } from "./GroundPlane";
-import { TradingDataPoint } from "@/utils/tradingData";
-import { OrbitControls, Stars, Environment } from "@react-three/drei";
+import { OrbitControls, Environment } from "@react-three/drei";
 import { useThemeDetection } from "@/hooks/use-theme-detection";
 import { useProcessedTradingData } from "@/hooks/use-processed-trading-data";
 import { usePriceVolumeRanges } from "@/hooks/use-price-volume-ranges";
 import { useMarketSentiment } from "@/hooks/use-market-sentiment";
 import { useMarketEnvironment } from "@/hooks/use-market-environment";
+import { TradingDataPoint } from "@/utils/tradingData";
+import { CoordinatesAndStars } from "./scene/CoordinatesAndStars";
+import { PriceBarVisualization } from "./scene/PriceBarVisualization";
+import { VolumeVisualization } from "./scene/VolumeVisualization";
+import { BaseSceneLighting } from "./scene/BaseSceneLighting";
+import { EnvironmentEffects } from "./scene/EnvironmentEffects";
 
 interface SceneProps {
   data: TradingDataPoint[];
@@ -31,59 +29,29 @@ export const Scene = ({ data }: SceneProps) => {
   
   return (
     <>
-      <ThemeBasedLighting />
-      
-      <SpotlightSystem 
+      <BaseSceneLighting 
         theme={theme} 
         hoveredIndex={hoveredIndex} 
         processedData={processedData} 
       />
       
-      {theme === 'dark' && (
-        <Stars radius={100} depth={50} count={1000} factor={4} fade speed={1} />
-      )}
+      <CoordinatesAndStars theme={theme} sentiment={marketSentiment} />
       
-      <MarketSentiment sentiment={marketSentiment} theme={theme} />
-      
-      <CoordinateSystem theme={theme} />
-      
-      {processedData.length > 0 && processedData.map((point, index) => (
-        <PriceBar 
-          key={`price-${index}`}
-          point={point} 
-          index={index} 
-          total={processedData.length} 
-          maxPrice={maxPrice} 
-          minPrice={minPrice}
-          theme={theme}
-          onHover={() => setHoveredIndex(index)}
-          onBlur={() => setHoveredIndex(null)}
-        />
-      ))}
-      
-      {processedData.length > 0 && processedData.map((point, index) => (
-        <VolumeIndicator 
-          key={`volume-${index}`}
-          point={point} 
-          index={index} 
-          total={processedData.length} 
-          maxVolume={maxVolume}
-          theme={theme}
-        />
-      ))}
-      
-      <GroundPlane theme={theme} />
-      
-      <OrbitControls 
-        enableZoom={true} 
-        enablePan={true} 
-        rotateSpeed={0.5}
-        zoomSpeed={0.7}
-        minDistance={5}
-        maxDistance={30}
+      <PriceBarVisualization 
+        processedData={processedData}
+        maxPrice={maxPrice}
+        minPrice={minPrice}
+        theme={theme}
+        onHoverChange={setHoveredIndex}
       />
       
-      <Environment preset={environmentPreset} />
+      <VolumeVisualization 
+        processedData={processedData}
+        maxVolume={maxVolume}
+        theme={theme}
+      />
+      
+      <EnvironmentEffects theme={theme} environmentPreset={environmentPreset} />
     </>
   );
 };

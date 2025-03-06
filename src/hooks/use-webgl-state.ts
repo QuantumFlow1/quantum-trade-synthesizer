@@ -14,12 +14,12 @@ export function useWebGLState() {
       const canvas = document.createElement('canvas');
       
       // First try to get a WebGL2 context which is more stable
-      let gl = canvas.getContext('webgl2') as WebGL2RenderingContext | null;
+      let gl = canvas.getContext('webgl2');
       
       // Fall back to WebGL1 if WebGL2 is not available
       if (!gl) {
-        gl = canvas.getContext('webgl') as WebGLRenderingContext | null || 
-             canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
+        gl = canvas.getContext('webgl') || 
+             canvas.getContext('experimental-webgl');
       }
       
       if (gl) {
@@ -96,9 +96,9 @@ export function useWebGLState() {
     // Force WebGL context check again
     try {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl2') as WebGL2RenderingContext | null || 
-                 canvas.getContext('webgl') as WebGLRenderingContext | null || 
-                 canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
+      const gl = canvas.getContext('webgl2') || 
+                 canvas.getContext('webgl') || 
+                 canvas.getContext('experimental-webgl');
       setWebGLAvailable(!!gl);
     } catch (e) {
       console.error("WebGL retry check failed:", e);
