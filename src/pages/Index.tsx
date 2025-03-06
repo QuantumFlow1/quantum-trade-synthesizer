@@ -13,8 +13,31 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
-import { Users } from "lucide-react";
+import { Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EnvironmentContext } from "@/contexts/EnvironmentContext";
+
+// Mock user progress data for the EnvironmentContext
+const mockUserProgress = {
+  level: 3,
+  experience: 2500,
+  totalPoints: 2500,
+  requiredExperience: 5000,
+  completion: {
+    total: 15,
+    completed: 7
+  },
+  trades: {
+    total: 45,
+    profitable: 28
+  },
+  badges: [
+    { id: 'first-trade', name: 'First Trade', icon: '🚀', earnedAt: new Date().toISOString() },
+    { id: 'fast-learner', name: 'Fast Learner', icon: '📚', earnedAt: new Date().toISOString() },
+    { id: 'early-bird', name: 'Early Bird', icon: '🐦', earnedAt: new Date().toISOString() }
+  ],
+  activeEnvironment: 'financial-garden'
+};
 
 const Index = () => {
   const { user, userProfile } = useAuth();
@@ -74,47 +97,61 @@ const Index = () => {
       {!user ? (
         <LoginComponent />
       ) : (
-        <AnimatePresence>
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
-            className="h-full w-full"
-          >
-            {/* Quick Links for authenticated users */}
-            <div className="fixed top-4 right-4 z-50 flex gap-2">
-              {/* Users Dashboard Link - Only shown to admins */}
-              {isAdmin && (
-                <Link to="/admin/users">
+        <EnvironmentContext.Provider value={{
+          userProgress: mockUserProgress,
+          learningModules: [],
+          selectedEnvironment: 'financial-garden',
+          setSelectedEnvironment: () => {},
+          loading: false
+        }}>
+          <AnimatePresence>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ transform: `scale(${scale})`, transformOrigin: "top center" }}
+              className="h-full w-full"
+            >
+              {/* Quick Links for authenticated users */}
+              <div className="fixed top-4 right-4 z-50 flex gap-2">
+                {/* Users Dashboard Link - Only shown to admins */}
+                {isAdmin && (
+                  <Link to="/admin/users">
+                    <Button variant="outline" size="sm" className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Gebruikers</span>
+                    </Button>
+                  </Link>
+                )}
+                {/* Chat Link */}
+                <Link to="/chat">
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span>Gebruikers</span>
+                    <MessageSquare className="h-4 w-4" />
+                    <span>AI Chat</span>
                   </Button>
                 </Link>
+              </div>
+              
+              {isSuperAdmin ? (
+                <AdminPanel key="admin-panel" />
+              ) : userProfile?.role === "admin" ? (
+                <AdminPanel key="admin-panel" />
+              ) : (
+                <UserDashboard key="user-dashboard" />
               )}
-            </div>
-            
-            {isSuperAdmin ? (
-              <AdminPanel key="admin-panel" />
-            ) : userProfile?.role === "admin" ? (
-              <AdminPanel key="admin-panel" />
-            ) : (
-              <UserDashboard key="user-dashboard" />
-            )}
-            {!isMobile && <ZoomControls
-              scale={scale}
-              onZoomIn={handleZoomIn}
-              onZoomOut={handleZoomOut}
-              onResetZoom={handleResetZoom}
-            />}
-          </motion.div>
-        </AnimatePresence>
+              {!isMobile && <ZoomControls
+                scale={scale}
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
+                onResetZoom={handleResetZoom}
+              />}
+            </motion.div>
+          </AnimatePresence>
+        </EnvironmentContext.Provider>
       )}
     </div>
   );
 };
 
 export default Index;
-

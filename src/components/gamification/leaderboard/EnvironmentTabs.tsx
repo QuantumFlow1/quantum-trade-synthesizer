@@ -1,53 +1,46 @@
 
 import React from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { LeaderboardEntry } from '@/types/gamification';
-import { EnvironmentType } from '@/types/virtual-environment';
-import { LeaderboardEntries } from './LeaderboardEntries';
-import { EmptyLeaderboard } from './EmptyLeaderboard';
-import { LoadingLeaderboard } from './LoadingLeaderboard';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { EnvironmentLeaderboard } from '@/types/gamification';
 
 interface EnvironmentTabsProps {
-  environmentTabs: Array<{ id: string; label: string }>;
-  leaderboardData?: Record<EnvironmentType, LeaderboardEntry[]>;
-  isLoading: boolean;
-  currentUserId?: string;
+  environments: EnvironmentLeaderboard[];
+  activeEnvironment: string;
+  setActiveEnvironment: (id: string) => void;
 }
 
 export const EnvironmentTabs: React.FC<EnvironmentTabsProps> = ({
-  environmentTabs,
-  leaderboardData,
-  isLoading,
-  currentUserId
+  environments,
+  activeEnvironment,
+  setActiveEnvironment
 }) => {
   return (
-    <Tabs defaultValue={environmentTabs[0].id} className="w-full">
-      <div className="px-4 pt-1">
-        <TabsList className="w-full">
-          {environmentTabs.map(env => (
-            <TabsTrigger key={env.id} value={env.id} className="text-xs">
-              {env.label}
-            </TabsTrigger>
+    <div>
+      <ScrollArea className="max-h-[320px]">
+        <div className="p-3 space-y-1">
+          <Button
+            variant={activeEnvironment === 'global' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="w-full justify-start"
+            onClick={() => setActiveEnvironment('global')}
+          >
+            Global Leaderboard
+          </Button>
+          
+          {environments.map((env) => (
+            <Button
+              key={env.id}
+              variant={activeEnvironment === env.id ? 'secondary' : 'ghost'}
+              size="sm"
+              className="w-full justify-start"
+              onClick={() => setActiveEnvironment(env.id)}
+            >
+              {env.name}
+            </Button>
           ))}
-        </TabsList>
-      </div>
-      
-      {environmentTabs.map(env => (
-        <TabsContent key={env.id} value={env.id} className="mt-0">
-          <div className="max-h-[250px] overflow-y-auto">
-            {isLoading ? (
-              <LoadingLeaderboard />
-            ) : !leaderboardData || !leaderboardData[env.id as EnvironmentType] || leaderboardData[env.id as EnvironmentType].length === 0 ? (
-              <EmptyLeaderboard />
-            ) : (
-              <LeaderboardEntries 
-                entries={leaderboardData[env.id as EnvironmentType]} 
-                currentUserId={currentUserId} 
-              />
-            )}
-          </div>
-        </TabsContent>
-      ))}
-    </Tabs>
+        </div>
+      </ScrollArea>
+    </div>
   );
 };

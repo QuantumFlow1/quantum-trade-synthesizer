@@ -1,92 +1,83 @@
 
-import React, { useState } from 'react';
-import { Trophy, Users, Layers } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LeaderboardData } from '@/types/gamification';
-import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LeaderboardEntries } from './leaderboard/LeaderboardEntries';
 import { EmptyLeaderboard } from './leaderboard/EmptyLeaderboard';
 import { LoadingLeaderboard } from './leaderboard/LoadingLeaderboard';
 import { EnvironmentTabs } from './leaderboard/EnvironmentTabs';
+import { LeaderboardData } from '@/types/gamification';
 
 interface LeaderboardSectionProps {
-  leaderboardData?: LeaderboardData;
-  isLoading?: boolean;
-  currentUserId?: string;
+  leaderboardData: LeaderboardData;
+  currentUserId: string;
 }
 
 export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
   leaderboardData,
-  isLoading = false,
   currentUserId
 }) => {
-  const [activeTab, setActiveTab] = useState<string>('global');
+  const [activeEnvironment, setActiveEnvironment] = React.useState('global');
   
-  // Environmental tabs data
-  const environmentTabs = [
-    { id: 'trading-floor', label: 'Trading Floor' },
-    { id: 'command-center', label: 'Command Center' },
-    { id: 'financial-garden', label: 'Financial Garden' }
-  ];
-  
-  const renderGlobalLeaderboard = () => {
-    if (isLoading) {
-      return <LoadingLeaderboard />;
+  // Get the appropriate entries based on active environment
+  const getEntries = () => {
+    if (activeEnvironment === 'global') {
+      return leaderboardData.global;
     }
     
-    if (!leaderboardData?.global || leaderboardData.global.length === 0) {
-      return <EmptyLeaderboard />;
-    }
-    
-    return (
-      <LeaderboardEntries 
-        entries={leaderboardData.global} 
-        currentUserId={currentUserId} 
-      />
+    const envData = leaderboardData.environments.find(
+      env => env.id === activeEnvironment
     );
+    
+    return envData ? envData.entries : [];
   };
   
+  const entries = getEntries();
+  const isLoading = !leaderboardData || !leaderboardData.global;
+  
   return (
-    <Card className="bg-secondary/5 border-secondary/20">
+    <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg flex items-center">
-            <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
-            Leaderboard
-          </CardTitle>
-          <Badge variant="outline" className="bg-primary/10">
-            <Users className="h-3 w-3 mr-1" />
-            {leaderboardData?.global.length || 0} Traders
-          </Badge>
-        </div>
+        <CardTitle className="text-lg">Leaderboard</CardTitle>
       </CardHeader>
+      
       <CardContent className="p-0">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="px-4 pt-2">
-            <TabsList className="w-full">
-              <TabsTrigger value="global" className="flex-1">
-                Global
+        <Tabs defaultValue="leaderboard" className="w-full">
+          <div className="border-b px-3">
+            <TabsList className="w-full justify-start h-auto p-0 bg-transparent">
+              <TabsTrigger 
+                value="leaderboard" 
+                className="data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:border-b-2 rounded-none py-2"
+              >
+                Leaderboard
               </TabsTrigger>
-              <TabsTrigger value="environments" className="flex-1">
-                <Layers className="h-4 w-4 mr-2" />
+              <TabsTrigger 
+                value="environments" 
+                className="data-[state=active]:bg-transparent data-[state=active]:border-primary data-[state=active]:border-b-2 rounded-none py-2"
+              >
                 Environments
               </TabsTrigger>
             </TabsList>
           </div>
           
-          <TabsContent value="global" className="mt-0">
-            <div className="max-h-[320px] overflow-y-auto">
-              {renderGlobalLeaderboard()}
-            </div>
+          <TabsContent value="leaderboard" className="pt-0 px-0">
+            {isLoading ? (
+              <LoadingLeaderboard />
+            ) : entries.length === 0 ? (
+              <EmptyLeaderboard />
+            ) : (
+              <LeaderboardEntries 
+                entries={entries} 
+                currentUserId={currentUserId} 
+              />
+            )}
           </TabsContent>
           
-          <TabsContent value="environments" className="mt-0">
+          <TabsContent value="environments" className="pt-0">
             <EnvironmentTabs 
-              environmentTabs={environmentTabs}
-              leaderboardData={leaderboardData?.byEnvironment}
-              isLoading={isLoading}
-              currentUserId={currentUserId}
+              environments={leaderboardData.environments} 
+              activeEnvironment={activeEnvironment}
+              setActiveEnvironment={setActiveEnvironment}
             />
           </TabsContent>
         </Tabs>
