@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { useThemeDetection } from "@/hooks/use-theme-detection";
 import { Sparkles, BarChart2, Activity } from "lucide-react";
+import * as THREE from "three";
 
 interface Market3DViewProps {
   data: TradingDataPoint[];
@@ -174,7 +175,8 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
             }}
             onCreated={({ gl }) => {
               gl.setClearColor(theme === 'dark' ? '#0f172a' : '#e0f2fe', 1);
-              gl.outputEncoding = THREE.sRGBEncoding;
+              // Use the newer encoding property instead of deprecated outputEncoding
+              gl.outputColorSpace = THREE.SRGBColorSpace;
             }}
           >
             <Scene data={visualizationData} />
