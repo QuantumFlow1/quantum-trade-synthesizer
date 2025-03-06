@@ -11,30 +11,24 @@ interface PointLightingProps {
 export const PointLighting = ({ theme }: PointLightingProps) => {
   const pointLightRef = useRef<THREE.PointLight>(null!);
   
-  // Animate the point light with a more stable approach
+  // Simpler animation with lower intensity variations
   useFrame(({ clock }) => {
     if (!pointLightRef.current) return;
     
-    try {
-      // Pulsing effect for point light with more conservative values
-      const t = clock.getElapsedTime();
-      const pulseIntensity = (Math.sin(t * 0.5) * 0.15 + 0.85);
-      pointLightRef.current.intensity = theme === 'dark' ? 1.5 * pulseIntensity : 1.0 * pulseIntensity;
-    } catch (err) {
-      console.error("Error in PointLighting animation:", err);
-    }
+    // Reduce animation complexity
+    const t = clock.getElapsedTime();
+    const pulseIntensity = (Math.sin(t * 0.3) * 0.05 + 0.95); // Much smaller variation
+    pointLightRef.current.intensity = theme === 'dark' ? 1.0 * pulseIntensity : 0.8 * pulseIntensity;
   });
   
   return (
     <pointLight
       ref={pointLightRef}
       position={[0, 5, -5]}
-      intensity={theme === 'dark' ? 1.5 : 1.0}
+      intensity={theme === 'dark' ? 1.0 : 0.8}
       color={theme === 'dark' ? "#5a51f0" : "#82d8fc"}
-      distance={30}
-      castShadow
-      shadow-mapSize-width={1024}
-      shadow-mapSize-height={1024}
+      distance={20} // Reduced from 30
+      castShadow={false} // Disable shadow casting for performance
     />
   );
 };

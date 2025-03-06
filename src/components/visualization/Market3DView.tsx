@@ -23,31 +23,39 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
   const [hasError, setHasError] = useState(false);
   const [webGLAvailable, setWebGLAvailable] = useState(true);
   const [contextLost, setContextLost] = useState(false);
+  const [restoreAttempts, setRestoreAttempts] = useState(0);
   const theme = useThemeDetection();
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   
-  // Improved WebGL availability check
+  // More reliable WebGL availability check
   useEffect(() => {
     try {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      
+      // First try to get a WebGL2 context which is more stable
+      let gl = canvas.getContext('webgl2');
+      
+      // Fall back to WebGL1 if WebGL2 is not available
+      if (!gl) {
+        gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      }
       
       if (gl) {
-        // Try to create a minimal Three.js scene to verify WebGL works
-        try {
-          const renderer = new THREE.WebGLRenderer({ canvas });
-          const scene = new THREE.Scene();
-          const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-          
-          renderer.render(scene, camera);
-          renderer.dispose();
-          
-          setWebGLAvailable(true);
-          setHasError(false);
-        } catch (rendererError) {
-          console.error("WebGL renderer creation failed:", rendererError);
-          setWebGLAvailable(false);
-          setHasError(true);
+        // Check for required extensions
+        const extensions = [
+          'OES_texture_float',
+          'OES_texture_float_linear',
+          'OES_standard_derivatives'
+        ];
+        
+        const missingExtensions = extensions.filter(ext => !gl!.getExtension(ext));
+        
+        if (missingExtensions.length > 0) {
+          console.warn("Some WebGL extensions are missing:", missingExtensions);
         }
+        
+        setWebGLAvailable(true);
+        setHasError(false);
       } else {
         console.error("WebGL is not available in this browser");
         setWebGLAvailable(false);
@@ -60,29 +68,44 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
     }
   }, []);
   
-  // Simulate loading state with a slightly longer delay to let resources initialize
+  // Longer loading state to ensure resources are properly initialized
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1500);
+    }, 2000); // Increased from 1500ms to 2000ms
     
     return () => clearTimeout(timer);
   }, []);
   
-  // Enhanced WebGL error handling
+  // Enhanced WebGL error handling with progressive backoff for context restoration
   useEffect(() => {
     const handleContextLost = (event: Event) => {
       event.preventDefault();
       console.error("WebGL context loss detected", event);
       setContextLost(true);
       setHasError(true);
+      
+      // Increment restore attempts
+      setRestoreAttempts(prev => prev + 1);
+      
+      // Progressive backoff for restoration attempts (helps prevent rapid loops of context loss)
+      const backoffTime = Math.min(1000 * Math.pow(1.5, restoreAttempts), 8000);
+      
+      // Try to restore after backoff
+      setTimeout(() => {
+        if (restoreAttempts < 3) {
+          handleRetry();
+        } else {
+          console.error("Maximum WebGL restore attempts reached");
+        }
+      }, backoffTime);
     };
     
     const handleContextRestored = (event: Event) => {
       console.log("WebGL context restored", event);
       setContextLost(false);
       // Wait a moment before clearing the error state
-      setTimeout(() => setHasError(false), 500);
+      setTimeout(() => setHasError(false), 800);
     };
     
     const handleContextCreationError = (event: Event) => {
@@ -99,7 +122,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
       window.removeEventListener("webglcontextrestored", handleContextRestored);
       window.removeEventListener("webglcontextcreationerror", handleContextCreationError);
     };
-  }, []);
+  }, [restoreAttempts]);
   
   // Stats for display
   const priceChangeColor = stats.priceChange >= 0 
@@ -108,7 +131,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
     
   const priceChangeSymbol = stats.priceChange >= 0 ? '▲' : '▼';
   
-  // Retry rendering
+  // Function to reset visualization state and retry rendering
   const handleRetry = () => {
     setContextLost(false);
     setHasError(false);
@@ -117,14 +140,16 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
     // Force WebGL context check again
     try {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const gl = canvas.getContext('webgl2') || 
+                 canvas.getContext('webgl') || 
+                 canvas.getContext('experimental-webgl');
       setWebGLAvailable(!!gl);
     } catch (e) {
       console.error("WebGL retry check failed:", e);
       setWebGLAvailable(false);
     }
     
-    setTimeout(() => setIsLoading(false), 1500);
+    setTimeout(() => setIsLoading(false), 2000);
   };
   
   return (
@@ -162,15 +187,16 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center space-y-4">
             <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-            <p className="text-lg font-medium">Loading 3D visualization...</p>
+            <p className="text-lg font-medium">Initializing 3D visualization...</p>
+            <p className="text-sm text-muted-foreground">This may take a moment...</p>
           </div>
         </div>
       )}
       
-      {/* Error state */}
+      {/* Error state with more detailed guidance */}
       {(hasError || contextLost) && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
-          <div className="flex flex-col items-center space-y-4 text-destructive max-w-md text-center">
+          <div className="flex flex-col items-center space-y-4 text-destructive max-w-md text-center p-6">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
@@ -179,15 +205,24 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
             </p>
             <p className="text-sm">
               {contextLost 
-                ? "The 3D rendering context was lost. This may be due to GPU memory pressure or driver issues."
-                : "Your browser may not support WebGL, or there might be an issue with your graphics drivers."
+                ? "The 3D rendering was interrupted. This is often due to GPU memory pressure or driver limitations."
+                : "Your browser may not support WebGL, or there might be an issue with your graphics hardware."
               }
             </p>
+            <div className="text-sm mt-2 text-muted-foreground">
+              <p>Try these solutions:</p>
+              <ul className="list-disc text-left ml-6 mt-2">
+                <li>Close other browser tabs and applications</li>
+                <li>Update your graphics drivers</li>
+                <li>Disable hardware acceleration in your browser settings</li>
+                <li>Try a different browser (Chrome or Firefox recommended)</li>
+              </ul>
+            </div>
             <button 
               onClick={handleRetry}
-              className="mt-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-md transition-colors"
+              className="mt-4 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-md transition-colors"
             >
-              Retry
+              Retry with Simplified Settings
             </button>
           </div>
         </div>
@@ -218,32 +253,39 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
         <VisualizationControls />
       </div>
       
-      {/* 3D Canvas */}
+      {/* 3D Canvas with simplified and improved rendering settings */}
       <div className="absolute inset-0">
         {webGLAvailable && !hasError && !contextLost && !isLoading && (
           <Canvas
             ref={canvasRef}
-            shadows
-            camera={{ position: [0, 5, 15], fov: 60 }}
+            shadows={false} // Disable shadows for better performance
+            dpr={[1, 1.5]} // Limit pixel ratio to improve performance
+            camera={{ position: [0, 5, 15], fov: 50 }} // Reduced FOV from 60 to 50
             style={{ background: theme === 'dark' ? 'linear-gradient(to bottom, #0f172a, #1e293b)' : 'linear-gradient(to bottom, #e0f2fe, #f0f9ff)' }}
             gl={{ 
               antialias: true,
               alpha: true,
-              preserveDrawingBuffer: true,
-              powerPreference: 'default', // Changed from high-performance to default for better stability
+              preserveDrawingBuffer: false, // Changed to false for better performance
+              powerPreference: 'low-power', // Changed to low-power for better stability
               failIfMajorPerformanceCaveat: false,
               depth: true,
               stencil: false,
-              logarithmicDepthBuffer: false // Disable logarithmic depth buffer which can cause issues
+              logarithmicDepthBuffer: false
             }}
             onCreated={({ gl, scene }) => {
+              rendererRef.current = gl;
               gl.setClearColor(theme === 'dark' ? '#0f172a' : '#e0f2fe', 1);
               gl.outputColorSpace = THREE.SRGBColorSpace;
               
-              // Lower precision if needed for better performance
-              gl.getContext().getExtension('OES_standard_derivatives');
+              // Disable some features for better performance
+              gl.shadowMap.enabled = false;
+              gl.info.autoReset = false; // Don't auto-reset memory info
               
-              // Set up scene with simplified background
+              // Apply memory-saving renderer settings
+              const maxAnisotropy = gl.capabilities.getMaxAnisotropy();
+              gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+              
+              // Set up scene with very simple background
               scene.background = new THREE.Color(theme === 'dark' ? '#0f172a' : '#e0f2fe');
               
               // Add custom error listener for canvas
@@ -258,9 +300,13 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
                 console.log('WebGL context restored!');
                 setContextLost(false);
                 setTimeout(() => {
-                  gl.setClearColor(theme === 'dark' ? '#0f172a' : '#e0f2fe', 1);
-                  gl.outputColorSpace = THREE.SRGBColorSpace;
-                }, 100);
+                  // Re-initialize after context restoration
+                  if (gl) {
+                    gl.setClearColor(theme === 'dark' ? '#0f172a' : '#e0f2fe', 1);
+                    gl.outputColorSpace = THREE.SRGBColorSpace;
+                    gl.shadowMap.enabled = false;
+                  }
+                }, 500);
               });
             }}
           >
