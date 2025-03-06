@@ -24,15 +24,28 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
   const [webGLAvailable, setWebGLAvailable] = useState(true);
   const theme = useThemeDetection();
   
-  // Check WebGL availability
+  // Check WebGL availability - improved detection
   useEffect(() => {
     try {
       const canvas = document.createElement('canvas');
-      const hasWebGL = !!(window.WebGLRenderingContext && 
-        (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
-      setWebGLAvailable(hasWebGL);
-      if (!hasWebGL) {
+      let gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      
+      // If we got a context, WebGL is supported
+      if (gl) {
+        // Additional check - try to create a simple scene
+        try {
+          const renderer = new THREE.WebGLRenderer({ canvas });
+          renderer.dispose();
+          setWebGLAvailable(true);
+          setHasError(false);
+        } catch (rendererError) {
+          console.error("WebGL renderer creation failed:", rendererError);
+          setWebGLAvailable(false);
+          setHasError(true);
+        }
+      } else {
         console.error("WebGL is not available in this browser");
+        setWebGLAvailable(false);
         setHasError(true);
       }
     } catch (e) {
@@ -53,17 +66,17 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
   
   // Handle potential WebGL errors
   useEffect(() => {
-    const handleError = () => {
-      console.error("WebGL context error detected");
+    const handleError = (event: Event) => {
+      console.error("WebGL context error detected", event);
       setHasError(true);
     };
     
     window.addEventListener("webglcontextlost", handleError);
-    window.addEventListener("error", handleError);
+    window.addEventListener("webglcontextcreationerror", handleError);
     
     return () => {
       window.removeEventListener("webglcontextlost", handleError);
-      window.removeEventListener("error", handleError);
+      window.removeEventListener("webglcontextcreationerror", handleError);
     };
   }, []);
   
@@ -78,6 +91,17 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
   const handleRetry = () => {
     setHasError(false);
     setIsLoading(true);
+    
+    // Force WebGL context check again
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      setWebGLAvailable(!!gl);
+    } catch (e) {
+      console.error("WebGL retry check failed:", e);
+      setWebGLAvailable(false);
+    }
+    
     setTimeout(() => setIsLoading(false), 1000);
   };
   
@@ -122,7 +146,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
       )}
       
       {/* Error state */}
-      {hasError && (
+      {hasError && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center space-y-4 text-destructive max-w-md text-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -141,7 +165,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
       )}
       
       {/* No WebGL Support */}
-      {!webGLAvailable && !isLoading && (
+      {!webGLAvailable && !isLoading && !hasError && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center space-y-4 max-w-md text-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -150,6 +174,12 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
             <p className="text-lg font-medium">WebGL Not Supported</p>
             <p className="text-sm">Your browser or device doesn't support WebGL, which is required for 3D visualizations.</p>
             <p className="text-sm mt-2">Try using a different browser or updating your graphics drivers.</p>
+            <button 
+              onClick={handleRetry}
+              className="mt-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-md transition-colors"
+            >
+              Try Anyway
+            </button>
           </div>
         </div>
       )}
@@ -161,7 +191,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
       
       {/* 3D Canvas */}
       <div className="absolute inset-0">
-        {webGLAvailable && !hasError && (
+        {webGLAvailable && !hasError && !isLoading && (
           <Canvas
             ref={canvasRef}
             shadows
@@ -171,12 +201,22 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
               antialias: true,
               alpha: true,
               preserveDrawingBuffer: true,
-              powerPreference: 'high-performance'
+              powerPreference: 'high-performance',
+              failIfMajorPerformanceCaveat: false
             }}
-            onCreated={({ gl }) => {
+            onCreated={({ gl, scene }) => {
               gl.setClearColor(theme === 'dark' ? '#0f172a' : '#e0f2fe', 1);
-              // Use the newer encoding property instead of deprecated outputEncoding
               gl.outputColorSpace = THREE.SRGBColorSpace;
+              
+              // Set up scene background with a slight gradient
+              scene.background = new THREE.Color(theme === 'dark' ? '#0f172a' : '#e0f2fe');
+              
+              // Error handling for render loop
+              gl.getContext().canvas.addEventListener('webglcontextlost', (event) => {
+                event.preventDefault();
+                console.error('WebGL context lost. Trying to restore...');
+                setHasError(true);
+              });
             }}
           >
             <Scene data={visualizationData} />

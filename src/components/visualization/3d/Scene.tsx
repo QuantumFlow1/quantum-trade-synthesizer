@@ -56,6 +56,8 @@ export const Scene = ({ data }: SceneProps) => {
           maxPrice={maxPrice} 
           minPrice={minPrice}
           theme={theme}
+          onHover={() => setHoveredIndex(index)}
+          onBlur={() => setHoveredIndex(null)}
         />
       ))}
       

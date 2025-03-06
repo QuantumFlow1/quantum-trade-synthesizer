@@ -8,8 +8,8 @@ interface AmbientLightingProps {
 export const AmbientLighting = ({ theme }: AmbientLightingProps) => {
   return (
     <ambientLight 
-      intensity={theme === 'dark' ? 0.5 : 0.8} 
-      color={theme === 'dark' ? "#3f3f6e" : "#ffffff"} 
+      intensity={theme === 'dark' ? 0.8 : 1.2} 
+      color={theme === 'dark' ? "#5f5f9e" : "#ffffff"} 
     />
   );
 };

@@ -18,7 +18,7 @@ export const PointLighting = ({ theme }: PointLightingProps) => {
     if (pointLightRef.current) {
       // Pulsing effect for point light
       const pulseIntensity = (Math.sin(t * 0.5) * 0.2 + 0.8);
-      pointLightRef.current.intensity = theme === 'dark' ? 0.8 * pulseIntensity : 0.5 * pulseIntensity;
+      pointLightRef.current.intensity = theme === 'dark' ? 1.2 * pulseIntensity : 0.8 * pulseIntensity;
     }
   });
   
@@ -26,9 +26,12 @@ export const PointLighting = ({ theme }: PointLightingProps) => {
     <pointLight
       ref={pointLightRef}
       position={[0, 5, -5]}
-      intensity={theme === 'dark' ? 0.8 : 0.5}
+      intensity={theme === 'dark' ? 1.2 : 0.8}
       color={theme === 'dark' ? "#4f46e5" : "#7dd3fc"}
       distance={25}
+      castShadow
+      shadow-mapSize-width={1024}
+      shadow-mapSize-height={1024}
     />
   );
 };
