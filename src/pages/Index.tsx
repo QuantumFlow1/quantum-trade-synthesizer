@@ -1,3 +1,4 @@
+
 import React, { Suspense } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
@@ -14,6 +15,7 @@ import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
 import { Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useEnvironment } from "@/contexts/EnvironmentContext";
 
 // Mock user progress data
 const mockUserProgress = {
@@ -55,7 +57,9 @@ const Index = () => {
       learningModules: [],
       selectedEnvironment: 'financial-garden',
       setSelectedEnvironment: () => {},
-      loading: false
+      environments: [],
+      currentEnvironment: { id: 'financial-garden', name: 'Financial Garden', description: '', thumbnailIcon: null },
+      completeModule: () => {}
     };
   }
   
