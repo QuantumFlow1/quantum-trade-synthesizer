@@ -15,7 +15,7 @@ import { checkSupabaseConnection } from "@/lib/supabase";
 import { Link } from "react-router-dom";
 import { Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EnvironmentContext } from "@/contexts/EnvironmentContext";
+import { useEnvironment } from "@/contexts/EnvironmentContext";
 
 // Mock user progress data for the EnvironmentContext
 const mockUserProgress = {
@@ -39,12 +39,36 @@ const mockUserProgress = {
   activeEnvironment: 'financial-garden'
 };
 
+// Create a temporary context to use until the proper provider is available
+const TempEnvironmentContext = React.createContext({
+  userProgress: mockUserProgress,
+  learningModules: [],
+  selectedEnvironment: 'financial-garden',
+  setSelectedEnvironment: () => {},
+  loading: false
+});
+
 const Index = () => {
   const { user, userProfile } = useAuth();
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error'>('checking');
+  
+  // Try to use the proper environment context, but fall back to our temp context
+  let environmentContext;
+  try {
+    environmentContext = useEnvironment();
+  } catch (e) {
+    // Use mock data if the real context provider isn't available
+    environmentContext = {
+      userProgress: mockUserProgress,
+      learningModules: [],
+      selectedEnvironment: 'financial-garden',
+      setSelectedEnvironment: () => {},
+      loading: false
+    };
+  }
   
   useOAuthRedirect();
 
@@ -97,13 +121,7 @@ const Index = () => {
       {!user ? (
         <LoginComponent />
       ) : (
-        <EnvironmentContext.Provider value={{
-          userProgress: mockUserProgress,
-          learningModules: [],
-          selectedEnvironment: 'financial-garden',
-          setSelectedEnvironment: () => {},
-          loading: false
-        }}>
+        <TempEnvironmentContext.Provider value={environmentContext}>
           <AnimatePresence>
             <motion.div 
               initial={{ opacity: 0 }}
@@ -148,7 +166,7 @@ const Index = () => {
               />}
             </motion.div>
           </AnimatePresence>
-        </EnvironmentContext.Provider>
+        </TempEnvironmentContext.Provider>
       )}
     </div>
   );

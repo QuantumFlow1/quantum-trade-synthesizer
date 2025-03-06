@@ -7,6 +7,7 @@ import { EmptyLeaderboard } from './leaderboard/EmptyLeaderboard';
 import { LoadingLeaderboard } from './leaderboard/LoadingLeaderboard';
 import { EnvironmentTabs } from './leaderboard/EnvironmentTabs';
 import { LeaderboardData } from '@/types/gamification';
+import { EnvironmentType } from '@/types/virtual-environment';
 
 interface LeaderboardSectionProps {
   leaderboardData: LeaderboardData;
@@ -19,17 +20,21 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
 }) => {
   const [activeEnvironment, setActiveEnvironment] = React.useState('global');
   
+  // Convert byEnvironment record to array format expected by EnvironmentTabs
+  const environmentsList = Object.entries(leaderboardData.byEnvironment || {}).map(([id, entries]) => ({
+    id,
+    name: id.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+    entries
+  }));
+  
   // Get the appropriate entries based on active environment
   const getEntries = () => {
     if (activeEnvironment === 'global') {
       return leaderboardData.global;
     }
     
-    const envData = leaderboardData.environments.find(
-      env => env.id === activeEnvironment
-    );
-    
-    return envData ? envData.entries : [];
+    const envData = leaderboardData.byEnvironment[activeEnvironment as EnvironmentType];
+    return envData || [];
   };
   
   const entries = getEntries();
@@ -75,7 +80,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
           
           <TabsContent value="environments" className="pt-0">
             <EnvironmentTabs 
-              environments={leaderboardData.environments} 
+              environments={environmentsList} 
               activeEnvironment={activeEnvironment}
               setActiveEnvironment={setActiveEnvironment}
             />

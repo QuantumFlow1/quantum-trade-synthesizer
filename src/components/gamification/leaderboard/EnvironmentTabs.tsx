@@ -2,7 +2,13 @@
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { EnvironmentLeaderboard } from '@/types/gamification';
+import { EnvironmentType } from '@/types/virtual-environment';
+
+interface EnvironmentLeaderboard {
+  id: string;
+  name: string;
+  entries: any[];
+}
 
 interface EnvironmentTabsProps {
   environments: EnvironmentLeaderboard[];
