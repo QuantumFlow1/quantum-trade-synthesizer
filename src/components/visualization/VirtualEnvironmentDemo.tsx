@@ -2,7 +2,7 @@
 import React from 'react';
 import { VirtualEnvironment } from './environment/VirtualEnvironment';
 import { EnvironmentProvider } from '@/contexts/EnvironmentContext';
-import { UserProgressDisplay } from './UserProgressDisplay';
+import { UserProgressDisplay } from './user-progress';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const VirtualEnvironmentDemo: React.FC = () => {
