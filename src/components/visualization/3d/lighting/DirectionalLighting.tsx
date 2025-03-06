@@ -28,7 +28,7 @@ export const DirectionalLighting = ({ theme }: DirectionalLightingProps) => {
       <directionalLight
         ref={directionalLightRef}
         position={[5, 10, 5]}
-        intensity={theme === 'dark' ? 0.6 : 1.2}
+        intensity={theme === 'dark' ? 0.8 : 1.4}
         color={theme === 'dark' ? "#a78bfa" : "#ffffff"}
         castShadow
       />
@@ -36,7 +36,7 @@ export const DirectionalLighting = ({ theme }: DirectionalLightingProps) => {
       {/* Fill light to balance shadows */}
       <directionalLight
         position={[-5, 3, -5]}
-        intensity={theme === 'dark' ? 0.3 : 0.5}
+        intensity={theme === 'dark' ? 0.4 : 0.6}
         color={theme === 'dark' ? "#9ca3af" : "#f3f4f6"}
       />
     </>

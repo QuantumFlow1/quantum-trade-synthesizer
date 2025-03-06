@@ -39,7 +39,7 @@ export const SpotLighting = ({ theme }: SpotLightingProps) => {
         position={[10, 15, 0]}
         angle={0.3}
         penumbra={0.8}
-        intensity={theme === 'dark' ? 0.5 : 0.2}
+        intensity={theme === 'dark' ? 0.8 : 0.4}
         color={theme === 'dark' ? "#8b5cf6" : "#6d28d9"}
         distance={30}
         decay={2}
