@@ -1,4 +1,5 @@
-import { LeaderboardData, LeaderboardEntry } from '@/types/gamification';
+
+import { LeaderboardData } from '@/types/gamification';
 import { EnvironmentType } from '@/types/virtual-environment';
 
 // Create mock leaderboard data
