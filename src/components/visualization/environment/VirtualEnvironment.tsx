@@ -5,7 +5,7 @@ import { OrbitControls, Stars, Environment } from '@react-three/drei';
 import { useThemeDetection } from '@/hooks/use-theme-detection';
 import { useEnvironment } from '@/contexts/EnvironmentContext';
 import { EnvironmentSelector } from './EnvironmentSelector';
-import { EnvironmentLearningPath } from './EnvironmentLearningPath';
+import { EnvironmentLearningPath } from './learning-path';
 import { TradingFloorEnvironment } from './environments/TradingFloorEnvironment';
 import { OfficeTowerEnvironment } from './environments/OfficeTowerEnvironment';
 import { FinancialGardenEnvironment } from './environments/FinancialGardenEnvironment';
