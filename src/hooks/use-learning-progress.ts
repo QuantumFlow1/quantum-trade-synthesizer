@@ -1,7 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { useLocalStorage } from './use-local-storage';
-import { EnvironmentType, UserProgress, LearningModule, EnvironmentLearningPath } from '@/types/virtual-environment';
+import { 
+  EnvironmentType, 
+  UserProgress, 
+  LearningModule, 
+  EnvironmentLearningPath,
+  UserBadge 
+} from '@/types/virtual-environment';
 
 // Initial learning modules for each environment
 const defaultLearningModules: Record<EnvironmentType, LearningModule[]> = {
@@ -200,7 +206,7 @@ export function useLearningProgress() {
 
   // Mark a module as completed
   const completeModule = (environmentId: EnvironmentType, moduleId: string) => {
-    setUserProgress(prev => {
+    setUserProgress((prev: UserProgress) => {
       const updatedPaths = { ...prev.learningPaths };
       const path = { ...updatedPaths[environmentId] };
       const moduleIndex = path.modules.findIndex(m => m.id === moduleId);
