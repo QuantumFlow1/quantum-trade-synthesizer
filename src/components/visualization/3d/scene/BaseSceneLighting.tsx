@@ -9,24 +9,31 @@ interface BaseSceneLightingProps {
   theme: ColorTheme;
   hoveredIndex: number | null;
   processedData: TradingDataPoint[];
+  optimizationLevel?: 'normal' | 'aggressive';
 }
 
 export const BaseSceneLighting = ({ 
   theme, 
   hoveredIndex, 
-  processedData 
+  processedData,
+  optimizationLevel = 'normal'
 }: BaseSceneLightingProps) => {
+  // In aggressive mode, we skip spotlights which are performance heavy
+  const showSpotlights = optimizationLevel !== 'aggressive';
+  
   return (
     <>
-      <ThemeBasedLighting />
+      <ThemeBasedLighting optimizationLevel={optimizationLevel} />
       
-      <SpotlightSystem 
-        theme={theme} 
-        hoveredIndex={hoveredIndex} 
-        processedData={processedData} 
-      />
+      {showSpotlights && (
+        <SpotlightSystem 
+          theme={theme} 
+          hoveredIndex={hoveredIndex} 
+          processedData={processedData} 
+        />
+      )}
       
-      <GroundPlane theme={theme} />
+      <GroundPlane theme={theme} optimizationLevel={optimizationLevel} />
     </>
   );
 };

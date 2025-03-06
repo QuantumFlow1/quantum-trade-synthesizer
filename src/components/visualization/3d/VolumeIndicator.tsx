@@ -1,5 +1,5 @@
 
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { TradingDataPoint } from "@/utils/tradingData";
 import * as THREE from "three";
@@ -12,6 +12,7 @@ interface VolumeIndicatorProps {
   total: number;
   maxVolume: number;
   theme: ColorTheme;
+  optimizationLevel?: 'normal' | 'aggressive';
 }
 
 export const VolumeIndicator = ({
@@ -19,7 +20,8 @@ export const VolumeIndicator = ({
   index,
   total,
   maxVolume,
-  theme
+  theme,
+  optimizationLevel = 'normal'
 }: VolumeIndicatorProps) => {
   const mesh = useRef<THREE.Mesh>(null);
   const [hovered, setHovered] = useState(false);
@@ -49,8 +51,39 @@ export const VolumeIndicator = ({
       : (theme === 'dark' ? 0.45 : 0.25)
     : (theme === 'dark' ? 0.3 : 0.1);
   
+  // Memoize material to prevent recreation on every render
+  const material = useMemo(() => new THREE.MeshStandardMaterial({
+    color: color,
+    transparent: true,
+    opacity: theme === 'dark' ? 0.6 : 0.5,
+    emissive: color,
+    emissiveIntensity: emissiveIntensity,
+    roughness: optimizationLevel === 'aggressive' ? 0.8 : 0.5,
+    metalness: optimizationLevel === 'aggressive' ? 0.2 : 0.4
+  }), [color, theme, emissiveIntensity, optimizationLevel]);
+  
+  // Optimize sphere geometry detail in aggressive mode
+  const sphereDetail = optimizationLevel === 'aggressive' ? 8 : 16;
+  
   useFrame((state) => {
-    if (mesh.current) {
+    if (!mesh.current) return;
+    
+    // Simplified animations in aggressive mode
+    if (optimizationLevel === 'aggressive') {
+      // Minimal or no animations in aggressive mode
+      if (hovered) {
+        // Only animate when hovered
+        mesh.current.rotation.x = state.clock.getElapsedTime() * 0.2;
+        mesh.current.rotation.z = state.clock.getElapsedTime() * 0.1;
+        mesh.current.rotation.y = state.clock.getElapsedTime() * 0.3;
+        
+        // Simple scale up when hovered
+        mesh.current.scale.setScalar(clicked ? 1.1 : 1.05);
+      } else {
+        mesh.current.rotation.y = state.clock.getElapsedTime() * 0.1;
+        mesh.current.scale.setScalar(1);
+      }
+    } else {
       // Basic rotation animation
       mesh.current.rotation.x = state.clock.getElapsedTime() * 0.3;
       mesh.current.rotation.z = state.clock.getElapsedTime() * 0.2;
@@ -74,6 +107,9 @@ export const VolumeIndicator = ({
     }
   });
   
+  // Don't render labels in aggressive optimization mode unless clicked
+  const shouldShowLabel = optimizationLevel !== 'aggressive' || clicked;
+  
   return (
     <group position={[position, -2, 0]}>
       <mesh 
@@ -82,18 +118,12 @@ export const VolumeIndicator = ({
         onPointerOut={() => setHovered(false)}
         onClick={() => setClicked(!clicked)}
       >
-        <sphereGeometry args={[size, 16, 16]} />
-        <meshStandardMaterial 
-          color={color} 
-          transparent={true}
-          opacity={theme === 'dark' ? 0.6 : 0.5} 
-          emissive={color}
-          emissiveIntensity={emissiveIntensity}
-        />
+        <sphereGeometry args={[size, sphereDetail, sphereDetail]} />
+        <primitive object={material} attach="material" />
       </mesh>
       
       {/* Volume information display on interaction */}
-      {(hovered || clicked) && (
+      {shouldShowLabel && (hovered || clicked) && (
         <Billboard 
           position={[0, size + 0.5, 0]}
           follow={true}

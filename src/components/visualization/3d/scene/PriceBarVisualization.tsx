@@ -9,6 +9,7 @@ interface PriceBarVisualizationProps {
   minPrice: number;
   theme: ColorTheme;
   onHoverChange: (index: number | null) => void;
+  optimizationLevel?: 'normal' | 'aggressive';
 }
 
 export const PriceBarVisualization = ({ 
@@ -16,7 +17,8 @@ export const PriceBarVisualization = ({
   maxPrice, 
   minPrice,
   theme,
-  onHoverChange
+  onHoverChange,
+  optimizationLevel = 'normal'
 }: PriceBarVisualizationProps) => {
   if (processedData.length === 0) return null;
   
@@ -33,6 +35,7 @@ export const PriceBarVisualization = ({
           theme={theme}
           onHover={() => onHoverChange(index)}
           onBlur={() => onHoverChange(null)}
+          optimizationLevel={optimizationLevel}
         />
       ))}
     </>

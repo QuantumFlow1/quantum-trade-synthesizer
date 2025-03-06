@@ -14,12 +14,12 @@ export function useWebGLState() {
       const canvas = document.createElement('canvas');
       
       // First try to get a WebGL2 context which is more stable
-      let gl = canvas.getContext('webgl2');
+      let gl: WebGL2RenderingContext | WebGLRenderingContext | null = canvas.getContext('webgl2') as WebGL2RenderingContext | null;
       
       // Fall back to WebGL1 if WebGL2 is not available
       if (!gl) {
-        gl = canvas.getContext('webgl') || 
-             canvas.getContext('experimental-webgl');
+        gl = canvas.getContext('webgl') as WebGLRenderingContext | null || 
+             canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
       }
       
       if (gl) {
