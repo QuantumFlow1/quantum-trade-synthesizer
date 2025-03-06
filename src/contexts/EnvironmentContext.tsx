@@ -4,6 +4,7 @@ import { EnvironmentType, VirtualEnvironment, UserProgress } from '@/types/virtu
 import { useThemeDetection } from '@/hooks/use-theme-detection';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useLearningProgress } from '@/hooks/use-learning-progress';
+import { BarChart4, Building2, Leaf, MonitorPlay, GraduationCap, Briefcase, Users } from 'lucide-react';
 
 interface EnvironmentContextType {
   selectedEnvironment: EnvironmentType;
@@ -38,43 +39,43 @@ export const EnvironmentProvider: React.FC<{children: ReactNode}> = ({ children 
       id: 'trading-floor',
       name: 'Modern Trading Floor',
       description: 'A sleek, high-tech trading floor with real-time market visualizations',
-      thumbnailIcon: require('lucide-react').BarChart4,
+      thumbnailIcon: BarChart4,
     },
     {
       id: 'office-tower',
       name: 'Virtual Office Tower',
       description: 'Multi-level office with panoramic views of a financial district',
-      thumbnailIcon: require('lucide-react').Building2,
+      thumbnailIcon: Building2,
     },
     {
       id: 'financial-garden',
       name: 'Financial Garden',
       description: 'A relaxed, nature-inspired space with organic data visualizations',
-      thumbnailIcon: require('lucide-react').Leaf,
+      thumbnailIcon: Leaf,
     },
     {
       id: 'command-center',
       name: 'Digital Command Center',
       description: 'Futuristic command hub with holographic displays and advanced controls',
-      thumbnailIcon: require('lucide-react').MonitorPlay,
+      thumbnailIcon: MonitorPlay,
     },
     {
       id: 'educational-campus',
       name: 'Educational Campus',
       description: 'Learning-focused environment with lecture halls and practice areas',
-      thumbnailIcon: require('lucide-react').GraduationCap,
+      thumbnailIcon: GraduationCap,
     },
     {
       id: 'personal-office',
       name: 'Customizable Personal Office',
       description: 'Your own space that grows with your trading experience',
-      thumbnailIcon: require('lucide-react').Briefcase,
+      thumbnailIcon: Briefcase,
     },
     {
       id: 'trading-hub',
       name: 'Virtual Trading Hub',
       description: 'Social trading space with community features and private consultations',
-      thumbnailIcon: require('lucide-react').Users,
+      thumbnailIcon: Users,
     },
   ];
   
