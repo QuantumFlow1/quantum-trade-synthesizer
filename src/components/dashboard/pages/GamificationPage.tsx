@@ -9,7 +9,7 @@ import { AchievementsSection } from '@/components/gamification/AchievementsSecti
 import { EnvironmentType } from '@/types/virtual-environment';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { mockLeaderboardData } from '@/utils/mock-leaderboard-data';
+import { mockLeaderboardData } from '@/utils/gamification';
 import { mockAchievements, mockRewards } from '@/utils/mock-achievements-data';
 
 export const GamificationPage: React.FC = () => {
