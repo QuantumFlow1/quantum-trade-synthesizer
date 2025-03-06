@@ -94,7 +94,8 @@ export const environmentLeaderboards: Record<EnvironmentType, LeaderboardEntry[]
     {
       userId: 'user-4',
       username: 'WallStreetPro',
-      totalPoints: l: 7,
+      totalPoints: 260,
+      level: 7,
       badgeCount: 4,
       environmentMastery: ['command-center'],
       tradingSuccess: 70,
