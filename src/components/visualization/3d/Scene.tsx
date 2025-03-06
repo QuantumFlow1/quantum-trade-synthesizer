@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useRef } from "react";
 import { PriceBar } from "./PriceBar";
 import { VolumeIndicator } from "./VolumeIndicator";
@@ -18,7 +17,6 @@ export const Scene = ({ data }: SceneProps) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const theme = useThemeDetection();
   
-  // Spotlight for highlighting
   const spotLight = useRef(new THREE.SpotLight(
     theme === 'dark' ? '#8b5cf6' : '#6d28d9',
     1,
@@ -30,12 +28,10 @@ export const Scene = ({ data }: SceneProps) => {
   
   const spotLightTarget = useRef(new THREE.Object3D()).current;
   
-  // Initialize spotlight
   useEffect(() => {
     spotLight.target = spotLightTarget;
   }, [spotLight, spotLightTarget]);
   
-  // Track overall market sentiment
   const marketSentiment = useMemo(() => {
     if (!processedData.length) return "neutral";
     
@@ -49,7 +45,6 @@ export const Scene = ({ data }: SceneProps) => {
     return "neutral";
   }, [processedData]);
   
-  // Generate appropriate environment based on market sentiment
   const environmentPreset = useMemo(() => {
     if (theme === 'dark') {
       switch (marketSentiment) {
@@ -70,7 +65,6 @@ export const Scene = ({ data }: SceneProps) => {
     }
   }, [marketSentiment, theme]);
   
-  // Ensure data is processed before rendering
   useEffect(() => {
     try {
       if (data && Array.isArray(data) && data.length > 0) {
@@ -78,14 +72,23 @@ export const Scene = ({ data }: SceneProps) => {
         setProcessedData(data);
       } else {
         console.warn("Empty or invalid data received, creating fallback data");
-        // Create fallback data if empty
         const fallbackData: TradingDataPoint[] = Array.from({ length: 5 }).map((_, i) => ({
-          time: new Date().toISOString(),
+          name: `Fallback ${i + 1}`,
           open: 100 + i * 5,
           close: 105 + i * 5,
           high: 110 + i * 5,
           low: 95 + i * 5,
           volume: 1000 + i * 100,
+          sma: 102 + i * 5,
+          ema: 103 + i * 5,
+          rsi: 50 + i,
+          macd: 0.5 + i * 0.1,
+          macdSignal: 0.3 + i * 0.1,
+          macdHistogram: 0.2 + i * 0.1,
+          bollingerUpper: 115 + i * 5,
+          bollingerLower: 90 + i * 5,
+          stochastic: 40 + i * 5,
+          adx: 30 + i * 2,
           trend: i % 2 === 0 ? "up" : "down"
         }));
         setProcessedData(fallbackData);
@@ -96,7 +99,6 @@ export const Scene = ({ data }: SceneProps) => {
     }
   }, [data]);
   
-  // Calculate min/max for scaling
   const { maxPrice, minPrice, maxVolume } = useMemo(() => {
     try {
       if (!processedData || processedData.length === 0) {
@@ -114,7 +116,6 @@ export const Scene = ({ data }: SceneProps) => {
     }
   }, [processedData]);
   
-  // Position spotlight on hovered item
   useEffect(() => {
     if (hoveredIndex !== null && processedData[hoveredIndex]) {
       const spread = 20;
@@ -126,7 +127,6 @@ export const Scene = ({ data }: SceneProps) => {
     }
   }, [hoveredIndex, processedData, spotLight, spotLightTarget]);
   
-  // Market sentiment text color
   const getSentimentColor = () => {
     if (marketSentiment.includes("bullish")) {
       return theme === 'dark' ? "#10b981" : "#059669";
@@ -136,7 +136,6 @@ export const Scene = ({ data }: SceneProps) => {
     return theme === 'dark' ? "#ffffff" : "#000000";
   };
   
-  // Market sentiment display text
   const getSentimentText = () => {
     switch (marketSentiment) {
       case "very-bullish": return "VERY BULLISH";
@@ -151,16 +150,13 @@ export const Scene = ({ data }: SceneProps) => {
     <>
       <ThemeBasedLighting />
       
-      {/* Spotlight for highlighting */}
       <primitive object={spotLight} intensity={hoveredIndex !== null ? 1 : 0} />
       <primitive object={spotLightTarget} />
       
-      {/* Stars for dark theme only */}
       {theme === 'dark' && (
         <Stars radius={100} depth={50} count={1000} factor={4} fade speed={1} />
       )}
       
-      {/* Market sentiment indicator */}
       <group position={[0, 8, -10]}>
         <Text
           color={getSentimentColor()}
@@ -174,10 +170,8 @@ export const Scene = ({ data }: SceneProps) => {
         </Text>
       </group>
       
-      {/* Coordinate system */}
       <CoordinateSystem theme={theme} />
       
-      {/* Price bars */}
       {processedData.length > 0 && processedData.map((point, index) => (
         <PriceBar 
           key={`price-${index}`}
@@ -190,7 +184,6 @@ export const Scene = ({ data }: SceneProps) => {
         />
       ))}
       
-      {/* Volume indicators */}
       {processedData.length > 0 && processedData.map((point, index) => (
         <VolumeIndicator 
           key={`volume-${index}`}
@@ -202,7 +195,6 @@ export const Scene = ({ data }: SceneProps) => {
         />
       ))}
       
-      {/* Add a basic ground plane for orientation */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.5, 0]} receiveShadow>
         <planeGeometry args={[50, 50]} />
         <meshStandardMaterial 
