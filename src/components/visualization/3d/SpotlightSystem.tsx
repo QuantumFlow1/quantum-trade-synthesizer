@@ -1,8 +1,8 @@
 
 import { useRef, useEffect } from "react";
-import * as THREE from "three";
 import { ColorTheme } from "@/hooks/use-theme-detection";
 import { TradingDataPoint } from "@/utils/tradingData";
+import * as THREE from "three";
 
 interface SpotlightSystemProps {
   theme: ColorTheme;
@@ -11,36 +11,50 @@ interface SpotlightSystemProps {
 }
 
 export const SpotlightSystem = ({ theme, hoveredIndex, processedData }: SpotlightSystemProps) => {
-  const spotLight = useRef(new THREE.SpotLight(
-    theme === 'dark' ? '#8b5cf6' : '#6d28d9',
-    1,
-    30,
-    Math.PI / 6,
-    0.5,
-    0.5
-  )).current;
+  const spotlightGroupRef = useRef<THREE.Group>(null);
   
-  const spotLightTarget = useRef(new THREE.Object3D()).current;
-  
+  // Update spotlight positions based on data and hovered index
   useEffect(() => {
-    spotLight.target = spotLightTarget;
-  }, [spotLight, spotLightTarget]);
+    if (!spotlightGroupRef.current) return;
+    
+    // Position updates logic here
+  }, [hoveredIndex, processedData]);
   
-  useEffect(() => {
-    if (hoveredIndex !== null && processedData[hoveredIndex]) {
-      const spread = 20;
-      const spacing = processedData.length > 1 ? spread / processedData.length : spread;
-      const position = hoveredIndex * spacing - (spread / 2);
-      
-      spotLight.position.set(position, 10, 5);
-      spotLightTarget.position.set(position, 0, 0);
-    }
-  }, [hoveredIndex, processedData, spotLight, spotLightTarget]);
-
   return (
-    <>
-      <primitive object={spotLight} intensity={hoveredIndex !== null ? 1 : 0} />
-      <primitive object={spotLightTarget} />
-    </>
+    <group ref={spotlightGroupRef}>
+      {/* Main spotlight for hovered element */}
+      {hoveredIndex !== null && (
+        <spotLight
+          position={[(hoveredIndex - processedData.length / 2) * 1.2, 8, 2]}
+          angle={0.3}
+          penumbra={0.8}
+          intensity={1.5}
+          color={theme === 'dark' ? '#6366f1' : '#4f46e5'}
+          distance={20}
+          castShadow={false}
+        />
+      )}
+      
+      {/* Ambient spotlights */}
+      <spotLight
+        position={[5, 10, 5]}
+        angle={0.4}
+        penumbra={0.5}
+        intensity={0.8}
+        color={theme === 'dark' ? '#818cf8' : '#6366f1'}
+        distance={25}
+        castShadow={false}
+      />
+      
+      <spotLight
+        position={[-5, 8, -2]}
+        angle={0.4}
+        penumbra={0.5}
+        intensity={0.6}
+        color={theme === 'dark' ? '#a5b4fc' : '#818cf8'}
+        distance={20}
+        castShadow={false}
+      />
+    </group>
   );
 };

@@ -1,28 +1,21 @@
 
 import { useMemo } from "react";
 import { ColorTheme } from "@/hooks/use-theme-detection";
-import { SentimentType } from "@/components/visualization/3d/MarketSentiment";
 
-export function useMarketEnvironment(marketSentiment: SentimentType, theme: ColorTheme) {
-  const environmentPreset = useMemo(() => {
+export function useMarketEnvironment(
+  sentiment: 'bullish' | 'bearish' | 'neutral',
+  theme: ColorTheme
+): 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby' {
+  return useMemo(() => {
+    // Map sentiment and theme to environment presets
     if (theme === 'dark') {
-      switch (marketSentiment) {
-        case "very-bullish": return "night";
-        case "bullish": return "sunset";
-        case "very-bearish": return "dawn";
-        case "bearish": return "warehouse";
-        default: return "night";
-      }
+      if (sentiment === 'bullish') return 'city';
+      if (sentiment === 'bearish') return 'night';
+      return 'studio';
     } else {
-      switch (marketSentiment) {
-        case "very-bullish": return "sunset";
-        case "bullish": return "park";
-        case "very-bearish": return "dawn";
-        case "bearish": return "city";
-        default: return "park";
-      }
+      if (sentiment === 'bullish') return 'dawn';
+      if (sentiment === 'bearish') return 'sunset';
+      return 'park';
     }
-  }, [marketSentiment, theme]);
-  
-  return environmentPreset;
+  }, [sentiment, theme]);
 }

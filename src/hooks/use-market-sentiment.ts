@@ -1,21 +1,22 @@
 
 import { useMemo } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
-import { SentimentType } from "@/components/visualization/3d/MarketSentiment";
 
-export function useMarketSentiment(processedData: TradingDataPoint[]) {
-  const marketSentiment = useMemo(() => {
-    if (!processedData.length) return "neutral" as SentimentType;
+export function useMarketSentiment(data: TradingDataPoint[]): 'bullish' | 'bearish' | 'neutral' {
+  return useMemo(() => {
+    if (!data || data.length === 0) return 'neutral';
     
-    const upCount = processedData.filter(d => d.trend === "up").length;
-    const downCount = processedData.filter(d => d.trend === "down").length;
+    // Count up vs down trends
+    const upCount = data.filter(point => point.trend === 'up').length;
+    const downCount = data.filter(point => point.trend === 'down').length;
     
-    if (upCount > downCount * 1.5) return "very-bullish" as SentimentType;
-    if (upCount > downCount) return "bullish" as SentimentType;
-    if (downCount > upCount * 1.5) return "very-bearish" as SentimentType;
-    if (downCount > upCount) return "bearish" as SentimentType;
-    return "neutral" as SentimentType;
-  }, [processedData]);
-  
-  return marketSentiment;
+    // Calculate sentiment based on majority trend
+    if (upCount > downCount * 1.25) {
+      return 'bullish';
+    } else if (downCount > upCount * 1.25) {
+      return 'bearish';
+    } else {
+      return 'neutral';
+    }
+  }, [data]);
 }
