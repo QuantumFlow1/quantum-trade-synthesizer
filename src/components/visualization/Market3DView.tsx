@@ -22,20 +22,25 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [webGLAvailable, setWebGLAvailable] = useState(true);
+  const [contextLost, setContextLost] = useState(false);
   const theme = useThemeDetection();
   
-  // Check WebGL availability - improved detection
+  // Improved WebGL availability check
   useEffect(() => {
     try {
       const canvas = document.createElement('canvas');
-      let gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       
-      // If we got a context, WebGL is supported
       if (gl) {
-        // Additional check - try to create a simple scene
+        // Try to create a minimal Three.js scene to verify WebGL works
         try {
           const renderer = new THREE.WebGLRenderer({ canvas });
+          const scene = new THREE.Scene();
+          const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+          
+          renderer.render(scene, camera);
           renderer.dispose();
+          
           setWebGLAvailable(true);
           setHasError(false);
         } catch (rendererError) {
@@ -55,28 +60,44 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
     }
   }, []);
   
-  // Simulate loading state
+  // Simulate loading state with a slightly longer delay to let resources initialize
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000);
+    }, 1500);
     
     return () => clearTimeout(timer);
   }, []);
   
-  // Handle potential WebGL errors
+  // Enhanced WebGL error handling
   useEffect(() => {
-    const handleError = (event: Event) => {
-      console.error("WebGL context error detected", event);
+    const handleContextLost = (event: Event) => {
+      event.preventDefault();
+      console.error("WebGL context loss detected", event);
+      setContextLost(true);
       setHasError(true);
     };
     
-    window.addEventListener("webglcontextlost", handleError);
-    window.addEventListener("webglcontextcreationerror", handleError);
+    const handleContextRestored = (event: Event) => {
+      console.log("WebGL context restored", event);
+      setContextLost(false);
+      // Wait a moment before clearing the error state
+      setTimeout(() => setHasError(false), 500);
+    };
+    
+    const handleContextCreationError = (event: Event) => {
+      console.error("WebGL context creation error detected", event);
+      setHasError(true);
+    };
+    
+    window.addEventListener("webglcontextlost", handleContextLost);
+    window.addEventListener("webglcontextrestored", handleContextRestored);
+    window.addEventListener("webglcontextcreationerror", handleContextCreationError);
     
     return () => {
-      window.removeEventListener("webglcontextlost", handleError);
-      window.removeEventListener("webglcontextcreationerror", handleError);
+      window.removeEventListener("webglcontextlost", handleContextLost);
+      window.removeEventListener("webglcontextrestored", handleContextRestored);
+      window.removeEventListener("webglcontextcreationerror", handleContextCreationError);
     };
   }, []);
   
@@ -89,6 +110,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
   
   // Retry rendering
   const handleRetry = () => {
+    setContextLost(false);
     setHasError(false);
     setIsLoading(true);
     
@@ -102,7 +124,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
       setWebGLAvailable(false);
     }
     
-    setTimeout(() => setIsLoading(false), 1000);
+    setTimeout(() => setIsLoading(false), 1500);
   };
   
   return (
@@ -146,14 +168,21 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
       )}
       
       {/* Error state */}
-      {hasError && !isLoading && (
+      {(hasError || contextLost) && !isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center space-y-4 text-destructive max-w-md text-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <p className="text-lg font-medium">Unable to load 3D visualization</p>
-            <p className="text-sm">Your browser may not support WebGL, or there might be an issue with your graphics drivers.</p>
+            <p className="text-lg font-medium">
+              {contextLost ? "WebGL context lost" : "Unable to load 3D visualization"}
+            </p>
+            <p className="text-sm">
+              {contextLost 
+                ? "The 3D rendering context was lost. This may be due to GPU memory pressure or driver issues."
+                : "Your browser may not support WebGL, or there might be an issue with your graphics drivers."
+              }
+            </p>
             <button 
               onClick={handleRetry}
               className="mt-2 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-md transition-colors"
@@ -165,7 +194,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
       )}
       
       {/* No WebGL Support */}
-      {!webGLAvailable && !isLoading && !hasError && (
+      {!webGLAvailable && !isLoading && !hasError && !contextLost && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
           <div className="flex flex-col items-center space-y-4 max-w-md text-center">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -191,7 +220,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
       
       {/* 3D Canvas */}
       <div className="absolute inset-0">
-        {webGLAvailable && !hasError && !isLoading && (
+        {webGLAvailable && !hasError && !contextLost && !isLoading && (
           <Canvas
             ref={canvasRef}
             shadows
@@ -201,21 +230,37 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
               antialias: true,
               alpha: true,
               preserveDrawingBuffer: true,
-              powerPreference: 'high-performance',
-              failIfMajorPerformanceCaveat: false
+              powerPreference: 'default', // Changed from high-performance to default for better stability
+              failIfMajorPerformanceCaveat: false,
+              depth: true,
+              stencil: false,
+              logarithmicDepthBuffer: false // Disable logarithmic depth buffer which can cause issues
             }}
             onCreated={({ gl, scene }) => {
               gl.setClearColor(theme === 'dark' ? '#0f172a' : '#e0f2fe', 1);
               gl.outputColorSpace = THREE.SRGBColorSpace;
               
-              // Set up scene background with a slight gradient
+              // Lower precision if needed for better performance
+              gl.getContext().getExtension('OES_standard_derivatives');
+              
+              // Set up scene with simplified background
               scene.background = new THREE.Color(theme === 'dark' ? '#0f172a' : '#e0f2fe');
               
-              // Error handling for render loop
-              gl.getContext().canvas.addEventListener('webglcontextlost', (event) => {
+              // Add custom error listener for canvas
+              const canvas = gl.domElement;
+              canvas.addEventListener('webglcontextlost', (event) => {
                 event.preventDefault();
                 console.error('WebGL context lost. Trying to restore...');
-                setHasError(true);
+                setContextLost(true);
+              });
+              
+              canvas.addEventListener('webglcontextrestored', () => {
+                console.log('WebGL context restored!');
+                setContextLost(false);
+                setTimeout(() => {
+                  gl.setClearColor(theme === 'dark' ? '#0f172a' : '#e0f2fe', 1);
+                  gl.outputColorSpace = THREE.SRGBColorSpace;
+                }, 100);
               });
             }}
           >
