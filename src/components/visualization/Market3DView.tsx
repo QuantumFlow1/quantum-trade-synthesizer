@@ -19,6 +19,7 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
   const { visualizationData, stats } = useMarket3DData(data);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const theme = useThemeDetection();
   
   // Simulate loading state
@@ -28,6 +29,22 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
     }, 1000);
     
     return () => clearTimeout(timer);
+  }, []);
+  
+  // Handle potential WebGL errors
+  useEffect(() => {
+    const handleError = () => {
+      console.error("WebGL context error detected");
+      setHasError(true);
+    };
+    
+    window.addEventListener("webglcontextlost", handleError);
+    window.addEventListener("error", handleError);
+    
+    return () => {
+      window.removeEventListener("webglcontextlost", handleError);
+      window.removeEventListener("error", handleError);
+    };
   }, []);
   
   // Stats for display
@@ -77,6 +94,19 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
         </div>
       )}
       
+      {/* Error state */}
+      {hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
+          <div className="flex flex-col items-center space-y-4 text-destructive max-w-md text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <p className="text-lg font-medium">Unable to load 3D visualization</p>
+            <p className="text-sm">Your browser may not support WebGL, or there might be an issue with your graphics drivers.</p>
+          </div>
+        </div>
+      )}
+      
       {/* Controls */}
       <div className="absolute bottom-4 left-6 z-10">
         <VisualizationControls />
@@ -89,6 +119,15 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
           shadows
           camera={{ position: [0, 5, 15], fov: 60 }}
           style={{ background: theme === 'dark' ? 'linear-gradient(to bottom, #0f172a, #1e293b)' : 'linear-gradient(to bottom, #e0f2fe, #f0f9ff)' }}
+          gl={{ 
+            antialias: true,
+            alpha: true,
+            preserveDrawingBuffer: true,
+            powerPreference: 'high-performance'
+          }}
+          onCreated={({ gl }) => {
+            gl.setClearColor(theme === 'dark' ? '#0f172a' : '#e0f2fe', 1);
+          }}
         >
           <Scene data={visualizationData} />
         </Canvas>

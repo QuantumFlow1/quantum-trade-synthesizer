@@ -1,11 +1,11 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { PriceBar } from "./PriceBar";
 import { VolumeIndicator } from "./VolumeIndicator";
 import { CoordinateSystem } from "./CoordinateSystem";
 import { ThemeBasedLighting } from "./ThemeBasedLighting";
 import { TradingDataPoint } from "@/utils/tradingData";
-import { OrbitControls, Stars, Environment, Text, useHelper } from "@react-three/drei";
+import { OrbitControls, Stars, Environment, Text } from "@react-three/drei";
 import { useThemeDetection } from "@/hooks/use-theme-detection";
 import * as THREE from "three";
 
@@ -19,14 +19,21 @@ export const Scene = ({ data }: SceneProps) => {
   const theme = useThemeDetection();
   
   // Spotlight for highlighting
-  const spotLight = useMemo(() => new THREE.SpotLight(
+  const spotLight = useRef(new THREE.SpotLight(
     theme === 'dark' ? '#8b5cf6' : '#6d28d9',
     1,
     30,
     Math.PI / 6,
     0.5,
     0.5
-  ), [theme]);
+  )).current;
+  
+  const spotLightTarget = useRef(new THREE.Object3D()).current;
+  
+  // Initialize spotlight
+  useEffect(() => {
+    spotLight.target = spotLightTarget;
+  }, [spotLight, spotLightTarget]);
   
   // Track overall market sentiment
   const marketSentiment = useMemo(() => {
@@ -71,7 +78,17 @@ export const Scene = ({ data }: SceneProps) => {
         setProcessedData(data);
       } else {
         console.warn("Empty or invalid data received, creating fallback data");
-        setProcessedData([]);
+        // Create fallback data if empty
+        const fallbackData: TradingDataPoint[] = Array.from({ length: 5 }).map((_, i) => ({
+          time: new Date().toISOString(),
+          open: 100 + i * 5,
+          close: 105 + i * 5,
+          high: 110 + i * 5,
+          low: 95 + i * 5,
+          volume: 1000 + i * 100,
+          trend: i % 2 === 0 ? "up" : "down"
+        }));
+        setProcessedData(fallbackData);
       }
     } catch (error) {
       console.error("Error processing 3D visualization data:", error);
@@ -105,15 +122,9 @@ export const Scene = ({ data }: SceneProps) => {
       const position = hoveredIndex * spacing - (spread / 2);
       
       spotLight.position.set(position, 10, 5);
-      spotLight.target.position.set(position, 0, 0);
+      spotLightTarget.position.set(position, 0, 0);
     }
-  }, [hoveredIndex, processedData, spotLight]);
-  
-  // Safety check to ensure we have valid data
-  if (!processedData || !Array.isArray(processedData)) {
-    console.error("Invalid data format in Scene component");
-    return null;
-  }
+  }, [hoveredIndex, processedData, spotLight, spotLightTarget]);
   
   // Market sentiment text color
   const getSentimentColor = () => {
@@ -142,7 +153,7 @@ export const Scene = ({ data }: SceneProps) => {
       
       {/* Spotlight for highlighting */}
       <primitive object={spotLight} intensity={hoveredIndex !== null ? 1 : 0} />
-      <primitive object={spotLight.target} />
+      <primitive object={spotLightTarget} />
       
       {/* Stars for dark theme only */}
       {theme === 'dark' && (
@@ -190,6 +201,17 @@ export const Scene = ({ data }: SceneProps) => {
           theme={theme}
         />
       ))}
+      
+      {/* Add a basic ground plane for orientation */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.5, 0]} receiveShadow>
+        <planeGeometry args={[50, 50]} />
+        <meshStandardMaterial 
+          color={theme === 'dark' ? "#1e1e2f" : "#f0f9ff"} 
+          opacity={0.6}
+          transparent
+          roughness={0.8}
+        />
+      </mesh>
       
       <OrbitControls 
         enableZoom={true} 

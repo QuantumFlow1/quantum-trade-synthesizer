@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useThemeDetection } from "@/hooks/use-theme-detection";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
@@ -14,40 +14,53 @@ export const ThemeBasedLighting = () => {
   }, [theme]);
 
   // Create refs for animatable lights
-  const directionalLightRef = useState(() => new THREE.DirectionalLight())[0];
-  const pointLightRef = useState(() => new THREE.PointLight())[0];
-  const spotLightRef = useState(() => new THREE.SpotLight())[0];
+  const directionalLightRef = useRef(new THREE.DirectionalLight());
+  const pointLightRef = useRef(new THREE.PointLight());
+  const spotLightRef = useRef(new THREE.SpotLight());
+  
+  // Initialize spot light target
+  useEffect(() => {
+    if (spotLightRef.current) {
+      spotLightRef.current.target.position.set(0, 0, 0);
+    }
+  }, []);
   
   // Animate lights
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     
-    // Subtle movement for directional light
-    directionalLightRef.position.x = Math.sin(t * 0.1) * 10;
-    directionalLightRef.position.z = Math.cos(t * 0.1) * 10;
+    if (directionalLightRef.current) {
+      // Subtle movement for directional light
+      directionalLightRef.current.position.x = Math.sin(t * 0.1) * 10;
+      directionalLightRef.current.position.z = Math.cos(t * 0.1) * 10;
+    }
     
-    // Pulsing effect for point light
-    const pulseIntensity = (Math.sin(t * 0.5) * 0.2 + 0.8);
-    pointLightRef.intensity = theme === 'dark' ? 0.6 * pulseIntensity : 0.3 * pulseIntensity;
+    if (pointLightRef.current) {
+      // Pulsing effect for point light
+      const pulseIntensity = (Math.sin(t * 0.5) * 0.2 + 0.8);
+      pointLightRef.current.intensity = theme === 'dark' ? 0.6 * pulseIntensity : 0.3 * pulseIntensity;
+    }
     
-    // Rotating spot light
-    spotLightRef.position.x = Math.sin(t * 0.2) * 15;
-    spotLightRef.position.z = Math.cos(t * 0.2) * 15;
-    spotLightRef.target.position.x = Math.sin(t * 0.2 + Math.PI) * 5;
-    spotLightRef.target.position.z = Math.cos(t * 0.2 + Math.PI) * 5;
+    if (spotLightRef.current) {
+      // Rotating spot light
+      spotLightRef.current.position.x = Math.sin(t * 0.2) * 15;
+      spotLightRef.current.position.z = Math.cos(t * 0.2) * 15;
+      spotLightRef.current.target.position.x = Math.sin(t * 0.2 + Math.PI) * 5;
+      spotLightRef.current.target.position.z = Math.cos(t * 0.2 + Math.PI) * 5;
+    }
   });
   
   return (
     <>
       {/* Ambient light - overall scene illumination */}
       <ambientLight 
-        intensity={theme === 'dark' ? 0.2 : 0.5} 
+        intensity={theme === 'dark' ? 0.3 : 0.6} 
         color={theme === 'dark' ? "#1a1a2e" : "#ffffff"} 
       />
       
       {/* Main directional light - simulates sunlight */}
-      <primitive
-        object={directionalLightRef}
+      <directionalLight
+        ref={directionalLightRef}
         position={[5, 10, 5]}
         intensity={theme === 'dark' ? 0.6 : 1.2}
         color={theme === 'dark' ? "#a78bfa" : "#ffffff"}
@@ -55,16 +68,17 @@ export const ThemeBasedLighting = () => {
       />
       
       {/* Accent point light - adds color and atmosphere */}
-      <primitive
-        object={pointLightRef}
+      <pointLight
+        ref={pointLightRef}
         position={[0, 5, -5]}
+        intensity={theme === 'dark' ? 0.5 : 0.3}
         color={theme === 'dark' ? "#4f46e5" : "#7dd3fc"}
         distance={25}
       />
       
       {/* Spotlight for dramatic effects */}
-      <primitive
-        object={spotLightRef}
+      <spotLight
+        ref={spotLightRef}
         position={[10, 15, 0]}
         angle={0.3}
         penumbra={0.8}
@@ -74,7 +88,6 @@ export const ThemeBasedLighting = () => {
         decay={2}
         castShadow
       />
-      <primitive object={spotLightRef.target} position={[0, 0, 0]} />
       
       {/* Fill light to balance shadows */}
       <directionalLight
