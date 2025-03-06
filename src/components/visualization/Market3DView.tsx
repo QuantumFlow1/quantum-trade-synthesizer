@@ -1,5 +1,5 @@
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { useMarket3DData } from "@/hooks/use-market-3d-data";
@@ -15,9 +15,16 @@ import { MarketViewCanvas } from "./3d/MarketViewCanvas";
 interface Market3DViewProps {
   data: TradingDataPoint[];
   isSimulationMode?: boolean;
+  onError?: () => void;
+  onLoaded?: () => void;
 }
 
-export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewProps) => {
+export const Market3DView = ({ 
+  data, 
+  isSimulationMode = false,
+  onError,
+  onLoaded
+}: Market3DViewProps) => {
   const { visualizationData, stats } = useMarket3DData(data);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const theme = useThemeDetection();
@@ -32,6 +39,20 @@ export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewPro
     handleContextRestored,
     handleRetry
   } = useWebGLState();
+  
+  // Notify parent components of errors
+  useEffect(() => {
+    if (hasError || contextLost || !webGLAvailable) {
+      onError?.();
+    }
+  }, [hasError, contextLost, webGLAvailable, onError]);
+  
+  // Notify parent when loading is done
+  useEffect(() => {
+    if (!isLoading && !hasError && webGLAvailable && !contextLost) {
+      onLoaded?.();
+    }
+  }, [isLoading, hasError, webGLAvailable, contextLost, onLoaded]);
   
   // Determine which error state to show
   const getErrorStateType = () => {
