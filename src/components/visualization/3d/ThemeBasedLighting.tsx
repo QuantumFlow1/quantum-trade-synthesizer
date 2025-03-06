@@ -1,6 +1,7 @@
 
 import { useThemeDetection } from "@/hooks/use-theme-detection";
-import { AmbientLight, DirectionalLight } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
+import * as THREE from "three";
 
 interface ThemeBasedLightingProps {
   optimizationLevel?: 'normal' | 'aggressive';
@@ -15,12 +16,13 @@ export const ThemeBasedLighting = ({ optimizationLevel = 'normal' }: ThemeBasedL
   
   return (
     <>
-      <AmbientLight 
+      {/* Use regular Three.js components instead of drei imports */}
+      <ambientLight 
         intensity={ambientIntensity}
         color={theme === 'dark' ? '#404060' : '#ffffff'} 
       />
       
-      <DirectionalLight
+      <directionalLight
         position={[10, 10, 5]}
         intensity={directionalIntensity}
         color={theme === 'dark' ? '#aaaaff' : '#ffffff'}
@@ -28,7 +30,7 @@ export const ThemeBasedLighting = ({ optimizationLevel = 'normal' }: ThemeBasedL
       />
       
       {optimizationLevel !== 'aggressive' && (
-        <DirectionalLight
+        <directionalLight
           position={[-10, 5, -5]}
           intensity={0.4}
           color={theme === 'dark' ? '#8080ff' : '#ffffee'}

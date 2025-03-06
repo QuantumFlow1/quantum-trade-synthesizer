@@ -23,8 +23,7 @@ export const BaseSceneLighting = ({
   
   return (
     <>
-      {/* Pass optimizationLevel only if ThemeBasedLighting accepts it */}
-      <ThemeBasedLighting />
+      <ThemeBasedLighting optimizationLevel={optimizationLevel} />
       
       {showSpotlights && (
         <SpotlightSystem 
