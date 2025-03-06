@@ -1,13 +1,14 @@
 
-import { useState } from "react";
-import { Market3DVisualization } from "./Market3DVisualization";
-import { useMarket3DData } from "@/hooks/use-market-3d-data";
+import { useRef, useState, useEffect } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Scene } from "./3d/Scene";
 import { TradingDataPoint } from "@/utils/tradingData";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { TrendingUp, BarChart3, Zap, Info, Box } from "lucide-react";
+import { useMarket3DData } from "@/hooks/use-market-3d-data";
+import { VisualizationControls } from "./3d/VisualizationControls";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { useThemeDetection } from "@/hooks/use-theme-detection";
+import { Sparkles, BarChart2, Activity } from "lucide-react";
 
 interface Market3DViewProps {
   data: TradingDataPoint[];
@@ -16,111 +17,82 @@ interface Market3DViewProps {
 
 export const Market3DView = ({ data, isSimulationMode = false }: Market3DViewProps) => {
   const { visualizationData, stats } = useMarket3DData(data);
-  const [activeTab, setActiveTab] = useState<string>("3d-view");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const theme = useThemeDetection();
   
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-  };
+  // Simulate loading state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Stats for display
+  const priceChangeColor = stats.priceChange >= 0 
+    ? theme === 'dark' ? 'text-green-400' : 'text-green-600'
+    : theme === 'dark' ? 'text-red-400' : 'text-red-600';
+    
+  const priceChangeSymbol = stats.priceChange >= 0 ? '▲' : '▼';
   
   return (
-    <Card className="bg-background/60 backdrop-blur-sm border border-purple-500/20">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Box className="h-5 w-5 text-purple-500" />
-            <span>3D Market Visualization</span>
-            <Badge variant="outline" className="ml-2 bg-purple-500/10 text-purple-400 border-purple-500/30">
-              Beta
-            </Badge>
-          </CardTitle>
-          
-          <Button variant="ghost" size="sm" className="h-7 gap-1">
-            <Info className="h-3.5 w-3.5" />
-            <span className="text-xs">About 3D View</span>
-          </Button>
-        </div>
-      </CardHeader>
+    <Card className="relative backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.5)] transition-all h-[500px] overflow-hidden">
+      {/* Header */}
+      <div className="absolute top-4 left-6 z-10 flex items-center space-x-2">
+        <h2 className="text-xl font-bold flex items-center">
+          <BarChart2 className="w-5 h-5 mr-2" /> 
+          3D Market Visualization
+        </h2>
+        {isSimulationMode && (
+          <Badge variant="outline" className="bg-yellow-500/20 text-yellow-600 border-yellow-600/30">
+            Simulation
+          </Badge>
+        )}
+      </div>
       
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="pb-2">
-          <TabsList className="grid grid-cols-2 w-48">
-            <TabsTrigger value="3d-view" className="flex items-center gap-1.5">
-              <BarChart3 className="h-3.5 w-3.5" />
-              <span>3D View</span>
-            </TabsTrigger>
-            <TabsTrigger value="stats" className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5" />
-              <span>Stats</span>
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="3d-view" className="pt-4">
-            <Market3DVisualization 
-              data={visualizationData} 
-              isSimulationMode={isSimulationMode} 
-            />
-            <div className="mt-3 text-sm text-muted-foreground">
-              <p>This 3D visualization shows price bars (green/red) and volume indicators (purple) for recent market data.</p>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="stats" className="pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg bg-secondary/20 backdrop-blur-sm">
-                <h3 className="text-sm font-medium mb-2">Price Statistics</h3>
-                <ul className="space-y-2">
-                  <li className="flex justify-between">
-                    <span className="text-muted-foreground">Average:</span>
-                    <span className="font-medium">${stats.avgPrice.toFixed(2)}</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span className="text-muted-foreground">Maximum:</span>
-                    <span className="font-medium">${stats.maxPrice.toFixed(2)}</span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span className="text-muted-foreground">Minimum:</span>
-                    <span className="font-medium">${stats.minPrice.toFixed(2)}</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <div className="p-4 rounded-lg bg-secondary/20 backdrop-blur-sm">
-                <h3 className="text-sm font-medium mb-2">Price Change</h3>
-                <ul className="space-y-2">
-                  <li className="flex justify-between">
-                    <span className="text-muted-foreground">Net:</span>
-                    <span className={`font-medium ${stats.priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      ${stats.priceChange.toFixed(2)}
-                    </span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span className="text-muted-foreground">Percentage:</span>
-                    <span className={`font-medium ${stats.priceChangePercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {stats.priceChangePercent.toFixed(2)}%
-                    </span>
-                  </li>
-                  <li className="flex justify-between">
-                    <span className="text-muted-foreground">Volatility:</span>
-                    <span className="font-medium">
-                      {(stats.maxPrice - stats.minPrice).toFixed(2)}
-                    </span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            
-            <div className="mt-4 p-4 rounded-lg bg-blue-900/10 border border-blue-900/20">
-              <h3 className="flex items-center gap-2 text-sm font-medium text-blue-400 mb-2">
-                <Info className="h-4 w-4" />
-                VR/AR Potential
-              </h3>
-              <p className="text-sm text-blue-300">
-                In VR/AR environments, this data will be visualized as an immersive trading floor where you can walk among the price bars and interact with market data points directly.
-              </p>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
+      {/* Stats overlay */}
+      <div className="absolute top-4 right-6 z-10 flex flex-col space-y-2">
+        <Badge className="bg-primary/20 text-primary border-primary/30 flex items-center gap-1.5">
+          <Activity className="w-3.5 h-3.5" /> 
+          <span>Avg: ${stats.avgPrice.toFixed(2)}</span>
+        </Badge>
+        <Badge className={`bg-black/20 ${priceChangeColor} border-white/10 flex items-center gap-1.5`}>
+          <Sparkles className="w-3.5 h-3.5" /> 
+          <span>
+            {priceChangeSymbol} ${Math.abs(stats.priceChange).toFixed(2)} 
+            ({stats.priceChangePercent >= 0 ? '+' : ''}{stats.priceChangePercent.toFixed(2)}%)
+          </span>
+        </Badge>
+      </div>
+      
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-20">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            <p className="text-lg font-medium">Loading 3D visualization...</p>
+          </div>
+        </div>
+      )}
+      
+      {/* Controls */}
+      <div className="absolute bottom-4 left-6 z-10">
+        <VisualizationControls />
+      </div>
+      
+      {/* 3D Canvas */}
+      <div className="absolute inset-0">
+        <Canvas
+          ref={canvasRef}
+          shadows
+          camera={{ position: [0, 5, 15], fov: 60 }}
+          style={{ background: theme === 'dark' ? 'linear-gradient(to bottom, #0f172a, #1e293b)' : 'linear-gradient(to bottom, #e0f2fe, #f0f9ff)' }}
+        >
+          <Scene data={visualizationData} />
+        </Canvas>
+      </div>
     </Card>
   );
 };

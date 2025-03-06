@@ -1,41 +1,105 @@
 
-import { Maximize } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { BarChart3 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useThemeDetection } from "@/hooks/use-theme-detection";
+import { Eye, EyeOff, RotateCcw, LucideZoomIn, LucideZoomOut, Maximize2, Cube } from "lucide-react";
 
-interface VisualizationControlsProps {
-  isFullscreen: boolean;
-  toggleFullscreen: () => void;
-  isSimulationMode?: boolean;
-}
+export const VisualizationControls = () => {
+  const [showPrices, setShowPrices] = useState(true);
+  const [showVolume, setShowVolume] = useState(true);
+  const theme = useThemeDetection();
+  
+  // This is a UI component, the actual control logic would be implemented
+  // via a context or props in a real implementation
+  
+  const controlClass = "flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 hover:bg-primary/20 text-primary-foreground transition-colors";
 
-export const VisualizationControls = ({
-  isFullscreen,
-  toggleFullscreen,
-  isSimulationMode = false
-}: VisualizationControlsProps) => {
   return (
-    <div className="flex justify-between items-center p-2 bg-black/50 border-b border-gray-800">
-      <div className="flex items-center gap-2">
-        <BarChart3 className="h-5 w-5 text-primary" />
-        <span className="font-medium text-gray-200">Market 3D View</span>
-        {isSimulationMode && (
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-            Simulation
-          </Badge>
-        )}
+    <TooltipProvider>
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={controlClass}
+                onClick={() => setShowPrices(!showPrices)}
+              >
+                {showPrices ? <Eye size={16} /> : <EyeOff size={16} />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>{showPrices ? "Hide Price Bars" : "Show Price Bars"}</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className={controlClass}
+                onClick={() => setShowVolume(!showVolume)}
+              >
+                <Cube size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>{showVolume ? "Hide Volume Indicators" : "Show Volume Indicators"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className={controlClass}>
+                <LucideZoomIn size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Zoom In</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className={controlClass}>
+                <LucideZoomOut size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Zoom Out</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className={controlClass}>
+                <RotateCcw size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Reset View</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className={controlClass}>
+                <Maximize2 size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Fullscreen</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
-      <div className="flex gap-2">
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="h-7 px-2 bg-gray-800/50 hover:bg-gray-700/50 border-gray-700"
-          onClick={toggleFullscreen}
-        >
-          <Maximize className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+    </TooltipProvider>
   );
 };
