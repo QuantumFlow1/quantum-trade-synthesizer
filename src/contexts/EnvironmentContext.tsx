@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { EnvironmentType, VirtualEnvironment, UserProgress } from '@/types/virtual-environment';
 import { useThemeDetection } from '@/hooks/use-theme-detection';
@@ -93,3 +92,5 @@ export const EnvironmentProvider: React.FC<{children: ReactNode}> = ({ children 
     </EnvironmentContext.Provider>
   );
 };
+
+export default EnvironmentContext;
