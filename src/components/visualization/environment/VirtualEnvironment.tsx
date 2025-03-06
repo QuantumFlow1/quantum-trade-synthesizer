@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, Environment } from '@react-three/drei';
 import { useThemeDetection } from '@/hooks/use-theme-detection';
 import { useEnvironment } from '@/contexts/EnvironmentContext';
 import { EnvironmentSelector } from './EnvironmentSelector';
+import { EnvironmentLearningPath } from './EnvironmentLearningPath';
 import { TradingFloorEnvironment } from './environments/TradingFloorEnvironment';
 import { OfficeTowerEnvironment } from './environments/OfficeTowerEnvironment';
 import { FinancialGardenEnvironment } from './environments/FinancialGardenEnvironment';
@@ -13,11 +14,15 @@ import { EducationalCampusEnvironment } from './environments/EducationalCampusEn
 import { PersonalOfficeEnvironment } from './environments/PersonalOfficeEnvironment';
 import { TradingHubEnvironment } from './environments/TradingHubEnvironment';
 import { ThemeBasedLighting } from '../3d/ThemeBasedLighting';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BookOpen, Globe } from 'lucide-react';
 
 export const VirtualEnvironment: React.FC = () => {
   const theme = useThemeDetection();
   const { selectedEnvironment } = useEnvironment();
   const [key, setKey] = React.useState(0);
+  const [activeTab, setActiveTab] = useState<string>("explore");
   
   // Remount canvas when environment changes
   React.useEffect(() => {
@@ -49,41 +54,60 @@ export const VirtualEnvironment: React.FC = () => {
     <div className="relative w-full h-[600px] rounded-lg overflow-hidden border border-white/10">
       <EnvironmentSelector />
       
-      <Canvas
-        key={key}
-        shadows
-        camera={{ position: [0, 5, 14], fov: 50 }}
-        gl={{ 
-          antialias: true,
-          alpha: true,
-          preserveDrawingBuffer: true 
-        }}
-      >
-        <ThemeBasedLighting />
-        
-        {/* Stars for dark theme only */}
-        {theme === 'dark' && (
-          <Stars radius={100} depth={50} count={1000} factor={4} fade speed={1} />
-        )}
-        
-        {/* Render the selected environment */}
-        {renderEnvironment()}
-        
-        <OrbitControls 
-          enableZoom={true} 
-          enablePan={true} 
-          rotateSpeed={0.5}
-          zoomSpeed={0.7}
-          minDistance={5}
-          maxDistance={30}
-        />
-        
-        <Environment preset={theme === "dark" ? "night" : "sunset"} />
-      </Canvas>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="absolute top-4 left-4 z-10">
+        <TabsList className="bg-black/40 backdrop-blur-sm border-white/10">
+          <TabsTrigger value="explore" className="text-white data-[state=active]:bg-primary/30">
+            <Globe className="h-4 w-4 mr-2" />
+            Explore
+          </TabsTrigger>
+          <TabsTrigger value="learn" className="text-white data-[state=active]:bg-primary/30">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Learn
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
       
-      <div className="absolute bottom-2 left-2 text-xs text-white/50">
-        <span>Drag to rotate • Scroll to zoom • Select environment to change</span>
-      </div>
+      <TabsContent value="explore" className="mt-0 h-full">
+        <Canvas
+          key={key}
+          shadows
+          camera={{ position: [0, 5, 14], fov: 50 }}
+          gl={{ 
+            antialias: true,
+            alpha: true,
+            preserveDrawingBuffer: true 
+          }}
+        >
+          <ThemeBasedLighting />
+          
+          {/* Stars for dark theme only */}
+          {theme === 'dark' && (
+            <Stars radius={100} depth={50} count={1000} factor={4} fade speed={1} />
+          )}
+          
+          {/* Render the selected environment */}
+          {renderEnvironment()}
+          
+          <OrbitControls 
+            enableZoom={true} 
+            enablePan={true} 
+            rotateSpeed={0.5}
+            zoomSpeed={0.7}
+            minDistance={5}
+            maxDistance={30}
+          />
+          
+          <Environment preset={theme === "dark" ? "night" : "sunset"} />
+        </Canvas>
+        
+        <div className="absolute bottom-2 left-2 text-xs text-white/50">
+          <span>Drag to rotate • Scroll to zoom • Select environment to change</span>
+        </div>
+      </TabsContent>
+      
+      <TabsContent value="learn" className="mt-0 h-full bg-black/80 backdrop-blur-lg overflow-y-auto p-6">
+        <EnvironmentLearningPath />
+      </TabsContent>
     </div>
   );
 };

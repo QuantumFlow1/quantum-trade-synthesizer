@@ -1,14 +1,17 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { EnvironmentType, VirtualEnvironment } from '@/types/virtual-environment';
+import { EnvironmentType, VirtualEnvironment, UserProgress } from '@/types/virtual-environment';
 import { useThemeDetection } from '@/hooks/use-theme-detection';
 import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useLearningProgress } from '@/hooks/use-learning-progress';
 
 interface EnvironmentContextType {
   selectedEnvironment: EnvironmentType;
   setSelectedEnvironment: (environment: EnvironmentType) => void;
   environments: VirtualEnvironment[];
   currentEnvironment: VirtualEnvironment;
+  userProgress: UserProgress;
+  completeModule: (environmentId: EnvironmentType, moduleId: string) => void;
 }
 
 const EnvironmentContext = createContext<EnvironmentContextType | undefined>(undefined);
@@ -27,6 +30,8 @@ export const EnvironmentProvider: React.FC<{children: ReactNode}> = ({ children 
     'selectedEnvironment', 
     'trading-floor'
   );
+  
+  const { userProgress, completeModule } = useLearningProgress();
   
   const environments: VirtualEnvironment[] = [
     {
@@ -80,7 +85,9 @@ export const EnvironmentProvider: React.FC<{children: ReactNode}> = ({ children 
       selectedEnvironment,
       setSelectedEnvironment,
       environments,
-      currentEnvironment
+      currentEnvironment,
+      userProgress,
+      completeModule
     }}>
       {children}
     </EnvironmentContext.Provider>
