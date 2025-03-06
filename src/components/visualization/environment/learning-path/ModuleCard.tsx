@@ -4,7 +4,7 @@ import { LearningModule, EnvironmentType } from '@/types/virtual-environment';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, CheckCircle2, Clock, Star } from 'lucide-react';
+import { BookOpen, CheckCircle2, Clock, Star, Trophy, Award } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEnvironment } from '@/contexts/EnvironmentContext';
 import { ModuleDifficultyBadge } from './ModuleDifficultyBadge';
@@ -66,7 +66,13 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({
             </CardTitle>
             <CardDescription>{module.description}</CardDescription>
           </div>
-          <ModuleDifficultyBadge difficulty={module.difficulty} />
+          <div className="flex flex-col items-end gap-2">
+            <ModuleDifficultyBadge difficulty={module.difficulty} />
+            <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/20 flex items-center">
+              <Trophy className="h-3 w-3 mr-1" />
+              {module.points} pts
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       
@@ -78,6 +84,29 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({
               In a complete implementation, this would be the actual learning content for this module.
               For now, this is a placeholder to demonstrate the UI flow.
             </p>
+            
+            <div className="mt-4 bg-blue-500/10 border border-blue-500/20 p-3 rounded-md">
+              <div className="flex items-center mb-2">
+                <Award className="h-4 w-4 text-blue-500 mr-2" />
+                <h4 className="font-medium">Completion Rewards</h4>
+              </div>
+              <ul className="text-sm space-y-1">
+                <li className="flex items-center">
+                  <Trophy className="h-3 w-3 text-yellow-500 mr-1" />
+                  <span>{module.points} points to your total score</span>
+                </li>
+                <li className="flex items-center">
+                  <Star className="h-3 w-3 text-purple-500 mr-1" />
+                  <span>Progress toward environment mastery</span>
+                </li>
+                {module.difficulty === 'advanced' && (
+                  <li className="flex items-center">
+                    <Award className="h-3 w-3 text-green-500 mr-1" />
+                    <span>Special badge for advanced module completion</span>
+                  </li>
+                )}
+              </ul>
+            </div>
           </div>
         </CardContent>
       )}
@@ -86,8 +115,6 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({
         <div className="flex items-center text-sm text-muted-foreground">
           <Clock className="h-4 w-4 mr-1" />
           <span>{module.estimatedTimeMinutes} min</span>
-          <Star className="h-4 w-4 ml-3 mr-1 text-yellow-500" />
-          <span>{module.points} points</span>
         </div>
         
         {module.completed ? (
@@ -97,6 +124,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({
           </Button>
         ) : isExpanded ? (
           <Button onClick={handleComplete}>
+            <Trophy className="h-4 w-4 mr-2" />
             Mark as Completed
           </Button>
         ) : (
