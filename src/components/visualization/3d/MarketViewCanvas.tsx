@@ -31,11 +31,23 @@ export const MarketViewCanvas = ({
     return null;
   }
   
+  const handleContextLost = () => {
+    onWebGLContextLost();
+  };
+  
+  const handleContextRestored = () => {
+    onWebGLContextRestored();
+  };
+  
   return (
     <div className="absolute inset-0 overflow-hidden">
       <Canvas
-        onContextLost={onWebGLContextLost}
-        onContextRestored={onWebGLContextRestored}
+        onCreated={(state) => {
+          // Add event listeners for context lost/restored events
+          const canvas = state.gl.domElement;
+          canvas.addEventListener('webglcontextlost', handleContextLost);
+          canvas.addEventListener('webglcontextrestored', handleContextRestored);
+        }}
         camera={{ position: [0, 5, 15], fov: 50 }}
         shadows={false} // Disable shadows for better performance
         dpr={[1, 2]} // Responsive pixel ratio
