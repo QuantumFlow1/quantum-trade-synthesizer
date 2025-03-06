@@ -2,9 +2,8 @@
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { EnvironmentType } from '@/types/virtual-environment';
 
-// Define the EnvironmentLeaderboard interface
+// Define the EnvironmentLeaderboard interface here since it's not exported from the types
 interface EnvironmentLeaderboard {
   id: string;
   name: string;

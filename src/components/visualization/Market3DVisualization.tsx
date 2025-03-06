@@ -5,9 +5,6 @@ import { TradingDataPoint } from "@/utils/tradingData";
 import { Scene } from "./3d/Scene";
 import { VisualizationControls } from "./3d/VisualizationControls";
 
-// Import React properly for the ErrorBoundary class
-import React from 'react';
-
 interface Market3DVisualizationProps {
   data: TradingDataPoint[];
   isSimulationMode?: boolean;
@@ -110,3 +107,5 @@ class ErrorBoundary extends React.Component<{
     return this.props.children;
   }
 }
+
+import React from 'react';

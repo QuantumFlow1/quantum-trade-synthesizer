@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { EnvironmentType, VirtualEnvironment, UserProgress } from '@/types/virtual-environment';
 import { useThemeDetection } from '@/hooks/use-theme-detection';
@@ -14,7 +13,7 @@ interface EnvironmentContextType {
   completeModule: (environmentId: EnvironmentType, moduleId: string) => void;
 }
 
-const EnvironmentContext = createContext<EnvironmentContextType | undefined>(undefined);
+export const EnvironmentContext = createContext<EnvironmentContextType | undefined>(undefined);
 
 export const useEnvironment = () => {
   const context = useContext(EnvironmentContext);
@@ -94,4 +93,4 @@ export const EnvironmentProvider: React.FC<{children: ReactNode}> = ({ children 
   );
 };
 
-export { EnvironmentContext };
+export default EnvironmentContext;

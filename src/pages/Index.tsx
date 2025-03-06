@@ -1,4 +1,3 @@
-
 import React, { Suspense } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
@@ -23,7 +22,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error'>('checking');
-  const environment = useEnvironment();
+  const environmentContext = useEnvironment();
 
   useOAuthRedirect();
 

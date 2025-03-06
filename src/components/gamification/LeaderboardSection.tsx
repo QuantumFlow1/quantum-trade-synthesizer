@@ -33,7 +33,7 @@ export const LeaderboardSection: React.FC<LeaderboardSectionProps> = ({
       return leaderboardData.global;
     }
     
-    const envData = leaderboardData.byEnvironment?.[activeEnvironment as EnvironmentType];
+    const envData = leaderboardData.byEnvironment[activeEnvironment as EnvironmentType];
     return envData || [];
   };
   
