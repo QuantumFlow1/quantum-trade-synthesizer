@@ -1,4 +1,3 @@
-
 import React, { Suspense } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
@@ -17,52 +16,14 @@ import { Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEnvironment } from "@/contexts/EnvironmentContext";
 
-// Mock user progress data
-const mockUserProgress = {
-  level: 3,
-  experience: 2500,
-  totalPoints: 2500,
-  requiredExperience: 5000,
-  completion: {
-    total: 15,
-    completed: 7
-  },
-  trades: {
-    total: 45,
-    profitable: 28
-  },
-  badges: [
-    { id: 'first-trade', name: 'First Trade', icon: '🚀', earnedAt: new Date().toISOString() },
-    { id: 'fast-learner', name: 'Fast Learner', icon: '📚', earnedAt: new Date().toISOString() },
-    { id: 'early-bird', name: 'Early Bird', icon: '🐦', earnedAt: new Date().toISOString() }
-  ],
-  activeEnvironment: 'financial-garden'
-};
-
 const Index = () => {
   const { user, userProfile } = useAuth();
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error'>('checking');
-  
-  // Try to use the proper environment context, but fall back to our temp context
-  let environmentContext;
-  try {
-    environmentContext = useEnvironment();
-  } catch (e) {
-    // Use mock data if the real context provider isn't available
-    environmentContext = {
-      userProgress: mockUserProgress,
-      learningModules: [],
-      selectedEnvironment: 'financial-garden',
-      setSelectedEnvironment: () => {},
-      environments: [],
-      currentEnvironment: { id: 'financial-garden', name: 'Financial Garden', description: '', thumbnailIcon: null },
-      completeModule: () => {}
-    };
-  }
-  
+  const environmentContext = useEnvironment();
+
   useOAuthRedirect();
 
   // Check Supabase connection when component mounts

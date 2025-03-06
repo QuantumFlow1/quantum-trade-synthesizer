@@ -13,7 +13,7 @@ interface EnvironmentContextType {
   completeModule: (environmentId: EnvironmentType, moduleId: string) => void;
 }
 
-const EnvironmentContext = createContext<EnvironmentContextType | undefined>(undefined);
+export const EnvironmentContext = createContext<EnvironmentContextType | undefined>(undefined);
 
 export const useEnvironment = () => {
   const context = useContext(EnvironmentContext);
