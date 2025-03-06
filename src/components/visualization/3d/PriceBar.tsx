@@ -1,4 +1,3 @@
-
 import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import { TradingDataPoint } from "@/utils/tradingData";
@@ -62,9 +61,10 @@ export const PriceBar = ({
   }, [theme, point.trend, optimizationLevel]);
   
   // Reduce geometry segments in aggressive optimization mode
-  const boxGeometryArgs = optimizationLevel === 'aggressive' 
-    ? [0.8, height, 0.8, 1, 1, 1]  // Reduced segments
-    : [0.8, height, 0.8];
+  const boxGeometryArgs: [width?: number, height?: number, depth?: number, widthSegments?: number, heightSegments?: number, depthSegments?: number] = 
+    optimizationLevel === 'aggressive' 
+      ? [0.8, height, 0.8, 1, 1, 1]  // Reduced segments
+      : [0.8, height, 0.8];
   
   // Animate the bar on creation - simplified for aggressive mode
   useFrame((state, delta) => {

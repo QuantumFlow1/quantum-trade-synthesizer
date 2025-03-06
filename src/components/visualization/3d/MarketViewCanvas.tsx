@@ -39,7 +39,10 @@ export const MarketViewCanvas = ({
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
       // Check for low memory (available in some browsers)
-      const hasLowMemory = navigator.deviceMemory !== undefined && navigator.deviceMemory < 4;
+      // Use type assertion with property check for deviceMemory
+      const hasLowMemory = 'deviceMemory' in navigator && 
+                          (navigator as Navigator & { deviceMemory?: number }).deviceMemory !== undefined && 
+                          (navigator as Navigator & { deviceMemory?: number }).deviceMemory < 4;
       
       // Check for low number of logical processors
       const hasLowCPU = navigator.hardwareConcurrency !== undefined && navigator.hardwareConcurrency <= 4;
