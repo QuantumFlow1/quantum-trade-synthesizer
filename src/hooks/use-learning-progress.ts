@@ -206,8 +206,8 @@ export function useLearningProgress() {
 
   // Mark a module as completed
   const completeModule = (environmentId: EnvironmentType, moduleId: string) => {
-    setUserProgress((prev: UserProgress) => {
-      const updatedPaths = { ...prev.learningPaths };
+    setUserProgress((currentProgress: UserProgress) => {
+      const updatedPaths = { ...currentProgress.learningPaths };
       const path = { ...updatedPaths[environmentId] };
       const moduleIndex = path.modules.findIndex(m => m.id === moduleId);
       
@@ -225,11 +225,11 @@ export function useLearningProgress() {
         
         updatedPaths[environmentId] = path;
         
-        const newTotalPoints = prev.totalPoints + modulePoints;
+        const newTotalPoints = currentProgress.totalPoints + modulePoints;
         const newLevel = calculateLevel(newTotalPoints);
         
         // Check if environment is now completed
-        let completedEnvironments = [...prev.completedEnvironments];
+        let completedEnvironments = [...currentProgress.completedEnvironments];
         if (path.completedModules === path.totalModules && 
             !completedEnvironments.includes(environmentId)) {
           completedEnvironments.push(environmentId);
@@ -244,17 +244,17 @@ export function useLearningProgress() {
           };
           
           return {
-            ...prev,
+            ...currentProgress,
             level: newLevel,
             totalPoints: newTotalPoints,
             completedEnvironments,
             learningPaths: updatedPaths,
-            badges: [...prev.badges, newBadge]
+            badges: [...currentProgress.badges, newBadge]
           };
         }
         
         return {
-          ...prev,
+          ...currentProgress,
           level: newLevel,
           totalPoints: newTotalPoints,
           completedEnvironments,
@@ -262,7 +262,7 @@ export function useLearningProgress() {
         };
       }
       
-      return prev;
+      return currentProgress;
     });
   };
 
