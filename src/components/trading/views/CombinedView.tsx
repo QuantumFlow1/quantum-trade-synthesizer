@@ -5,7 +5,7 @@ import { TradingOrderSection } from "@/components/trading/TradingOrderSection";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { ApiStatus } from "@/hooks/use-trading-chart-data";
 import { Button } from "@/components/ui/button";
-import { Cube } from "lucide-react";
+import { BoxIcon } from "lucide-react";
 
 interface CombinedViewProps {
   data: TradingDataPoint[];
@@ -56,7 +56,7 @@ export const CombinedView: FC<CombinedViewProps> = ({
               <h3 className="text-xl font-semibold mb-3">3D Visualization Available</h3>
               <p className="mb-4 text-muted-foreground">The 3D visualization is now available as a separate page for better performance.</p>
               <Button onClick={handleOpenVisualization} className="flex items-center gap-2">
-                <Cube className="h-4 w-4" />
+                <BoxIcon className="h-4 w-4" />
                 Open 3D View
               </Button>
             </div>
