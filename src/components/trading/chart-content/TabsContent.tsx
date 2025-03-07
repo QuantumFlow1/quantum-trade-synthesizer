@@ -1,6 +1,6 @@
 
 import React from "react";
-import { TabsContent } from "@/components/ui/tabs";
+import { TabsContent as UITabsContent } from "@/components/ui/tabs";
 import { TradingTabContent } from "../TradingTabContent";
 import { IndicatorType } from "../charts/types/types";
 import { TradingDataPoint } from "@/utils/tradingData";
@@ -26,7 +26,7 @@ const TabsContent: React.FC<TabsContentProps> = ({
 }) => {
   return (
     <>
-      <TabsContent value="price">
+      <UITabsContent value="price">
         <TradingTabContent 
           tabValue="price"
           data={data}
@@ -37,9 +37,9 @@ const TabsContent: React.FC<TabsContentProps> = ({
           showReplayMode={showReplayMode}
           isLoading={isLoading}
         />
-      </TabsContent>
+      </UITabsContent>
 
-      <TabsContent value="volume">
+      <UITabsContent value="volume">
         <TradingTabContent 
           tabValue="volume"
           data={data}
@@ -50,9 +50,9 @@ const TabsContent: React.FC<TabsContentProps> = ({
           showReplayMode={false}
           isLoading={isLoading}
         />
-      </TabsContent>
+      </UITabsContent>
 
-      <TabsContent value="indicators">
+      <UITabsContent value="indicators">
         <TradingTabContent 
           tabValue="indicators"
           data={data}
@@ -63,7 +63,7 @@ const TabsContent: React.FC<TabsContentProps> = ({
           showReplayMode={false}
           isLoading={isLoading}
         />
-      </TabsContent>
+      </UITabsContent>
     </>
   );
 };
