@@ -13,6 +13,9 @@ export function useTradingChartData(forceSimulation: boolean) {
   const [lastAPICheckTime, setLastAPICheckTime] = useState<Date | null>(null);
   const [apiKeysAvailable, setApiKeysAvailable] = useState<boolean>(false);
   const [rawMarketData, setRawMarketData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorCount, setErrorCount] = useState(0);
+  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
 
   const checkApiKeysAvailability = useCallback(() => {
     const userKeys = loadApiKeysFromStorage();
@@ -87,12 +90,36 @@ export function useTradingChartData(forceSimulation: boolean) {
     }
   };
 
-  const fetchMarketData = async () => {
+  const fetchMarketData = useCallback(async () => {
+    // Prevent multiple concurrent calls
+    if (isLoading) {
+      console.log("Fetch already in progress, skipping");
+      return data;
+    }
+    
+    // Throttle API calls - don't call more often than every 3 seconds
+    if (lastFetchTime && new Date().getTime() - lastFetchTime.getTime() < 3000) {
+      console.log("Throttling API calls - too frequent");
+      return data;
+    }
+    
     try {
+      setIsLoading(true);
+      setLastFetchTime(new Date());
+      
       if (forceSimulation) {
         const generatedData = generateTradingData();
         setData(generatedData);
+        setIsLoading(false);
         return generatedData;
+      }
+      
+      if (apiStatus !== 'available') {
+        console.log("API not available, using generated data");
+        const fallbackData = generateTradingData();
+        setData(fallbackData);
+        setIsLoading(false);
+        return fallbackData;
       }
       
       const { data: marketData, error } = await supabase.functions.invoke('market-data-collector');
@@ -101,17 +128,22 @@ export function useTradingChartData(forceSimulation: boolean) {
         console.error("Error fetching market data:", error);
         const fallbackData = generateTradingData();
         setData(fallbackData);
+        setErrorCount(prev => prev + 1);
+        setIsLoading(false);
         return fallbackData;
       }
       
       if (marketData) {
         console.log("Raw market data received:", marketData);
         setRawMarketData(marketData);
+        setErrorCount(0); // Reset error count on success
         
         try {
           const { data: validationResult, error: validationError } = await supabase.functions.invoke('market-data-validator', {
             body: { marketData, source: 'market-data-collector' }
           });
+          
+          setIsLoading(false);
           
           if (validationError) {
             console.error("Error validating market data:", validationError);
@@ -134,20 +166,24 @@ export function useTradingChartData(forceSimulation: boolean) {
           console.error("Exception in market data validation:", validationErr);
           const formattedData = formatMarketData(marketData);
           setData(formattedData);
+          setIsLoading(false);
           return formattedData;
         }
       }
       
+      setIsLoading(false);
       const fallbackData = generateTradingData();
       setData(fallbackData);
       return fallbackData;
     } catch (error) {
       console.error("Error in fetchMarketData:", error);
+      setErrorCount(prev => prev + 1);
       const fallbackData = generateTradingData();
       setData(fallbackData);
+      setIsLoading(false);
       return fallbackData;
     }
-  };
+  }, [apiStatus, data, forceSimulation, isLoading, lastFetchTime]);
 
   const checkApiStatus = useCallback(async () => {
     try {
@@ -167,11 +203,14 @@ export function useTradingChartData(forceSimulation: boolean) {
         setApiStatus('unavailable');
         setLastAPICheckTime(new Date());
         
-        toast({
-          title: "API Keys Missing",
-          description: "No API keys configured. Please set up API keys in settings or admin panel.",
-          variant: "destructive",
-        });
+        // Only show toast if this is the first check
+        if (!lastAPICheckTime) {
+          toast({
+            title: "API Keys Missing",
+            description: "No API keys configured. Please set up API keys in settings or admin panel.",
+            variant: "destructive",
+          });
+        }
         return;
       }
       
@@ -184,11 +223,14 @@ export function useTradingChartData(forceSimulation: boolean) {
         setApiStatus('unavailable');
         setLastAPICheckTime(new Date());
         
-        toast({
-          title: "API Connection Issue",
-          description: "We're having trouble connecting to our trading services. Some features may be limited. Try using Simulation Mode.",
-          variant: "destructive",
-        });
+        // Only show toast if this is the first check
+        if (!lastAPICheckTime) {
+          toast({
+            title: "API Connection Issue",
+            description: "We're having trouble connecting to our trading services. Some features may be limited. Try using Simulation Mode.",
+            variant: "destructive",
+          });
+        }
       } else {
         console.log("API is available:", data);
         setApiStatus('available');
@@ -201,13 +243,16 @@ export function useTradingChartData(forceSimulation: boolean) {
       setApiStatus('unavailable');
       setLastAPICheckTime(new Date());
       
-      toast({
-        title: "API Connection Failed",
-        description: "Unable to connect to trading services. Please try using Simulation Mode.",
-        variant: "destructive",
-      });
+      // Only show toast if this is the first check
+      if (!lastAPICheckTime) {
+        toast({
+          title: "API Connection Failed",
+          description: "Unable to connect to trading services. Please try using Simulation Mode.",
+          variant: "destructive",
+        });
+      }
     }
-  }, [forceSimulation, checkApiKeysAvailability, fetchMarketData]);
+  }, [forceSimulation, checkApiKeysAvailability, fetchMarketData, lastAPICheckTime]);
 
   const handleRetryConnection = async () => {
     toast({
@@ -271,22 +316,26 @@ export function useTradingChartData(forceSimulation: boolean) {
   // Initial API check
   useEffect(() => {
     checkApiStatus();
-    const intervalId = setInterval(checkApiStatus, 60000);
+    // Reduce frequency of API checks to prevent flooding
+    const intervalId = setInterval(checkApiStatus, 30000); // Check every 30 seconds instead of 60
     return () => clearInterval(intervalId);
   }, [forceSimulation, checkApiStatus]);
 
-  // Regular data update interval
+  // Regular data update interval - with error backoff
   useEffect(() => {
+    // If we have too many errors, increase the interval time
+    const updateInterval = errorCount > 5 ? 15000 : errorCount > 2 ? 10000 : 5000;
+    
     const dataInterval = setInterval(() => {
       if (forceSimulation) {
         setData(generateTradingData());
-      } else if (apiStatus === 'available') {
+      } else if (apiStatus === 'available' && !isLoading) {
         fetchMarketData();
       }
-    }, 5000);
+    }, updateInterval);
 
     return () => clearInterval(dataInterval);
-  }, [forceSimulation, apiStatus, fetchMarketData]);
+  }, [forceSimulation, apiStatus, fetchMarketData, errorCount, isLoading]);
 
   return {
     data,
@@ -295,6 +344,7 @@ export function useTradingChartData(forceSimulation: boolean) {
     lastAPICheckTime,
     rawMarketData,
     handleRetryConnection,
-    fetchMarketData
+    fetchMarketData,
+    isLoading
   };
 }

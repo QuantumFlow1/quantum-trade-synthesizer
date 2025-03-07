@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { useZoomControls } from "@/hooks/use-zoom-controls";
 import { PriceCards } from "./trading/PriceCards";
 import { ViewModeSelector, ViewModeType } from "./trading/ViewModeSelector";
@@ -10,12 +10,10 @@ import { useTradingChartData } from "@/hooks/use-trading-chart-data";
 import { useSimulationMode } from "@/hooks/use-simulation-mode";
 import { Button } from "./ui/button";
 import { BoxIcon } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
-const TradingChart = () => {
+const TradingChart = memo(() => {
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls(1);
   const [viewMode, setViewMode] = useState<ViewModeType>("standard");
-  const navigate = useNavigate();
   
   const {
     data,
@@ -23,7 +21,8 @@ const TradingChart = () => {
     apiKeysAvailable,
     lastAPICheckTime,
     rawMarketData,
-    handleRetryConnection
+    handleRetryConnection,
+    isLoading
   } = useTradingChartData(false);
   
   const { forceSimulation, toggleSimulationMode } = useSimulationMode(handleRetryConnection);
@@ -69,6 +68,7 @@ const TradingChart = () => {
           onSimulationToggle={toggleSimulationMode}
           isSimulationMode={forceSimulation}
           apiKeysAvailable={apiKeysAvailable}
+          isLoading={isLoading}
         />
       )}
       
@@ -84,10 +84,13 @@ const TradingChart = () => {
           onSimulationToggle={toggleSimulationMode}
           isSimulationMode={forceSimulation}
           apiKeysAvailable={apiKeysAvailable}
+          isLoading={isLoading}
         />
       )}
     </div>
   );
-};
+});
+
+TradingChart.displayName = "TradingChart";
 
 export default TradingChart;

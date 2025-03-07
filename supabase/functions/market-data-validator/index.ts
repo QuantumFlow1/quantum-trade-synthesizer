@@ -19,11 +19,28 @@ serve(async (req) => {
     const { marketData, source } = await req.json();
     console.log(`Validating market data from source: ${source}`);
     
-    if (!marketData || !Array.isArray(marketData)) {
+    if (!marketData) {
+      console.error("No market data received");
+      return new Response(
+        JSON.stringify({ 
+          error: "No market data received",
+          valid: false,
+          data: null
+        }),
+        { headers: corsHeaders }
+      );
+    }
+
+    // Check if marketData has a data property that is an array (usual format)
+    const dataToProcess = Array.isArray(marketData.data) ? marketData.data : 
+                         Array.isArray(marketData) ? marketData : 
+                         null;
+    
+    if (!dataToProcess) {
       console.error("Invalid market data format received:", marketData);
       return new Response(
         JSON.stringify({ 
-          error: "Invalid market data format. Expected an array.",
+          error: "Invalid market data format. Expected an array or object with data array.",
           valid: false,
           data: null
         }),
@@ -32,30 +49,41 @@ serve(async (req) => {
     }
     
     // Map the data to ensure it has the correct structure
-    const validatedData = marketData.map((item) => {
+    const validatedData = dataToProcess.map((item) => {
+      // Default values to ensure we have valid data
+      const price = typeof item.price === 'number' ? item.price : 
+                   typeof item.close === 'number' ? item.close : 1000;
+                   
       // Explicitly determine trend as "up" or "down" to satisfy TypeScript
       const trendValue: "up" | "down" = 
-        (item.change24h > 0 || item.close > item.open) ? "up" : "down";
+        (item.change24h > 0 || (item.close && item.open && item.close > item.open)) ? "up" : "down";
 
       // Set default values for required TradingDataPoint properties
       const result: TradingDataPoint = {
         name: item.name || item.symbol || "Unknown",
-        open: typeof item.open === 'number' ? item.open : (item.price || 0),
-        close: typeof item.close === 'number' ? item.close : (item.price || 0),
-        high: typeof item.high === 'number' ? item.high : (item.high24h || item.price * 1.02 || 0),
-        low: typeof item.low === 'number' ? item.low : (item.low24h || item.price * 0.98 || 0),
-        volume: typeof item.volume === 'number' ? item.volume : (item.volume24h || 0),
+        open: typeof item.open === 'number' ? item.open : (price * 0.99),
+        close: typeof item.close === 'number' ? item.close : price,
+        high: typeof item.high === 'number' ? item.high : 
+             (item.high24h || price * 1.02),
+        low: typeof item.low === 'number' ? item.low : 
+            (item.low24h || price * 0.98),
+        volume: typeof item.volume === 'number' ? item.volume : 
+              (item.volume24h || 1000000),
         // Calculate derived metrics if not provided
-        sma: item.sma || ((item.open + item.close) / 2) || 0,
-        ema: item.ema || (item.sma * 0.8 + Math.random() * 20 - 10) || 0,
-        rsi: item.rsi || Math.random() * 100 || 50,
-        macd: item.macd || Math.random() * 20 - 10 || 0,
-        macdSignal: item.macdSignal || (item.macd + (Math.random() * 4 - 2)) || 0,
-        macdHistogram: item.macdHistogram || (item.macd - item.macdSignal) || 0,
-        bollingerUpper: item.bollingerUpper || (item.high + Math.random() * 300) || 0,
-        bollingerLower: item.bollingerLower || (item.low - Math.random() * 300) || 0,
-        stochastic: item.stochastic || Math.random() * 100 || 50,
-        adx: item.adx || Math.random() * 100 || 50,
+        sma: item.sma || ((typeof item.open === 'number' ? item.open : price) + 
+                         (typeof item.close === 'number' ? item.close : price)) / 2,
+        ema: item.ema || (item.sma ? item.sma * 0.8 + Math.random() * 20 - 10 : price),
+        rsi: item.rsi || 30 + Math.random() * 40,
+        macd: item.macd || Math.random() * 20 - 10,
+        macdSignal: item.macdSignal || (item.macd ? item.macd + (Math.random() * 4 - 2) : 0),
+        macdHistogram: item.macdHistogram || (item.macd && item.macdSignal ? 
+                                            item.macd - item.macdSignal : 0),
+        bollingerUpper: item.bollingerUpper || (typeof item.high === 'number' ? 
+                                              item.high + Math.random() * 300 : price * 1.05),
+        bollingerLower: item.bollingerLower || (typeof item.low === 'number' ? 
+                                              item.low - Math.random() * 300 : price * 0.95),
+        stochastic: item.stochastic || Math.random() * 100,
+        adx: item.adx || Math.random() * 100,
         // Use the explicitly determined trend value
         trend: trendValue
       };

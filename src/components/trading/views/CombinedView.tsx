@@ -18,6 +18,7 @@ interface CombinedViewProps {
   onSimulationToggle: (enabled: boolean) => void;
   isSimulationMode: boolean;
   apiKeysAvailable: boolean;
+  isLoading?: boolean;
 }
 
 export const CombinedView: FC<CombinedViewProps> = ({
@@ -30,7 +31,8 @@ export const CombinedView: FC<CombinedViewProps> = ({
   rawMarketData,
   onSimulationToggle,
   isSimulationMode,
-  apiKeysAvailable
+  apiKeysAvailable,
+  isLoading = false
 }) => {
   const handleOpenVisualization = () => {
     // Navigate to visualization page
@@ -48,6 +50,7 @@ export const CombinedView: FC<CombinedViewProps> = ({
           handleZoomIn={handleZoomIn}
           handleZoomOut={handleZoomOut}
           handleResetZoom={handleResetZoom}
+          isLoading={isLoading}
         />
         
         <div className="flex flex-col space-y-4">
@@ -72,6 +75,7 @@ export const CombinedView: FC<CombinedViewProps> = ({
             onSimulationToggle={onSimulationToggle}
             isSimulationMode={isSimulationMode}
             apiKeysAvailable={apiKeysAvailable}
+            isLoading={isLoading}
           />
         </div>
       </div>
