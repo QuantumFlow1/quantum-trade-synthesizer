@@ -14,6 +14,7 @@ export const VisualizationPage = () => {
   const [activeTab, setActiveTab] = useState<string>("3d-view");
   const [hasViewError, setHasViewError] = useState(false);
   const [viewLoaded, setViewLoaded] = useState(false);
+  const [renderKey, setRenderKey] = useState(0);
   
   // Use our extracted hook for API and data fetching with simulation mode
   const {
@@ -57,6 +58,8 @@ export const VisualizationPage = () => {
   const handleRefresh = () => {
     console.log("Manual refresh requested");
     refreshData();
+    setRenderKey(prev => prev + 1);
+    
     toast({
       title: "Refreshing Visualization",
       description: "Fetching new market data for the 3D view..."
@@ -104,12 +107,14 @@ export const VisualizationPage = () => {
         <Tabs value={activeTab} className="w-full">
           <TabsContent value="3d-view" className="mt-0">
             {hasData ? (
-              <Market3DView 
-                data={data}
-                isSimulationMode={forceSimulation}
-                onError={handleViewError}
-                onLoaded={handleViewLoaded}
-              />
+              <div key={renderKey}>
+                <Market3DView 
+                  data={data}
+                  isSimulationMode={forceSimulation}
+                  onError={handleViewError}
+                  onLoaded={handleViewLoaded}
+                />
+              </div>
             ) : (
               <Card className="relative backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 h-[500px] flex justify-center items-center">
                 <div className="flex flex-col items-center">
@@ -120,7 +125,7 @@ export const VisualizationPage = () => {
             )}
           </TabsContent>
           
-          <TabsContent value="about" className="mt-6 space-y-4">
+          <TabsContent value="about" className="mt-0">
             <Alert variant="default" className="bg-secondary/20">
               <AlertDescription className="space-y-4">
                 <p>The 3D Market Visualization provides an immersive way to visualize market data. This dedicated view offers better performance by running independently from the trading interface.</p>

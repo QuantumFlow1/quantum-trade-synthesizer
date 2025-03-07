@@ -15,24 +15,39 @@ export function useWebGLState() {
       try {
         const canvas = document.createElement('canvas');
         
-        // Fix type error: explicitly type gl as WebGL2RenderingContext | WebGLRenderingContext | null
-        let gl: WebGL2RenderingContext | WebGLRenderingContext | null = canvas.getContext('webgl2', { 
-          failIfMajorPerformanceCaveat: false,
-          powerPreference: 'high-performance'
-        });
+        // Try WebGL2 first with fallbacks to WebGL1
+        let gl: WebGL2RenderingContext | WebGLRenderingContext | null = null;
         
-        // Fall back to WebGL1
-        if (!gl) {
-          gl = canvas.getContext('webgl', { 
+        try {
+          // Try WebGL2
+          gl = canvas.getContext('webgl2', { 
             failIfMajorPerformanceCaveat: false,
-            powerPreference: 'high-performance'
-          }) as WebGLRenderingContext | null; 
+            powerPreference: 'default'
+          });
+        } catch (e) {
+          console.warn("WebGL2 context creation failed, will try WebGL1", e);
+        }
+        
+        // Fall back to WebGL1 if WebGL2 is not available
+        if (!gl) {
+          try {
+            gl = canvas.getContext('webgl', { 
+              failIfMajorPerformanceCaveat: false,
+              powerPreference: 'default'
+            }) as WebGLRenderingContext | null;
+          } catch (e) {
+            console.warn("WebGL1 context creation failed", e);
+          }
           
           if (!gl) {
-            gl = canvas.getContext('experimental-webgl', { 
-              failIfMajorPerformanceCaveat: false,
-              powerPreference: 'high-performance'
-            }) as WebGLRenderingContext | null;
+            try {
+              gl = canvas.getContext('experimental-webgl', { 
+                failIfMajorPerformanceCaveat: false,
+                powerPreference: 'default'
+              }) as WebGLRenderingContext | null;
+            } catch (e) {
+              console.warn("Experimental WebGL context creation failed", e);
+            }
           }
         }
         
@@ -84,7 +99,7 @@ export function useWebGLState() {
   useEffect(() => {
     let timer = setTimeout(() => {
       setIsLoading(false);
-    }, 800);
+    }, 1000); // Increased delay for better stability
     
     return () => clearTimeout(timer);
   }, []);
@@ -139,10 +154,22 @@ export function useWebGLState() {
     // Force a new WebGL context
     try {
       const canvas = document.createElement('canvas');
-      // Fix type error by explicitly typing gl as WebGL2RenderingContext | WebGLRenderingContext | null
-      const gl: WebGL2RenderingContext | WebGLRenderingContext | null = 
-                 canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) || 
-                 canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
+      let gl: WebGL2RenderingContext | WebGLRenderingContext | null = null;
+      
+      // Try each type of context to see if any work
+      try {
+        gl = canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false });
+      } catch (e) {
+        console.warn("WebGL2 retry failed:", e);
+      }
+      
+      if (!gl) {
+        try {
+          gl = canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
+        } catch (e) {
+          console.warn("WebGL retry failed:", e);
+        }
+      }
                  
       if (gl) {
         setWebGLAvailable(true);
@@ -157,7 +184,7 @@ export function useWebGLState() {
     }
     
     // Reset loading state after a delay
-    setTimeout(() => setIsLoading(false), 1000);
+    setTimeout(() => setIsLoading(false), 1200);
   }, []);
   
   return {

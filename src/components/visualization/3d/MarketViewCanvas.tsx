@@ -6,6 +6,7 @@ import { TradingDataPoint } from "@/utils/tradingData";
 import { Suspense, useEffect, useState, useRef } from "react";
 import { ThemeBasedLighting } from "./ThemeBasedLighting";
 import { GroundPlane } from "./GroundPlane";
+import { OrbitControls } from "@react-three/drei";
 
 interface MarketViewCanvasProps {
   theme: ColorTheme;
@@ -32,6 +33,7 @@ export const MarketViewCanvas = ({
   const [rendererReady, setRendererReady] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const mountedRef = useRef(true);
   
   // Debug log to track component lifecycle
   useEffect(() => {
@@ -41,6 +43,7 @@ export const MarketViewCanvas = ({
     
     return () => {
       console.log("MarketViewCanvas unmounting");
+      mountedRef.current = false;
     };
   }, [webGLAvailable, hasError, contextLost, isLoading, data]);
   
@@ -48,20 +51,26 @@ export const MarketViewCanvas = ({
   useEffect(() => {
     if (hasError || contextLost) {
       console.log("Resetting canvas initialization due to error or context loss");
-      setCanvasInitialized(false);
-      setRendererReady(false);
+      if (mountedRef.current) {
+        setCanvasInitialized(false);
+        setRendererReady(false);
+      }
     }
   }, [hasError, contextLost]);
   
   // Force a remount of the Canvas when webGLAvailable changes
   useEffect(() => {
     if (webGLAvailable) {
-      setCanvasInitialized(false);
+      if (mountedRef.current) {
+        setCanvasInitialized(false);
+      }
       
       // Small delay to ensure clean remount
       const timer = setTimeout(() => {
-        setCanvasInitialized(true);
-      }, 100);
+        if (mountedRef.current) {
+          setCanvasInitialized(true);
+        }
+      }, 300); // Increased delay for better stability
       
       return () => clearTimeout(timer);
     }
@@ -89,38 +98,43 @@ export const MarketViewCanvas = ({
     
     // Configure renderer for better performance and stability
     if (state && state.gl) {
-      // Set clear color based on theme
-      state.gl.setClearColor(theme === 'dark' ? '#0a0a14' : '#f0f4f8', 1);
-      
-      // Set pixel ratio (limiting to 1.5 for performance)
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
-      state.gl.setPixelRatio(pixelRatio);
-      
-      // Store reference to the canvas
-      if (state.gl.domElement) {
-        canvasRef.current = state.gl.domElement;
-      }
-      
-      // Configure additional WebGL parameters for stability
       try {
-        // Enable depth testing for proper 3D rendering
-        state.gl.enable(state.gl.DEPTH_TEST);
-        // Set depth function to less than or equal
-        state.gl.depthFunc(state.gl.LEQUAL);
-        // Enable alpha blending
-        state.gl.enable(state.gl.BLEND);
-        state.gl.blendFunc(state.gl.SRC_ALPHA, state.gl.ONE_MINUS_SRC_ALPHA);
+        // Set clear color based on theme
+        state.gl.setClearColor(theme === 'dark' ? '#0a0a14' : '#f0f4f8', 1);
+        
+        // Set pixel ratio (limiting to 1.5 for performance)
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+        state.gl.setPixelRatio(pixelRatio);
+        
+        // Store reference to the canvas
+        if (state.gl.domElement) {
+          canvasRef.current = state.gl.domElement;
+        }
+        
+        // Configure additional WebGL parameters for stability
+        if (state.gl.getContext) {
+          // Only try to enable features if webgl context is accessible via getContext
+          state.gl.enable(state.gl.DEPTH_TEST);
+          state.gl.depthFunc(state.gl.LEQUAL);
+          state.gl.enable(state.gl.BLEND);
+          state.gl.blendFunc(state.gl.SRC_ALPHA, state.gl.ONE_MINUS_SRC_ALPHA);
+        }
       } catch (e) {
         console.error("Error configuring WebGL context:", e);
+        // Don't let this crash the component - we'll handle gracefully
       }
     }
     
-    setCanvasInitialized(true);
-    
-    // Allow a brief moment for initialization before rendering content
-    setTimeout(() => {
-      setRendererReady(true);
-    }, 150);
+    if (mountedRef.current) {
+      setCanvasInitialized(true);
+      
+      // Allow a brief moment for initialization before rendering content
+      setTimeout(() => {
+        if (mountedRef.current) {
+          setRendererReady(true);
+        }
+      }, 200);
+    }
   };
   
   // Determine optimization level based on loading state
@@ -139,12 +153,16 @@ export const MarketViewCanvas = ({
       <Canvas
         onCreated={(state) => {
           // Register WebGL context event listeners
-          if (state && state.gl && state.gl.domElement) {
-            const canvas = state.gl.domElement;
-            canvas.addEventListener('webglcontextlost', handleContextLost, false);
-            canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+          try {
+            if (state && state.gl && state.gl.domElement) {
+              const canvas = state.gl.domElement;
+              canvas.addEventListener('webglcontextlost', handleContextLost, false);
+              canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+            }
+            handleCreated(state);
+          } catch (err) {
+            console.error("Error during canvas creation:", err);
           }
-          handleCreated(state);
         }}
         camera={{ position: [0, 5, 15], fov: 50, near: 0.1, far: 1000 }}
         shadows={false} // Disable shadows for better performance
@@ -156,13 +174,21 @@ export const MarketViewCanvas = ({
           depth: true, // Enable depth buffer
           stencil: false, // Disable stencil buffer (not needed)
           preserveDrawingBuffer: true,
-          powerPreference: 'high-performance',
+          powerPreference: 'default', // Changed from high-performance for better compatibility
           failIfMajorPerformanceCaveat: false
         }}
       >
         <Suspense fallback={null}>
           <ThemeBasedLighting optimizationLevel={optimizationLevel} />
           <GroundPlane theme={theme} optimizationLevel={optimizationLevel} />
+          <OrbitControls 
+            enableZoom={true} 
+            enablePan={true} 
+            rotateSpeed={0.5}
+            zoomSpeed={0.7}
+            minDistance={5}
+            maxDistance={30}
+          />
           {rendererReady && data.length > 0 && (
             <Scene data={data} optimizationLevel={optimizationLevel} />
           )}

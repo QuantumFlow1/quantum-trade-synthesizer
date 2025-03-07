@@ -31,6 +31,7 @@ export const Market3DView = ({
   const [renderingStarted, setRenderingStarted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
   const initialRenderAttemptedRef = useRef(false);
+  const mountedRef = useRef(true);
   
   // Use the WebGL state hook to manage loading and error states
   const {
@@ -47,7 +48,9 @@ export const Market3DView = ({
   useEffect(() => {
     if (visualizationData.length > 0) {
       console.log("Visualization data ready:", visualizationData.length, "points");
-      setDataReady(true);
+      if (mountedRef.current) {
+        setDataReady(true);
+      }
     } else {
       console.log("Waiting for visualization data...");
     }
@@ -55,12 +58,14 @@ export const Market3DView = ({
   
   // Start rendering with a slight delay to avoid blocking main thread
   useEffect(() => {
-    if (dataReady && !initialRenderAttemptedRef.current) {
+    if (dataReady && !initialRenderAttemptedRef.current && mountedRef.current) {
       initialRenderAttemptedRef.current = true;
       const timer = setTimeout(() => {
-        console.log("Starting 3D rendering");
-        setRenderingStarted(true);
-      }, 200);
+        if (mountedRef.current) {
+          console.log("Starting 3D rendering");
+          setRenderingStarted(true);
+        }
+      }, 300); // Increased delay for better stability
       
       return () => clearTimeout(timer);
     }
@@ -82,24 +87,35 @@ export const Market3DView = ({
     }
   }, [isLoading, hasError, webGLAvailable, contextLost, renderingStarted, onLoaded]);
   
+  // Component unmount cleanup
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  
   // Handle WebGL context restoration
   const handleWebGLRestore = () => {
     console.log("Attempting to restore WebGL context");
     handleContextRestored();
     
     // Reset rendering state to force fresh start
-    setRenderingStarted(false);
-    initialRenderAttemptedRef.current = false;
+    if (mountedRef.current) {
+      setRenderingStarted(false);
+      initialRenderAttemptedRef.current = false;
     
-    // Restart rendering after a brief delay
-    setTimeout(() => {
-      setRenderingStarted(true);
-    }, 300);
+      // Restart rendering after a brief delay
+      setTimeout(() => {
+        if (mountedRef.current) {
+          setRenderingStarted(true);
+        }
+      }, 500);
     
-    toast({
-      title: "3D View Restarted",
-      description: "Visualization has been refreshed.",
-    });
+      toast({
+        title: "3D View Restarted",
+        description: "Visualization has been refreshed.",
+      });
+    }
   };
   
   // Determine which error state to show
@@ -159,7 +175,7 @@ export const Market3DView = ({
       )}
       
       {/* 3D Canvas */}
-      {renderingStarted && (
+      {renderingStarted && !hasError && !contextLost && webGLAvailable && (
         <MarketViewCanvas 
           theme={theme}
           webGLAvailable={webGLAvailable}
