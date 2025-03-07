@@ -6,6 +6,7 @@ import {
   TabsContent,
   useTradingChartState 
 } from "./chart-content";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TradingChartContentProps {
   scale: number;
@@ -31,8 +32,13 @@ export const TradingChartContent = ({
     chartType,
     handleChartTypeChange,
     showReplayMode,
-    handleToggleReplayMode
+    handleToggleReplayMode,
+    isDataReady
   } = useTradingChartState();
+
+  if (!isDataReady && !isLoading) {
+    isLoading = true; // Force loading state if data is not ready
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -52,15 +58,21 @@ export const TradingChartContent = ({
             handleResetZoom={handleResetZoom}
           />
 
-          <TabsContent 
-            data={data}
-            chartType={chartType}
-            scale={scale}
-            indicator={indicator}
-            setIndicator={setIndicator}
-            showReplayMode={showReplayMode}
-            isLoading={isLoading}
-          />
+          {isLoading ? (
+            <div className="space-y-4 mt-4">
+              <Skeleton className="h-[400px] w-full" />
+            </div>
+          ) : (
+            <TabsContent 
+              data={data}
+              chartType={chartType}
+              scale={scale}
+              indicator={indicator}
+              setIndicator={setIndicator}
+              showReplayMode={showReplayMode}
+              isLoading={isLoading}
+            />
+          )}
         </Tabs>
       </div>
     </div>
