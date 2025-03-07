@@ -108,7 +108,8 @@ export const SceneContainer = ({
           processedData={displayData}
           maxVolume={maxVolume}
           theme={theme}
-          optimizationLevel={optimizationLevel}
+          // Convert optimization level to the format needed by VolumeVisualization
+          optimizationLevel={optimizationLevel === 'extreme' ? 'aggressive' : optimizationLevel}
         />
       )}
     </>
