@@ -1,6 +1,7 @@
+
 import { FC, useState, useEffect } from "react";
 import { Market3DView } from "@/components/visualization/Market3DView";
-import { TradingOrderSection } from "@/components/trading/TradingOrderSection";
+import { TradingOrderSection } from "@/components/trading";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { ApiStatus } from "@/hooks/use-trading-chart-data";
 import { LoadingSpinner } from "@/components/visualization/3d/LoadingSpinner";

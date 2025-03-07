@@ -1,7 +1,7 @@
 
 import { FC } from "react";
 import { TradingChartContent } from "@/components/trading/TradingChartContent";
-import { TradingOrderSection } from "@/components/trading/TradingOrderSection";
+import { TradingOrderSection } from "@/components/trading";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { ApiStatus } from "@/hooks/use-trading-chart-data";
 import { Button } from "@/components/ui/button";
