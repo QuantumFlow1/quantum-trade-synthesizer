@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
-import agentConnectionService, { AgentConnectionStatus } from '@/services/agentConnectionService';
+import agentConnectionService, { AgentConnectionStatus } from '@/services/agent-connection';
 
 /**
  * Hook to interact with the agent connection service
