@@ -65,12 +65,12 @@ export const MarketViewCanvas = ({
         setCanvasInitialized(false);
       }
       
-      // Small delay to ensure clean remount
+      // Reduced delay for faster initialization
       const timer = setTimeout(() => {
         if (mountedRef.current) {
           setCanvasInitialized(true);
         }
-      }, 300); // Increased delay for better stability
+      }, 100); // Reduced from 300ms to 100ms
       
       return () => clearTimeout(timer);
     }
@@ -128,12 +128,12 @@ export const MarketViewCanvas = ({
     if (mountedRef.current) {
       setCanvasInitialized(true);
       
-      // Allow a brief moment for initialization before rendering content
+      // Reduced delay for faster rendering of content
       setTimeout(() => {
         if (mountedRef.current) {
           setRendererReady(true);
         }
-      }, 200);
+      }, 50); // Reduced from 200ms to 50ms
     }
   };
   
@@ -151,6 +151,7 @@ export const MarketViewCanvas = ({
       style={{ background: theme === 'dark' ? darkBackground : lightBackground }}
     >
       <Canvas
+        key={`canvas-${canvasInitialized}-${theme}`} // Add key to force proper re-renders
         onCreated={(state) => {
           // Register WebGL context event listeners
           try {

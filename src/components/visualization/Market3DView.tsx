@@ -60,12 +60,13 @@ export const Market3DView = ({
   useEffect(() => {
     if (dataReady && !initialRenderAttemptedRef.current && mountedRef.current) {
       initialRenderAttemptedRef.current = true;
+      // Reduced delay for faster startup
       const timer = setTimeout(() => {
         if (mountedRef.current) {
           console.log("Starting 3D rendering");
           setRenderingStarted(true);
         }
-      }, 300); // Increased delay for better stability
+      }, 100); // Reduced from 300ms to 100ms for faster initialization
       
       return () => clearTimeout(timer);
     }
@@ -109,7 +110,7 @@ export const Market3DView = ({
         if (mountedRef.current) {
           setRenderingStarted(true);
         }
-      }, 500);
+      }, 200); // Reduced from 500ms to 200ms for faster recovery
     
       toast({
         title: "3D View Restarted",

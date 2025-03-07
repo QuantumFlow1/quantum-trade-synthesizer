@@ -95,11 +95,11 @@ export function useWebGLState() {
     };
   }, []);
   
-  // Loading state management
+  // Loading state management - reduced delay for faster loading
   useEffect(() => {
     let timer = setTimeout(() => {
       setIsLoading(false);
-    }, 1000); // Increased delay for better stability
+    }, 500); // Reduced from 1000ms to 500ms
     
     return () => clearTimeout(timer);
   }, []);
@@ -183,8 +183,8 @@ export function useWebGLState() {
       setWebGLAvailable(false);
     }
     
-    // Reset loading state after a delay
-    setTimeout(() => setIsLoading(false), 1200);
+    // Reset loading state after a delay - reduced for faster recovery
+    setTimeout(() => setIsLoading(false), 600); // Reduced from 1200ms to 600ms
   }, []);
   
   return {

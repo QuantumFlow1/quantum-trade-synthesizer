@@ -27,17 +27,20 @@ export const Scene = ({ data, optimizationLevel = 'normal' }: SceneProps) => {
   const marketSentiment = useMarketSentiment(processedData);
   const environmentPreset = useMarketEnvironment(marketSentiment, theme);
   
-  // When in aggressive optimization mode, limit the number of elements rendered
-  const optimizedData = optimizationLevel === 'aggressive' 
-    ? processedData.filter((_, index) => index % 2 === 0) // Only render every other data point
-    : processedData;
+  // Always limit the data points to improve performance
+  // This significantly improves loading and rendering speed
+  const displayData = processedData.filter((_, index) => 
+    optimizationLevel === 'aggressive' 
+      ? index % 3 === 0  // Show only 1/3 of data points in aggressive mode
+      : index % 2 === 0  // Show only 1/2 of data points in normal mode
+  );
   
   return (
     <>
       <BaseSceneLighting 
         theme={theme} 
         hoveredIndex={hoveredIndex} 
-        processedData={optimizedData}
+        processedData={displayData}
         optimizationLevel={optimizationLevel}
       />
       
@@ -48,7 +51,7 @@ export const Scene = ({ data, optimizationLevel = 'normal' }: SceneProps) => {
       />
       
       <PriceBarVisualization 
-        processedData={optimizedData}
+        processedData={displayData}
         maxPrice={maxPrice}
         minPrice={minPrice}
         theme={theme}
@@ -57,7 +60,7 @@ export const Scene = ({ data, optimizationLevel = 'normal' }: SceneProps) => {
       />
       
       <VolumeVisualization 
-        processedData={optimizedData}
+        processedData={displayData}
         maxVolume={maxVolume}
         theme={theme}
         optimizationLevel={optimizationLevel}
