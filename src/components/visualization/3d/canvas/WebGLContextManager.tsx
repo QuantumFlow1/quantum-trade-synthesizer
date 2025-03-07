@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect } from "react";
 
 interface WebGLContextManagerProps {
   onContextLost: () => void;
@@ -18,8 +18,9 @@ export const WebGLContextManager = ({
     onContextLost();
   }, [onContextLost]);
   
-  const handleContextRestored = useCallback(() => {
+  const handleContextRestored = useCallback((event: Event) => {
     console.log("WebGL context restored event triggered");
+    event.preventDefault(); // Prevent default behavior
     onContextRestored();
   }, [onContextRestored]);
   
@@ -27,12 +28,13 @@ export const WebGLContextManager = ({
     const canvas = canvasRef.current;
     
     if (canvas) {
-      canvas.addEventListener('webglcontextlost', handleContextLost, false);
-      canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+      // Add event listeners with properly typed event handlers
+      canvas.addEventListener('webglcontextlost', handleContextLost as EventListener);
+      canvas.addEventListener('webglcontextrestored', handleContextRestored as EventListener);
       
       return () => {
-        canvas.removeEventListener('webglcontextlost', handleContextLost);
-        canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+        canvas.removeEventListener('webglcontextlost', handleContextLost as EventListener);
+        canvas.removeEventListener('webglcontextrestored', handleContextRestored as EventListener);
       };
     }
   }, [canvasRef, handleContextLost, handleContextRestored]);

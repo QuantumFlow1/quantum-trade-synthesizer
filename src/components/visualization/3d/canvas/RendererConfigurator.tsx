@@ -33,10 +33,9 @@ export const RendererConfigurator = ({
         }
         
         // Configure additional WebGL parameters for stability
-        // Access the WebGL context correctly
         const glContext = gl.getContext();
         if (glContext) {
-          // Use the WebGL context directly to set parameters
+          // Get the raw WebGL context to set parameters
           glContext.enable(glContext.DEPTH_TEST);
           glContext.depthFunc(glContext.LEQUAL);
           glContext.enable(glContext.BLEND);
@@ -46,7 +45,7 @@ export const RendererConfigurator = ({
         configuredRef.current = true;
         console.log("3D Canvas initialized successfully");
         
-        // Notify parent that renderer is ready
+        // Notify parent that renderer is ready after a short delay
         setTimeout(() => {
           onRendererReady();
         }, 50);

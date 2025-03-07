@@ -13,5 +13,6 @@ interface SceneProps {
 }
 
 export const Scene = (props: SceneProps) => {
+  // Pass props directly to container with no additional processing
   return <SceneContainer {...props} />;
 };

@@ -57,23 +57,21 @@ export const MarketViewCanvas = ({
     }
   }, [hasError, contextLost]);
   
-  // Force a remount of the Canvas when webGLAvailable changes
+  // Create a new canvas when needed
   useEffect(() => {
-    if (webGLAvailable) {
+    if (webGLAvailable && !contextLost && !hasError) {
       if (mountedRef.current) {
-        setCanvasInitialized(false);
+        // Delayed initialization reduces race conditions
+        const timer = setTimeout(() => {
+          if (mountedRef.current) {
+            setCanvasInitialized(true);
+          }
+        }, 100);
+        
+        return () => clearTimeout(timer);
       }
-      
-      // Reduced delay for faster initialization
-      const timer = setTimeout(() => {
-        if (mountedRef.current) {
-          setCanvasInitialized(true);
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
     }
-  }, [webGLAvailable]);
+  }, [webGLAvailable, contextLost, hasError]);
 
   // Handle canvas ready event
   const handleCanvasReady = (canvas: HTMLCanvasElement) => {
@@ -96,8 +94,11 @@ export const MarketViewCanvas = ({
   return (
     <CanvasContainer theme={theme} ref={containerRef}>
       <Canvas
-        key={`canvas-${canvasInitialized}-${theme}`} // Add key to force proper re-renders
-        onCreated={() => setCanvasInitialized(true)}
+        key={`canvas-${theme}-${Date.now()}`} // Ensure fresh canvas creation
+        onCreated={() => {
+          console.log("Canvas created successfully");
+          setCanvasInitialized(true);
+        }}
         camera={{ position: [0, 5, 15], fov: 50, near: 0.1, far: 1000 }}
         shadows={false} // Disable shadows for better performance
         dpr={[1, 1.5]} // Limit pixel ratio for performance
