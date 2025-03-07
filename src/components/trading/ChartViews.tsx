@@ -14,6 +14,7 @@ interface ChartViewsProps {
   showExtendedData?: boolean;
   secondaryIndicator?: string;
   showReplayMode?: boolean;
+  isLoading?: boolean; // Added isLoading prop
 }
 
 export const ChartViews = ({ 
@@ -24,7 +25,8 @@ export const ChartViews = ({
   showDrawingTools = false,
   showExtendedData = false,
   secondaryIndicator,
-  showReplayMode = false
+  showReplayMode = false,
+  isLoading = false // Added default value
 }: ChartViewsProps) => {
   if (view === "price") {
     return (

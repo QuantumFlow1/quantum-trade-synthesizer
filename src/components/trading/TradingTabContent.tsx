@@ -12,6 +12,7 @@ interface TradingTabContentProps {
   indicator: "sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx";
   setIndicator: (indicator: "sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx") => void;
   showReplayMode: boolean;
+  isLoading?: boolean; // Added isLoading prop
 }
 
 export const TradingTabContent: FC<TradingTabContentProps> = ({
@@ -21,7 +22,8 @@ export const TradingTabContent: FC<TradingTabContentProps> = ({
   scale,
   indicator,
   setIndicator,
-  showReplayMode
+  showReplayMode,
+  isLoading = false // Added with default value
 }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
 
