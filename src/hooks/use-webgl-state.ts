@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 
 export function useWebGLState() {
@@ -8,16 +8,19 @@ export function useWebGLState() {
   const [webGLAvailable, setWebGLAvailable] = useState(true);
   const [contextLost, setContextLost] = useState(false);
   const [restoreAttempts, setRestoreAttempts] = useState(0);
+  const initialCheckDone = useRef(false);
   
-  // Check for WebGL availability - optimized for faster checks
+  // Check for WebGL availability - one-time fast check
   useEffect(() => {
+    if (initialCheckDone.current) return;
+    
     const checkWebGLSupport = () => {
       try {
         const canvas = document.createElement('canvas');
         
-        // Try WebGL2 first with fallbacks to WebGL1
-        let gl = canvas.getContext('webgl2') || 
-                canvas.getContext('webgl') || 
+        // Try WebGL2 first with fallback to WebGL1
+        let gl = canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) || 
+                canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false }) || 
                 canvas.getContext('experimental-webgl');
         
         if (gl) {
@@ -29,35 +32,25 @@ export function useWebGLState() {
           setWebGLAvailable(false);
           setHasError(true);
         }
+        
+        initialCheckDone.current = true;
       } catch (e) {
         console.error("Error checking WebGL support:", e);
         setWebGLAvailable(false);
         setHasError(true);
+        initialCheckDone.current = true;
       }
     };
     
-    // Check WebGL support on mount
+    // Check WebGL support immediately
     checkWebGLSupport();
-    
-    // Re-check when tab becomes visible
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkWebGLSupport();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
   }, []);
   
-  // Loading state management - significantly reduced delay for faster loading
+  // Loading state management - significantly reduced delay for ultra-fast loading
   useEffect(() => {
     let timer = setTimeout(() => {
       setIsLoading(false);
-    }, 250); // Reduced from 500ms to 250ms
+    }, 150); // Reduced from 250ms to 150ms
     
     return () => clearTimeout(timer);
   }, []);
@@ -71,7 +64,7 @@ export function useWebGLState() {
     // Show toast to user
     toast({
       title: "3D Visualization Issue",
-      description: "WebGL context was lost. Try refreshing the page.",
+      description: "WebGL context was lost. Trying to recover automatically...",
       variant: "destructive",
     });
     
@@ -79,9 +72,9 @@ export function useWebGLState() {
     const newAttempts = restoreAttempts + 1;
     setRestoreAttempts(newAttempts);
     
-    // Auto-retry with increasing delays
-    if (newAttempts < 2) {
-      const backoffTime = Math.min(1000 * Math.pow(1.5, newAttempts), 2000);
+    // Auto-retry with fast recovery for first attempt
+    if (newAttempts < 3) {
+      const backoffTime = newAttempts === 1 ? 200 : Math.min(1000 * Math.pow(1.5, newAttempts - 1), 2000);
       setTimeout(() => {
         handleRetry();
       }, backoffTime);
@@ -95,12 +88,14 @@ export function useWebGLState() {
     setHasError(false);
     setRestoreAttempts(0);
     
-    // Notify user
-    toast({
-      title: "3D View Restored",
-      description: "Visualization has been successfully restored.",
-    });
-  }, []);
+    // Notify user only if there were multiple attempts
+    if (restoreAttempts > 1) {
+      toast({
+        title: "3D View Restored",
+        description: "Visualization has been successfully restored.",
+      });
+    }
+  }, [restoreAttempts]);
   
   // Manual retry function for user-initiated recovery
   const handleRetry = useCallback(() => {
@@ -110,7 +105,7 @@ export function useWebGLState() {
     setRestoreAttempts(0);
     
     // Reset loading state after a minimal delay
-    setTimeout(() => setIsLoading(false), 300); // Reduced from 600ms to 300ms
+    setTimeout(() => setIsLoading(false), 200); // Reduced from 300ms to 200ms
   }, []);
   
   return {
