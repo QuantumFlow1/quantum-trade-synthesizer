@@ -1,6 +1,6 @@
 
 import { supabase } from "@/lib/supabase";
-import { logApiCall } from "@/utils/apiLogger";
+import { logApiCall, logApiCallLocal } from "@/utils/apiLogger";
 
 /**
  * Service to handle agent connections separately from other trading functionality
@@ -11,6 +11,7 @@ export interface AgentConnectionStatus {
   activeAgents: number;
   isVerifying: boolean;
   error?: string | null;
+  retryCount?: number;
 }
 
 // Initial connection status
@@ -19,13 +20,17 @@ const initialStatus: AgentConnectionStatus = {
   lastChecked: null,
   activeAgents: 0,
   isVerifying: false,
-  error: null
+  error: null,
+  retryCount: 0
 };
 
 class AgentConnectionService {
   private status: AgentConnectionStatus = initialStatus;
   private listeners: ((status: AgentConnectionStatus) => void)[] = [];
   private connectionCheckInterval: number | null = null;
+  private maxRetryCount = 3;
+  private retryDelayMs = 5000;
+  private retryTimeoutId: number | null = null;
 
   constructor() {
     // Initialize with a connection check
@@ -85,6 +90,34 @@ class AgentConnectionService {
       this.connectionCheckInterval = null;
       console.log("Stopped periodic agent connection checking");
     }
+    
+    // Also clear any retry timeout
+    if (this.retryTimeoutId !== null) {
+      clearTimeout(this.retryTimeoutId);
+      this.retryTimeoutId = null;
+    }
+  }
+
+  /**
+   * Schedule a retry after a delay
+   */
+  private scheduleRetry(): void {
+    // Only schedule if we haven't exceeded max retries
+    if (this.status.retryCount !== undefined && this.status.retryCount < this.maxRetryCount) {
+      console.log(`Scheduling agent connection retry (${this.status.retryCount + 1}/${this.maxRetryCount}) in ${this.retryDelayMs}ms`);
+      
+      // Clear any existing retry timeout
+      if (this.retryTimeoutId !== null) {
+        clearTimeout(this.retryTimeoutId);
+      }
+      
+      // Schedule new retry
+      this.retryTimeoutId = window.setTimeout(() => {
+        this.checkConnection();
+      }, this.retryDelayMs);
+    } else {
+      console.log("Max retry count reached, not scheduling more retries");
+    }
   }
 
   /**
@@ -104,7 +137,7 @@ class AgentConnectionService {
       };
       this.notifyListeners();
       
-      // Log attempt - changed from "pending" to "success"
+      // First log the attempt
       await logApiCall('agent-network', 'AgentConnectionService', 'success');
       
       // Check connection to agent network through the Supabase function
@@ -129,7 +162,8 @@ class AgentConnectionService {
         activeAgents,
         lastChecked: new Date(),
         isVerifying: false,
-        error: null
+        error: null,
+        retryCount: 0 // Reset retry count on success
       };
       
       // Log success or failure
@@ -149,21 +183,44 @@ class AgentConnectionService {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error("Agent connection error:", error);
       
+      // Increment retry count
+      const retryCount = (this.status.retryCount || 0) + 1;
+      
       // Update status
       this.status = {
         isConnected: false,
         lastChecked: new Date(),
         activeAgents: 0,
         isVerifying: false,
-        error: errorMessage
+        error: errorMessage,
+        retryCount
       };
       
       // Log error
-      await logApiCall('agent-network', 'AgentConnectionService', 'error', errorMessage);
+      await logApiCallLocal('agent-network', 'AgentConnectionService', 'error', errorMessage);
       
       this.notifyListeners();
+      
+      // Schedule a retry if we haven't exceeded max retries
+      if (retryCount < this.maxRetryCount) {
+        this.scheduleRetry();
+      }
+      
       return false;
     }
+  }
+  
+  /**
+   * Force a connection check and reset retry counter
+   */
+  async forceCheckConnection(): Promise<boolean> {
+    // Reset retry count
+    this.status = {
+      ...this.status,
+      retryCount: 0
+    };
+    
+    return this.checkConnection();
   }
   
   /**

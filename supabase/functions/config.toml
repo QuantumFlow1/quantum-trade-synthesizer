@@ -8,3 +8,27 @@ GROK3_API_KEY = "CHANGEME"
 [[functions]]
 name = "agent-network-coordinator"
 verify_jwt = false
+
+[[functions]]
+name = "log-api-call"
+verify_jwt = false
+
+[[functions]]
+name = "market-data-collector"
+verify_jwt = false
+
+[[functions]]
+name = "market-data-validator"
+verify_jwt = false
+
+[[functions]]
+name = "grok3-response"
+verify_jwt = false
+
+[[functions]]
+name = "grok3-ping"
+verify_jwt = false
+
+[[functions]]
+name = "generate-trading-advice"
+verify_jwt = false
