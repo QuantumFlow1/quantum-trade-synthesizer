@@ -36,9 +36,8 @@ export const TradingChartContent = ({
     isDataReady
   } = useTradingChartState();
 
-  if (!isDataReady && !isLoading) {
-    isLoading = true; // Force loading state if data is not ready
-  }
+  // Force loading state if data is not ready
+  const shouldShowLoading = isLoading || !isDataReady;
 
   return (
     <div className="flex flex-col h-full">
@@ -58,7 +57,7 @@ export const TradingChartContent = ({
             handleResetZoom={handleResetZoom}
           />
 
-          {isLoading ? (
+          {shouldShowLoading ? (
             <div className="space-y-4 mt-4">
               <Skeleton className="h-[400px] w-full" />
             </div>
