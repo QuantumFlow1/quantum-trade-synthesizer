@@ -3,6 +3,7 @@ import { usePositions } from "@/hooks/use-positions";
 import { useSimulatedPositions } from "@/hooks/use-simulated-positions";
 import { useAgentConnection } from "@/hooks/use-agent-connection";
 import { AIKeyConfigSheet } from "@/components/dashboard/advice/AIKeyConfigSheet";
+import { CollaborativeInsightsPanel } from "../CollaborativeInsightsPanel";
 import { TradeOrderForm } from "../TradeOrderForm";
 import TransactionList from "@/components/TransactionList";
 
@@ -67,6 +68,11 @@ export const TradingOrderSection = ({
         isOpen={isKeySheetOpen}
         onOpenChange={setIsKeySheetOpen}
         onSave={handleApiKeySave}
+      />
+      
+      <CollaborativeInsightsPanel 
+        currentData={marketData}
+        isSimulationMode={localIsSimulationMode}
       />
       
       <TradeOrderForm 
