@@ -54,14 +54,14 @@ export function useTradingChartData(forceSimulation: boolean) {
     return checkAdminKeys();
   }, []);
 
-  const formatMarketData = (apiData: any[]): TradingDataPoint[] => {
-    if (!apiData || !Array.isArray(apiData)) {
+  const formatMarketData = (apiData: any): TradingDataPoint[] => {
+    if (!apiData || !Array.isArray(apiData?.data)) {
       console.error("Invalid market data received:", apiData);
       return generateTradingData(); // Fallback to generated data
     }
     
     try {
-      const mainAsset = apiData[0] || {};
+      const mainAsset = apiData.data[0] || {};
       
       const formattedData = generateTradingData().map((item, index) => {
         const trendValue: "up" | "down" | "neutral" = 
@@ -108,30 +108,39 @@ export function useTradingChartData(forceSimulation: boolean) {
         console.log("Raw market data received:", marketData);
         setRawMarketData(marketData);
         
-        const { data: validationResult, error: validationError } = await supabase.functions.invoke('market-data-validator', {
-          body: { marketData, source: 'market-data-collector' }
-        });
-        
-        if (validationError) {
-          console.error("Error validating market data:", validationError);
-          const formattedData = formatMarketData(marketData);
-          setData(formattedData);
-          return formattedData;
-        }
-        
-        if (validationResult && validationResult.valid && validationResult.data) {
-          console.log("Using validated market data");
-          setData(validationResult.data);
-          return validationResult.data;
-        } else {
-          console.warn("Validation service returned invalid data, falling back to local formatting");
+        try {
+          const { data: validationResult, error: validationError } = await supabase.functions.invoke('market-data-validator', {
+            body: { marketData, source: 'market-data-collector' }
+          });
+          
+          if (validationError) {
+            console.error("Error validating market data:", validationError);
+            const formattedData = formatMarketData(marketData);
+            setData(formattedData);
+            return formattedData;
+          }
+          
+          if (validationResult && validationResult.valid && validationResult.data) {
+            console.log("Using validated market data");
+            setData(validationResult.data);
+            return validationResult.data;
+          } else {
+            console.warn("Validation service returned invalid data, falling back to local formatting");
+            const formattedData = formatMarketData(marketData);
+            setData(formattedData);
+            return formattedData;
+          }
+        } catch (validationErr) {
+          console.error("Exception in market data validation:", validationErr);
           const formattedData = formatMarketData(marketData);
           setData(formattedData);
           return formattedData;
         }
       }
       
-      return null;
+      const fallbackData = generateTradingData();
+      setData(fallbackData);
+      return fallbackData;
     } catch (error) {
       console.error("Error in fetchMarketData:", error);
       const fallbackData = generateTradingData();
