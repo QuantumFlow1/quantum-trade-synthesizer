@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 
 interface UseOrderSectionProps {
@@ -16,10 +16,19 @@ export const useOrderSection = ({
   const [localIsSimulationMode, setLocalIsSimulationMode] = useState(isSimulationMode);
   const [isKeySheetOpen, setIsKeySheetOpen] = useState(false);
   const prevSimModeRef = useRef(isSimulationMode);
+  const prevApiKeysRef = useRef(apiKeysAvailable);
+  const isProcessingToggleRef = useRef(false);
 
-  const handleSimulationToggle = (enabled: boolean) => {
+  const handleSimulationToggle = useCallback((enabled: boolean) => {
+    // Prevent rapid toggles
+    if (isProcessingToggleRef.current) return;
+    isProcessingToggleRef.current = true;
+    
     // Skip update if already in this mode
-    if (localIsSimulationMode === enabled) return;
+    if (localIsSimulationMode === enabled) {
+      isProcessingToggleRef.current = false;
+      return;
+    }
     
     setLocalIsSimulationMode(enabled);
     
@@ -34,9 +43,14 @@ export const useOrderSection = ({
         });
       }
     }
-  };
+    
+    // Reset processing flag after delay
+    setTimeout(() => {
+      isProcessingToggleRef.current = false;
+    }, 250);
+  }, [localIsSimulationMode, onSimulationToggle]);
   
-  const handleApiKeySave = () => {
+  const handleApiKeySave = useCallback(() => {
     toast({
       title: "API Keys Saved",
       description: "Your API keys have been saved successfully. Reconnecting to services...",
@@ -44,15 +58,19 @@ export const useOrderSection = ({
     });
     
     setIsKeySheetOpen(false);
-  };
+  }, []);
 
   useEffect(() => {
-    // Only update if the simulation mode actually changed
-    if (prevSimModeRef.current !== isSimulationMode) {
+    // Only update if the simulation mode or API keys status actually changed
+    if (
+      prevSimModeRef.current !== isSimulationMode || 
+      prevApiKeysRef.current !== apiKeysAvailable
+    ) {
       prevSimModeRef.current = isSimulationMode;
+      prevApiKeysRef.current = apiKeysAvailable;
       setLocalIsSimulationMode(isSimulationMode);
     }
-  }, [isSimulationMode]);
+  }, [isSimulationMode, apiKeysAvailable]);
 
   return {
     localIsSimulationMode,

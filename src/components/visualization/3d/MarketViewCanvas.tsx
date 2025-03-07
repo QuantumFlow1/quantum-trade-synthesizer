@@ -29,6 +29,7 @@ export const MarketViewCanvas = ({
   onWebGLContextRestored
 }: MarketViewCanvasProps) => {
   const [canvasInitialized, setCanvasInitialized] = useState(false);
+  const [rendererReady, setRendererReady] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   useEffect(() => {
@@ -36,6 +37,7 @@ export const MarketViewCanvas = ({
     if (hasError || contextLost) {
       console.log("Resetting canvas initialization due to error or context loss");
       setCanvasInitialized(false);
+      setRendererReady(false);
     }
   }, [hasError, contextLost]);
   
@@ -68,12 +70,22 @@ export const MarketViewCanvas = ({
   const handleCreated = (state: any) => {
     console.log("3D Canvas initialized successfully");
     
-    // Store reference to the actual canvas element
-    if (state && state.gl && state.gl.domElement) {
-      canvasRef.current = state.gl.domElement;
+    // Configure renderer for better performance
+    if (state && state.gl) {
+      state.gl.setClearColor(theme === 'dark' ? '#0a0a14' : '#f0f4f8');
+      state.gl.setPixelRatio(window.devicePixelRatio || 1);
+      // Store reference to the actual canvas element
+      if (state.gl.domElement) {
+        canvasRef.current = state.gl.domElement;
+      }
     }
     
     setCanvasInitialized(true);
+    
+    // Allow a brief moment for the renderer to initialize before rendering content
+    setTimeout(() => {
+      setRendererReady(true);
+    }, 100);
   };
   
   // Determine optimization level for the scene based on loading state
@@ -96,20 +108,23 @@ export const MarketViewCanvas = ({
         camera={{ position: [0, 5, 15], fov: 50 }}
         shadows={false} // Disable shadows for better performance
         dpr={[1, 1.5]} // Lower pixel ratio for better performance
-        frameloop={isLoading ? 'demand' : 'always'} // Only render when needed during loading
+        frameloop="always" // Always render to prevent black screen
         gl={{ 
           antialias: true,
           alpha: true,
           preserveDrawingBuffer: true,
           powerPreference: 'high-performance',
-          failIfMajorPerformanceCaveat: false // Don't fail on performance issues
+          failIfMajorPerformanceCaveat: false, // Don't fail on performance issues
+          // Ensure depth and stencil buffers are created
+          depth: true,
+          stencil: false
         }}
         style={{ background: theme === 'dark' ? darkBackground : lightBackground }}
       >
         <Suspense fallback={null}>
           <ThemeBasedLighting optimizationLevel={optimizationLevel} />
           <GroundPlane theme={theme} optimizationLevel={optimizationLevel} />
-          <Scene data={data} optimizationLevel={optimizationLevel} />
+          {rendererReady && <Scene data={data} optimizationLevel={optimizationLevel} />}
         </Suspense>
       </Canvas>
     </div>

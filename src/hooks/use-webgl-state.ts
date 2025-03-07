@@ -19,38 +19,31 @@ export function useWebGLState() {
         
         // Fall back to WebGL1 if WebGL2 is not available
         if (!gl) {
-          gl = canvas.getContext('webgl') as WebGLRenderingContext | null || 
-               canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
+          gl = canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false }) as WebGLRenderingContext | null || 
+               canvas.getContext('experimental-webgl', { failIfMajorPerformanceCaveat: false }) as WebGLRenderingContext | null;
         }
         
         if (gl) {
-          // Check for required extensions
+          // Check for required extensions (but don't fail if they're missing)
           const extensions = [
             'OES_texture_float',
             'OES_texture_float_linear',
             'OES_standard_derivatives'
           ];
           
-          const missingExtensions = extensions.filter(ext => !gl!.getExtension(ext));
-          
-          if (missingExtensions.length > 0) {
-            console.warn("Some WebGL extensions are missing:", missingExtensions);
-          }
-          
           // Basic rendering test
           try {
             gl.viewport(0, 0, canvas.width, canvas.height);
             gl.clearColor(0.0, 0.0, 0.0, 1.0);
             gl.clear(gl.COLOR_BUFFER_BIT);
+            
+            setWebGLAvailable(true);
+            setHasError(false);
           } catch (renderError) {
             console.error("WebGL rendering test failed:", renderError);
             setWebGLAvailable(false);
             setHasError(true);
-            return;
           }
-          
-          setWebGLAvailable(true);
-          setHasError(false);
         } else {
           console.error("WebGL is not available in this browser");
           setWebGLAvailable(false);
@@ -63,14 +56,28 @@ export function useWebGLState() {
       }
     };
     
+    // Run check on mount
     checkWebGLSupport();
+    
+    // Add listening for visibilitychange to re-check WebGL when tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkWebGLSupport();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
   
   // Loading state timer
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 2000);
+    }, 1000); // Reduce to 1 second for faster initial rendering
     
     return () => clearTimeout(timer);
   }, []);
@@ -102,7 +109,7 @@ export function useWebGLState() {
     console.log("WebGL context restored detected in hook");
     setContextLost(false);
     // Wait a moment before clearing the error state
-    setTimeout(() => setHasError(false), 800);
+    setTimeout(() => setHasError(false), 500);
   }, []);
   
   // Reset visualization state and retry rendering
@@ -115,9 +122,9 @@ export function useWebGLState() {
     // Force WebGL context check again
     try {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl2') || 
-                 canvas.getContext('webgl') || 
-                 canvas.getContext('experimental-webgl');
+      const gl = canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) || 
+                 canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false }) || 
+                 canvas.getContext('experimental-webgl', { failIfMajorPerformanceCaveat: false });
                  
       if (gl) {
         setWebGLAvailable(true);
@@ -129,8 +136,8 @@ export function useWebGLState() {
       setWebGLAvailable(false);
     }
     
-    // Reset loading state after a delay
-    setTimeout(() => setIsLoading(false), 2000);
+    // Reset loading state after a shorter delay
+    setTimeout(() => setIsLoading(false), 1000);
   }, []);
   
   return {

@@ -7,7 +7,7 @@ import {
   useTradingChartState 
 } from "./chart-content";
 import { Skeleton } from "@/components/ui/skeleton";
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 
 interface TradingChartContentProps {
   scale: number;
@@ -37,8 +37,30 @@ export const TradingChartContent = memo(({
     isDataReady
   } = useTradingChartState();
 
-  // Force loading state if data is not ready
-  const shouldShowLoading = isLoading || !isDataReady;
+  // Force loading state if data is not ready or data is empty
+  const isEmpty = !data || data.length === 0;
+  const shouldShowLoading = isLoading || !isDataReady || isEmpty;
+  
+  // Add a delay state to prevent flickering during rapid updates
+  const [showContent, setShowContent] = useState(!shouldShowLoading);
+  
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    if (shouldShowLoading) {
+      setShowContent(false);
+    } else {
+      timeoutId = setTimeout(() => {
+        setShowContent(true);
+      }, 150);
+    }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [shouldShowLoading]);
 
   return (
     <div className="flex flex-col h-full">
