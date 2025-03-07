@@ -65,49 +65,49 @@ export const VirtualEnvironment: React.FC = () => {
             Learn
           </TabsTrigger>
         </TabsList>
-      </Tabs>
       
-      <TabsContent value="explore" className="mt-0 h-full">
-        <Canvas
-          key={key}
-          shadows
-          camera={{ position: [0, 5, 14], fov: 50 }}
-          gl={{ 
-            antialias: true,
-            alpha: true,
-            preserveDrawingBuffer: true 
-          }}
-        >
-          <ThemeBasedLighting />
+        <TabsContent value="explore" className="mt-0 h-full">
+          <Canvas
+            key={key}
+            shadows
+            camera={{ position: [0, 5, 14], fov: 50 }}
+            gl={{ 
+              antialias: true,
+              alpha: true,
+              preserveDrawingBuffer: true 
+            }}
+          >
+            <ThemeBasedLighting />
+            
+            {/* Stars for dark theme only */}
+            {theme === 'dark' && (
+              <Stars radius={100} depth={50} count={1000} factor={4} fade speed={1} />
+            )}
+            
+            {/* Render the selected environment */}
+            {renderEnvironment()}
+            
+            <OrbitControls 
+              enableZoom={true} 
+              enablePan={true} 
+              rotateSpeed={0.5}
+              zoomSpeed={0.7}
+              minDistance={5}
+              maxDistance={30}
+            />
+            
+            <Environment preset={theme === "dark" ? "night" : "sunset"} />
+          </Canvas>
           
-          {/* Stars for dark theme only */}
-          {theme === 'dark' && (
-            <Stars radius={100} depth={50} count={1000} factor={4} fade speed={1} />
-          )}
-          
-          {/* Render the selected environment */}
-          {renderEnvironment()}
-          
-          <OrbitControls 
-            enableZoom={true} 
-            enablePan={true} 
-            rotateSpeed={0.5}
-            zoomSpeed={0.7}
-            minDistance={5}
-            maxDistance={30}
-          />
-          
-          <Environment preset={theme === "dark" ? "night" : "sunset"} />
-        </Canvas>
+          <div className="absolute bottom-2 left-2 text-xs text-white/50">
+            <span>Drag to rotate • Scroll to zoom • Select environment to change</span>
+          </div>
+        </TabsContent>
         
-        <div className="absolute bottom-2 left-2 text-xs text-white/50">
-          <span>Drag to rotate • Scroll to zoom • Select environment to change</span>
-        </div>
-      </TabsContent>
-      
-      <TabsContent value="learn" className="mt-0 h-full bg-black/80 backdrop-blur-lg overflow-y-auto p-6">
-        <EnvironmentLearningPath />
-      </TabsContent>
+        <TabsContent value="learn" className="mt-0 h-full bg-black/80 backdrop-blur-lg overflow-y-auto p-6">
+          <EnvironmentLearningPath />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

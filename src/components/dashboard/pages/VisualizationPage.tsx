@@ -101,57 +101,59 @@ export const VisualizationPage = () => {
           </div>
         </div>
         
-        <TabsContent value="3d-view" className="mt-0">
-          {hasData ? (
-            <Market3DView 
-              data={data}
-              isSimulationMode={forceSimulation}
-              onError={handleViewError}
-              onLoaded={handleViewLoaded}
-            />
-          ) : (
-            <Card className="relative backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 h-[500px] flex justify-center items-center">
-              <div className="flex flex-col items-center">
-                <div className="animate-spin h-8 w-8 rounded-full border-4 border-primary border-t-transparent mb-4"></div>
-                <p className="text-muted-foreground">Loading market data...</p>
-              </div>
-            </Card>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="about" className="mt-6 space-y-4">
-          <Alert variant="default" className="bg-secondary/20">
-            <AlertDescription className="space-y-4">
-              <p>The 3D Market Visualization provides an immersive way to visualize market data. This dedicated view offers better performance by running independently from the trading interface.</p>
-              
-              <h3 className="font-semibold text-lg mt-2">Features</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Real-time 3D rendering of market data</li>
-                <li>Interactive visualization you can rotate and zoom</li>
-                <li>Visual representation of price and volume data</li>
-                <li>Market sentiment indicators</li>
-                <li>Optimized performance with WebGL acceleration</li>
-              </ul>
-              
-              <h3 className="font-semibold text-lg mt-2">Tips</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>Click and drag to rotate the view</li>
-                <li>Scroll to zoom in and out</li>
-                <li>The visualization automatically updates as new market data arrives</li>
-                <li>If you experience performance issues, try the Refresh button</li>
-                <li>For best performance, close other browser tabs and applications</li>
-              </ul>
-              
-              <h3 className="font-semibold text-lg mt-2">Troubleshooting</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>If the view appears black or broken, click the Refresh button</li>
-                <li>Some browsers may need WebGL enabled in settings</li>
-                <li>Make sure your graphics drivers are up to date</li>
-                <li>Chrome and Firefox typically provide the best support for 3D visualization</li>
-              </ul>
-            </AlertDescription>
-          </Alert>
-        </TabsContent>
+        <Tabs value={activeTab} className="w-full">
+          <TabsContent value="3d-view" className="mt-0">
+            {hasData ? (
+              <Market3DView 
+                data={data}
+                isSimulationMode={forceSimulation}
+                onError={handleViewError}
+                onLoaded={handleViewLoaded}
+              />
+            ) : (
+              <Card className="relative backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 h-[500px] flex justify-center items-center">
+                <div className="flex flex-col items-center">
+                  <div className="animate-spin h-8 w-8 rounded-full border-4 border-primary border-t-transparent mb-4"></div>
+                  <p className="text-muted-foreground">Loading market data...</p>
+                </div>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="about" className="mt-6 space-y-4">
+            <Alert variant="default" className="bg-secondary/20">
+              <AlertDescription className="space-y-4">
+                <p>The 3D Market Visualization provides an immersive way to visualize market data. This dedicated view offers better performance by running independently from the trading interface.</p>
+                
+                <h3 className="font-semibold text-lg mt-2">Features</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Real-time 3D rendering of market data</li>
+                  <li>Interactive visualization you can rotate and zoom</li>
+                  <li>Visual representation of price and volume data</li>
+                  <li>Market sentiment indicators</li>
+                  <li>Optimized performance with WebGL acceleration</li>
+                </ul>
+                
+                <h3 className="font-semibold text-lg mt-2">Tips</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Click and drag to rotate the view</li>
+                  <li>Scroll to zoom in and out</li>
+                  <li>The visualization automatically updates as new market data arrives</li>
+                  <li>If you experience performance issues, try the Refresh button</li>
+                  <li>For best performance, close other browser tabs and applications</li>
+                </ul>
+                
+                <h3 className="font-semibold text-lg mt-2">Troubleshooting</h3>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>If the view appears black or broken, click the Refresh button</li>
+                  <li>Some browsers may need WebGL enabled in settings</li>
+                  <li>Make sure your graphics drivers are up to date</li>
+                  <li>Chrome and Firefox typically provide the best support for 3D visualization</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+          </TabsContent>
+        </Tabs>
       </Card>
     </div>
   );
