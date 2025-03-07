@@ -17,7 +17,7 @@ interface SceneProps {
   optimizationLevel?: 'normal' | 'aggressive';
 }
 
-export const Scene = ({ data, optimizationLevel = 'normal' }: SceneProps) => {
+export const Scene = ({ data, optimizationLevel = 'aggressive' }: SceneProps) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const theme = useThemeDetection();
   
@@ -27,13 +27,9 @@ export const Scene = ({ data, optimizationLevel = 'normal' }: SceneProps) => {
   const marketSentiment = useMarketSentiment(processedData);
   const environmentPreset = useMarketEnvironment(marketSentiment, theme);
   
-  // Always limit the data points to improve performance
+  // Further limit the data points to improve performance - always use aggressive
   // This significantly improves loading and rendering speed
-  const displayData = processedData.filter((_, index) => 
-    optimizationLevel === 'aggressive' 
-      ? index % 3 === 0  // Show only 1/3 of data points in aggressive mode
-      : index % 2 === 0  // Show only 1/2 of data points in normal mode
-  );
+  const displayData = processedData.filter((_, index) => index % 4 === 0); // Show only 1/4 of data points
   
   return (
     <>
@@ -41,13 +37,13 @@ export const Scene = ({ data, optimizationLevel = 'normal' }: SceneProps) => {
         theme={theme} 
         hoveredIndex={hoveredIndex} 
         processedData={displayData}
-        optimizationLevel={optimizationLevel}
+        optimizationLevel="aggressive"
       />
       
       <CoordinatesAndStars 
         theme={theme} 
         sentiment={marketSentiment} 
-        optimizationLevel={optimizationLevel}
+        optimizationLevel="aggressive"
       />
       
       <PriceBarVisualization 
@@ -56,20 +52,20 @@ export const Scene = ({ data, optimizationLevel = 'normal' }: SceneProps) => {
         minPrice={minPrice}
         theme={theme}
         onHoverChange={setHoveredIndex}
-        optimizationLevel={optimizationLevel}
+        optimizationLevel="aggressive"
       />
       
       <VolumeVisualization 
         processedData={displayData}
         maxVolume={maxVolume}
         theme={theme}
-        optimizationLevel={optimizationLevel}
+        optimizationLevel="aggressive"
       />
       
       <EnvironmentEffects 
         theme={theme} 
         environmentPreset={environmentPreset}
-        optimizationLevel={optimizationLevel}
+        optimizationLevel="aggressive"
       />
     </>
   );

@@ -9,63 +9,21 @@ export function useWebGLState() {
   const [contextLost, setContextLost] = useState(false);
   const [restoreAttempts, setRestoreAttempts] = useState(0);
   
-  // Check for WebGL availability
+  // Check for WebGL availability - optimized for faster checks
   useEffect(() => {
     const checkWebGLSupport = () => {
       try {
         const canvas = document.createElement('canvas');
         
         // Try WebGL2 first with fallbacks to WebGL1
-        let gl: WebGL2RenderingContext | WebGLRenderingContext | null = null;
-        
-        try {
-          // Try WebGL2
-          gl = canvas.getContext('webgl2', { 
-            failIfMajorPerformanceCaveat: false,
-            powerPreference: 'default'
-          });
-        } catch (e) {
-          console.warn("WebGL2 context creation failed, will try WebGL1", e);
-        }
-        
-        // Fall back to WebGL1 if WebGL2 is not available
-        if (!gl) {
-          try {
-            gl = canvas.getContext('webgl', { 
-              failIfMajorPerformanceCaveat: false,
-              powerPreference: 'default'
-            }) as WebGLRenderingContext | null;
-          } catch (e) {
-            console.warn("WebGL1 context creation failed", e);
-          }
-          
-          if (!gl) {
-            try {
-              gl = canvas.getContext('experimental-webgl', { 
-                failIfMajorPerformanceCaveat: false,
-                powerPreference: 'default'
-              }) as WebGLRenderingContext | null;
-            } catch (e) {
-              console.warn("Experimental WebGL context creation failed", e);
-            }
-          }
-        }
+        let gl = canvas.getContext('webgl2') || 
+                canvas.getContext('webgl') || 
+                canvas.getContext('experimental-webgl');
         
         if (gl) {
-          // Basic rendering test to ensure WebGL works
-          try {
-            gl.viewport(0, 0, canvas.width, canvas.height);
-            gl.clearColor(0.0, 0.0, 0.0, 1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            
-            console.log("WebGL is available and working properly");
-            setWebGLAvailable(true);
-            setHasError(false);
-          } catch (renderError) {
-            console.error("WebGL rendering test failed:", renderError);
-            setWebGLAvailable(false);
-            setHasError(true);
-          }
+          console.log("WebGL is available");
+          setWebGLAvailable(true);
+          setHasError(false);
         } else {
           console.error("WebGL is not available in this browser");
           setWebGLAvailable(false);
@@ -95,11 +53,11 @@ export function useWebGLState() {
     };
   }, []);
   
-  // Loading state management - reduced delay for faster loading
+  // Loading state management - significantly reduced delay for faster loading
   useEffect(() => {
     let timer = setTimeout(() => {
       setIsLoading(false);
-    }, 500); // Reduced from 1000ms to 500ms
+    }, 250); // Reduced from 500ms to 250ms
     
     return () => clearTimeout(timer);
   }, []);
@@ -113,7 +71,7 @@ export function useWebGLState() {
     // Show toast to user
     toast({
       title: "3D Visualization Issue",
-      description: "WebGL context was lost. Attempting to recover...",
+      description: "WebGL context was lost. Try refreshing the page.",
       variant: "destructive",
     });
     
@@ -122,8 +80,8 @@ export function useWebGLState() {
     setRestoreAttempts(newAttempts);
     
     // Auto-retry with increasing delays
-    if (newAttempts < 3) {
-      const backoffTime = Math.min(1000 * Math.pow(1.5, newAttempts), 5000);
+    if (newAttempts < 2) {
+      const backoffTime = Math.min(1000 * Math.pow(1.5, newAttempts), 2000);
       setTimeout(() => {
         handleRetry();
       }, backoffTime);
@@ -151,40 +109,8 @@ export function useWebGLState() {
     setIsLoading(true);
     setRestoreAttempts(0);
     
-    // Force a new WebGL context
-    try {
-      const canvas = document.createElement('canvas');
-      let gl: WebGL2RenderingContext | WebGLRenderingContext | null = null;
-      
-      // Try each type of context to see if any work
-      try {
-        gl = canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false });
-      } catch (e) {
-        console.warn("WebGL2 retry failed:", e);
-      }
-      
-      if (!gl) {
-        try {
-          gl = canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
-        } catch (e) {
-          console.warn("WebGL retry failed:", e);
-        }
-      }
-                 
-      if (gl) {
-        setWebGLAvailable(true);
-        console.log("WebGL retry succeeded");
-      } else {
-        setWebGLAvailable(false);
-        console.log("WebGL retry failed - not available");
-      }
-    } catch (e) {
-      console.error("WebGL retry check failed:", e);
-      setWebGLAvailable(false);
-    }
-    
-    // Reset loading state after a delay - reduced for faster recovery
-    setTimeout(() => setIsLoading(false), 600); // Reduced from 1200ms to 600ms
+    // Reset loading state after a minimal delay
+    setTimeout(() => setIsLoading(false), 300); // Reduced from 600ms to 300ms
   }, []);
   
   return {
