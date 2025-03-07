@@ -1,10 +1,11 @@
 
 import { FC } from "react";
 import { TradingChartContent } from "@/components/trading/TradingChartContent";
-import { Market3DView } from "@/components/visualization/Market3DView";
 import { TradingOrderSection } from "@/components/trading/TradingOrderSection";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { ApiStatus } from "@/hooks/use-trading-chart-data";
+import { Button } from "@/components/ui/button";
+import { Cube } from "lucide-react";
 
 interface CombinedViewProps {
   data: TradingDataPoint[];
@@ -31,6 +32,14 @@ export const CombinedView: FC<CombinedViewProps> = ({
   isSimulationMode,
   apiKeysAvailable
 }) => {
+  const handleOpenVisualization = () => {
+    // Navigate to visualization page
+    const dashboardNavHandler = (window as any).__dashboardNavigationHandler;
+    if (typeof dashboardNavHandler === 'function') {
+      dashboardNavHandler('visualization');
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 gap-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -41,10 +50,18 @@ export const CombinedView: FC<CombinedViewProps> = ({
           handleResetZoom={handleResetZoom}
         />
         
-        <Market3DView 
-          data={data}
-          isSimulationMode={isSimulationMode}
-        />
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center justify-center h-[500px] border border-dashed border-white/20 rounded-lg bg-secondary/5">
+            <div className="text-center p-6">
+              <h3 className="text-xl font-semibold mb-3">3D Visualization Available</h3>
+              <p className="mb-4 text-muted-foreground">The 3D visualization is now available as a separate page for better performance.</p>
+              <Button onClick={handleOpenVisualization} className="flex items-center gap-2">
+                <Cube className="h-4 w-4" />
+                Open 3D View
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

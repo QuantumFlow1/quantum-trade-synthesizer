@@ -22,8 +22,18 @@ const Index = () => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error'>('checking');
+  const [dashboardPage, setDashboardPage] = React.useState("overview");
   
   useOAuthRedirect();
+
+  // Expose dashboard navigation handler to window for cross-component communication
+  React.useEffect(() => {
+    (window as any).__dashboardNavigationHandler = setDashboardPage;
+    
+    return () => {
+      delete (window as any).__dashboardNavigationHandler;
+    };
+  }, []);
 
   // Check Supabase connection when component mounts
   React.useEffect(() => {
@@ -117,4 +127,3 @@ const Index = () => {
 };
 
 export default Index;
-

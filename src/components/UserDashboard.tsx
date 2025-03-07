@@ -18,6 +18,7 @@ import { RiskPage } from "./dashboard/pages/RiskPage";
 import { AIToolsPage } from "./dashboard/pages/AIToolsPage";
 import { SettingsPage } from "./dashboard/pages/SettingsPage";
 import { GamificationPage } from "./dashboard/pages/GamificationPage";
+import { VisualizationPage } from "./dashboard/pages/VisualizationPage";
 import { VirtualEnvironmentDemo } from "./visualization/VirtualEnvironmentDemo";
 
 const UserDashboard = () => {
@@ -91,6 +92,8 @@ const UserDashboard = () => {
         return <AIToolsPage apiStatus={apiStatus} showApiAccess={visibleWidgets.apiAccess} />;
       case "gamification":
         return <GamificationPage />;
+      case "visualization":
+        return <VisualizationPage />;
       case "settings":
         return <SettingsPage />;
       default:
