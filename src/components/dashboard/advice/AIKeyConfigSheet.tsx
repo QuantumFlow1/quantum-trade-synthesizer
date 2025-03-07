@@ -20,6 +20,7 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
   const [claudeKey, setClaudeKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [deepseekKey, setDeepseekKey] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   
   // Load saved API keys on component mount
   useEffect(() => {
@@ -45,62 +46,75 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
     setDeepseekKey(savedDeepseek);
   };
   
-  const saveApiKeys = () => {
-    // Store previous values to check what changed
-    const prevOpenAI = localStorage.getItem('openaiApiKey');
-    const prevClaude = localStorage.getItem('claudeApiKey');
-    const prevGemini = localStorage.getItem('geminiApiKey');
-    const prevDeepseek = localStorage.getItem('deepseekApiKey');
+  const saveApiKeys = async () => {
+    setIsSaving(true);
     
-    // Save new values
-    if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
-    if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
-    if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
-    if (deepseekKey.trim()) localStorage.setItem('deepseekApiKey', deepseekKey.trim());
-    
-    console.log('Saved API keys to localStorage:', {
-      openai: openaiKey ? 'present' : 'not set',
-      claude: claudeKey ? 'present' : 'not set',
-      gemini: geminiKey ? 'present' : 'not set',
-      deepseek: deepseekKey ? 'present' : 'not set'
-    });
-    
-    toast({
-      title: "API sleutels opgeslagen",
-      description: "Uw API sleutels zijn opgeslagen. Controleer opnieuw de verbinding.",
-    });
-    
-    onOpenChange(false);
-    onSave();
-    
-    // Dispatch custom events for other components
-    window.dispatchEvent(new Event('localStorage-changed'));
-    window.dispatchEvent(new Event('apikey-updated'));
-    
-    // For each API key that changed, dispatch a specific event
-    if (prevOpenAI !== openaiKey && openaiKey) {
-      window.dispatchEvent(new CustomEvent('connection-status-changed', {
-        detail: { provider: 'openai', status: 'connected' }
-      }));
-    }
-    
-    if (prevClaude !== claudeKey && claudeKey) {
-      window.dispatchEvent(new CustomEvent('connection-status-changed', {
-        detail: { provider: 'claude', status: 'connected' }
-      }));
-    }
-    
-    if (prevDeepseek !== deepseekKey && deepseekKey) {
-      window.dispatchEvent(new CustomEvent('connection-status-changed', {
-        detail: { provider: 'deepseek', status: 'connected' }
-      }));
-    }
-    
-    // Automatically trigger a connection check
-    if (onManualCheck) {
-      setTimeout(() => {
-        onManualCheck();
-      }, 500);
+    try {
+      // Store previous values to check what changed
+      const prevOpenAI = localStorage.getItem('openaiApiKey');
+      const prevClaude = localStorage.getItem('claudeApiKey');
+      const prevGemini = localStorage.getItem('geminiApiKey');
+      const prevDeepseek = localStorage.getItem('deepseekApiKey');
+      
+      // Save new values
+      if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
+      if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
+      if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
+      if (deepseekKey.trim()) localStorage.setItem('deepseekApiKey', deepseekKey.trim());
+      
+      console.log('Saved API keys to localStorage:', {
+        openai: openaiKey ? 'present' : 'not set',
+        claude: claudeKey ? 'present' : 'not set',
+        gemini: geminiKey ? 'present' : 'not set',
+        deepseek: deepseekKey ? 'present' : 'not set'
+      });
+      
+      toast({
+        title: "API sleutels opgeslagen",
+        description: "Uw API sleutels zijn opgeslagen. Controleer opnieuw de verbinding.",
+      });
+      
+      onOpenChange(false);
+      onSave();
+      
+      // Dispatch custom events for other components
+      window.dispatchEvent(new Event('localStorage-changed'));
+      window.dispatchEvent(new Event('apikey-updated'));
+      
+      // For each API key that changed, dispatch a specific event
+      if (prevOpenAI !== openaiKey && openaiKey) {
+        window.dispatchEvent(new CustomEvent('connection-status-changed', {
+          detail: { provider: 'openai', status: 'connected' }
+        }));
+      }
+      
+      if (prevClaude !== claudeKey && claudeKey) {
+        window.dispatchEvent(new CustomEvent('connection-status-changed', {
+          detail: { provider: 'claude', status: 'connected' }
+        }));
+      }
+      
+      if (prevDeepseek !== deepseekKey && deepseekKey) {
+        window.dispatchEvent(new CustomEvent('connection-status-changed', {
+          detail: { provider: 'deepseek', status: 'connected' }
+        }));
+      }
+      
+      // Automatically trigger a connection check
+      if (onManualCheck) {
+        setTimeout(() => {
+          onManualCheck();
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Error saving API keys:', error);
+      toast({
+        title: "Error",
+        description: "Er is een fout opgetreden bij het opslaan van de API sleutels.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -169,7 +183,20 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
             <p className="text-xs text-muted-foreground">Vereist voor DeepSeek modellen</p>
           </div>
           
-          <Button className="w-full mt-4" onClick={saveApiKeys}>Opslaan</Button>
+          <Button 
+            className="w-full mt-4" 
+            onClick={saveApiKeys}
+            disabled={isSaving}
+          >
+            {isSaving ? (
+              <>
+                <span className="animate-spin mr-2">⟳</span>
+                Opslaan...
+              </>
+            ) : (
+              "Opslaan"
+            )}
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

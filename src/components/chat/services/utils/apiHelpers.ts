@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -16,32 +15,10 @@ export async function fetchAdminApiKey(provider: 'openai' | 'deepseek' | 'claude
       return null;
     }
     
-    // Check if the user has admin access
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    
-    if (userError || !userData.user) {
-      console.log('User not authenticated or error fetching user data');
-      return null;
-    }
-    
-    // Query admin_api_keys table for the specified provider
-    const { data, error } = await supabase
-      .from('admin_api_keys')
-      .select('key_value')
-      .eq('provider', provider)
-      .maybeSingle();
-    
-    if (error) {
-      console.error(`Error fetching admin ${provider} API key:`, error);
-      return null;
-    }
-    
-    if (!data || !data.key_value) {
-      console.log(`No admin ${provider} API key found in database`);
-      return null;
-    }
-    
-    return data.key_value;
+    // For now, we'll skip admin API key checking - this should be implemented
+    // once the proper database table and columns are set up
+    console.log(`Admin API keys for ${provider} are not yet configured in the database`);
+    return null;
   } catch (error) {
     console.error(`Error in fetchAdminApiKey for ${provider}:`, error);
     return null;
@@ -95,8 +72,8 @@ export async function getApiKey(
     return null;
   }
   
-  // As a last resort, try to get the admin API key
-  return await fetchAdminApiKey(provider);
+  // Skip admin API key access for now
+  return null;
 }
 
 /**

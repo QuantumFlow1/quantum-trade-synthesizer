@@ -1,35 +1,22 @@
 
 import { supabase } from "@/lib/supabase";
-import { fetchAdminApiKey } from "@/components/chat/services/utils/apiHelpers";
 
 /**
- * Checks for API key availability in localStorage and admin keys
+ * Checks for API key availability in localStorage
  */
 export const checkAPIAvailability = async (): Promise<boolean> => {
   try {
     console.log("Checking API availability...");
     
-    // Check for API keys
-    const hasOpenAI = await fetchAdminApiKey('openai');
-    const hasClaude = await fetchAdminApiKey('claude');
-    const hasGemini = await fetchAdminApiKey('gemini');
-    const hasDeepseek = await fetchAdminApiKey('deepseek');
-    
+    // Check for API keys in localStorage
     const openaiKey = localStorage.getItem('openaiApiKey');
     const claudeKey = localStorage.getItem('claudeApiKey');
     const geminiKey = localStorage.getItem('geminiApiKey');
     const deepseekKey = localStorage.getItem('deepseekApiKey');
     
-    const hasAnyKey = !!(hasOpenAI || hasClaude || hasGemini || hasDeepseek || 
-                        openaiKey || claudeKey || geminiKey || deepseekKey);
+    const hasAnyKey = !!(openaiKey || claudeKey || geminiKey || deepseekKey);
     
     console.log("API key availability check:", {
-      adminKeys: {
-        openai: !!hasOpenAI,
-        claude: !!hasClaude,
-        gemini: !!hasGemini,
-        deepseek: !!hasDeepseek
-      },
       localStorageKeys: {
         openai: !!openaiKey,
         claude: !!claudeKey,
@@ -39,12 +26,7 @@ export const checkAPIAvailability = async (): Promise<boolean> => {
       hasAnyKey
     });
     
-    if (!hasAnyKey) {
-      console.log("No API keys available");
-      return false;
-    }
-    
-    return true;
+    return hasAnyKey;
   } catch (error) {
     console.error("Error checking API keys:", error);
     return false;
@@ -59,9 +41,9 @@ export const pingApiService = async (): Promise<{
   message?: string;
 }> => {
   try {
-    // Try to ping the Grok3 API
-    const { data, error } = await supabase.functions.invoke('grok3-ping', {
-      body: { isAvailabilityCheck: true }
+    // Try to ping the market data collector as a proxy for API health
+    const { data, error } = await supabase.functions.invoke('market-data-collector', {
+      body: { action: 'status_check' }
     });
     
     if (error) {
