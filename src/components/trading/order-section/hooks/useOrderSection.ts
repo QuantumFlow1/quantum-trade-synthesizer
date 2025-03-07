@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "@/hooks/use-toast";
 
 interface UseOrderSectionProps {
@@ -15,8 +15,12 @@ export const useOrderSection = ({
 }: UseOrderSectionProps) => {
   const [localIsSimulationMode, setLocalIsSimulationMode] = useState(isSimulationMode);
   const [isKeySheetOpen, setIsKeySheetOpen] = useState(false);
+  const prevSimModeRef = useRef(isSimulationMode);
 
   const handleSimulationToggle = (enabled: boolean) => {
+    // Skip update if already in this mode
+    if (localIsSimulationMode === enabled) return;
+    
     setLocalIsSimulationMode(enabled);
     
     if (onSimulationToggle) {
@@ -43,7 +47,11 @@ export const useOrderSection = ({
   };
 
   useEffect(() => {
-    setLocalIsSimulationMode(isSimulationMode);
+    // Only update if the simulation mode actually changed
+    if (prevSimModeRef.current !== isSimulationMode) {
+      prevSimModeRef.current = isSimulationMode;
+      setLocalIsSimulationMode(isSimulationMode);
+    }
   }, [isSimulationMode]);
 
   return {

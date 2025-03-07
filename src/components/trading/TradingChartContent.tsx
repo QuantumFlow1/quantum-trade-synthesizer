@@ -7,6 +7,7 @@ import {
   useTradingChartState 
 } from "./chart-content";
 import { Skeleton } from "@/components/ui/skeleton";
+import { memo } from "react";
 
 interface TradingChartContentProps {
   scale: number;
@@ -16,7 +17,7 @@ interface TradingChartContentProps {
   isLoading?: boolean;
 }
 
-export const TradingChartContent = ({
+export const TradingChartContent = memo(({
   scale,
   handleZoomIn,
   handleZoomOut,
@@ -76,4 +77,6 @@ export const TradingChartContent = ({
       </div>
     </div>
   );
-};
+});
+
+TradingChartContent.displayName = "TradingChartContent";

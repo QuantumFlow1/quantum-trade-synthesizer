@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AgentRecommendation, PortfolioDecision, TradeAction } from "@/types/agent";
 
@@ -9,12 +9,44 @@ export const usePortfolioManager = (currentData: any) => {
   const [portfolioDecision, setPortfolioDecision] = useState<PortfolioDecision | null>(null);
   const [loadingDecision, setLoadingDecision] = useState(false);
   const [riskScore, setRiskScore] = useState(35); // 0-100 scale
+  const lastDataRef = useRef<any>(null);
+  const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Effect to run analysis when currentData changes
+  // Effect to run analysis when currentData changes, but with debouncing
   useEffect(() => {
-    if (currentData) {
-      generateSimulatedRecommendations();
+    // Skip if data hasn't meaningfully changed
+    if (!currentData) return;
+    
+    // Compare current data to last data
+    const currentPrice = currentData?.price;
+    const lastPrice = lastDataRef.current?.price;
+    
+    // Skip updates if the price hasn't changed by more than 0.5%
+    if (lastPrice && currentPrice && 
+        Math.abs((currentPrice - lastPrice) / lastPrice) < 0.005 &&
+        agentRecommendations.length > 0) {
+      return;
     }
+    
+    // Update the last data ref
+    lastDataRef.current = currentData;
+    
+    // Clear any pending generation timeout
+    if (generationTimeoutRef.current) {
+      clearTimeout(generationTimeoutRef.current);
+    }
+    
+    // Set a timeout to generate recommendations
+    generationTimeoutRef.current = setTimeout(() => {
+      generateSimulatedRecommendations();
+    }, 300); // Debounce time
+    
+    // Clean up on unmount
+    return () => {
+      if (generationTimeoutRef.current) {
+        clearTimeout(generationTimeoutRef.current);
+      }
+    };
   }, [currentData]);
 
   // Make this a memoized function so it can be safely used in useEffect and as a callback
@@ -23,6 +55,9 @@ export const usePortfolioManager = (currentData: any) => {
       console.log("No current data available for portfolio analysis");
       return;
     }
+    
+    // If we're already loading, don't start a new load
+    if (loadingDecision) return;
     
     setLoadingDecision(true);
     const ticker = currentData?.symbol || "BTC";
@@ -89,7 +124,7 @@ export const usePortfolioManager = (currentData: any) => {
       setRiskScore(newDecision.riskScore);
       setLoadingDecision(false);
     }, 1500);
-  }, [currentData, toast]);
+  }, [currentData, loadingDecision, toast]);
 
   const calculateMajorityAction = (recommendations: AgentRecommendation[]): TradeAction => {
     const actionCounts: Record<TradeAction, number> = {

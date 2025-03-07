@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -16,28 +16,34 @@ interface SimulationToggleProps {
   onToggle: (enabled: boolean) => void;
 }
 
-export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) => {
+export const SimulationToggle = memo(({ enabled, onToggle }: SimulationToggleProps) => {
   const [isEnglish, setIsEnglish] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
   const guideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const prevEnabledRef = useRef(enabled);
   
   useEffect(() => {
     const lang = localStorage.getItem('preferredLanguage');
     setIsEnglish(lang !== 'nl');
     
-    const hasSeenGuide = localStorage.getItem('hasSeenSimulationGuide');
-    setShowGuide(!hasSeenGuide && enabled);
-    
-    if (enabled && !hasSeenGuide) {
-      localStorage.setItem('hasSeenSimulationGuide', 'true');
+    // Only run guide logic if enabled status has changed
+    if (prevEnabledRef.current !== enabled) {
+      prevEnabledRef.current = enabled;
       
-      // Clear any existing timer
-      if (guideTimerRef.current) {
-        clearTimeout(guideTimerRef.current);
+      const hasSeenGuide = localStorage.getItem('hasSeenSimulationGuide');
+      setShowGuide(!hasSeenGuide && enabled);
+      
+      if (enabled && !hasSeenGuide) {
+        localStorage.setItem('hasSeenSimulationGuide', 'true');
+        
+        // Clear any existing timer
+        if (guideTimerRef.current) {
+          clearTimeout(guideTimerRef.current);
+        }
+        
+        // Set new timer
+        guideTimerRef.current = setTimeout(() => setShowGuide(false), 10000);
       }
-      
-      // Set new timer
-      guideTimerRef.current = setTimeout(() => setShowGuide(false), 10000);
     }
     
     // Cleanup
@@ -49,6 +55,9 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
   }, [enabled]);
 
   const handleToggle = (value: boolean) => {
+    // Prevent toggle if the value is the same
+    if (value === enabled) return;
+    
     onToggle(value);
     if (value) {
       setShowGuide(true);
@@ -142,7 +151,7 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            transition={{ type: "spring", stiffness: 300 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
             className="absolute top-full left-0 right-0 mt-2 p-3 bg-gradient-to-br from-green-50 to-green-100/70 dark:from-green-900/20 dark:to-green-800/10 backdrop-blur-md border border-green-200 dark:border-green-800 rounded-md shadow-xl z-10"
           >
             <div className="flex items-start gap-3">
@@ -189,4 +198,6 @@ export const SimulationToggle = ({ enabled, onToggle }: SimulationToggleProps) =
       </AnimatePresence>
     </div>
   );
-};
+});
+
+SimulationToggle.displayName = "SimulationToggle";
