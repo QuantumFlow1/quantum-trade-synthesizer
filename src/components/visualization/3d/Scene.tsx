@@ -14,12 +14,12 @@ import { EnvironmentEffects } from "./scene/EnvironmentEffects";
 
 interface SceneProps {
   data: TradingDataPoint[];
-  optimizationLevel?: 'normal' | 'aggressive' | 'extreme';
+  optimizationLevel?: 'normal' | 'aggressive';
   showPrices?: boolean;
   showVolume?: boolean;
   showStars?: boolean;
   dataReductionFactor?: number;
-  environmentPreset?: string;
+  environmentPreset?: 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby';
 }
 
 export const Scene = ({ 
@@ -51,7 +51,6 @@ export const Scene = ({
     switch (optimizationLevel) {
       case 'normal': return 2; // Show 1/2 of data points
       case 'aggressive': return 4; // Show 1/4 of data points
-      case 'extreme': return 8; // Show 1/8 of data points
       default: return 4;
     }
   };
