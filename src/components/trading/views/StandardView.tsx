@@ -14,6 +14,7 @@ interface StandardViewProps {
   onSimulationToggle: (enabled: boolean) => void;
   isSimulationMode: boolean;
   apiKeysAvailable: boolean;
+  isLoading?: boolean; // Added isLoading prop
 }
 
 export const StandardView: FC<StandardViewProps> = ({
@@ -25,7 +26,8 @@ export const StandardView: FC<StandardViewProps> = ({
   rawMarketData,
   onSimulationToggle,
   isSimulationMode,
-  apiKeysAvailable
+  apiKeysAvailable,
+  isLoading = false // Set default value
 }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -35,6 +37,7 @@ export const StandardView: FC<StandardViewProps> = ({
           handleZoomIn={handleZoomIn}
           handleZoomOut={handleZoomOut}
           handleResetZoom={handleResetZoom}
+          isLoading={isLoading}
         />
       </div>
 
@@ -44,6 +47,7 @@ export const StandardView: FC<StandardViewProps> = ({
         onSimulationToggle={onSimulationToggle}
         isSimulationMode={isSimulationMode}
         apiKeysAvailable={apiKeysAvailable}
+        isLoading={isLoading}
       />
     </div>
   );
