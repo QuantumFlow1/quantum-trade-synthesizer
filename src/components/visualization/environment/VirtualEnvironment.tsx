@@ -17,12 +17,23 @@ import { ThemeBasedLighting } from '../3d/ThemeBasedLighting';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen, Globe } from 'lucide-react';
+import { WebGLContextManager } from '../3d/canvas/WebGLContextManager';
 
-export const VirtualEnvironment: React.FC = () => {
+export const VirtualEnvironment: React.FC<{ videoSrc?: string }> = ({ videoSrc }) => {
   const theme = useThemeDetection();
   const { selectedEnvironment } = useEnvironment();
   const [key, setKey] = React.useState(0);
   const [activeTab, setActiveTab] = useState<string>("explore");
+  const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  
+  // Handle WebGL context events
+  const handleContextLost = React.useCallback(() => {
+    console.error("VirtualEnvironment: WebGL context lost");
+  }, []);
+  
+  const handleContextRestored = React.useCallback(() => {
+    console.log("VirtualEnvironment: WebGL context restored");
+  }, []);
   
   // Remount canvas when environment changes
   React.useEffect(() => {
@@ -36,7 +47,7 @@ export const VirtualEnvironment: React.FC = () => {
       case 'office-tower':
         return <OfficeTowerEnvironment />;
       case 'financial-garden':
-        return <FinancialGardenEnvironment />;
+        return <FinancialGardenEnvironment videoSrc={videoSrc} />;
       case 'command-center':
         return <CommandCenterEnvironment />;
       case 'educational-campus':
@@ -76,7 +87,17 @@ export const VirtualEnvironment: React.FC = () => {
               alpha: true,
               preserveDrawingBuffer: true 
             }}
+            ref={(canvas) => {
+              canvasRef.current = canvas;
+            }}
           >
+            <WebGLContextManager 
+              canvasRef={canvasRef} 
+              onContextLost={handleContextLost} 
+              onContextRestored={handleContextRestored}
+              videoTextureEnabled={true}
+            />
+            
             <ThemeBasedLighting />
             
             {/* Stars for dark theme only */}

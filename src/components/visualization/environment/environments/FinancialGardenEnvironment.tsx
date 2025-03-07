@@ -1,10 +1,68 @@
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useThemeDetection } from '@/hooks/use-theme-detection';
+import { useVideoTexture } from '@react-three/drei';
 
-export const FinancialGardenEnvironment: React.FC = () => {
+interface FinancialGardenEnvironmentProps {
+  videoSrc?: string;
+}
+
+export const FinancialGardenEnvironment: React.FC<FinancialGardenEnvironmentProps> = ({ videoSrc }) => {
   const theme = useThemeDetection();
+  const videoTextureRef = useRef<THREE.VideoTexture | null>(null);
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  
+  // Video texture setup when video source is provided
+  const hasVideo = !!videoSrc;
+  
+  // Video texture creation
+  useEffect(() => {
+    if (!hasVideo) return;
+    
+    // Create video element
+    const video = document.createElement('video');
+    video.src = videoSrc;
+    video.crossOrigin = 'anonymous';
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.autoplay = true;
+    
+    // Store ref to video element
+    videoElementRef.current = video;
+    
+    // Create texture
+    const texture = new THREE.VideoTexture(video);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.format = THREE.RGBAFormat;
+    
+    // Store ref to texture
+    videoTextureRef.current = texture;
+    
+    // Register with context manager if available
+    if ((window as any).__registerVideoTexture) {
+      const unregister = (window as any).__registerVideoTexture(video);
+      
+      // Play the video
+      video.play().catch(e => console.warn("Could not autoplay video:", e));
+      
+      return () => {
+        if (unregister) unregister();
+        video.pause();
+        texture.dispose();
+      };
+    } else {
+      // Still try to play even if not registered
+      video.play().catch(e => console.warn("Could not autoplay video:", e));
+      
+      return () => {
+        video.pause();
+        texture.dispose();
+      };
+    }
+  }, [hasVideo, videoSrc]);
   
   return (
     <group>
@@ -26,6 +84,14 @@ export const FinancialGardenEnvironment: React.FC = () => {
           roughness={0.2}
         />
       </mesh>
+      
+      {/* Video display surface if video is provided */}
+      {hasVideo && videoTextureRef.current && (
+        <mesh position={[0, 5, -15]} scale={[16, 9, 1]}>
+          <planeGeometry />
+          <meshBasicMaterial map={videoTextureRef.current} side={THREE.DoubleSide} transparent opacity={0.85} />
+        </mesh>
+      )}
       
       {/* Data plants/trees */}
       {Array.from({ length: 12 }).map((_, i) => {

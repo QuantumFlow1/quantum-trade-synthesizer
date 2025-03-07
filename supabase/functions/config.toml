@@ -32,3 +32,8 @@ verify_jwt = false
 [[functions]]
 name = "generate-trading-advice"
 verify_jwt = false
+
+[[functions]]
+name = "process-video-texture"
+verify_jwt = false
+
