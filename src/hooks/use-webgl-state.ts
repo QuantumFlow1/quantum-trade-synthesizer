@@ -15,8 +15,8 @@ export function useWebGLState() {
       try {
         const canvas = document.createElement('canvas');
         
-        // Try WebGL2 first (more features, better performance)
-        let gl = canvas.getContext('webgl2', { 
+        // Fix type error: explicitly type gl as WebGL2RenderingContext | WebGLRenderingContext | null
+        let gl: WebGL2RenderingContext | WebGLRenderingContext | null = canvas.getContext('webgl2', { 
           failIfMajorPerformanceCaveat: false,
           powerPreference: 'high-performance'
         });
@@ -26,11 +26,14 @@ export function useWebGLState() {
           gl = canvas.getContext('webgl', { 
             failIfMajorPerformanceCaveat: false,
             powerPreference: 'high-performance'
-          }) || 
-          canvas.getContext('experimental-webgl', { 
-            failIfMajorPerformanceCaveat: false,
-            powerPreference: 'high-performance'
-          });
+          }) as WebGLRenderingContext | null; 
+          
+          if (!gl) {
+            gl = canvas.getContext('experimental-webgl', { 
+              failIfMajorPerformanceCaveat: false,
+              powerPreference: 'high-performance'
+            }) as WebGLRenderingContext | null;
+          }
         }
         
         if (gl) {
@@ -136,7 +139,9 @@ export function useWebGLState() {
     // Force a new WebGL context
     try {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) || 
+      // Fix type error by explicitly typing gl as WebGL2RenderingContext | WebGLRenderingContext | null
+      const gl: WebGL2RenderingContext | WebGLRenderingContext | null = 
+                 canvas.getContext('webgl2', { failIfMajorPerformanceCaveat: false }) || 
                  canvas.getContext('webgl', { failIfMajorPerformanceCaveat: false });
                  
       if (gl) {

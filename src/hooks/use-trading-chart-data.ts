@@ -116,6 +116,12 @@ export function useTradingChartData(forceSimulation: boolean) {
     return () => clearInterval(dataInterval);
   }, [forceSimulation, apiStatus, fetchMarketDataImpl, errorCount, isLoading]);
 
+  // Add refresh function to manually trigger data refresh
+  const refresh = useCallback(() => {
+    console.log("Manual refresh requested");
+    return fetchMarketDataImpl();
+  }, [fetchMarketDataImpl]);
+
   return {
     data,
     apiStatus,
@@ -124,6 +130,8 @@ export function useTradingChartData(forceSimulation: boolean) {
     rawMarketData,
     handleRetryConnection,
     fetchMarketData: fetchMarketDataImpl,
-    isLoading
+    isLoading,
+    refresh // Add refresh function to the return object
   };
 }
+
