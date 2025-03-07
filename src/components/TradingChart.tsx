@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useZoomControls } from "@/hooks/use-zoom-controls";
 import { PriceCards } from "./trading/PriceCards";
