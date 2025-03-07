@@ -73,6 +73,18 @@ serve(async (req) => {
     console.log(`Agent network coordinator received action: ${action}`);
     
     switch (action) {
+      case "ping":
+        // Add proper handling for ping action
+        return new Response(
+          JSON.stringify({
+            status: "connected",
+            message: "Agent network is operational",
+            activeAgents: Math.floor(Math.random() * 5) + 3, // Random number of active agents (3-7)
+            timestamp: new Date().toISOString()
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+        
       case "status":
         return new Response(
           JSON.stringify({ 

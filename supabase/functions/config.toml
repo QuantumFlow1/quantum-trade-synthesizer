@@ -1,36 +1,10 @@
 
-# Supabase Edge Functions configuration
 project_id = "tfmlretexydslgowlkid"
 
-[functions.log-api-call]
-verify_jwt = false
+[global.env]
+# These are environment variables shared across all functions
+GROK3_API_KEY = "CHANGEME"
 
-[functions.log-transaction-audit]
-verify_jwt = false
-
-[functions.submit-kyc]
-verify_jwt = false
-
-[functions.deepseek-response]
-verify_jwt = false
-
-[functions.deepseek-ping]
-verify_jwt = false
-
-[functions.openai-response]
-verify_jwt = false
-
-[functions.generate-advice]
-verify_jwt = false
-
-[functions.security-services]
-verify_jwt = false
-
-[functions.grok3-response]
-verify_jwt = false
-
-[functions.grok3-ping]
-verify_jwt = false
-
-[functions.offline-mode]
+[[functions]]
+name = "agent-network-coordinator"
 verify_jwt = false

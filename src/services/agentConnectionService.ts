@@ -119,7 +119,7 @@ class AgentConnectionService {
         throw error;
       }
       
-      // Parse response
+      // Parse response - Updated to match our new edge function response format
       const isConnected = data?.status === 'connected';
       const activeAgents = data?.activeAgents || 0;
       
