@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 interface WebGLContextManagerProps {
   onContextLost: () => void;
@@ -12,6 +12,8 @@ export const WebGLContextManager = ({
   onContextRestored,
   canvasRef
 }: WebGLContextManagerProps) => {
+  const eventsAttachedRef = useRef(false);
+  
   const handleContextLost = useCallback((event: Event) => {
     console.error("WebGL context lost event triggered");
     event.preventDefault(); // Standard practice to allow recovery
@@ -27,15 +29,25 @@ export const WebGLContextManager = ({
   useEffect(() => {
     const canvas = canvasRef.current;
     
-    if (canvas) {
-      // Add event listeners with properly typed event handlers
-      canvas.addEventListener('webglcontextlost', handleContextLost as EventListener);
-      canvas.addEventListener('webglcontextrestored', handleContextRestored as EventListener);
-      
-      return () => {
-        canvas.removeEventListener('webglcontextlost', handleContextLost as EventListener);
-        canvas.removeEventListener('webglcontextrestored', handleContextRestored as EventListener);
-      };
+    if (canvas && !eventsAttachedRef.current) {
+      try {
+        // Add event listeners with properly typed event handlers
+        canvas.addEventListener('webglcontextlost', handleContextLost as EventListener);
+        canvas.addEventListener('webglcontextrestored', handleContextRestored as EventListener);
+        eventsAttachedRef.current = true;
+        
+        return () => {
+          try {
+            canvas.removeEventListener('webglcontextlost', handleContextLost as EventListener);
+            canvas.removeEventListener('webglcontextrestored', handleContextRestored as EventListener);
+            eventsAttachedRef.current = false;
+          } catch (err) {
+            console.warn("Error removing WebGL event listeners:", err);
+          }
+        };
+      } catch (err) {
+        console.error("Failed to attach WebGL context event listeners:", err);
+      }
     }
   }, [canvasRef, handleContextLost, handleContextRestored]);
   

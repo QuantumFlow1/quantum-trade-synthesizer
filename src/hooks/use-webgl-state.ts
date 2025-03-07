@@ -7,8 +7,11 @@ export function useWebGLState() {
   const [hasError, setHasError] = useState(false);
   const [webGLAvailable, setWebGLAvailable] = useState(true);
   const [contextLost, setContextLost] = useState(false);
+  const [loadingTime, setLoadingTime] = useState(0);
   const [restoreAttempts, setRestoreAttempts] = useState(0);
   const initialCheckDone = useRef(false);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
   
   // Check for WebGL availability - one-time fast check
   useEffect(() => {
@@ -46,14 +49,32 @@ export function useWebGLState() {
     checkWebGLSupport();
   }, []);
   
-  // Loading state management - significantly reduced delay for ultra-fast loading
+  // Track loading time to detect potential hangs
   useEffect(() => {
-    let timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 150); // Reduced from 250ms to 150ms
-    
-    return () => clearTimeout(timer);
-  }, []);
+    if (isLoading) {
+      startTimeRef.current = Date.now();
+      
+      // Update loading time every second
+      loadingTimerRef.current = setInterval(() => {
+        const elapsedTime = Date.now() - startTimeRef.current;
+        setLoadingTime(elapsedTime);
+        
+        // Auto-retry after 10 seconds if still loading
+        if (elapsedTime > 10000 && webGLAvailable && !hasError && !contextLost) {
+          console.warn("WebGL initialization taking too long, auto-retrying...");
+          handleRetry();
+        }
+      }, 1000);
+      
+      return () => {
+        if (loadingTimerRef.current) {
+          clearInterval(loadingTimerRef.current);
+        }
+      };
+    } else if (loadingTimerRef.current) {
+      clearInterval(loadingTimerRef.current);
+    }
+  }, [isLoading, webGLAvailable, hasError, contextLost]);
   
   // Handle WebGL context loss
   const handleContextLost = useCallback(() => {
@@ -102,10 +123,12 @@ export function useWebGLState() {
     setContextLost(false);
     setHasError(false);
     setIsLoading(true);
-    setRestoreAttempts(0);
+    setRestoreAttempts(prev => prev + 1);
+    setLoadingTime(0);
+    startTimeRef.current = Date.now();
     
     // Reset loading state after a minimal delay
-    setTimeout(() => setIsLoading(false), 200); // Reduced from 300ms to 200ms
+    setTimeout(() => setIsLoading(false), 100);
   }, []);
   
   return {
@@ -113,8 +136,10 @@ export function useWebGLState() {
     hasError,
     webGLAvailable,
     contextLost,
+    loadingTime,
     handleContextLost,
     handleContextRestored,
-    handleRetry
+    handleRetry,
+    setIsLoading
   };
 }

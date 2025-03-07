@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useThemeDetection } from "@/hooks/use-theme-detection";
 import { useProcessedTradingData } from "@/hooks/use-processed-trading-data";
 import { usePriceVolumeRanges } from "@/hooks/use-price-volume-ranges";
@@ -66,17 +66,16 @@ export const SceneContainer = ({
     index % getReductionFactor() === 0
   );
   
-  // Mark scene as ready after a short delay to ensure everything is initialized
+  // Mark scene as ready immediately to avoid waiting
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setReady(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
+    setReady(true);
   }, []);
   
+  // Convert extreme optimization to aggressive for components that don't support extreme
+  const volumeOptimizationLevel = optimizationLevel === 'extreme' ? 'aggressive' : optimizationLevel;
+  
   return (
-    <>
+    <Suspense fallback={null}>
       <SceneLighting 
         theme={theme} 
         hoveredIndex={hoveredIndex} 
@@ -108,10 +107,9 @@ export const SceneContainer = ({
           processedData={displayData}
           maxVolume={maxVolume}
           theme={theme}
-          // Convert optimization level to the format needed by VolumeVisualization
-          optimizationLevel={optimizationLevel === 'extreme' ? 'aggressive' : optimizationLevel}
+          optimizationLevel={volumeOptimizationLevel}
         />
       )}
-    </>
+    </Suspense>
   );
 };

@@ -30,8 +30,10 @@ export const Market3DView = ({
   const theme = useThemeDetection();
   const [renderingStarted, setRenderingStarted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
+  const [renderKey, setRenderKey] = useState(0); // Used to force re-render
   const initialRenderAttemptedRef = useRef(false);
   const mountedRef = useRef(true);
+  const autoRetryTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Use the WebGL state hook to manage loading and error states
   const {
@@ -39,9 +41,11 @@ export const Market3DView = ({
     hasError,
     webGLAvailable,
     contextLost,
+    loadingTime,
     handleContextLost,
     handleContextRestored,
-    handleRetry
+    handleRetry,
+    setIsLoading
   } = useWebGLState();
   
   // Check if data is ready for rendering
@@ -60,17 +64,33 @@ export const Market3DView = ({
   useEffect(() => {
     if (dataReady && !initialRenderAttemptedRef.current && mountedRef.current) {
       initialRenderAttemptedRef.current = true;
-      // Reduced delay for faster startup
-      const timer = setTimeout(() => {
-        if (mountedRef.current) {
-          console.log("Starting 3D rendering");
-          setRenderingStarted(true);
-        }
-      }, 100); // Reduced from 300ms to 100ms for faster initialization
       
-      return () => clearTimeout(timer);
+      // Start rendering immediately
+      if (mountedRef.current) {
+        console.log("Starting 3D rendering");
+        setRenderingStarted(true);
+      }
+      
+      // Set up auto-retry for initialization failures
+      if (autoRetryTimerRef.current) {
+        clearTimeout(autoRetryTimerRef.current);
+      }
+      
+      autoRetryTimerRef.current = setTimeout(() => {
+        if (mountedRef.current && isLoading) {
+          console.log("Auto-retrying 3D initialization due to timeout");
+          setRenderKey(prev => prev + 1); // Force canvas recreation
+          setIsLoading(false); // Reset loading state
+        }
+      }, 5000);
     }
-  }, [dataReady]);
+    
+    return () => {
+      if (autoRetryTimerRef.current) {
+        clearTimeout(autoRetryTimerRef.current);
+      }
+    };
+  }, [dataReady, isLoading, setIsLoading]);
   
   // Notify parent components of errors
   useEffect(() => {
@@ -92,6 +112,9 @@ export const Market3DView = ({
   useEffect(() => {
     return () => {
       mountedRef.current = false;
+      if (autoRetryTimerRef.current) {
+        clearTimeout(autoRetryTimerRef.current);
+      }
     };
   }, []);
   
@@ -104,19 +127,35 @@ export const Market3DView = ({
     if (mountedRef.current) {
       setRenderingStarted(false);
       initialRenderAttemptedRef.current = false;
+      setRenderKey(prev => prev + 1); // Force canvas recreation
     
       // Restart rendering after a brief delay
       setTimeout(() => {
         if (mountedRef.current) {
           setRenderingStarted(true);
         }
-      }, 200); // Reduced from 500ms to 200ms for faster recovery
+      }, 100);
     
       toast({
         title: "3D View Restarted",
         description: "Visualization has been refreshed.",
       });
     }
+  };
+  
+  // Force reinitialize the canvas
+  const handleForceRestart = () => {
+    console.log("Force restarting 3D view");
+    setRenderKey(prev => prev + 1);
+    setRenderingStarted(false);
+    initialRenderAttemptedRef.current = false;
+    
+    // Small delay to ensure DOM updates
+    setTimeout(() => {
+      if (mountedRef.current) {
+        setRenderingStarted(true);
+      }
+    }, 100);
   };
   
   // Determine which error state to show
@@ -131,7 +170,11 @@ export const Market3DView = ({
     return (
       <Card className="relative backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] transition-all h-[500px] overflow-hidden">
         <MarketViewHeader isSimulationMode={isSimulationMode} />
-        <LoadingState message="Initializing 3D Visualization..." />
+        <LoadingState 
+          message="Initializing 3D Visualization..." 
+          retryAction={handleForceRestart}
+          loadingTime={5000} // Show retry after 5 seconds
+        />
       </Card>
     );
   }
@@ -153,11 +196,15 @@ export const Market3DView = ({
       
       {/* Loading overlay */}
       {isLoading && (
-        <LoadingState message={
-          dataReady 
-            ? "Preparing 3D environment..." 
-            : "Loading market data..."
-        } />
+        <LoadingState 
+          message={
+            dataReady 
+              ? "Preparing 3D environment..." 
+              : "Loading market data..."
+          }
+          retryAction={handleForceRestart}
+          loadingTime={loadingTime}
+        />
       )}
       
       {/* Error state */}
@@ -178,6 +225,7 @@ export const Market3DView = ({
       {/* 3D Canvas */}
       {renderingStarted && !hasError && !contextLost && webGLAvailable && (
         <MarketViewCanvas 
+          key={`canvas-${renderKey}`} // Force re-create canvas on key change
           theme={theme}
           webGLAvailable={webGLAvailable}
           hasError={hasError}
