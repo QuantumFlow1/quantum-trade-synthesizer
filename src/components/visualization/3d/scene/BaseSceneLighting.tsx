@@ -5,11 +5,13 @@ import { GroundPlane } from "../GroundPlane";
 import { ColorTheme } from "@/hooks/use-theme-detection";
 import { TradingDataPoint } from "@/utils/tradingData";
 
+type OptimizationLevel = 'normal' | 'aggressive';
+
 interface BaseSceneLightingProps {
   theme: ColorTheme;
   hoveredIndex: number | null;
   processedData: TradingDataPoint[];
-  optimizationLevel?: 'normal' | 'aggressive';
+  optimizationLevel?: OptimizationLevel;
 }
 
 export const BaseSceneLighting = ({ 

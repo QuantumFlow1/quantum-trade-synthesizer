@@ -33,12 +33,13 @@ export const RendererConfigurator = ({
         }
         
         // Configure additional WebGL parameters for stability
-        if (gl.getContext) {
-          // Only try to enable features if webgl context is accessible via getContext
-          gl.enable(gl.DEPTH_TEST);
-          gl.depthFunc(gl.LEQUAL);
-          gl.enable(gl.BLEND);
-          gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        const glContext = gl.getContext();
+        if (glContext) {
+          // Use the WebGL context directly instead of trying to access methods on the renderer
+          glContext.enable(glContext.DEPTH_TEST);
+          glContext.depthFunc(glContext.LEQUAL);
+          glContext.enable(glContext.BLEND);
+          glContext.blendFunc(glContext.SRC_ALPHA, glContext.ONE_MINUS_SRC_ALPHA);
         }
         
         configuredRef.current = true;

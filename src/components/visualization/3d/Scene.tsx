@@ -12,14 +12,20 @@ import { VolumeVisualization } from "./scene/VolumeVisualization";
 import { BaseSceneLighting } from "./scene/BaseSceneLighting";
 import { EnvironmentEffects } from "./scene/EnvironmentEffects";
 
+// Define the optimization level type to match what's used in the child components
+type OptimizationLevel = 'normal' | 'aggressive';
+
+// Define the environment preset type
+type EnvironmentPreset = 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby';
+
 interface SceneProps {
   data: TradingDataPoint[];
-  optimizationLevel?: 'normal' | 'aggressive';
+  optimizationLevel?: OptimizationLevel;
   showPrices?: boolean;
   showVolume?: boolean;
   showStars?: boolean;
   dataReductionFactor?: number;
-  environmentPreset?: 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby';
+  environmentPreset?: EnvironmentPreset;
 }
 
 export const Scene = ({ 
@@ -42,7 +48,7 @@ export const Scene = ({
   const defaultEnvironment = useMarketEnvironment(marketSentiment, theme);
   
   // Set environment preset based on props or default
-  const environmentPreset = customEnvironment || defaultEnvironment;
+  const environmentPreset: EnvironmentPreset = customEnvironment || defaultEnvironment;
   
   // Calculate data reduction based on optimization level
   const getReductionFactor = () => {

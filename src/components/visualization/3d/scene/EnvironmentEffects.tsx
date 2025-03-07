@@ -1,10 +1,13 @@
 
 import { ColorTheme } from "@/hooks/use-theme-detection";
 
+type OptimizationLevel = 'normal' | 'aggressive';
+type EnvironmentPreset = 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby';
+
 interface EnvironmentEffectsProps {
   theme: ColorTheme;
-  environmentPreset: 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby';
-  optimizationLevel?: 'normal' | 'aggressive';
+  environmentPreset: EnvironmentPreset;
+  optimizationLevel?: OptimizationLevel;
 }
 
 export const EnvironmentEffects = ({ 
