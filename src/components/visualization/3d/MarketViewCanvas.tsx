@@ -31,9 +31,21 @@ export const MarketViewCanvas = ({
   const [canvasInitialized, setCanvasInitialized] = useState(false);
   const [rendererReady, setRendererReady] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
   
+  // Debug log to track component lifecycle
   useEffect(() => {
-    // Reset canvas initialization state when props change
+    console.log("MarketViewCanvas mounted with props:", { 
+      webGLAvailable, hasError, contextLost, isLoading, dataLength: data.length 
+    });
+    
+    return () => {
+      console.log("MarketViewCanvas unmounting");
+    };
+  }, [webGLAvailable, hasError, contextLost, isLoading, data]);
+  
+  // Reset states when key props change
+  useEffect(() => {
     if (hasError || contextLost) {
       console.log("Resetting canvas initialization due to error or context loss");
       setCanvasInitialized(false);
@@ -41,14 +53,19 @@ export const MarketViewCanvas = ({
     }
   }, [hasError, contextLost]);
   
-  // Cleanup function to properly dispose WebGL context on unmount
+  // Force a remount of the Canvas when webGLAvailable changes
   useEffect(() => {
-    return () => {
-      console.log("MarketViewCanvas unmounting, cleaning up resources");
-      // By this point, we don't need to do anything special
-      // Three.js/React Three Fiber handles WebGL context disposal
-    };
-  }, []);
+    if (webGLAvailable) {
+      setCanvasInitialized(false);
+      
+      // Small delay to ensure clean remount
+      const timer = setTimeout(() => {
+        setCanvasInitialized(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [webGLAvailable]);
   
   // Don't render canvas if WebGL is not available or there's an error
   if (!webGLAvailable || hasError || contextLost) {
@@ -57,74 +74,98 @@ export const MarketViewCanvas = ({
   }
   
   const handleContextLost = (event: Event) => {
-    event.preventDefault();
-    console.error("WebGL context lost event detected");
+    console.error("WebGL context lost event triggered");
+    event.preventDefault(); // Standard practice to allow recovery
     onWebGLContextLost();
   };
   
   const handleContextRestored = () => {
-    console.log("WebGL context restored event detected");
+    console.log("WebGL context restored event triggered");
     onWebGLContextRestored();
   };
   
   const handleCreated = (state: any) => {
     console.log("3D Canvas initialized successfully");
     
-    // Configure renderer for better performance
+    // Configure renderer for better performance and stability
     if (state && state.gl) {
-      state.gl.setClearColor(theme === 'dark' ? '#0a0a14' : '#f0f4f8');
-      state.gl.setPixelRatio(window.devicePixelRatio || 1);
-      // Store reference to the actual canvas element
+      // Set clear color based on theme
+      state.gl.setClearColor(theme === 'dark' ? '#0a0a14' : '#f0f4f8', 1);
+      
+      // Set pixel ratio (limiting to 1.5 for performance)
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+      state.gl.setPixelRatio(pixelRatio);
+      
+      // Store reference to the canvas
       if (state.gl.domElement) {
         canvasRef.current = state.gl.domElement;
+      }
+      
+      // Configure additional WebGL parameters for stability
+      try {
+        // Enable depth testing for proper 3D rendering
+        state.gl.enable(state.gl.DEPTH_TEST);
+        // Set depth function to less than or equal
+        state.gl.depthFunc(state.gl.LEQUAL);
+        // Enable alpha blending
+        state.gl.enable(state.gl.BLEND);
+        state.gl.blendFunc(state.gl.SRC_ALPHA, state.gl.ONE_MINUS_SRC_ALPHA);
+      } catch (e) {
+        console.error("Error configuring WebGL context:", e);
       }
     }
     
     setCanvasInitialized(true);
     
-    // Allow a brief moment for the renderer to initialize before rendering content
+    // Allow a brief moment for initialization before rendering content
     setTimeout(() => {
       setRendererReady(true);
-    }, 100);
+    }, 150);
   };
   
-  // Determine optimization level for the scene based on loading state
+  // Determine optimization level based on loading state
   const optimizationLevel = isLoading ? 'aggressive' : 'normal';
   
-  // Choose a lighter background in dark mode to improve contrast
+  // Background gradients based on theme
   const darkBackground = 'radial-gradient(circle, #1a1a3a 0%, #0f0f23 100%)';
   const lightBackground = 'radial-gradient(circle, #f8fafc 0%, #e2e8f0 100%)';
   
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div 
+      ref={canvasContainerRef}
+      className="absolute inset-0 overflow-hidden"
+      style={{ background: theme === 'dark' ? darkBackground : lightBackground }}
+    >
       <Canvas
         onCreated={(state) => {
-          // Add event listeners for context lost/restored events
-          const canvas = state.gl.domElement;
-          canvas.addEventListener('webglcontextlost', handleContextLost);
-          canvas.addEventListener('webglcontextrestored', handleContextRestored);
+          // Register WebGL context event listeners
+          if (state && state.gl && state.gl.domElement) {
+            const canvas = state.gl.domElement;
+            canvas.addEventListener('webglcontextlost', handleContextLost, false);
+            canvas.addEventListener('webglcontextrestored', handleContextRestored, false);
+          }
           handleCreated(state);
         }}
-        camera={{ position: [0, 5, 15], fov: 50 }}
+        camera={{ position: [0, 5, 15], fov: 50, near: 0.1, far: 1000 }}
         shadows={false} // Disable shadows for better performance
-        dpr={[1, 1.5]} // Lower pixel ratio for better performance
-        frameloop="always" // Always render to prevent black screen
+        dpr={[1, 1.5]} // Limit pixel ratio for performance
+        frameloop="demand" // Only render when needed for better performance
         gl={{ 
           antialias: true,
           alpha: true,
+          depth: true, // Enable depth buffer
+          stencil: false, // Disable stencil buffer (not needed)
           preserveDrawingBuffer: true,
           powerPreference: 'high-performance',
-          failIfMajorPerformanceCaveat: false, // Don't fail on performance issues
-          // Ensure depth and stencil buffers are created
-          depth: true,
-          stencil: false
+          failIfMajorPerformanceCaveat: false
         }}
-        style={{ background: theme === 'dark' ? darkBackground : lightBackground }}
       >
         <Suspense fallback={null}>
           <ThemeBasedLighting optimizationLevel={optimizationLevel} />
           <GroundPlane theme={theme} optimizationLevel={optimizationLevel} />
-          {rendererReady && <Scene data={data} optimizationLevel={optimizationLevel} />}
+          {rendererReady && data.length > 0 && (
+            <Scene data={data} optimizationLevel={optimizationLevel} />
+          )}
         </Suspense>
       </Canvas>
     </div>

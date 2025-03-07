@@ -27,9 +27,10 @@ export const Market3DView = ({
   onLoaded
 }: Market3DViewProps) => {
   const { visualizationData, stats } = useMarket3DData(data);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const theme = useThemeDetection();
   const [renderingStarted, setRenderingStarted] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
+  const initialRenderAttemptedRef = useRef(false);
   
   // Use the WebGL state hook to manage loading and error states
   const {
@@ -42,38 +43,62 @@ export const Market3DView = ({
     handleRetry
   } = useWebGLState();
   
-  // Start rendering with a slight delay to avoid blocking the main thread during page load
+  // Check if data is ready for rendering
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setRenderingStarted(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
+    if (visualizationData.length > 0) {
+      console.log("Visualization data ready:", visualizationData.length, "points");
+      setDataReady(true);
+    } else {
+      console.log("Waiting for visualization data...");
+    }
+  }, [visualizationData]);
+  
+  // Start rendering with a slight delay to avoid blocking main thread
+  useEffect(() => {
+    if (dataReady && !initialRenderAttemptedRef.current) {
+      initialRenderAttemptedRef.current = true;
+      const timer = setTimeout(() => {
+        console.log("Starting 3D rendering");
+        setRenderingStarted(true);
+      }, 200);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [dataReady]);
   
   // Notify parent components of errors
   useEffect(() => {
     if (hasError || contextLost || !webGLAvailable) {
-      console.log("3D View error state:", { hasError, contextLost, webGLAvailable });
+      console.log("3D View error state detected:", { hasError, contextLost, webGLAvailable });
       onError?.();
     }
   }, [hasError, contextLost, webGLAvailable, onError]);
   
   // Notify parent when loading is done
   useEffect(() => {
-    if (!isLoading && !hasError && webGLAvailable && !contextLost) {
+    if (!isLoading && !hasError && webGLAvailable && !contextLost && renderingStarted) {
       console.log("3D View loaded successfully");
       onLoaded?.();
     }
-  }, [isLoading, hasError, webGLAvailable, contextLost, onLoaded]);
+  }, [isLoading, hasError, webGLAvailable, contextLost, renderingStarted, onLoaded]);
   
   // Handle WebGL context restoration
   const handleWebGLRestore = () => {
     console.log("Attempting to restore WebGL context");
     handleContextRestored();
+    
+    // Reset rendering state to force fresh start
+    setRenderingStarted(false);
+    initialRenderAttemptedRef.current = false;
+    
+    // Restart rendering after a brief delay
+    setTimeout(() => {
+      setRenderingStarted(true);
+    }, 300);
+    
     toast({
-      title: "3D View Restored",
-      description: "Visualization has been successfully restored.",
+      title: "3D View Restarted",
+      description: "Visualization has been refreshed.",
     });
   };
   
@@ -88,7 +113,8 @@ export const Market3DView = ({
   if (!renderingStarted) {
     return (
       <Card className="relative backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)] transition-all h-[500px] overflow-hidden">
-        <LoadingState />
+        <MarketViewHeader isSimulationMode={isSimulationMode} />
+        <LoadingState message="Initializing 3D Visualization..." />
       </Card>
     );
   }
@@ -99,15 +125,23 @@ export const Market3DView = ({
       <MarketViewHeader isSimulationMode={isSimulationMode} />
       
       {/* Stats overlay */}
-      <StatsOverlay 
-        avgPrice={stats.avgPrice} 
-        priceChange={stats.priceChange} 
-        priceChangePercent={stats.priceChangePercent}
-        theme={theme}
-      />
+      {!isLoading && !hasError && !contextLost && (
+        <StatsOverlay 
+          avgPrice={stats.avgPrice} 
+          priceChange={stats.priceChange} 
+          priceChangePercent={stats.priceChangePercent}
+          theme={theme}
+        />
+      )}
       
       {/* Loading overlay */}
-      {isLoading && <LoadingState />}
+      {isLoading && (
+        <LoadingState message={
+          dataReady 
+            ? "Preparing 3D environment..." 
+            : "Loading market data..."
+        } />
+      )}
       
       {/* Error state */}
       {(hasError || contextLost || (!webGLAvailable && !isLoading)) && (
@@ -117,10 +151,12 @@ export const Market3DView = ({
         />
       )}
       
-      {/* Controls */}
-      <div className="absolute bottom-4 left-6 z-10">
-        <VisualizationControls />
-      </div>
+      {/* Controls - only show when not loading or error */}
+      {!isLoading && !hasError && !contextLost && webGLAvailable && (
+        <div className="absolute bottom-4 left-6 z-10">
+          <VisualizationControls />
+        </div>
+      )}
       
       {/* 3D Canvas */}
       {renderingStarted && (
