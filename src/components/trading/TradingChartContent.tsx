@@ -13,13 +13,15 @@ interface TradingChartContentProps {
   handleZoomIn: () => void;
   handleZoomOut: () => void;
   handleResetZoom: () => void;
+  isLoading?: boolean; // Added isLoading prop
 }
 
 export const TradingChartContent = ({
   scale,
   handleZoomIn,
   handleZoomOut,
-  handleResetZoom
+  handleResetZoom,
+  isLoading = false // Added default value for isLoading
 }: TradingChartContentProps) => {
   const [data, setData] = useState(generateTradingData());
   const [indicator, setIndicator] = useState<"sma" | "ema" | "rsi" | "macd" | "bollinger" | "stochastic" | "adx">("sma");
@@ -163,6 +165,7 @@ export const TradingChartContent = ({
               indicator={indicator}
               setIndicator={setIndicator}
               showReplayMode={showReplayMode}
+              isLoading={isLoading} // Pass isLoading to tab content
             />
           </TabsContent>
 
@@ -175,6 +178,7 @@ export const TradingChartContent = ({
               indicator={indicator}
               setIndicator={setIndicator}
               showReplayMode={false}
+              isLoading={isLoading} // Pass isLoading to tab content
             />
           </TabsContent>
 
@@ -187,6 +191,7 @@ export const TradingChartContent = ({
               indicator={indicator}
               setIndicator={setIndicator}
               showReplayMode={false}
+              isLoading={isLoading} // Pass isLoading to tab content
             />
           </TabsContent>
         </Tabs>
@@ -194,4 +199,3 @@ export const TradingChartContent = ({
     </div>
   );
 };
-

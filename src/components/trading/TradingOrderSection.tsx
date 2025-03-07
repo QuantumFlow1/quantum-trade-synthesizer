@@ -22,6 +22,7 @@ interface TradingOrderSectionProps {
   isSimulationMode?: boolean;
   onSimulationToggle?: (enabled: boolean) => void;
   apiKeysAvailable?: boolean;
+  isLoading?: boolean;
 }
 
 export const TradingOrderSection = ({ 
@@ -29,7 +30,8 @@ export const TradingOrderSection = ({
   marketData, 
   isSimulationMode = false, 
   onSimulationToggle,
-  apiKeysAvailable = false
+  apiKeysAvailable = false,
+  isLoading = false
 }: TradingOrderSectionProps) => {
   const { positions, isLoading: positionsLoading } = usePositions();
   const { positions: simulatedPositions, isLoading: simulatedPositionsLoading, closePosition } = useSimulatedPositions();
