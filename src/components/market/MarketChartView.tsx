@@ -180,7 +180,7 @@ export const MarketChartView = ({ data, type }: MarketChartViewProps) => {
                 <Area
                   type="monotone"
                   dataKey="upperBand"
-                  stroke={false}
+                  stroke="none"
                   fillOpacity={1}
                   fill="url(#confidenceBandGradient)"
                   name="Confidence Band"

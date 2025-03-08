@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Refresh, LineChart, BarChart3, Info } from "lucide-react";
+import { RefreshCw, LineChart, BarChart3, Info } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ChartControlsProps {
@@ -85,7 +85,7 @@ export const ChartControls = ({
         </TooltipProvider>
         
         <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-          <Refresh className="h-4 w-4" />
+          <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
     </div>
