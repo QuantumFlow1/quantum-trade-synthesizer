@@ -9,6 +9,12 @@ import { TradingDataPoint } from "@/utils/tradingData";
 import { PortfolioManager } from "../PortfolioManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { OrderBook } from "./components/OrderBook";
+import { PriceAlerts } from "./components/PriceAlerts";
+import { TradingPairSelector } from "./components/TradingPairSelector";
+import { ChartDrawingTools } from "./components/ChartDrawingTools";
+import { TechnicalIndicators } from "./components/TechnicalIndicators";
+import { NewsFeed } from "./components/NewsFeed";
 
 export const MinimalTradingTab = () => {
   const [data, setData] = useState<TradingDataPoint[]>([]);
@@ -17,6 +23,9 @@ export const MinimalTradingTab = () => {
   const [currentData, setCurrentData] = useState<any>(null);
   const [isSimulationMode, setIsSimulationMode] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<string>("chart");
+  const [selectedPair, setSelectedPair] = useState<string>("BTC/USDT");
+  const [showOrderBook, setShowOrderBook] = useState<boolean>(true);
+  const [showNewsPane, setShowNewsPane] = useState<boolean>(true);
   const dataRef = useRef<TradingDataPoint[]>([]);
   const { toast } = useToast();
 
@@ -32,7 +41,7 @@ export const MinimalTradingTab = () => {
       if (newData.length > 0) {
         const latestDataPoint = newData[newData.length - 1];
         setCurrentData({
-          symbol: "BTC",
+          symbol: selectedPair.split("/")[0],
           price: latestDataPoint.close,
           high: latestDataPoint.high,
           low: latestDataPoint.low,
@@ -64,7 +73,7 @@ export const MinimalTradingTab = () => {
       if (newData.length > 0) {
         const latestDataPoint = newData[newData.length - 1];
         setCurrentData({
-          symbol: "BTC",
+          symbol: selectedPair.split("/")[0],
           price: latestDataPoint.close,
           high: latestDataPoint.high,
           low: latestDataPoint.low,
@@ -83,6 +92,16 @@ export const MinimalTradingTab = () => {
     }
   };
 
+  // Handle trading pair change
+  const handlePairChange = (pair: string) => {
+    setSelectedPair(pair);
+    refreshData();
+    toast({
+      title: "Trading pair changed",
+      description: `Now viewing ${pair} data`,
+    });
+  };
+
   // Handle simulation mode toggle
   const handleSimulationToggle = (enabled: boolean) => {
     setIsSimulationMode(enabled);
@@ -91,6 +110,16 @@ export const MinimalTradingTab = () => {
   // Handle tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+  };
+
+  // Toggle order book visibility
+  const toggleOrderBook = () => {
+    setShowOrderBook(prev => !prev);
+  };
+
+  // Toggle news pane visibility
+  const toggleNewsPane = () => {
+    setShowNewsPane(prev => !prev);
   };
 
   // Initial data load
@@ -107,8 +136,21 @@ export const MinimalTradingTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* Market Data Summary */}
-      <MinimalMarketData />
+      {/* Trading pair selector and market data */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-start">
+        <div className="w-full md:w-1/4">
+          <TradingPairSelector 
+            selectedPair={selectedPair} 
+            onPairChange={handlePairChange} 
+          />
+        </div>
+        <div className="w-full md:w-3/4">
+          <MinimalMarketData />
+        </div>
+      </div>
+      
+      {/* Price alerts */}
+      <PriceAlerts selectedPair={selectedPair} />
       
       {/* Main content with tabs */}
       <Tabs 
@@ -117,15 +159,17 @@ export const MinimalTradingTab = () => {
         value={activeTab}
         onValueChange={handleTabChange}
       >
-        <TabsList className="grid grid-cols-2 w-full mb-4">
+        <TabsList className="grid grid-cols-3 w-full mb-4">
           <TabsTrigger value="chart">Price Chart</TabsTrigger>
+          <TabsTrigger value="order-book">Order Book</TabsTrigger>
           <TabsTrigger value="agents">Trading Agents</TabsTrigger>
         </TabsList>
         
         <TabsContent value="chart">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Trading Chart</CardTitle>
+              <ChartDrawingTools />
             </CardHeader>
             <CardContent>
               <MinimalTradingControls
@@ -133,6 +177,8 @@ export const MinimalTradingTab = () => {
                 onTimeframeChange={handleTimeframeChange}
                 currentTimeframe={timeframe}
               />
+              
+              <TechnicalIndicators />
               
               {isLoading ? (
                 <div className="h-[400px] flex items-center justify-center">
@@ -143,6 +189,15 @@ export const MinimalTradingTab = () => {
               )}
             </CardContent>
           </Card>
+          
+          {/* News feed below chart */}
+          {showNewsPane && (
+            <NewsFeed selectedPair={selectedPair} />
+          )}
+        </TabsContent>
+        
+        <TabsContent value="order-book">
+          <OrderBook selectedPair={selectedPair} />
         </TabsContent>
         
         <TabsContent value="agents">
