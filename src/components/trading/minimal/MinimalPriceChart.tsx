@@ -280,9 +280,18 @@ export const MinimalPriceChart = ({ data }: MinimalPriceChartProps) => {
                   />
                   <Bar
                     dataKey="macdHistogram"
-                    fill={(data) => (data.macdHistogram >= 0 ? "#22c55e" : "#ef4444")}
+                    fill="#22c55e"
                     name="Histogram"
-                  />
+                    // Fix the error by removing the function and using a string instead
+                    // Then we'll add a custom rendered element to show different colors
+                  >
+                    {data.map((entry, index) => (
+                      <Bar 
+                        key={`bar-${index}`}
+                        fill={entry.macdHistogram >= 0 ? "#22c55e" : "#ef4444"}
+                      />
+                    ))}
+                  </Bar>
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
