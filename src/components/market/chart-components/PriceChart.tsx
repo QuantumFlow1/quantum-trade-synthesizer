@@ -23,16 +23,17 @@ export const PriceChart = ({ data }: PriceChartProps) => {
       <YAxis stroke="#888888" />
       <Tooltip content={<CustomTooltip />} />
       <Legend 
-        payload={[
-          { value: 'Price', color: '#8b5cf6', type: 'line' },
-          { value: 'High', color: '#4ade80', type: 'line' },
-          { value: 'Low', color: '#ef4444', type: 'line' },
-          ...(hasProjections ? [
-            { value: 'Projection', color: '#f59e0b', type: 'line' },
-            { value: 'Confidence Band', color: '#f59e0b', type: 'area' }
-          ] : [])
-        ] as any}
-        content={<CustomLegend />}
+        content={<CustomLegend 
+          payload={[
+            { value: 'Price', color: '#8b5cf6', type: 'line' },
+            { value: 'High', color: '#4ade80', type: 'line' },
+            { value: 'Low', color: '#ef4444', type: 'line' },
+            ...(hasProjections ? [
+              { value: 'Projection', color: '#f59e0b', type: 'line' },
+              { value: 'Confidence Band', color: '#f59e0b', type: 'square' } // Changed 'area' to 'square' which is valid
+            ] : [])
+          ]}
+        />}
       />
       
       {/* Current price line */}

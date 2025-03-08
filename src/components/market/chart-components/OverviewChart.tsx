@@ -18,7 +18,14 @@ export const OverviewChart = ({ data }: OverviewChartProps) => {
       <XAxis dataKey="name" stroke="#888888" />
       <YAxis stroke="#888888" />
       <Tooltip content={<CustomTooltip />} />
-      <Legend formatter={(value) => value} />
+      <Legend 
+        content={<CustomLegend 
+          payload={[
+            { value: 'Volume', color: '#4ade80', type: 'rect' },
+            { value: 'Price', color: '#8b5cf6', type: 'rect' }
+          ]}
+        />}
+      />
       <Bar dataKey="volume" fill="#4ade80" name="Volume" />
       <Bar dataKey="price" fill="#8b5cf6" name="Price" />
     </BarChart>

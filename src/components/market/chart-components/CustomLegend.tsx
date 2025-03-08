@@ -1,13 +1,14 @@
 
 import { LegendProps } from 'recharts';
 
-type LegendType = 'line' | 'rect' | 'circle' | 'cross' | 'diamond' | 'square' | 'star' | 'triangle' | 'wye' | 'none' | 'area';
+// Import the LegendType directly from Recharts instead of defining our own
+type RechartsLegendType = 'line' | 'plainline' | 'square' | 'rect' | 'circle' | 'cross' | 'diamond' | 'star' | 'triangle' | 'wye' | 'none';
 
-interface CustomLegendProps extends LegendProps {
+interface CustomLegendProps extends Omit<LegendProps, 'payload'> {
   payload?: Array<{
     value: string;
     color: string;
-    type?: LegendType;
+    type?: RechartsLegendType;
   }>;
 }
 
