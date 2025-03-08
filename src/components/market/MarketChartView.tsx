@@ -1,4 +1,3 @@
-
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Legend, ReferenceLine } from 'recharts';
 import { ChartData } from './types';
 
@@ -137,15 +136,18 @@ export const MarketChartView = ({ data, type }: MarketChartViewProps) => {
             <XAxis dataKey="name" stroke="#888888" />
             <YAxis stroke="#888888" />
             <Tooltip content={<CustomTooltip />} />
-            <Legend payload={[
-              { value: 'Price', color: '#8b5cf6', type: 'line' },
-              { value: 'High', color: '#4ade80', type: 'line' },
-              { value: 'Low', color: '#ef4444', type: 'line' },
-              ...(hasProjections ? [
-                { value: 'Projection', color: '#f59e0b', type: 'line' },
-                { value: 'Confidence Band', color: '#f59e0b', type: 'area' }
-              ] : [])
-            ]} content={renderCustomLegend} />
+            <Legend 
+              payload={[
+                { value: 'Price', color: '#8b5cf6', type: 'line' },
+                { value: 'High', color: '#4ade80', type: 'line' },
+                { value: 'Low', color: '#ef4444', type: 'line' },
+                ...(hasProjections ? [
+                  { value: 'Projection', color: '#f59e0b', type: 'line' },
+                  { value: 'Confidence Band', color: '#f59e0b', type: 'area' }
+                ] : [])
+              ]}
+              content={renderCustomLegend} 
+            />
             
             {/* Current price line */}
             <Line 
