@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MinimalPriceChart } from "./MinimalPriceChart";
 import { MinimalTradingControls } from "./MinimalTradingControls";
@@ -8,6 +8,7 @@ import { tradingDataService } from "@/services/trading/tradingDataService";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { PortfolioManager } from "../PortfolioManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 export const MinimalTradingTab = () => {
   const [data, setData] = useState<TradingDataPoint[]>([]);
@@ -15,53 +16,81 @@ export const MinimalTradingTab = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentData, setCurrentData] = useState<any>(null);
   const [isSimulationMode, setIsSimulationMode] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<string>("chart");
+  const dataRef = useRef<TradingDataPoint[]>([]);
+  const { toast } = useToast();
 
   // Function to refresh data
   const refreshData = () => {
     setIsLoading(true);
-    const newData = tradingDataService.refreshData(timeframe);
-    setData(newData);
-    
-    // Set current data for agent analysis
-    if (newData.length > 0) {
-      const latestDataPoint = newData[newData.length - 1];
-      setCurrentData({
-        symbol: "BTC",
-        price: latestDataPoint.close,
-        high: latestDataPoint.high,
-        low: latestDataPoint.low,
-        volume: latestDataPoint.volume
+    try {
+      const newData = tradingDataService.refreshData(timeframe);
+      setData(newData);
+      dataRef.current = newData;
+      
+      // Set current data for agent analysis
+      if (newData.length > 0) {
+        const latestDataPoint = newData[newData.length - 1];
+        setCurrentData({
+          symbol: "BTC",
+          price: latestDataPoint.close,
+          high: latestDataPoint.high,
+          low: latestDataPoint.low,
+          volume: latestDataPoint.volume
+        });
+      }
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast({
+        title: "Error loading chart data",
+        description: "Could not refresh trading data. Please try again.",
+        variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   // Handle timeframe change
   const handleTimeframeChange = (newTimeframe: "1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w") => {
     setTimeframe(newTimeframe);
     setIsLoading(true);
-    const newData = tradingDataService.refreshData(newTimeframe);
-    setData(newData);
-    
-    // Update current data
-    if (newData.length > 0) {
-      const latestDataPoint = newData[newData.length - 1];
-      setCurrentData({
-        symbol: "BTC",
-        price: latestDataPoint.close,
-        high: latestDataPoint.high,
-        low: latestDataPoint.low,
-        volume: latestDataPoint.volume
+    try {
+      const newData = tradingDataService.refreshData(newTimeframe);
+      setData(newData);
+      dataRef.current = newData;
+      
+      // Update current data
+      if (newData.length > 0) {
+        const latestDataPoint = newData[newData.length - 1];
+        setCurrentData({
+          symbol: "BTC",
+          price: latestDataPoint.close,
+          high: latestDataPoint.high,
+          low: latestDataPoint.low,
+          volume: latestDataPoint.volume
+        });
+      }
+    } catch (error) {
+      console.error("Error changing timeframe:", error);
+      toast({
+        title: "Error changing timeframe",
+        description: "Could not load data for the selected timeframe.",
+        variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   // Handle simulation mode toggle
   const handleSimulationToggle = (enabled: boolean) => {
     setIsSimulationMode(enabled);
+  };
+
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
   // Initial data load
@@ -82,7 +111,12 @@ export const MinimalTradingTab = () => {
       <MinimalMarketData />
       
       {/* Main content with tabs */}
-      <Tabs defaultValue="chart" className="w-full">
+      <Tabs 
+        defaultValue="chart" 
+        className="w-full"
+        value={activeTab}
+        onValueChange={handleTabChange}
+      >
         <TabsList className="grid grid-cols-2 w-full mb-4">
           <TabsTrigger value="chart">Price Chart</TabsTrigger>
           <TabsTrigger value="agents">Trading Agents</TabsTrigger>
@@ -105,7 +139,7 @@ export const MinimalTradingTab = () => {
                   Loading chart data...
                 </div>
               ) : (
-                <MinimalPriceChart data={data} />
+                <MinimalPriceChart data={dataRef.current.length > 0 ? dataRef.current : data} />
               )}
             </CardContent>
           </Card>
