@@ -16,6 +16,18 @@ interface RSIChartProps {
   data: TradingDataPoint[];
 }
 
+// Custom tooltip component to replace the default white background
+const CustomRSITooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background/80 backdrop-blur-sm border border-muted p-2 rounded shadow-md text-xs">
+        <p className="text-amber-500">{`RSI: ${payload[0].value.toFixed(2)}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export const RSIChart = ({ data }: RSIChartProps) => {
   // Find overbought/oversold levels in the data
   const overboughtRSI = data.some(d => d.rsi > 70);
@@ -39,7 +51,7 @@ export const RSIChart = ({ data }: RSIChartProps) => {
               ticks={[0, 30, 50, 70, 100]}
               tick={{ fontSize: 10 }}
             />
-            <Tooltip />
+            <Tooltip content={<CustomRSITooltip />} />
             <ReferenceLine y={30} stroke="#22c55e" strokeDasharray="3 3" />
             <ReferenceLine y={70} stroke="#ef4444" strokeDasharray="3 3" />
             <Line
@@ -48,6 +60,7 @@ export const RSIChart = ({ data }: RSIChartProps) => {
               stroke="#f59e0b"
               dot={false}
               name="RSI"
+              activeDot={{ r: 6, stroke: "#f59e0b", strokeWidth: 2, fill: "#f59e0b" }}
             />
           </ComposedChart>
         </ResponsiveContainer>

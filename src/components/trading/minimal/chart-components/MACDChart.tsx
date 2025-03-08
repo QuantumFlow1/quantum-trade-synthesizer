@@ -16,6 +16,22 @@ interface MACDChartProps {
   data: TradingDataPoint[];
 }
 
+// Custom tooltip to replace the default white background
+const CustomMACDTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-background/80 backdrop-blur-sm border border-muted p-2 rounded shadow-md text-xs">
+        <p className="text-cyan-500">{`MACD: ${payload[0].value.toFixed(2)}`}</p>
+        <p className="text-fuchsia-500">{`Signal: ${payload[1].value.toFixed(2)}`}</p>
+        <p className={payload[2]?.value > 0 ? "text-green-500" : "text-red-500"}>
+          {`Histogram: ${payload[2]?.value.toFixed(2) || payload[3]?.value.toFixed(2)}`}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export const MACDChart = ({ data }: MACDChartProps) => {
   // Create separate arrays for positive and negative histogram values
   const positiveData = data.map(item => ({
@@ -45,7 +61,7 @@ export const MACDChart = ({ data }: MACDChartProps) => {
               tick={{ fontSize: 10 }}
               tickFormatter={(value) => value.toFixed(1)}
             />
-            <Tooltip />
+            <Tooltip content={<CustomMACDTooltip />} />
             <ReferenceLine y={0} stroke="#888888" />
             <Line
               type="monotone"
@@ -53,6 +69,7 @@ export const MACDChart = ({ data }: MACDChartProps) => {
               stroke="#06b6d4"
               dot={false}
               name="MACD"
+              activeDot={{ r: 6, stroke: "#06b6d4", strokeWidth: 2, fill: "#06b6d4" }}
             />
             <Line
               type="monotone"
@@ -60,6 +77,7 @@ export const MACDChart = ({ data }: MACDChartProps) => {
               stroke="#d946ef"
               dot={false}
               name="Signal"
+              activeDot={{ r: 6, stroke: "#d946ef", strokeWidth: 2, fill: "#d946ef" }}
             />
             <Bar
               dataKey="positiveHistogram"
