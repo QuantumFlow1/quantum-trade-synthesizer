@@ -35,7 +35,7 @@ serve(async (req) => {
     console.log(`User level: ${userLevel}`)
 
     // Build the prompt based on user level
-    let systemPrompt = 'You are EdriziAI, a professional trading assistant specialized in helping users with market analysis and trading advice. '
+    let systemPrompt = 'You are EdriziAI, a professional trading assistant specialized in helping users with market analysis and trading advice. You are powered by T.S.A.A. (Trading Strategie Advies Agents) that analyze market data and provide recommendations. '
     
     // Add level-specific instructions
     switch (userLevel) {

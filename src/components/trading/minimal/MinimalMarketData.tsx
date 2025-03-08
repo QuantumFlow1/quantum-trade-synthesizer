@@ -139,7 +139,7 @@ export const MinimalMarketData = () => {
               ) : (
                 <BarChart3 className="h-3 w-3 mr-1" />
               )}
-              {marketSentiment.charAt(0).toUpperCase() + marketSentiment.slice(1)}
+              {marketSentiment.charAt(0).toUpperCase() + marketSentiment.slice(1)} T.S.A.A. Signal
             </Badge>
             
             <Badge 
@@ -265,7 +265,7 @@ export const MinimalMarketData = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="bg-secondary/10 p-3 rounded-lg hidden md:block">
-                    <div className="text-xs text-muted-foreground mb-1">Market Sentiment</div>
+                    <div className="text-xs text-muted-foreground mb-1">T.S.A.A. Sentiment</div>
                     <div className={`font-semibold capitalize ${
                       marketSentiment === 'bullish' ? 'text-green-500' : 
                       marketSentiment === 'bearish' ? 'text-red-500' : 

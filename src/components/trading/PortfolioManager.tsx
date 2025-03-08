@@ -61,7 +61,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
               Portfolio Manager
             </CardTitle>
             <CardDescription>
-              AI-powered trading decisions from specialized agents
+              AI-powered trading decisions from T.S.A.A. (Trading Strategie Advies Agents)
             </CardDescription>
           </div>
           {(onSimulationToggle || isSimulationMode === undefined) && (
@@ -79,7 +79,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
         <div className="space-y-3">
           {agentRecommendations.length > 0 ? (
             <>
-              <h3 className="text-sm font-medium">Agent Recommendations:</h3>
+              <h3 className="text-sm font-medium">T.S.A.A. Recommendations:</h3>
               <RecommendationList recommendations={agentRecommendations} />
               
               {portfolioDecision && (

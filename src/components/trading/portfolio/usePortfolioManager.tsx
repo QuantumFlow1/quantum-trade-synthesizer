@@ -68,7 +68,7 @@ export const usePortfolioManager = (currentData: any) => {
     
     const newRecommendations: AgentRecommendation[] = [
       {
-        agentId: "value-investor-001",
+        agentId: "tsaa-value-investor-001",
         action: randomSeed > 0.7 ? "BUY" : (randomSeed > 0.4 ? "HOLD" : "SELL"),
         confidence: Math.round(60 + randomSeed * 30),
         reasoning: `Based on fundamental analysis, the current ${ticker} price at $${currentPrice} ${randomSeed > 0.6 ? "represents a good value" : "is slightly overvalued"}.`,
@@ -77,7 +77,7 @@ export const usePortfolioManager = (currentData: any) => {
         timestamp: new Date().toISOString()
       },
       {
-        agentId: "technical-analyst-001",
+        agentId: "tsaa-technical-analyst-001",
         action: randomSeed > 0.5 ? "BUY" : "SELL",
         confidence: Math.round(50 + randomSeed * 40),
         reasoning: `Technical indicators show ${randomSeed > 0.5 ? "bullish" : "bearish"} momentum on ${ticker} with ${randomSeed > 0.7 ? "strong" : "moderate"} volume.`,
@@ -86,7 +86,7 @@ export const usePortfolioManager = (currentData: any) => {
         timestamp: new Date().toISOString()
       },
       {
-        agentId: "sentiment-analyst-001",
+        agentId: "tsaa-sentiment-analyst-001",
         action: randomSeed > 0.6 ? "BUY" : (randomSeed > 0.3 ? "HOLD" : "SELL"),
         confidence: Math.round(40 + randomSeed * 50),
         reasoning: `Market sentiment analysis indicates ${randomSeed > 0.6 ? "positive" : "mixed"} outlook for ${ticker} based on news and social media.`,
@@ -96,7 +96,7 @@ export const usePortfolioManager = (currentData: any) => {
       }
     ];
     
-    console.log(`Generated ${newRecommendations.length} agent recommendations`);
+    console.log(`Generated ${newRecommendations.length} T.S.A.A. recommendations`);
     setAgentRecommendations(newRecommendations);
     
     setTimeout(() => {
@@ -115,7 +115,7 @@ export const usePortfolioManager = (currentData: any) => {
         confidence: averageConfidence,
         riskScore: Math.round(30 + randomSeed * 40),
         contributors: newRecommendations.map(rec => rec.agentId),
-        reasoning: `Consensus among ${newRecommendations.length} specialized agents suggests a ${majorityAction} action with ${averageConfidence}% confidence.`,
+        reasoning: `Consensus among ${newRecommendations.length} specialized T.S.A.A. agents suggests a ${majorityAction} action with ${averageConfidence}% confidence.`,
         timestamp: new Date().toISOString()
       };
       
@@ -173,7 +173,7 @@ export const usePortfolioManager = (currentData: any) => {
     
     toast({
       title: "Analysis Refresh Requested",
-      description: "Generating new agent recommendations and portfolio decision",
+      description: "Generating new T.S.A.A. recommendations and portfolio decision",
     });
   };
 
