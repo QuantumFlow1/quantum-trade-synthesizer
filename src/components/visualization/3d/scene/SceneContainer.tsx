@@ -78,4 +78,5 @@ export const SceneContainer = ({
   );
 };
 
-export { OptimizationLevel, EnvironmentPreset };
+// Fix: Change to "export type" for type re-exports
+export type { OptimizationLevel, EnvironmentPreset };
