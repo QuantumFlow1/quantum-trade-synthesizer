@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
@@ -11,7 +10,7 @@ import { DashboardNavigation } from "./dashboard/DashboardNavigation";
 // Import all page components
 import { OverviewPage } from "./dashboard/pages/OverviewPage";
 import { MarketPage } from "./dashboard/pages/MarketPage";
-import { TradingPage } from "./dashboard/pages/TradingPage";
+import { MinimalTradingPage } from "./dashboard/pages/MinimalTradingPage";
 import { AnalyticsPage } from "./dashboard/pages/AnalyticsPage";
 import { WalletPage } from "./dashboard/pages/WalletPage";
 import { RiskPage } from "./dashboard/pages/RiskPage";
@@ -81,7 +80,7 @@ const UserDashboard = () => {
       case "market":
         return <MarketPage />;
       case "trading":
-        return <TradingPage />;
+        return <MinimalTradingPage />;
       case "analytics":
         return <AnalyticsPage />;
       case "wallet":
@@ -108,19 +107,16 @@ const UserDashboard = () => {
 
   return (
     <DashboardLayout>
-      {/* Command Center Header */}
       <DashboardHeader 
         userEmail={userProfile?.email} 
         isLovTrader={isLovTrader}
       />
       
-      {/* Navigation Bar */}
       <DashboardNavigation
         activePage={activePage}
         onChangePage={handlePageChange}
       />
       
-      {/* Dynamic Page Content */}
       {renderActivePage()}
     </DashboardLayout>
   );
