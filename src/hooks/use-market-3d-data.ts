@@ -1,10 +1,11 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
 
 export const useMarket3DData = (data: TradingDataPoint[]) => {
   const [visualizationData, setVisualizationData] = useState<TradingDataPoint[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const processingRef = useRef(false);
   
   // Process data for visualization
   useEffect(() => {
@@ -13,40 +14,47 @@ export const useMarket3DData = (data: TradingDataPoint[]) => {
       return;
     }
     
-    if (isProcessing) {
+    if (isProcessing || processingRef.current) {
       console.log("Already processing data, skipping update");
       return;
     }
     
     console.log("Processing market data for 3D visualization:", data.length, "points");
     setIsProcessing(true);
+    processingRef.current = true;
     
-    try {
-      // Use last 24 points for better visualization
-      const dataPoints = Math.min(data.length, 24);
-      const lastPoints = data.slice(Math.max(0, data.length - dataPoints));
-      
-      // Add trend indicator based on price movement
-      const pointsWithTrend = lastPoints.map((point, index, arr) => {
-        if (index === 0) {
-          return { ...point, trend: "neutral" as "up" | "down" | "neutral" };
-        }
+    // Use a timeout to avoid blocking UI
+    const timeoutId = setTimeout(() => {
+      try {
+        // Use last 24 points for better visualization
+        const dataPoints = Math.min(data.length, 24);
+        const lastPoints = data.slice(Math.max(0, data.length - dataPoints));
         
-        const prevPoint = arr[index - 1];
-        const trend = point.close > prevPoint.close ? "up" as const : "down" as const;
+        // Add trend indicator based on price movement
+        const pointsWithTrend = lastPoints.map((point, index, arr) => {
+          if (index === 0) {
+            return { ...point, trend: "neutral" as const };
+          }
+          
+          const prevPoint = arr[index - 1];
+          const trend = point.close > prevPoint.close ? "up" as const : "down" as const;
+          
+          return { ...point, trend };
+        });
         
-        return { ...point, trend };
-      });
-      
-      console.log("Prepared 3D visualization data:", pointsWithTrend.length, "points");
-      setVisualizationData(pointsWithTrend);
-    } catch (error) {
-      console.error("Error processing 3D visualization data:", error);
-      // Fallback to empty array if processing fails
-      setVisualizationData([]);
-    } finally {
-      setIsProcessing(false);
-    }
+        console.log("Prepared 3D visualization data:", pointsWithTrend.length, "points");
+        setVisualizationData(pointsWithTrend);
+      } catch (error) {
+        console.error("Error processing 3D visualization data:", error);
+        // Fallback to empty array if processing fails
+        setVisualizationData([]);
+      } finally {
+        setIsProcessing(false);
+        processingRef.current = false;
+      }
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, [data]);
   
   // Calculate statistics for the visualization

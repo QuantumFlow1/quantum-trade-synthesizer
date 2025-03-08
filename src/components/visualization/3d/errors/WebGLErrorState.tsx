@@ -16,6 +16,7 @@ export const WebGLErrorState = ({ type, onRetry }: WebGLErrorStateProps) => {
           fill="none" 
           viewBox="0 0 24 24" 
           stroke="currentColor"
+          aria-hidden="true"
         >
           <path 
             strokeLinecap="round" 
@@ -35,36 +36,24 @@ export const WebGLErrorState = ({ type, onRetry }: WebGLErrorStateProps) => {
         
         <p className="text-sm text-muted-foreground">
           {type === 'context-lost' 
-            ? "The 3D rendering was interrupted. This is often due to GPU memory pressure or driver issues."
+            ? "The 3D rendering was interrupted. This is often due to browser limitations or memory pressure."
             : type === 'unsupported'
               ? "Your browser or device doesn't fully support WebGL, which is required for 3D visualizations."
               : "There was a problem initializing the 3D visualization. This might be due to browser compatibility or hardware limitations."
           }
         </p>
         
-        {type === 'error' && (
-          <div className="text-sm mt-2 text-muted-foreground">
-            <p>Try these solutions:</p>
-            <ul className="list-disc text-left ml-6 mt-2">
-              <li>Close other browser tabs and applications</li>
-              <li>Update your graphics drivers</li>
-              <li>Switch to Chrome or Firefox if you're using another browser</li>
-              <li>Reload the page and try again</li>
-            </ul>
-          </div>
-        )}
-        
-        {type === 'unsupported' && (
-          <p className="text-sm mt-2 text-muted-foreground">
-            Try using a different browser like Chrome or Firefox, or updating your graphics drivers.
-            Some older devices might not support 3D visualization.
-          </p>
-        )}
-        
         <div className="flex gap-3 mt-3">
           <button 
             onClick={onRetry}
             className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors"
+            aria-label={
+              type === 'context-lost' 
+                ? 'Restart visualization' 
+                : type === 'unsupported' 
+                  ? 'Try anyway' 
+                  : 'Retry'
+            }
           >
             {type === 'context-lost' ? 'Restart Visualization' : (
               type === 'unsupported' ? 'Try Anyway' : 'Retry'

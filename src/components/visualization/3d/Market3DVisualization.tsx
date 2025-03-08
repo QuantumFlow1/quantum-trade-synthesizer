@@ -23,6 +23,8 @@ interface Market3DVisualizationProps {
     avgPrice: number;
     priceChange: number;
     priceChangePercent: number;
+    maxPrice?: number;
+    minPrice?: number;
   };
   visualizationData: TradingDataPoint[];
   errorStateType: 'context-lost' | 'error' | 'unsupported';
@@ -55,7 +57,7 @@ export const Market3DVisualization = ({
       {/* Header */}
       <MarketViewHeader isSimulationMode={isSimulationMode} />
       
-      {/* Stats overlay */}
+      {/* Stats overlay - only show when successfully loaded */}
       {!isLoading && !hasError && !contextLost && (
         <StatsOverlay 
           avgPrice={stats.avgPrice} 
@@ -73,7 +75,7 @@ export const Market3DVisualization = ({
               ? "Preparing 3D environment..." 
               : "Loading market data..."
           }
-          retryAction={onRetry}
+          retryAction={loadingTime > 5000 ? onRetry : undefined}
           loadingTime={loadingTime}
         />
       )}
@@ -93,10 +95,10 @@ export const Market3DVisualization = ({
         </div>
       )}
       
-      {/* 3D Canvas */}
+      {/* 3D Canvas - with key to force remount */}
       {!hasError && !contextLost && webGLAvailable && (
         <MarketViewCanvas 
-          key={`canvas-${renderKey}`} // Force re-create canvas on key change
+          key={`canvas-${renderKey}`}
           theme={theme}
           webGLAvailable={webGLAvailable}
           hasError={hasError}
@@ -104,7 +106,7 @@ export const Market3DVisualization = ({
           isLoading={isLoading}
           data={visualizationData}
           onWebGLContextLost={onContextLost}
-          onWebGLContextRestored={onWebGLRestore}
+          onWebGLContextRestored={onContextRestored}
         />
       )}
     </Card>
