@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, TrendingUp } from 'lucide-react';
+import { Clock, TrendingUp, AlertCircle, Info } from 'lucide-react';
 import { MarketData, HourlyProjection } from '../types';
 import { MarketChartView } from '../MarketChartView';
 import { generateChartData } from '../utils/chartDataGenerator';
 import { toast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MarketPriceChartProps {
   marketData: MarketData;
@@ -66,16 +67,19 @@ export const MarketPriceChart: React.FC<MarketPriceChartProps> = ({ marketData }
           
           // Add projection data points
           const projectedData = projections.map((proj, idx) => {
+            const confidenceBand = proj.projectedPrice * (1 - proj.confidence * 0.2); // Wider bands for less confidence
             return {
               name: `${proj.hour.toString().padStart(2, '0')}:00`,
               price: currentData[0].price, // Maintain a reference line
               volume: 0,
-              high: proj.projectedPrice + (proj.projectedPrice * 0.01), // Add a small range
-              low: proj.projectedPrice - (proj.projectedPrice * 0.01),
+              high: proj.projectedPrice + confidenceBand * 0.5, // Add confidence bands
+              low: proj.projectedPrice - confidenceBand * 0.5,
               change: 0,
               projected: true,
               projectedPrice: proj.projectedPrice,
-              confidence: proj.confidence
+              confidence: proj.confidence,
+              upperBand: proj.projectedPrice + confidenceBand * 0.5,
+              lowerBand: proj.projectedPrice - confidenceBand * 0.5
             };
           });
           
@@ -143,10 +147,29 @@ export const MarketPriceChart: React.FC<MarketPriceChartProps> = ({ marketData }
       
       {activeTimeframe === '24h' && hourlyProjections.length > 0 && (
         <div className="mt-4 bg-secondary/20 rounded-lg p-4 space-y-2">
-          <h3 className="text-sm font-medium flex items-center">
-            <TrendingUp className="h-4 w-4 mr-2 text-primary" />
-            24-Hour Price Projection Summary
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium flex items-center">
+              <TrendingUp className="h-4 w-4 mr-2 text-primary" />
+              24-Hour Price Projection Summary
+            </h3>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <Info className="h-3 w-3 mr-1" />
+                    About Projections
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  <p className="text-xs">
+                    Projections are indicated with dashed lines, with confidence bands showing possible price ranges. 
+                    Higher confidence projections have narrower bands.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
           
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="bg-background/80 p-2 rounded">
@@ -178,6 +201,21 @@ export const MarketPriceChart: React.FC<MarketPriceChartProps> = ({ marketData }
               <p className="font-medium">
                 {(hourlyProjections.reduce((sum, proj) => sum + proj.confidence, 0) / hourlyProjections.length * 100).toFixed(0)}%
               </p>
+            </div>
+          </div>
+          
+          <div className="mt-3 flex items-center flex-wrap gap-2 text-xs">
+            <div className="flex items-center">
+              <span className="inline-block w-6 h-[2px] bg-primary mr-1"></span>
+              <span>Actual data</span>
+            </div>
+            <div className="flex items-center">
+              <span className="inline-block w-6 h-[2px] border-t-[2px] border-dashed border-amber-500 mr-1"></span>
+              <span>Projection</span>
+            </div>
+            <div className="flex items-center">
+              <span className="inline-block w-6 h-4 bg-amber-100/50 border border-amber-200/50 mr-1"></span>
+              <span>Confidence band</span>
             </div>
           </div>
           

@@ -28,13 +28,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           <>
             <p className="text-xs text-white/80 flex items-center justify-between">
               <span>Projected Price:</span>
-              <span className="font-bold text-primary">${dataPoint.projectedPrice?.toFixed(2) || 'N/A'}</span>
+              <span className="font-bold text-amber-400">${dataPoint.projectedPrice?.toFixed(2) || 'N/A'}</span>
             </p>
             <p className="text-xs text-white/80 flex items-center justify-between">
               <span>Confidence:</span>
               <span>{dataPoint.confidence ? (dataPoint.confidence * 100).toFixed(0) : 'N/A'}%</span>
             </p>
-            <div className="mt-1 px-2 py-0.5 bg-primary/20 text-primary text-xs rounded text-center">
+            <p className="text-xs text-white/80 flex items-center justify-between">
+              <span>Range:</span>
+              <span>${dataPoint.lowerBand?.toFixed(2) || 'N/A'} - ${dataPoint.upperBand?.toFixed(2) || 'N/A'}</span>
+            </p>
+            <div className="mt-1 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded text-center">
               AI Projection
             </div>
           </>
@@ -127,16 +131,62 @@ export const MarketChartView = ({ data, type }: MarketChartViewProps) => {
             
             {/* Projected price line (if available) */}
             {hasProjections && (
-              <Line
-                type="monotone"
-                dataKey="projectedPrice"
-                stroke="#f59e0b"
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                name="Projection"
-                connectNulls={true}
-                dot={{ r: 3, fill: "#f59e0b", strokeWidth: 1, stroke: "#fff" }}
-              />
+              <>
+                {/* Main projected price line */}
+                <Line
+                  type="monotone"
+                  dataKey="projectedPrice"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  name="Projection"
+                  connectNulls={true}
+                  dot={{ r: 3, fill: "#f59e0b", strokeWidth: 1, stroke: "#fff" }}
+                />
+                
+                {/* Confidence band - upper bound */}
+                <Line
+                  type="monotone"
+                  dataKey="upperBand"
+                  stroke="#f59e0b"
+                  strokeWidth={1}
+                  strokeOpacity={0.4}
+                  strokeDasharray="3 3"
+                  name="Upper Bound"
+                  connectNulls={true}
+                  dot={false}
+                />
+                
+                {/* Confidence band - lower bound */}
+                <Line
+                  type="monotone"
+                  dataKey="lowerBand"
+                  stroke="#f59e0b"
+                  strokeWidth={1}
+                  strokeOpacity={0.4}
+                  strokeDasharray="3 3"
+                  name="Lower Bound"
+                  connectNulls={true}
+                  dot={false}
+                />
+                
+                {/* Confidence band area */}
+                <defs>
+                  <linearGradient id="confidenceBandGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.05}/>
+                  </linearGradient>
+                </defs>
+                <Area
+                  type="monotone"
+                  dataKey="upperBand"
+                  stroke={false}
+                  fillOpacity={1}
+                  fill="url(#confidenceBandGradient)"
+                  name="Confidence Band"
+                  connectNulls={true}
+                />
+              </>
             )}
             
             {/* Divider line between actual and projected data */}
@@ -145,7 +195,15 @@ export const MarketChartView = ({ data, type }: MarketChartViewProps) => {
                 x={data[projectionStartIndex].name} 
                 stroke="#f59e0b" 
                 strokeDasharray="3 3"
-                label={{ value: "AI Projections →", position: "insideTopRight", fill: "#f59e0b", fontSize: 10 }}
+                strokeWidth={1.5}
+                label={{ 
+                  value: "AI Projections →", 
+                  position: "insideTopRight", 
+                  fill: "#f59e0b", 
+                  fontSize: 10,
+                  fontWeight: "bold",
+                  offset: 5
+                }}
               />
             )}
           </LineChart>
