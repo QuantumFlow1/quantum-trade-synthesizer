@@ -1,13 +1,15 @@
 
+import { AgentRecommendation, TradingAgent } from "../types/portfolioTypes";
+
 // Generate simulated agent recommendations
 export const generateAgentRecommendations = (
   currentData: any,
-  tradingAgents: any[],
+  tradingAgents: TradingAgent[],
   accuracyMetrics: Record<string, any> = {}
-) => {
+): AgentRecommendation[] => {
   if (!currentData) return [];
   
-  const recommendations = [];
+  const recommendations: AgentRecommendation[] = [];
   const ticker = currentData?.symbol || "BTC";
   const currentPrice = currentData?.price || 45000;
   
@@ -31,7 +33,9 @@ export const generateAgentRecommendations = (
     const biasedSeed = 0.5 + (marketTrend * 0.2) + (specialBias * 0.3) + randomFactor;
     
     // Make decisions based on biased seed
-    let action, confidence, reasoning;
+    let action: "BUY" | "SELL" | "HOLD";
+    let confidence: number;
+    let reasoning: string;
     
     // Decision logic based on agent specialization
     switch(agent.specialization) {
@@ -138,7 +142,10 @@ export const generateAgentRecommendations = (
 };
 
 // Helper function to determine specialization bias based on market data
-function getSpecializationBias(specialization: string, marketData: any): number {
+function getSpecializationBias(
+  specialization: "fundamental" | "technical" | "sentiment" | "risk" | "volatility" | "macro", 
+  marketData: any
+): number {
   if (!marketData) return 0;
   
   const trend = marketData.trend || 0;

@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { PortfolioManagerHookReturn } from '../types/portfolioTypes';
+import { PortfolioManagerHookReturn, TradingAgent, AgentRecommendation, PortfolioDecision, AgentPerformance } from '../types/portfolioTypes';
 import { tradingAgents } from '../data/tradingAgents';
 import { generateCollaborationMessages } from '../utils/collaborationUtils';
 import { generateBacktestResults, calculateAgentAccuracy } from '../utils/backtestingUtils';
@@ -11,13 +11,13 @@ import { usePortfolioDecisions } from './usePortfolioDecisions';
 
 export const usePortfolioManager = (currentData: any): PortfolioManagerHookReturn => {
   const { toast } = useToast();
-  const [agentRecommendations, setAgentRecommendations] = useState([]);
+  const [agentRecommendations, setAgentRecommendations] = useState<AgentRecommendation[]>([]);
   const [loadingDecision, setLoadingDecision] = useState(false);
-  const [collaborationMessages, setCollaborationMessages] = useState([]);
-  const [collaborationScore, setCollaborationScore] = useState(0);
-  const [agentAccuracy, setAgentAccuracy] = useState({});
-  const [activeDiscussions, setActiveDiscussions] = useState([]);
-  const [backtestResults, setBacktestResults] = useState([]);
+  const [collaborationMessages, setCollaborationMessages] = useState<any[]>([]);
+  const [collaborationScore, setCollaborationScore] = useState<number>(0);
+  const [agentAccuracy, setAgentAccuracy] = useState<Record<string, any>>({});
+  const [activeDiscussions, setActiveDiscussions] = useState<any[]>([]);
+  const [backtestResults, setBacktestResults] = useState<any[]>([]);
   const { agentPerformance, updateAgentPerformance } = useAgentPerformance();
   const { 
     portfolioDecision, 

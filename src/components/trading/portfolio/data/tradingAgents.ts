@@ -1,6 +1,8 @@
 
+import { TradingAgent } from "../types/portfolioTypes";
+
 // Trading agent definitions
-export const tradingAgents = [
+export const tradingAgents: TradingAgent[] = [
   {
     id: "value-investor",
     name: "Value Investor",

@@ -1,130 +1,117 @@
 
 import { useState, useCallback } from 'react';
+import { AgentRecommendation, PortfolioDecision, TradingAgent } from '../types/portfolioTypes';
 
 export const usePortfolioDecisions = () => {
-  const [portfolioDecision, setPortfolioDecision] = useState<any>(null);
+  const [portfolioDecision, setPortfolioDecision] = useState<PortfolioDecision | null>(null);
   const [riskScore, setRiskScore] = useState<number>(50);
-
-  const calculateMajorityAction = useCallback((recommendations: any[]) => {
-    const actionCounts: Record<string, number> = {};
-    const actionConfidence: Record<string, number[]> = {};
-    
-    recommendations.forEach(rec => {
-      actionCounts[rec.action] = (actionCounts[rec.action] || 0) + 1;
-      actionConfidence[rec.action] = actionConfidence[rec.action] || [];
-      actionConfidence[rec.action].push(rec.confidence);
-    });
-    
-    // Find the action with the most votes
-    let majorityAction = "HOLD";
-    let maxCount = 0;
-    
-    for (const action in actionCounts) {
-      if (actionCounts[action] > maxCount) {
-        maxCount = actionCounts[action];
-        majorityAction = action;
-      }
-    }
-    
-    // Calculate the average confidence for the majority action
-    const avgConfidence = actionConfidence[majorityAction].reduce((sum, val) => sum + val, 0) / 
-                          actionConfidence[majorityAction].length;
-    
-    return {
-      action: majorityAction,
-      confidence: Math.round(avgConfidence),
-      votes: maxCount,
-      totalVotes: recommendations.length
-    };
-  }, []);
-
-  const calculateRiskScore = useCallback((
-    recommendations: any[], 
-    majority: { action: string, confidence: number }
-  ) => {
-    // Base risk on the variance of recommendations and confidence levels
-    const recommendationVariance = recommendations.reduce((variance, rec) => {
-      return variance + (rec.action !== majority.action ? 1 : 0);
-    }, 0) / recommendations.length;
-    
-    // Risk increases with variance and decreases with confidence
-    const baseRisk = 50; // Neutral starting point
-    const varianceImpact = recommendationVariance * 40; // Higher variance = higher risk
-    const confidenceImpact = majority.confidence * 0.3; // Higher confidence = lower risk
-    
-    // Calculate final risk (0-100 scale)
-    const calculatedRisk = Math.min(
-      100, 
-      Math.max(
-        0, 
-        baseRisk + varianceImpact - confidenceImpact
-      )
-    );
-    
-    return Math.round(calculatedRisk);
-  }, []);
-
+  
+  // Generate a final portfolio decision based on agent recommendations
   const generatePortfolioDecision = useCallback((
-    recommendations: any[],
-    agents: any[],
-    accuracyMetrics: any,
+    recommendations: AgentRecommendation[],
+    agents: TradingAgent[],
+    accuracyMetrics: Record<string, any>,
     collaborationMessages: any[],
     collaborationScore: number,
-    currentData: any
+    marketData: any
   ) => {
-    if (!recommendations.length) return null;
+    if (recommendations.length === 0) return;
     
-    const ticker = currentData?.symbol || "BTC";
-    const currentPrice = currentData?.price || 45000;
+    const ticker = marketData?.symbol || "BTC";
+    const currentPrice = marketData?.price || 45000;
     
-    // Calculate the majority action and its confidence
-    const majority = calculateMajorityAction(recommendations);
+    // Count votes for each action, weighted by agent importance and accuracy
+    const votes = {
+      BUY: 0,
+      SELL: 0,
+      HOLD: 0
+    };
     
-    // Calculate a risk score based on recommendation variance and confidence
-    const newRiskScore = calculateRiskScore(recommendations, majority);
-    setRiskScore(newRiskScore);
+    // Track contributing agents
+    const contributors: string[] = [];
+    let totalWeightedConfidence = 0;
+    let totalWeight = 0;
     
-    // Determine contributors (agents that recommended the majority action)
-    const contributors = recommendations
-      .filter(rec => rec.action === majority.action)
-      .map(rec => rec.agentId);
+    // Calculate weighted votes
+    recommendations.forEach(rec => {
+      // Find the agent
+      const agent = agents.find(a => a.id === rec.agentId);
+      if (!agent) return;
+      
+      // Get accuracy metric for this agent
+      const accuracy = accuracyMetrics[agent.id] ? accuracyMetrics[agent.id].overall / 100 : 0.5;
+      
+      // Calculate weight based on agent weight, accuracy, and confidence
+      const weight = agent.weight * accuracy * (rec.confidence / 100);
+      
+      // Add weighted vote
+      votes[rec.action as keyof typeof votes] += weight;
+      totalWeight += weight;
+      
+      // Add to total confidence
+      totalWeightedConfidence += rec.confidence * weight;
+      
+      // Add to contributors if significant contribution
+      if (weight > 0.1) {
+        contributors.push(agent.id);
+      }
+    });
     
-    // Generate reasoning based on majority action and collaboration
-    let reasoning = `Based on the analysis of ${majority.votes} out of ${majority.totalVotes} agents`;
+    // Determine the final action (highest weighted vote)
+    const action = Object.entries(votes).reduce((a, b) => a[1] > b[1] ? a : b)[0] as "BUY" | "SELL" | "HOLD";
     
-    if (collaborationScore > 70) {
-      reasoning += ` with high collaboration (${collaborationScore}%)`;
+    // Calculate overall confidence (weighted average of contributing agents)
+    const confidence = totalWeight > 0 ? Math.round(totalWeightedConfidence / totalWeight) : 60;
+    
+    // Calculate simulated amount based on confidence and action
+    const baseAmount = action === "BUY" ? 0.25 : (action === "SELL" ? 0.15 : 0);
+    const adjustedAmount = baseAmount * (confidence / 70);
+    const finalAmount = Math.round(adjustedAmount * 100) / 100;
+    
+    // Calculate risk score based on market volatility, action, and collaboration
+    const volatility = marketData?.volatility || 0.3;
+    const calculatedRiskScore = Math.round(
+      (volatility * 50) + 
+      (action === "BUY" ? 15 : action === "SELL" ? 10 : 0) + 
+      ((1 - (confidence / 100)) * 20) - 
+      (collaborationScore * 10)
+    );
+    
+    setRiskScore(calculatedRiskScore);
+    
+    // Generate reasoning
+    let reasoning = `Based on weighted analysis from ${contributors.length} trading agents`;
+    
+    if (collaborationScore > 0.6) {
+      reasoning += ` with strong collaborative consensus (${Math.round(collaborationScore * 100)}%)`;
     }
     
-    reasoning += `, the portfolio recommends to ${majority.action} ${ticker} at the current price of $${currentPrice}.`;
+    reasoning += `, the recommended action is to ${action} ${ticker} at the current price of $${currentPrice}.`;
     
-    if (newRiskScore > 70) {
-      reasoning += ` This recommendation comes with high risk (${newRiskScore}/100).`;
-    } else if (newRiskScore < 30) {
-      reasoning += ` This recommendation has relatively low risk (${newRiskScore}/100).`;
+    if (action === "BUY") {
+      reasoning += ` Bullish signals outweigh bearish indicators by ${Math.round((votes.BUY - votes.SELL) * 100)}%.`;
+    } else if (action === "SELL") {
+      reasoning += ` Bearish signals outweigh bullish indicators by ${Math.round((votes.SELL - votes.BUY) * 100)}%.`;
+    } else {
+      reasoning += ` Market signals are mixed with insufficient conviction for a directional trade.`;
     }
     
-    // Determine amount based on confidence and risk
-    const baseAmount = 0.1; // Base amount to trade
-    const adjustedAmount = baseAmount * (majority.confidence / 100) * (1 - (newRiskScore / 200));
-    const amount = Math.max(0.01, Math.round(adjustedAmount * 100) / 100); // Min 0.01, rounded to 2 decimals
-    
-    const decision = {
-      action: majority.action,
+    // Create the portfolio decision
+    const decision: PortfolioDecision = {
+      action,
       ticker,
-      amount,
+      amount: finalAmount,
       price: currentPrice,
-      confidence: majority.confidence,
-      riskScore: newRiskScore,
-      contributors,
+      confidence,
+      riskScore: calculatedRiskScore,
+      contributors: contributors.slice(0, 3), // Top 3 contributors
       reasoning,
       timestamp: new Date().toISOString()
     };
     
     setPortfolioDecision(decision);
-    return decision;
-  }, [calculateMajorityAction, calculateRiskScore]);
-
+  }, []);
+  
   return {
     portfolioDecision,
     riskScore,

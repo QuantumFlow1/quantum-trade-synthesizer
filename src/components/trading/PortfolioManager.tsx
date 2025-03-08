@@ -10,7 +10,7 @@ import { RecommendationList } from "./portfolio/RecommendationList";
 import { PortfolioDecision } from "./portfolio/PortfolioDecision";
 import { LoadingDecision } from "./portfolio/LoadingDecision";
 import { AgentCollaboration } from "./portfolio/AgentCollaboration";
-import { usePortfolioManager } from "./portfolio/usePortfolioManager";
+import { usePortfolioManager } from "./portfolio/hooks/usePortfolioManager";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 

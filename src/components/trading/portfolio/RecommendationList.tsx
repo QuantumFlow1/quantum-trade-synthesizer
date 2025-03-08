@@ -1,13 +1,14 @@
 
 import React from 'react';
-import { AgentRecommendation } from "@/types/agent";
+import { AgentRecommendation, TradingAgent } from "@/types/agent";
 import { Badge } from "@/components/ui/badge";
 import { Brain, TrendingUp, TrendingDown, Pause, AlertTriangle, BarChart3, Percent, History, Target } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { AgentPerformance } from "./types/portfolioTypes";
 
 interface RecommendationListProps {
   recommendations: AgentRecommendation[];
-  agentPerformance?: Record<string, number>;
+  agentPerformance?: Record<string, AgentPerformance>;
   agentAccuracy?: Record<string, {
     overall: number;
     recent: number;
@@ -84,7 +85,8 @@ export const RecommendationList: React.FC<RecommendationListProps> = ({
             color: "bg-gray-500" 
           };
           const AgentIcon = agentType.icon;
-          const performanceScore = agentPerformance[rec.agentId] || 0;
+          const performance = agentPerformance[rec.agentId];
+          const performanceScore = performance ? performance.successRate : 0;
           const accuracyData = agentAccuracy[rec.agentId];
           const confidenceInterval = accuracyData?.confidence || [0, 0];
           

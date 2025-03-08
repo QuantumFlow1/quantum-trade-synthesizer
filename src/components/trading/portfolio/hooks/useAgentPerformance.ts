@@ -1,16 +1,12 @@
 
 import { useState, useCallback } from 'react';
+import { AgentPerformance, TradingAgent } from '../types/portfolioTypes';
 
 export const useAgentPerformance = () => {
-  const [agentPerformance, setAgentPerformance] = useState<Record<string, {
-    successRate: number,
-    recentSuccess: number[],
-    averageConfidence: number,
-    totalCalls: number
-  }>>({});
+  const [agentPerformance, setAgentPerformance] = useState<Record<string, AgentPerformance>>({});
 
-  const updateAgentPerformance = useCallback((agents: any[], accuracyMetrics: any) => {
-    const updatedPerformance: Record<string, any> = {};
+  const updateAgentPerformance = useCallback((agents: TradingAgent[], accuracyMetrics: any) => {
+    const updatedPerformance: Record<string, AgentPerformance> = {};
     
     agents.forEach(agent => {
       const agentAccuracy = accuracyMetrics[agent.id] || { overall: 50, recent: 50 };
