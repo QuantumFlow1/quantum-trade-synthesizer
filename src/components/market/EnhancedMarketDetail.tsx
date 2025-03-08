@@ -1,12 +1,16 @@
 
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarketDetailHeader } from './detail/MarketDetailHeader';
 import { MarketPriceOverview } from './detail/MarketPriceOverview';
+import { MarketPriceChart } from './detail/MarketPriceChart';
+import { MarketStatistics } from './detail/MarketStatistics';
+import { MarketActions } from './detail/MarketActions';
 import { MarketData } from './types';
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CollapsibleSection } from './detail/CollapsibleSection';
-import { MarketTabs } from './detail/MarketTabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface EnhancedMarketDetailProps {
   marketData: MarketData;
@@ -33,22 +37,75 @@ export const EnhancedMarketDetail = ({ marketData, onClose }: EnhancedMarketDeta
       
       <CardContent className={`p-4 ${isMobile ? 'p-2' : 'p-6'}`}>
         {/* Price Overview Section - Expandable */}
-        <CollapsibleSection
-          title="Price Overview"
-          isExpanded={expandedSections.priceOverview}
-          onToggle={() => toggleSection('priceOverview')}
+        <Collapsible
+          open={expandedSections.priceOverview}
+          onOpenChange={() => toggleSection('priceOverview')}
           className="mb-6"
         >
-          <MarketPriceOverview marketData={marketData} />
-        </CollapsibleSection>
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">Price Overview</h3>
+            <CollapsibleTrigger className="p-1 hover:bg-secondary/20 rounded-full">
+              {expandedSections.priceOverview ? 
+                <ChevronUp className="h-5 w-5" /> : 
+                <ChevronDown className="h-5 w-5" />
+              }
+            </CollapsibleTrigger>
+          </div>
+          
+          <CollapsibleContent className="mt-2">
+            <MarketPriceOverview marketData={marketData} />
+          </CollapsibleContent>
+        </Collapsible>
         
         {/* Main Content Tabs */}
-        <MarketTabs 
-          marketData={marketData} 
-          expandedSections={expandedSections} 
-          toggleSection={toggleSection}
-          onClose={onClose}
-        />
+        <Tabs defaultValue="chart" className="mt-4">
+          <TabsList className={`mb-4 ${isMobile ? 'w-full grid grid-cols-3' : ''}`}>
+            <TabsTrigger value="chart">Price Chart</TabsTrigger>
+            <TabsTrigger value="statistics">Statistics</TabsTrigger>
+            <TabsTrigger value="actions">Trade</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="chart" className="mt-2">
+            <Collapsible
+              open={expandedSections.chartSection}
+              onOpenChange={() => toggleSection('chartSection')}
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-medium">Price History</h3>
+                <CollapsibleTrigger className="p-1 hover:bg-secondary/20 rounded-full">
+                  {expandedSections.chartSection ? 
+                    <ChevronUp className="h-4 w-4" /> : 
+                    <ChevronDown className="h-4 w-4" />
+                  }
+                </CollapsibleTrigger>
+              </div>
+              
+              <CollapsibleContent>
+                <Card className="bg-card/50">
+                  <CardContent className={`${isMobile ? 'p-2' : 'p-4'}`}>
+                    <MarketPriceChart marketData={marketData} />
+                  </CardContent>
+                </Card>
+              </CollapsibleContent>
+            </Collapsible>
+          </TabsContent>
+          
+          <TabsContent value="statistics" className="mt-2">
+            <Card className="bg-card/50">
+              <CardContent className={`${isMobile ? 'p-2' : 'p-4'}`}>
+                <MarketStatistics marketData={marketData} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="actions" className="mt-2">
+            <Card className="bg-card/50">
+              <CardContent className={`${isMobile ? 'p-2' : 'p-4'}`}>
+                <MarketActions marketData={marketData} onClose={onClose} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
