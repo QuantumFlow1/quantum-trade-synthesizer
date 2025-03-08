@@ -1,6 +1,10 @@
 
 import { TradingDataPoint } from "@/utils/tradingData";
-import { SceneContainer, OptimizationLevel, EnvironmentPreset } from "./scene/SceneContainer";
+import { 
+  SceneContainer, 
+  OptimizationLevel, 
+  EnvironmentPreset 
+} from "./scene/SceneContainer";
 
 interface SceneProps {
   data: TradingDataPoint[];
