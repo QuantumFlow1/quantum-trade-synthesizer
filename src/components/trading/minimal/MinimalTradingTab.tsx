@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MinimalPriceChart } from "./MinimalPriceChart";
 import { MinimalTradingControls } from "./MinimalTradingControls";
+import { MinimalMarketData } from "./MinimalMarketData";
 import { tradingDataService } from "@/services/trading/tradingDataService";
 import { TradingDataPoint } from "@/utils/tradingData";
 
@@ -42,6 +43,10 @@ export const MinimalTradingTab = () => {
 
   return (
     <div className="space-y-6">
+      {/* Market Data Summary */}
+      <MinimalMarketData />
+      
+      {/* Chart Card */}
       <Card>
         <CardHeader>
           <CardTitle>Trading Chart</CardTitle>
