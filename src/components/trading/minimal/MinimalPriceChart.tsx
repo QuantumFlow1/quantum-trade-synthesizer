@@ -1,5 +1,4 @@
 
-import { useEffect, useState } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
 import {
   ResponsiveContainer,
@@ -23,7 +22,7 @@ export const MinimalPriceChart = ({ data, className = "" }: MinimalPriceChartPro
   }
 
   return (
-    <div className={`bg-card border rounded-lg p-4 ${className}`}>
+    <div className={`bg-card border rounded-lg p-4 h-full ${className}`}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={data}

@@ -65,12 +65,11 @@ export const MinimalTradingTab = () => {
   };
 
   // Handle view change
-  const handleViewChange = (view: string) => {
-    const newView = view as "3d" | "2d";
-    setActiveView(newView);
+  const handleViewChange = (view: "3d" | "2d") => {
+    setActiveView(view);
     
     // Reset error state when switching back to 3D
-    if (newView === "3d" && has3DError) {
+    if (view === "3d" && has3DError) {
       setRenderAttempt(0);
       setHas3DError(false);
     }

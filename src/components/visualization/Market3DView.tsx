@@ -4,6 +4,7 @@ import { TradingDataPoint } from "@/utils/tradingData";
 import { useMarket3DData } from "@/hooks/use-market-3d-data";
 import { Market3DInitializing } from "./3d/Market3DInitializing";
 import { Market3DVisualization } from "./3d/Market3DVisualization";
+import { useImprovedMarket3DView, useThemeDetection, useWebGLState } from "@/hooks/use-theme-detection";
 
 interface Market3DViewProps {
   data: TradingDataPoint[];
@@ -18,6 +19,8 @@ export const Market3DView = ({
   onError,
   onLoaded
 }: Market3DViewProps) => {
+  console.log("Market3DView rendered with data length:", data.length);
+  
   const {
     visualizationData,
     stats,
@@ -48,10 +51,20 @@ export const Market3DView = ({
     onLoaded 
   });
 
+  // Log visualization data to help with debugging
+  useEffect(() => {
+    console.log("Visualization data updated:", visualizationData.length);
+    console.log("Stats:", stats);
+    console.log("WebGL available:", webGLAvailable);
+    console.log("Has error:", hasError);
+    console.log("Context lost:", contextLost);
+  }, [visualizationData, stats, webGLAvailable, hasError, contextLost]);
+
   // Start rendering with a slight delay to avoid blocking main thread
   useEffect(() => {
     if (visualizationData.length > 0 && !initialRenderAttemptedRef.current && mountedRef.current) {
       initialRenderAttemptedRef.current = true;
+      console.log("Starting 3D rendering");
       
       // Set rendering started immediately to avoid flickering
       setRenderingStarted(true);
@@ -59,6 +72,7 @@ export const Market3DView = ({
       // Force a re-render with a new key after a small delay
       const timer = setTimeout(() => {
         if (mountedRef.current) {
+          console.log("Updating render key");
           setRenderKey(prev => prev + 1);
         }
       }, 100);
@@ -76,10 +90,12 @@ export const Market3DView = ({
 
   // Don't render anything until we have data
   if (!renderingStarted || isProcessing) {
+    console.log("Showing initializing state");
     return (
       <Market3DInitializing
         isSimulationMode={isSimulationMode}
         onRetry={() => {
+          console.log("Retrying 3D initialization");
           setRenderKey(prev => prev + 1);
           initialRenderAttemptedRef.current = false;
         }}
@@ -87,6 +103,7 @@ export const Market3DView = ({
     );
   }
 
+  console.log("Rendering Market3DVisualization with key:", renderKey);
   return (
     <Market3DVisualization
       key={`visualization-${renderKey}`}
@@ -110,114 +127,5 @@ export const Market3DView = ({
   );
 };
 
-// New improved hook that combines functionality from our existing hooks
-function useImprovedMarket3DView({ 
-  visualizationData, 
-  onError, 
-  onLoaded 
-}: { 
-  visualizationData: TradingDataPoint[],
-  onError?: () => void,
-  onLoaded?: () => void
-}) {
-  const theme = useThemeDetection();
-  const [dataReady, setDataReady] = useState(false);
-  const [renderAttempts, setRenderAttempts] = useState(0);
-  const mountedRef = useRef(true);
-  
-  // Use the WebGL state hook for core functionality
-  const {
-    isLoading,
-    hasError,
-    webGLAvailable,
-    contextLost,
-    loadingTime,
-    handleContextLost,
-    handleContextRestored,
-    handleRetry: baseHandleRetry,
-    setIsLoading
-  } = useWebGLState();
-
-  // Check if data is ready for rendering
-  useEffect(() => {
-    if (visualizationData.length > 0 && mountedRef.current) {
-      setDataReady(true);
-    }
-  }, [visualizationData]);
-
-  // Notify parent components of errors
-  useEffect(() => {
-    if ((hasError || contextLost || !webGLAvailable) && renderAttempts < 2 && mountedRef.current) {
-      console.log("3D View error state detected:", { hasError, contextLost, webGLAvailable });
-      setRenderAttempts(prev => prev + 1);
-      onError?.();
-    }
-  }, [hasError, contextLost, webGLAvailable, onError, renderAttempts]);
-
-  // Notify parent when loading is done
-  useEffect(() => {
-    if (!isLoading && !hasError && webGLAvailable && !contextLost && dataReady && mountedRef.current) {
-      console.log("3D View loaded successfully");
-      onLoaded?.();
-    }
-  }, [isLoading, hasError, webGLAvailable, contextLost, dataReady, onLoaded]);
-
-  // Component unmount cleanup
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  // Handle WebGL context restoration
-  const handleWebGLRestore = () => {
-    console.log("Attempting to restore WebGL context");
-    handleContextRestored();
-    
-    if (mountedRef.current) {
-      // Reset loading state to trigger re-creation
-      setIsLoading(true);
-      setTimeout(() => {
-        if (mountedRef.current) {
-          setIsLoading(false);
-        }
-      }, 100);
-    }
-  };
-
-  // Enhanced retry function with attempt tracking
-  const handleRetry = () => {
-    if (renderAttempts < 3 && mountedRef.current) {
-      setRenderAttempts(prev => prev + 1);
-      baseHandleRetry();
-    }
-  };
-
-  // Determine which error state to show
-  const getErrorStateType = () => {
-    if (contextLost) return 'context-lost';
-    if (!webGLAvailable) return 'unsupported';
-    return 'error';
-  };
-
-  return {
-    theme,
-    isLoading,
-    hasError,
-    webGLAvailable,
-    contextLost,
-    loadingTime,
-    handleContextLost,
-    handleContextRestored,
-    handleRetry,
-    handleWebGLRestore,
-    getErrorStateType,
-    dataReady,
-    renderAttempts
-  };
-}
-
 // Re-export the hook to make it accessible
-import { useThemeDetection } from "@/hooks/use-theme-detection";
-import { useWebGLState } from "@/hooks/use-webgl-state";
 export { useImprovedMarket3DView };
