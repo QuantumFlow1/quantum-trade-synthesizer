@@ -25,12 +25,12 @@ export const PriceChart = ({ data }: PriceChartProps) => {
       <Legend 
         content={<CustomLegend 
           payload={[
-            { value: 'Price', color: '#8b5cf6', type: 'line' },
-            { value: 'High', color: '#4ade80', type: 'line' },
-            { value: 'Low', color: '#ef4444', type: 'line' },
+            { value: 'Price', color: '#8b5cf6', type: 'line' as const },
+            { value: 'High', color: '#4ade80', type: 'line' as const },
+            { value: 'Low', color: '#ef4444', type: 'line' as const },
             ...(hasProjections ? [
-              { value: 'Projection', color: '#f59e0b', type: 'line' },
-              { value: 'Confidence Band', color: '#f59e0b', type: 'square' } // Changed 'area' to 'square' which is valid
+              { value: 'Projection', color: '#f59e0b', type: 'line' as const },
+              { value: 'Confidence Band', color: '#f59e0b', type: 'square' as const }
             ] : [])
           ]}
         />}

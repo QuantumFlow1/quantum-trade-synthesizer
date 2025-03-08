@@ -1,6 +1,7 @@
 
 import { AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { CustomTooltip } from './CustomTooltip';
+import { CustomLegend } from './CustomLegend';
 import { ChartData } from '../types';
 
 interface VolumeChartProps {
@@ -17,7 +18,13 @@ export const VolumeChart = ({ data }: VolumeChartProps) => {
       <XAxis dataKey="name" stroke="#888888" />
       <YAxis stroke="#888888" />
       <Tooltip content={<CustomTooltip />} />
-      <Legend formatter={(value) => value} />
+      <Legend 
+        content={<CustomLegend 
+          payload={[
+            { value: 'Volume', color: '#4ade80', type: 'rect' as const }
+          ]}
+        />}
+      />
       <defs>
         <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
           <stop offset="5%" stopColor="#4ade80" stopOpacity={0.8}/>

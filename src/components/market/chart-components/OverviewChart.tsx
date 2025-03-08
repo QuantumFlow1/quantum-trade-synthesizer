@@ -21,8 +21,8 @@ export const OverviewChart = ({ data }: OverviewChartProps) => {
       <Legend 
         content={<CustomLegend 
           payload={[
-            { value: 'Volume', color: '#4ade80', type: 'rect' },
-            { value: 'Price', color: '#8b5cf6', type: 'rect' }
+            { value: 'Volume', color: '#4ade80', type: 'rect' as const },
+            { value: 'Price', color: '#8b5cf6', type: 'rect' as const }
           ]}
         />}
       />
