@@ -1,10 +1,9 @@
-
 import React from 'react';
-import { AgentRecommendation, TradingAgent } from "@/types/agent";
+import { AgentRecommendation } from "@/types/agent";
+import { TradingAgent, AgentPerformance } from "./types/portfolioTypes";
 import { Badge } from "@/components/ui/badge";
 import { Brain, TrendingUp, TrendingDown, Pause, AlertTriangle, BarChart3, Percent, History, Target } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { AgentPerformance } from "./types/portfolioTypes";
 
 interface RecommendationListProps {
   recommendations: AgentRecommendation[];
