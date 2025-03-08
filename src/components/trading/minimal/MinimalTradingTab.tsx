@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,6 @@ import { MinimalPriceChart } from "./MinimalPriceChart";
 import { MinimalTradingControls } from "./MinimalTradingControls";
 import { MinimalMarketData } from "./MinimalMarketData";
 import { tradingDataService } from "@/services/trading/tradingDataService";
-import { TradingDataPoint } from "@/utils/tradingData";
 import { Market3DView } from "@/components/visualization/Market3DView";
 import { useThemeDetection } from "@/hooks/use-theme-detection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,7 +22,6 @@ export const MinimalTradingTab = () => {
   const theme = useThemeDetection();
   const { toast } = useToast();
 
-  // Function to fetch data with the given timeframe
   const fetchData = (tf: typeof timeframe) => {
     setIsLoading(true);
     const newData = tradingDataService.refreshData(tf);
@@ -32,16 +29,13 @@ export const MinimalTradingTab = () => {
     setIsLoading(false);
   };
 
-  // Function to refresh data with current timeframe
   const refreshData = () => fetchData(timeframe);
 
-  // Handle timeframe change
   const handleTimeframeChange = (newTimeframe: typeof timeframe) => {
     setTimeframe(newTimeframe);
     fetchData(newTimeframe);
   };
 
-  // Handle 3D view error
   const handle3DError = () => {
     if (activeView === "3d") {
       if (renderAttempt < 2) {
@@ -64,18 +58,15 @@ export const MinimalTradingTab = () => {
     }
   };
 
-  // Handle view change
   const handleViewChange = (view: "3d" | "2d") => {
     setActiveView(view);
     
-    // Reset error state when switching back to 3D
     if (view === "3d" && has3DError) {
       setRenderAttempt(0);
       setHas3DError(false);
     }
   };
 
-  // Initial data load and auto-refresh
   useEffect(() => {
     refreshData();
     const intervalId = setInterval(refreshData, 30000);
