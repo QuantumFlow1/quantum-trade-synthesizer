@@ -19,6 +19,32 @@ interface MainPriceChartProps {
   showIndicators: boolean;
 }
 
+// Custom legend renderer to make it more visually appealing
+const renderCustomLegend = (props: any) => {
+  const { payload } = props;
+  
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-1 pb-1 text-xs">
+      {payload.map((entry: any, index: number) => {
+        const isDashed = entry.value === 'SMA' || entry.value === 'EMA' || entry.value === 'Upper Band' || entry.value === 'Lower Band';
+        
+        return (
+          <div key={`item-${index}`} className="flex items-center gap-1.5">
+            <div 
+              className={`w-3 h-2 ${isDashed ? 'border-t-[2px] border-dotted' : ''}`} 
+              style={{ 
+                backgroundColor: isDashed ? 'transparent' : entry.color,
+                borderColor: isDashed ? entry.color : 'transparent'
+              }}
+            />
+            <span style={{ color: entry.color }}>{entry.value}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const MainPriceChart = ({ data, showVolume, showIndicators }: MainPriceChartProps) => {
   // Calculate min and max values for better axis scaling
   const minPrice = Math.min(...data.map(d => d.low)) * 0.99;
@@ -48,7 +74,7 @@ export const MainPriceChart = ({ data, showVolume, showIndicators }: MainPriceCh
             />
           )}
           <Tooltip content={<CustomTooltip />} />
-          <Legend />
+          <Legend content={renderCustomLegend} />
           <Line
             type="monotone"
             dataKey="close"
@@ -68,6 +94,7 @@ export const MainPriceChart = ({ data, showVolume, showIndicators }: MainPriceCh
                 dot={false}
                 name="SMA"
                 yAxisId="price"
+                strokeDasharray="3 2"
               />
               <Line
                 type="monotone"
@@ -77,6 +104,7 @@ export const MainPriceChart = ({ data, showVolume, showIndicators }: MainPriceCh
                 dot={false}
                 name="EMA"
                 yAxisId="price"
+                strokeDasharray="3 2"
               />
               {data[0].bollingerUpper && (
                 <>

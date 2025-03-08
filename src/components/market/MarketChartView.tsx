@@ -68,6 +68,31 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// Custom legend renderer
+const renderCustomLegend = (props: any) => {
+  const { payload } = props;
+  
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center mt-2 text-xs">
+      {payload.map((entry: any, index: number) => {
+        const isProjection = entry.value.includes('Projection') || entry.value.includes('Bound') || entry.value.includes('Band');
+        return (
+          <div key={`item-${index}`} className="flex items-center gap-1.5">
+            <div 
+              className={`w-3 h-2 ${isProjection ? 'border-t-[2px] border-dashed' : ''}`} 
+              style={{ 
+                backgroundColor: isProjection ? 'transparent' : entry.color,
+                borderColor: isProjection ? entry.color : 'transparent'
+              }}
+            />
+            <span style={{ color: entry.color }}>{entry.value}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const MarketChartView = ({ data, type }: MarketChartViewProps) => {
   const commonProps = {
     data: data,
@@ -87,7 +112,7 @@ export const MarketChartView = ({ data, type }: MarketChartViewProps) => {
             <XAxis dataKey="name" stroke="#888888" />
             <YAxis stroke="#888888" />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend formatter={(value) => value} />
             <Bar dataKey="volume" fill="#4ade80" name="Volume" />
             <Bar dataKey="price" fill="#8b5cf6" name="Price" />
           </BarChart>
@@ -97,7 +122,7 @@ export const MarketChartView = ({ data, type }: MarketChartViewProps) => {
             <XAxis dataKey="name" stroke="#888888" />
             <YAxis stroke="#888888" />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend formatter={(value) => value} />
             <defs>
               <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#4ade80" stopOpacity={0.8}/>
@@ -112,7 +137,15 @@ export const MarketChartView = ({ data, type }: MarketChartViewProps) => {
             <XAxis dataKey="name" stroke="#888888" />
             <YAxis stroke="#888888" />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend payload={[
+              { value: 'Price', color: '#8b5cf6', type: 'line' },
+              { value: 'High', color: '#4ade80', type: 'line' },
+              { value: 'Low', color: '#ef4444', type: 'line' },
+              ...(hasProjections ? [
+                { value: 'Projection', color: '#f59e0b', type: 'line' },
+                { value: 'Confidence Band', color: '#f59e0b', type: 'area' }
+              ] : [])
+            ]} content={renderCustomLegend} />
             
             {/* Current price line */}
             <Line 
