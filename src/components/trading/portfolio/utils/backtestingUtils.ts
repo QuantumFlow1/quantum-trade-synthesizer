@@ -1,104 +1,113 @@
 
-import { BacktestResult, AgentAccuracy, TradingAgent } from "../types/portfolioTypes";
-import { TradeAction } from "@/types/agent";
-
-// Generate prediction history based on simulated backtesting
-export const generateBacktestResults = (currentData: any, tradingAgents: TradingAgent[]): BacktestResult[] => {
-  if (!currentData) return [];
-  
+// Generate simulated backtesting results for agents
+export const generateBacktestResults = (
+  currentData: any,
+  tradingAgents: any[]
+) => {
+  const backtestResults = [];
   const ticker = currentData?.symbol || "BTC";
   const currentPrice = currentData?.price || 45000;
-  const results: BacktestResult[] = [];
   
-  // For each agent, generate some historical backtests
-  tradingAgents.forEach(agent => {
-    // Generate 10 historical predictions per agent
-    for (let i = 0; i < 10; i++) {
-      const daysAgo = i + 1;
-      const date = new Date();
-      date.setDate(date.getDate() - daysAgo);
+  // Create some simulated dates for backtest (last 10 days)
+  const dates = [];
+  for (let i = 10; i > 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    dates.push(date.toISOString());
+  }
+  
+  // For each agent, generate backtesting results
+  for (const agent of tradingAgents) {
+    // Simulate agent accuracy based on its weight/quality
+    const baseAccuracy = 0.5 + (agent.weight * 0.3);
+    
+    for (const date of dates) {
+      // Generate a simulated prediction and outcome
+      const confidence = Math.floor(60 + Math.random() * 35);
       
-      // Simulated historical price (random variation from current)
-      const historicalPrice = currentPrice * (1 + (Math.random() * 0.2 - 0.1));
+      // Action prediction for this historical date
+      let predictedAction: string;
+      const actionRoll = Math.random();
       
-      // Price 'later' after the prediction was made
-      const priceLater = historicalPrice * (1 + (Math.random() * 0.3 - 0.15));
+      if (actionRoll > 0.65) {
+        predictedAction = "BUY";
+      } else if (actionRoll > 0.3) {
+        predictedAction = "HOLD";
+      } else {
+        predictedAction = "SELL";
+      }
       
-      // Determine actual outcome based on price difference
-      const actualOutcome: TradeAction = priceLater > historicalPrice ? "BUY" : "SELL";
+      // Randomly determine if the prediction was correct (weighted by agent's quality)
+      const accuracyRoll = Math.random();
+      const isCorrect = accuracyRoll < baseAccuracy;
       
-      // Simulate what the agent would have predicted
-      const predictedAction: TradeAction = Math.random() > 0.4 ? actualOutcome : 
-                                         (actualOutcome === "BUY" ? "SELL" : "BUY");
-      
-      // Determine if prediction was correct
-      const isCorrect = predictedAction === actualOutcome;
-      
-      // Record the result
-      results.push({
+      // Add to results
+      backtestResults.push({
         agentId: agent.id,
+        date,
         predictedAction,
-        actualOutcome,
+        actualOutcome: isCorrect ? predictedAction : (predictedAction === "BUY" ? "SELL" : "BUY"), 
         isCorrect,
-        date: date.toISOString(),
-        confidence: Math.round(50 + Math.random() * 40),
-        price: historicalPrice,
-        priceLater
+        confidence,
+        price: Math.round(currentPrice * (0.9 + Math.random() * 0.2)), // Random price within ±10%
+        priceLater: Math.round(currentPrice * (0.85 + Math.random() * 0.3)) // Random price within wider range
       });
     }
-  });
+  }
   
-  return results;
+  return backtestResults;
 };
 
 // Calculate agent accuracy metrics from backtest results
-export const calculateAgentAccuracy = (backtests: BacktestResult[]): Record<string, AgentAccuracy> => {
-  const accuracy: Record<string, AgentAccuracy> = {};
+export const calculateAgentAccuracy = (backtestResults: any[]) => {
+  const accuracy: Record<string, any> = {};
   
-  // Group by agent
-  const agentGroups = backtests.reduce((groups, test) => {
-    if (!groups[test.agentId]) {
-      groups[test.agentId] = [];
+  // Group results by agent
+  const resultsByAgent: Record<string, any[]> = {};
+  
+  for (const result of backtestResults) {
+    if (!resultsByAgent[result.agentId]) {
+      resultsByAgent[result.agentId] = [];
     }
-    groups[test.agentId].push(test);
-    return groups;
-  }, {} as Record<string, BacktestResult[]>);
+    resultsByAgent[result.agentId].push(result);
+  }
   
-  // Calculate metrics for each agent
-  Object.entries(agentGroups).forEach(([agentId, tests]) => {
-    // Sort by date (newest first)
-    const sortedTests = [...tests].sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+  // Calculate accuracy metrics for each agent
+  for (const agentId in resultsByAgent) {
+    const agentResults = resultsByAgent[agentId];
+    const totalPredictions = agentResults.length;
+    
+    if (totalPredictions === 0) continue;
     
     // Calculate overall accuracy
-    const correctCount = tests.filter(t => t.isCorrect).length;
-    const overall = Math.round((correctCount / tests.length) * 100);
+    const correctPredictions = agentResults.filter(r => r.isCorrect).length;
+    const overallAccuracy = Math.round((correctPredictions / totalPredictions) * 100);
     
-    // Calculate recent accuracy (last 5 tests)
-    const recentTests = sortedTests.slice(0, 5);
-    const recentCorrect = recentTests.filter(t => t.isCorrect).length;
-    const recent = Math.round((recentCorrect / recentTests.length) * 100);
+    // Calculate recent accuracy (last 5 predictions)
+    const recentResults = agentResults.slice(-5);
+    const recentCorrect = recentResults.filter(r => r.isCorrect).length;
+    const recentAccuracy = Math.round((recentCorrect / recentResults.length) * 100);
     
-    // Generate confidence interval (overall ± 5-15%)
-    const variability = Math.round(Math.random() * 10) + 5;
-    const lowerBound = Math.max(0, overall - variability);
-    const upperBound = Math.min(100, overall + variability);
+    // Calculate confidence interval
+    const confidenceMargin = Math.round(15 + Math.random() * 10); // Random margin 15-25%
+    const lowerConfidence = Math.max(0, overallAccuracy - confidenceMargin);
+    const upperConfidence = Math.min(100, overallAccuracy + confidenceMargin);
     
-    // Create prediction history
-    const predictionHistory = sortedTests.map(test => ({
-      correct: test.isCorrect,
-      date: test.date,
-      prediction: test.predictedAction
+    // Generate a prediction history for display
+    const predictionHistory = agentResults.slice(-7).map(result => ({
+      prediction: result.predictedAction,
+      correct: result.isCorrect,
+      date: result.date
     }));
     
     accuracy[agentId] = {
-      overall,
-      recent,
-      confidence: [lowerBound, upperBound] as [number, number],
+      overall: overallAccuracy,
+      recent: recentAccuracy,
+      confidence: [lowerConfidence, upperConfidence],
+      sampleSize: totalPredictions,
       predictionHistory
     };
-  });
+  }
   
   return accuracy;
 };

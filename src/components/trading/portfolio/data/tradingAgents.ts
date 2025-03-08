@@ -1,60 +1,64 @@
 
-import { TradingAgent } from "../types/portfolioTypes";
-
-// Define our specialized agents with weights
-export const tradingAgents: TradingAgent[] = [
+// Trading agent definitions
+export const tradingAgents = [
   {
     id: "value-investor",
     name: "Value Investor",
+    icon: "trending-up",
     specialization: "fundamental",
-    description: "Analyzes asset fundamentals and intrinsic value",
-    weight: 85,
-    successRate: 0.72,
-    contributionScore: 16
+    description: "Analyzes asset fundamentals and seeks undervalued opportunities",
+    weight: 0.8,
+    confidence: 80,
+    successRate: 0.7
   },
   {
     id: "technical-analyst",
     name: "Technical Analyst",
+    icon: "bar-chart-2",
     specialization: "technical",
-    description: "Identifies patterns in price charts and technical indicators",
-    weight: 82,
-    successRate: 0.68,
-    contributionScore: 14
+    description: "Uses chart patterns and technical indicators to predict price movements",
+    weight: 0.75,
+    confidence: 75,
+    successRate: 0.65
   },
   {
     id: "sentiment-analyzer",
     name: "Sentiment Analyzer",
+    icon: "message-circle",
     specialization: "sentiment",
-    description: "Analyzes news and social media for market sentiment",
-    weight: 75,
-    successRate: 0.63,
-    contributionScore: 12
+    description: "Monitors social media and news sentiment to gauge market perception",
+    weight: 0.7,
+    confidence: 70,
+    successRate: 0.6
   },
   {
     id: "risk-manager",
     name: "Risk Manager",
+    icon: "shield",
     specialization: "risk",
-    description: "Calculates risk metrics and optimal position sizing",
-    weight: 90,
-    successRate: 0.78,
-    contributionScore: 18
+    description: "Evaluates potential downside risks and suggests protective strategies",
+    weight: 0.85,
+    confidence: 85,
+    successRate: 0.75
   },
   {
     id: "volatility-expert",
     name: "Volatility Expert",
+    icon: "activity",
     specialization: "volatility",
-    description: "Specializes in market volatility analysis",
-    weight: 80,
-    successRate: 0.65,
-    contributionScore: 13
+    description: "Specializes in analyzing market volatility and price fluctuations",
+    weight: 0.72,
+    confidence: 72,
+    successRate: 0.63
   },
   {
     id: "macro-economist",
     name: "Macro Economist",
+    icon: "globe",
     specialization: "macro",
-    description: "Analyzes economic indicators and monetary policy effects",
-    weight: 78,
-    successRate: 0.64,
-    contributionScore: 12
+    description: "Considers broader economic factors and market correlations",
+    weight: 0.78,
+    confidence: 78,
+    successRate: 0.68
   }
 ];

@@ -1,77 +1,128 @@
 
-import { TradingAgent, AgentAccuracy } from "../types/portfolioTypes";
-import { AgentRecommendation, TradeAction } from "@/types/agent";
-
-// Generate agent recommendations with more specializations
+// Generate simulated agent recommendations
 export const generateAgentRecommendations = (
-  currentData: any, 
-  tradingAgents: TradingAgent[],
-  accuracyMetrics: Record<string, AgentAccuracy>
-): AgentRecommendation[] => {
+  currentData: any,
+  tradingAgents: any[],
+  accuracyMetrics: Record<string, any> = {}
+) => {
   if (!currentData) return [];
   
+  const recommendations = [];
   const ticker = currentData?.symbol || "BTC";
   const currentPrice = currentData?.price || 45000;
-  const randomSeed = Math.random();
-  const recommendations: AgentRecommendation[] = [];
   
-  // Get recommendations from each agent type
-  tradingAgents.forEach(agent => {
-    // Determine action based on agent type and random factors
-    let action: TradeAction = "HOLD";
-    let confidence = 50 + Math.floor(Math.random() * 40);
-    let reasoning = "";
+  for (const agent of tradingAgents) {
+    // Use agent's accuracy metrics if available, otherwise use defaults
+    const agentAccuracy = accuracyMetrics[agent.id] || { 
+      overall: 60,
+      recent: 55,
+      confidence: [40, 80]
+    };
     
-    // Specialized logic per agent type
+    // Bias the random seed based on:
+    // 1. Current market data (trend)
+    // 2. Agent's specialization
+    // 3. Small random factor
+    const marketTrend = currentData?.trend || 0; // -1 to 1 range
+    const specialBias = getSpecializationBias(agent.specialization, currentData);
+    const randomFactor = Math.random() * 0.3 - 0.15; // Small random adjustment (-0.15 to 0.15)
+    
+    // Combine all factors, weighted appropriately
+    const biasedSeed = 0.5 + (marketTrend * 0.2) + (specialBias * 0.3) + randomFactor;
+    
+    // Make decisions based on biased seed
+    let action, confidence, reasoning;
+    
+    // Decision logic based on agent specialization
     switch(agent.specialization) {
       case "fundamental":
-        action = randomSeed > 0.7 ? "BUY" : (randomSeed > 0.4 ? "HOLD" : "SELL");
-        confidence = Math.round(60 + randomSeed * 30);
-        reasoning = `Based on fundamental analysis, the current ${ticker} price at $${currentPrice} ${randomSeed > 0.6 ? "represents a good value" : "is slightly overvalued"}.`;
+        // Value investors generally prefer buying undervalued assets
+        action = biasedSeed > 0.6 ? "BUY" : (biasedSeed > 0.4 ? "HOLD" : "SELL");
+        confidence = Math.round(70 + (biasedSeed * 20));
+        reasoning = `Based on fundamental analysis, the current ${ticker} price at $${currentPrice} ${biasedSeed > 0.55 ? "represents a good value" : "appears slightly overvalued"}.`;
         break;
         
       case "technical":
-        action = randomSeed > 0.5 ? "BUY" : "SELL";
-        confidence = Math.round(50 + randomSeed * 40);
-        reasoning = `Technical indicators show ${randomSeed > 0.5 ? "bullish" : "bearish"} momentum on ${ticker} with ${randomSeed > 0.7 ? "strong" : "moderate"} volume.`;
+        // Technical analysts look for patterns and momentum
+        action = biasedSeed > 0.65 ? "BUY" : (biasedSeed > 0.35 ? "HOLD" : "SELL");
+        confidence = Math.round(65 + (biasedSeed * 25));
+        
+        if (biasedSeed > 0.65) {
+          reasoning = `Technical indicators show a bullish pattern with strong support at $${Math.floor(currentPrice * 0.95)}.`;
+        } else if (biasedSeed < 0.35) {
+          reasoning = `Technical indicators show a bearish pattern with resistance at $${Math.floor(currentPrice * 1.05)}.`;
+        } else {
+          reasoning = `${ticker} is consolidating between support at $${Math.floor(currentPrice * 0.95)} and resistance at $${Math.floor(currentPrice * 1.05)}.`;
+        }
         break;
         
       case "sentiment":
-        action = randomSeed > 0.6 ? "BUY" : (randomSeed > 0.3 ? "HOLD" : "SELL");
-        confidence = Math.round(40 + randomSeed * 50);
-        reasoning = `Market sentiment analysis indicates ${randomSeed > 0.6 ? "positive" : "mixed"} outlook for ${ticker} based on news and social media.`;
+        // Sentiment analysts are more influenced by market sentiment and volatility
+        action = biasedSeed > 0.7 ? "BUY" : (biasedSeed > 0.3 ? "HOLD" : "SELL");
+        confidence = Math.round(60 + (biasedSeed * 30));
+        
+        if (biasedSeed > 0.7) {
+          reasoning = `Market sentiment for ${ticker} is bullish with increasing social media mentions.`;
+        } else if (biasedSeed < 0.3) {
+          reasoning = `Market sentiment for ${ticker} is bearish with negative social media trends.`;
+        } else {
+          reasoning = `Market sentiment for ${ticker} is mixed with neutral engagement metrics.`;
+        }
         break;
         
       case "risk":
-        // Risk manager is more conservative
-        action = randomSeed > 0.8 ? "BUY" : (randomSeed > 0.4 ? "HOLD" : "SELL");
-        confidence = Math.round(70 + randomSeed * 25);
-        reasoning = `Risk assessment shows ${randomSeed > 0.7 ? "manageable" : "elevated"} downside risk with recommended position size of ${Math.round(randomSeed * 5 + 2)}% of portfolio.`;
+        // Risk managers are more conservative
+        action = biasedSeed > 0.75 ? "BUY" : (biasedSeed > 0.4 ? "HOLD" : "SELL");
+        confidence = Math.round(75 + (biasedSeed * 15)); // Generally higher confidence
+        
+        if (biasedSeed > 0.75) {
+          reasoning = `Risk assessment indicates favorable conditions for ${ticker} with manageable downside.`;
+        } else if (biasedSeed < 0.4) {
+          reasoning = `Risk assessment shows elevated risk levels for ${ticker}; recommend reducing exposure.`;
+        } else {
+          reasoning = `Risk levels for ${ticker} are within acceptable parameters; maintain current position.`;
+        }
         break;
         
       case "volatility":
-        action = randomSeed > 0.6 ? (randomSeed > 0.8 ? "BUY" : "HOLD") : "SELL";
-        confidence = Math.round(55 + randomSeed * 35);
-        reasoning = `Volatility metrics indicate ${randomSeed > 0.7 ? "decreasing" : "increasing"} market fluctuations with ${randomSeed > 0.5 ? "favorable" : "unfavorable"} trading conditions.`;
+        // Volatility experts focus on market fluctuations
+        action = biasedSeed > 0.6 ? "BUY" : (biasedSeed > 0.45 ? "HOLD" : "SELL");
+        confidence = Math.round(65 + (biasedSeed * 25));
+        
+        if (biasedSeed > 0.6) {
+          reasoning = `Volatility patterns suggest a potential upward movement for ${ticker} in the near term.`;
+        } else if (biasedSeed < 0.45) {
+          reasoning = `Volatility metrics indicate increased downside risk for ${ticker} at current levels.`;
+        } else {
+          reasoning = `Volatility for ${ticker} is expected to remain stable in the short term.`;
+        }
         break;
         
       case "macro":
-        action = randomSeed > 0.65 ? "BUY" : (randomSeed > 0.4 ? "HOLD" : "SELL");
-        confidence = Math.round(60 + randomSeed * 30);
-        reasoning = `Macroeconomic indicators suggest ${randomSeed > 0.6 ? "supportive" : "challenging"} environment for ${ticker} with ${randomSeed > 0.5 ? "bullish" : "bearish"} implications.`;
+        // Macro economists look at broader economic indicators
+        action = biasedSeed > 0.55 ? "BUY" : (biasedSeed > 0.45 ? "HOLD" : "SELL");
+        confidence = Math.round(70 + (biasedSeed * 20));
+        
+        if (biasedSeed > 0.55) {
+          reasoning = `Macroeconomic conditions favor ${ticker} with positive market correlations.`;
+        } else if (biasedSeed < 0.45) {
+          reasoning = `Macroeconomic indicators suggest caution for ${ticker} due to market headwinds.`;
+        } else {
+          reasoning = `Macroeconomic environment is neutral for ${ticker} with mixed signals.`;
+        }
         break;
         
       default:
-        action = randomSeed > 0.5 ? "BUY" : "SELL";
-        confidence = Math.round(50 + randomSeed * 30);
-        reasoning = `Analysis indicates a ${randomSeed > 0.5 ? "favorable" : "unfavorable"} outlook for ${ticker}.`;
+        action = biasedSeed > 0.5 ? "BUY" : "SELL";
+        confidence = Math.round(60 + (biasedSeed * 30));
+        reasoning = `Analysis of ${ticker} at $${currentPrice} suggests a ${action} recommendation.`;
     }
     
-    // Adjust confidence based on accuracy metrics
-    if (accuracyMetrics[agent.id]) {
-      // Make confidence slightly closer to historical accuracy
-      const historicalAccuracy = accuracyMetrics[agent.id].overall;
-      confidence = Math.round((confidence * 0.7) + (historicalAccuracy * 0.3));
+    // Factor in the agent's historical accuracy
+    if (agentAccuracy.overall < 50 && Math.random() > 0.7) {
+      // For agents with poor track records, occasionally flip their recommendation
+      action = action === "BUY" ? "SELL" : (action === "SELL" ? "BUY" : "HOLD");
+      reasoning += " However, my recent predictions have been inconsistent.";
     }
     
     recommendations.push({
@@ -79,102 +130,47 @@ export const generateAgentRecommendations = (
       action,
       confidence,
       reasoning,
-      ticker,
-      price: currentPrice,
       timestamp: new Date().toISOString()
     });
-  });
+  }
   
   return recommendations;
 };
 
-// Calculate weighted action based on agent weights and accuracy
-export const calculateWeightedAction = (
-  recommendations: AgentRecommendation[], 
-  agents: TradingAgent[],
-  accuracyMetrics: Record<string, AgentAccuracy>
-): TradeAction => {
-  const actionScores: Record<TradeAction, number> = {
-    "BUY": 0,
-    "SELL": 0,
-    "HOLD": 0,
-    "SHORT": 0,
-    "COVER": 0
-  };
+// Helper function to determine specialization bias based on market data
+function getSpecializationBias(specialization: string, marketData: any): number {
+  if (!marketData) return 0;
   
-  let totalWeight = 0;
+  const trend = marketData.trend || 0;
+  const volatility = marketData.volatility || 0.5;
+  const volume = marketData.volume || 0.5;
   
-  recommendations.forEach(rec => {
-    // Find the agent's weight
-    const agent = agents.find(a => a.id === rec.agentId);
-    if (agent) {
-      // Calculate weight based on agent weight, confidence, and historical accuracy
-      let weight = agent.weight;
+  switch (specialization) {
+    case "fundamental":
+      // Value investors may see opportunity in downtrends if the asset is undervalued
+      return trend < 0 ? 0.1 : (trend > 0 ? 0.2 : 0);
       
-      // Adjust weight by accuracy if available
-      if (accuracyMetrics[agent.id]) {
-        // Give more weight to agents with higher accuracy
-        const accuracyFactor = accuracyMetrics[agent.id].overall / 100;
-        // And more weight to agents with more consistent results
-        const confidenceRange = accuracyMetrics[agent.id].confidence[1] - accuracyMetrics[agent.id].confidence[0];
-        const consistencyFactor = 1 - (confidenceRange / 100);
-        
-        weight = weight * (0.5 + (accuracyFactor * 0.3) + (consistencyFactor * 0.2));
-      }
+    case "technical":
+      // Technical analysts follow momentum
+      return trend * 0.3;
       
-      // Adjust by recommendation confidence
-      weight = weight * (rec.confidence / 100);
+    case "sentiment":
+      // Sentiment analysts are more sensitive to trend changes
+      return trend * 0.4;
       
-      actionScores[rec.action] += weight;
-      totalWeight += weight;
-    } else {
-      // Fallback if agent not found
-      actionScores[rec.action] += rec.confidence;
-      totalWeight += rec.confidence;
-    }
-  });
-  
-  // Find the action with the highest weighted score
-  let bestAction: TradeAction = "HOLD"; // Default
-  let highestScore = 0;
-  
-  (Object.keys(actionScores) as TradeAction[]).forEach(action => {
-    if (actionScores[action] > highestScore) {
-      highestScore = actionScores[action];
-      bestAction = action;
-    }
-  });
-  
-  return bestAction;
-};
-
-// Calculate weighted confidence with accuracy considerations
-export const calculateWeightedConfidence = (
-  recommendations: AgentRecommendation[], 
-  agents: TradingAgent[],
-  accuracyMetrics: Record<string, AgentAccuracy>
-): number => {
-  let weightedConfidenceSum = 0;
-  let totalWeight = 0;
-  
-  recommendations.forEach(rec => {
-    const agent = agents.find(a => a.id === rec.agentId);
-    if (agent) {
-      let weight = agent.weight;
+    case "risk":
+      // Risk managers prefer stability and are cautious in volatile markets
+      return -volatility * 0.4;
       
-      // Apply accuracy weighting if available
-      if (accuracyMetrics[agent.id]) {
-        // Agents with higher accuracy get more weight in confidence calculation
-        weight = weight * (accuracyMetrics[agent.id].overall / 100);
-      }
+    case "volatility":
+      // Volatility experts may see opportunity in volatility
+      return (volatility - 0.5) * 0.3;
       
-      weightedConfidenceSum += rec.confidence * weight;
-      totalWeight += weight;
-    } else {
-      weightedConfidenceSum += rec.confidence;
-      totalWeight += 50; // Default weight
-    }
-  });
-  
-  return Math.round(weightedConfidenceSum / (totalWeight || 1));
-};
+    case "macro":
+      // Macro economists consider broader trends and volume
+      return (trend * 0.2) + ((volume - 0.5) * 0.2);
+      
+    default:
+      return 0;
+  }
+}

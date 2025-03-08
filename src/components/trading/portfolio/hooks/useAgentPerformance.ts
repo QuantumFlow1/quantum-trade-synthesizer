@@ -1,34 +1,41 @@
 
 import { useState, useCallback } from 'react';
-import { TradingAgent, AgentAccuracy } from '../types/portfolioTypes';
 
 export const useAgentPerformance = () => {
-  const [agentPerformance, setAgentPerformance] = useState<Record<string, number>>({});
+  const [agentPerformance, setAgentPerformance] = useState<Record<string, {
+    successRate: number,
+    recentSuccess: number[],
+    averageConfidence: number,
+    totalCalls: number
+  }>>({});
 
-  const updateAgentPerformance = useCallback((
-    tradingAgents: TradingAgent[],
-    accuracyMetrics: Record<string, AgentAccuracy>
-  ) => {
-    const newPerformance: Record<string, number> = {...agentPerformance};
+  const updateAgentPerformance = useCallback((agents: any[], accuracyMetrics: any) => {
+    const updatedPerformance: Record<string, any> = {};
     
-    tradingAgents.forEach(agent => {
-      // Calculate performance based on accuracy metrics if available
-      if (accuracyMetrics[agent.id]) {
-        // Base performance on accuracy metrics
-        newPerformance[agent.id] = Math.round(
-          (accuracyMetrics[agent.id].overall * 0.6) + 
-          (accuracyMetrics[agent.id].recent * 0.4)
-        );
-      } else {
-        // Fallback to simulated performance
-        const basePerf = agent.successRate * 100;
-        // Add some random variation
-        newPerformance[agent.id] = Math.round(basePerf + (Math.random() * 10 - 5));
-      }
+    agents.forEach(agent => {
+      const agentAccuracy = accuracyMetrics[agent.id] || { overall: 50, recent: 50 };
+      const currentPerformance = agentPerformance[agent.id] || {
+        successRate: 50,
+        recentSuccess: [50, 50, 50, 50, 50],
+        averageConfidence: 70,
+        totalCalls: 0
+      };
+      
+      // Update recent success with a rolling window
+      const newRecentSuccess = [...currentPerformance.recentSuccess.slice(1), agentAccuracy.recent];
+      
+      updatedPerformance[agent.id] = {
+        successRate: agentAccuracy.overall,
+        recentSuccess: newRecentSuccess,
+        averageConfidence: (currentPerformance.averageConfidence * 0.8) + (agent.confidence * 0.2),
+        totalCalls: currentPerformance.totalCalls + 1
+      };
     });
     
-    setAgentPerformance(newPerformance);
-    return newPerformance;
+    setAgentPerformance(prev => ({
+      ...prev,
+      ...updatedPerformance
+    }));
   }, [agentPerformance]);
 
   return {
