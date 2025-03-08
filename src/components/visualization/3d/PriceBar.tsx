@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { ColorTheme } from "@/hooks/use-theme-detection";
 import * as THREE from "three";
+import { OptimizationLevel } from "./scene/types";
 
 interface PriceBarProps {
   point: TradingDataPoint;
@@ -14,7 +15,7 @@ interface PriceBarProps {
   theme: ColorTheme;
   onHover?: () => void;
   onBlur?: () => void;
-  optimizationLevel?: 'normal' | 'aggressive';
+  optimizationLevel?: OptimizationLevel;
 }
 
 export const PriceBar = ({ 
@@ -30,35 +31,21 @@ export const PriceBar = ({
 }: PriceBarProps) => {
   const meshRef = useRef<THREE.Mesh>(null!);
   
-  // Log initial render for debugging
-  useEffect(() => {
-    if (index === 0) {
-      console.log(`Rendering price bars with theme: ${theme}, optimization: ${optimizationLevel}`);
-    }
-  }, [index, theme, optimizationLevel]);
-  
-  // Position bar along X-axis based on index
-  const xPosition = (index - total / 2) * 1.2;
-  
-  // Calculate height based on price
-  const priceRange = maxPrice - minPrice;
-  const height = priceRange > 0 
-    ? ((point.close - minPrice) / priceRange) * 5 + 0.5 // Scale height between 0.5 and 5.5
-    : 1; // Default height if there's no price range
-  
-  // Determine color based on price trend
-  const getBarColor = () => {
-    if (point.trend === 'up') {
-      return theme === 'dark' ? '#10b981' : '#059669'; // Green
-    } else if (point.trend === 'down') {
-      return theme === 'dark' ? '#ef4444' : '#dc2626'; // Red
-    }
-    return theme === 'dark' ? '#6366f1' : '#4f46e5'; // Default/neutral (indigo)
-  };
-  
-  // Memoize the material to prevent unnecessary recreations
-  const material = useMemo(() => {
-    const barColor = getBarColor();
+  // Calculate position and dimensions once
+  const { xPosition, height, material, geometry } = useMemo(() => {
+    // Position bar along X-axis based on index
+    const xPos = (index - total / 2) * 1.2;
+    
+    // Calculate height based on price
+    const priceRange = maxPrice - minPrice;
+    const barHeight = priceRange > 0 
+      ? ((point.close - minPrice) / priceRange) * 5 + 0.5 // Scale height between 0.5 and 5.5
+      : 1; // Default height if there's no price range
+    
+    // Determine color based on price trend
+    const barColor = getBarColor(point.trend, theme);
+    
+    // Create material with optimized properties
     const mat = new THREE.MeshStandardMaterial({
       color: barColor,
       roughness: optimizationLevel === 'aggressive' ? 0.7 : 0.4,
@@ -67,53 +54,87 @@ export const PriceBar = ({
       emissiveIntensity: 0
     });
     
-    return mat;
-  }, [theme, point.trend, optimizationLevel]);
+    // Create geometry with appropriate detail level
+    const segments = optimizationLevel === 'aggressive' ? 1 : (optimizationLevel === 'extreme' ? 1 : 2);
+    const geo = new THREE.BoxGeometry(0.8, barHeight, 0.8, segments, segments, segments);
+    
+    return { xPosition: xPos, height: barHeight, material: mat, geometry: geo };
+  }, [index, total, point.close, point.trend, maxPrice, minPrice, theme, optimizationLevel]);
   
-  // Reduce geometry segments in aggressive optimization mode
-  const boxGeometryArgs: [width?: number, height?: number, depth?: number, widthSegments?: number, heightSegments?: number, depthSegments?: number] = 
-    optimizationLevel === 'aggressive' 
-      ? [0.8, height, 0.8, 1, 1, 1]  // Reduced segments
-      : [0.8, height, 0.8, 2, 2, 2];
+  // Separate function for getting bar color
+  const getBarColor = (trend: "up" | "down" | "neutral", currentTheme: ColorTheme): string => {
+    if (trend === 'up') {
+      return currentTheme === 'dark' ? '#10b981' : '#059669'; // Green
+    } else if (trend === 'down') {
+      return currentTheme === 'dark' ? '#ef4444' : '#dc2626'; // Red
+    }
+    return currentTheme === 'dark' ? '#6366f1' : '#4f46e5'; // Default/neutral (indigo)
+  };
   
-  // Animate the bar on creation - simplified for aggressive mode
+  // Log initial render only for first item
+  useEffect(() => {
+    if (index === 0) {
+      console.log(`Rendering price bars with theme: ${theme}, optimization: ${optimizationLevel}`);
+    }
+  }, [index, theme, optimizationLevel]);
+  
+  // Optimize animations based on optimization level
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
     
-    if (optimizationLevel === 'aggressive') {
-      // Minimal animation in aggressive mode, only if hovered
+    if (optimizationLevel === 'extreme') {
+      // Almost no animation in extreme mode for maximum performance
       if (meshRef.current.userData.hovered) {
+        // Only update emissive when hovered
+        updateMaterialEmissive(meshRef.current, 0.3);
+      }
+      return;
+    }
+    
+    if (optimizationLevel === 'aggressive') {
+      // Minimal animation in aggressive mode
+      if (meshRef.current.userData.hovered) {
+        // Simple rotation for hover effect
         meshRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.2) * 0.05;
-        
-        // Safely update material properties
-        if (meshRef.current.material instanceof THREE.MeshStandardMaterial) {
-          meshRef.current.material.emissiveIntensity = 0.3;
-        }
+        updateMaterialEmissive(meshRef.current, 0.3);
       }
-    } else {
-      // Normal animation
-      meshRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.5 + index * 0.1) * 0.05;
-      
-      // Emissive pulse for hover effect if this is the hovered bar
-      if (meshRef.current.userData.hovered && meshRef.current.material instanceof THREE.MeshStandardMaterial) {
-        meshRef.current.material.emissiveIntensity = 0.3 + Math.sin(clock.getElapsedTime() * 2) * 0.2;
-      }
+      return;
+    }
+    
+    // Normal animation for standard optimization
+    meshRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.5 + index * 0.1) * 0.05;
+    
+    // Emissive pulse for hover effect
+    if (meshRef.current.userData.hovered) {
+      updateMaterialEmissive(
+        meshRef.current, 
+        0.3 + Math.sin(clock.getElapsedTime() * 2) * 0.2
+      );
     }
   });
   
-  // Handle hover state
+  // Helper function to safely update material properties
+  const updateMaterialEmissive = (mesh: THREE.Mesh, intensity: number) => {
+    if (mesh.material instanceof THREE.MeshStandardMaterial) {
+      mesh.material.emissiveIntensity = intensity;
+    }
+  };
+  
+  // Handle pointer events
   const handlePointerOver = () => {
     if (!meshRef.current) return;
     
     meshRef.current.userData.hovered = true;
     
-    // Safely update material properties
+    // Update material properties
     if (meshRef.current.material instanceof THREE.MeshStandardMaterial) {
-      meshRef.current.material.emissive = new THREE.Color(getBarColor());
+      const barColor = getBarColor(point.trend, theme);
+      meshRef.current.material.emissive = new THREE.Color(barColor);
       meshRef.current.material.emissiveIntensity = 0.5;
       document.body.style.cursor = 'pointer';
     }
     
+    // Call external event handler
     if (onHover) onHover();
   };
   
@@ -122,15 +143,17 @@ export const PriceBar = ({
     
     meshRef.current.userData.hovered = false;
     
-    // Safely update material properties
+    // Reset material properties
     if (meshRef.current.material instanceof THREE.MeshStandardMaterial) {
       meshRef.current.material.emissiveIntensity = 0;
       document.body.style.cursor = 'auto';
     }
     
+    // Call external event handler
     if (onBlur) onBlur();
   };
 
+  // Render the mesh with pre-calculated properties
   return (
     <mesh
       ref={meshRef}
@@ -140,7 +163,7 @@ export const PriceBar = ({
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
     >
-      <boxGeometry args={boxGeometryArgs} />
+      <primitive object={geometry} attach="geometry" />
       <primitive object={material} attach="material" />
     </mesh>
   );
