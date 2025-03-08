@@ -26,7 +26,7 @@ export const WebGLContextManager = ({
       const canvas = canvasRef.current;
       if (canvas) {
         const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (gl) {
+        if (gl && gl instanceof WebGLRenderingContext) {
           console.log("WebGL Debug Info:");
           console.log("- Vendor:", gl.getParameter(gl.VENDOR));
           console.log("- Renderer:", gl.getParameter(gl.RENDERER));
@@ -116,7 +116,7 @@ export const WebGLContextManager = ({
         // Log initial WebGL state
         try {
           const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-          if (gl) {
+          if (gl && gl instanceof WebGLRenderingContext) {
             console.log("WebGL is available. Initial context created successfully.");
             console.log("- Vendor:", gl.getParameter(gl.VENDOR));
             console.log("- Renderer:", gl.getParameter(gl.RENDERER));

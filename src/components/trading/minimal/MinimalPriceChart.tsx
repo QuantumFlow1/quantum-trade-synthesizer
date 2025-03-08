@@ -18,17 +18,16 @@ export const MinimalPriceChart = ({ data }: MinimalPriceChartProps) => {
     console.log("Rendering MinimalPriceChart with data:", data.length);
   }, [data]);
   
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+  const formatDate = (name: string) => {
+    return name;
   };
   
   // Format data for the chart
   const chartData = data.map(point => ({
-    time: point.timestamp,
+    time: point.name,
     price: point.close,
     volume: point.volume,
-    timeFormatted: formatDate(point.timestamp),
+    timeFormatted: formatDate(point.name),
     trend: point.close > point.open ? "up" : "down"
   }));
   
