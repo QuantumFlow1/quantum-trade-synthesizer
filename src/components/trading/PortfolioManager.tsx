@@ -2,13 +2,14 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, BookCheck } from "lucide-react";
+import { Brain, BookCheck, Users, Sparkles } from "lucide-react";
 import { SimulationToggle } from "./SimulationToggle";
 import { SimulationAlert } from "./portfolio/SimulationAlert";
 import { EmptyAnalysisState } from "./portfolio/EmptyAnalysisState";
 import { RecommendationList } from "./portfolio/RecommendationList";
 import { PortfolioDecision } from "./portfolio/PortfolioDecision";
 import { LoadingDecision } from "./portfolio/LoadingDecision";
+import { AgentCollaboration } from "./portfolio/AgentCollaboration";
 import { usePortfolioManager } from "./portfolio/usePortfolioManager";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,6 +32,9 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
     agentRecommendations,
     portfolioDecision,
     loadingDecision,
+    collaborationMessages,
+    agentPerformance,
+    tradingAgents,
     handleExecuteDecision,
     handleRefreshAnalysis
   } = usePortfolioManager(currentData);
@@ -57,11 +61,11 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
         <div className="flex justify-between items-center">
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
-              Portfolio Manager
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Portfolio Manager
             </CardTitle>
             <CardDescription>
-              AI-powered trading decisions from T.S.A.A. (Trading Strategie Advies Agents)
+              Multi-agent AI trading system with collaborative decision making
             </CardDescription>
           </div>
           {(onSimulationToggle || isSimulationMode === undefined) && (
@@ -79,8 +83,25 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
         <div className="space-y-3">
           {agentRecommendations.length > 0 ? (
             <>
-              <h3 className="text-sm font-medium">T.S.A.A. Recommendations:</h3>
-              <RecommendationList recommendations={agentRecommendations} />
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-primary" />
+                  Agent Recommendations:
+                </h3>
+                <Badge variant="outline" className="text-xs">
+                  <Users className="h-3.5 w-3.5 mr-1" />
+                  {agentRecommendations.length} agents
+                </Badge>
+              </div>
+              
+              <RecommendationList 
+                recommendations={agentRecommendations} 
+                agentPerformance={agentPerformance}
+              />
+              
+              {collaborationMessages && collaborationMessages.length > 0 && (
+                <AgentCollaboration messages={collaborationMessages} />
+              )}
               
               {portfolioDecision && (
                 <div className="mt-4 pt-4 border-t border-white/10">
