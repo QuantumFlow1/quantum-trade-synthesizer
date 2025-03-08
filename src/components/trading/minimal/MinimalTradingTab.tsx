@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MinimalPriceChart } from "./MinimalPriceChart";
@@ -12,7 +12,7 @@ import { useThemeDetection } from "@/hooks/use-theme-detection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Boxes, LineChart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { LoadingState } from "../visualization/3d/LoadingState";
+import { LoadingState } from "@/components/visualization/3d/LoadingState";
 
 export const MinimalTradingTab = () => {
   const [data, setData] = useState<TradingDataPoint[]>([]);
