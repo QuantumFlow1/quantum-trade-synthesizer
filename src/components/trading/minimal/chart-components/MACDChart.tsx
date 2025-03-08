@@ -17,6 +17,17 @@ interface MACDChartProps {
 }
 
 export const MACDChart = ({ data }: MACDChartProps) => {
+  // Create separate arrays for positive and negative histogram values
+  const positiveData = data.map(item => ({
+    ...item,
+    positiveHistogram: item.macdHistogram >= 0 ? item.macdHistogram : 0
+  }));
+  
+  const negativeData = data.map(item => ({
+    ...item,
+    negativeHistogram: item.macdHistogram < 0 ? item.macdHistogram : 0
+  }));
+
   return (
     <div className="border rounded-lg p-4">
       <h3 className="text-sm font-medium mb-2">MACD</h3>
@@ -43,17 +54,19 @@ export const MACDChart = ({ data }: MACDChartProps) => {
               name="Signal"
             />
             <Bar
-              dataKey="macdHistogram"
+              dataKey="positiveHistogram"
               name="Histogram"
-            >
-              {data.map((entry, index) => (
-                <Bar 
-                  key={`histogram-${index}`}
-                  dataKey="macdHistogram"
-                  fill={entry.macdHistogram >= 0 ? "#22c55e" : "#ef4444"}
-                />
-              ))}
-            </Bar>
+              fill="#22c55e"
+              stackId="histogram"
+              data={positiveData}
+            />
+            <Bar
+              dataKey="negativeHistogram"
+              name="Histogram"
+              fill="#ef4444"
+              stackId="histogram"
+              data={negativeData}
+            />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
