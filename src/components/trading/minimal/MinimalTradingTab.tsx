@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Boxes, LineChart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingState } from "@/components/visualization/3d/LoadingState";
+import { TradingDataPoint } from "@/utils/tradingData";
 
 export const MinimalTradingTab = () => {
   const [data, setData] = useState<TradingDataPoint[]>([]);

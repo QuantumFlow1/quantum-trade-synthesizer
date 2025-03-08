@@ -103,6 +103,13 @@ export const Market3DView = ({
     );
   }
 
+  // Ensure errorStateType is one of the allowed values
+  const errorType = getErrorStateType();
+  // Convert string to the appropriate type
+  const safeErrorType: "context-lost" | "error" | "unsupported" = 
+    errorType === "webgl-unsupported" ? "unsupported" :
+    errorType === "context-lost" ? "context-lost" : "error";
+
   console.log("Rendering Market3DVisualization with key:", renderKey);
   return (
     <Market3DVisualization
@@ -118,7 +125,7 @@ export const Market3DView = ({
       renderKey={renderKey}
       stats={stats}
       visualizationData={visualizationData}
-      errorStateType={getErrorStateType()}
+      errorStateType={safeErrorType}
       onContextLost={handleContextLost}
       onContextRestored={handleContextRestored}
       onRetry={handleRetry}

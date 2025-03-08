@@ -64,7 +64,8 @@ export function useWebGLState() {
   return {
     webGLAvailable,
     contextLost,
-    setContextLost
+    setContextLost,
+    setWebGLAvailable
   };
 }
 
@@ -79,7 +80,7 @@ export function useImprovedMarket3DView({
   onLoaded?: () => void;
 }) {
   const theme = useThemeDetection();
-  const { webGLAvailable, contextLost, setContextLost } = useWebGLState();
+  const { webGLAvailable, contextLost, setContextLost, setWebGLAvailable } = useWebGLState();
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [loadingTime, setLoadingTime] = useState(0);
