@@ -1,11 +1,13 @@
 
 import { LegendProps } from 'recharts';
 
+type LegendType = 'line' | 'rect' | 'circle' | 'cross' | 'diamond' | 'square' | 'star' | 'triangle' | 'wye' | 'none' | 'area';
+
 interface CustomLegendProps extends LegendProps {
   payload?: Array<{
     value: string;
     color: string;
-    type?: 'line' | 'rect' | 'circle' | 'cross' | 'diamond' | 'square' | 'star' | 'triangle' | 'wye' | 'none';
+    type?: LegendType;
   }>;
 }
 
