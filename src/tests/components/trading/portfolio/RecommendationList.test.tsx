@@ -30,8 +30,8 @@ describe('RecommendationList', () => {
     render(<RecommendationList recommendations={mockRecommendations} />);
     
     // Check if both recommendations are rendered
-    expect(screen.getByText('value-investor')).toBeInTheDocument();
-    expect(screen.getByText('technical-analyst')).toBeInTheDocument();
+    expect(screen.getByText('Value Investor')).toBeInTheDocument();
+    expect(screen.getByText('Technical Analyst')).toBeInTheDocument();
     
     // Check if their reasonings are displayed
     expect(screen.getByText('Strong fundamentals')).toBeInTheDocument();
