@@ -29,14 +29,22 @@ export const MACDChart = ({ data }: MACDChartProps) => {
   }));
 
   return (
-    <div className="border rounded-lg p-4">
+    <div className="border rounded-lg p-4 bg-background/60 backdrop-blur-sm">
       <h3 className="text-sm font-medium mb-2">MACD</h3>
       <div className="h-[100px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            <XAxis dataKey="name" hide />
-            <YAxis />
+            <XAxis 
+              dataKey="name" 
+              tick={{ fontSize: 10 }}
+              interval="preserveStartEnd"
+              tickFormatter={(value) => value}
+            />
+            <YAxis 
+              tick={{ fontSize: 10 }}
+              tickFormatter={(value) => value.toFixed(1)}
+            />
             <Tooltip />
             <ReferenceLine y={0} stroke="#888888" />
             <Line
