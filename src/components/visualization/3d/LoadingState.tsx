@@ -1,44 +1,61 @@
 
-import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import React from "react";
 
 interface LoadingStateProps {
   message?: string;
+  showSpinner?: boolean;
+  progress?: number;
+  simpleMode?: boolean;
   retryAction?: () => void;
+  showRetry?: boolean;
   loadingTime?: number;
 }
 
 export const LoadingState = ({ 
-  message = "Loading...", 
-  retryAction, 
-  loadingTime = 0 
+  message = "Loading visualization...", 
+  showSpinner = true,
+  progress,
+  simpleMode = false,
+  retryAction,
+  showRetry = false,
+  loadingTime = 0
 }: LoadingStateProps) => {
-  const [showRetry, setShowRetry] = useState(false);
+  // Show retry button if loading takes too long or explicitly requested
+  const showRetryButton = showRetry || loadingTime > 5000;
   
-  // Show retry button after a delay if provided
-  useEffect(() => {
-    if (!retryAction || !loadingTime) return;
-    
-    const timer = setTimeout(() => {
-      setShowRetry(true);
-    }, loadingTime);
-    
-    return () => clearTimeout(timer);
-  }, [retryAction, loadingTime]);
-
   return (
-    <div className="flex flex-col items-center justify-center space-y-3 p-4 text-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      <p className="text-sm text-muted-foreground">{message}</p>
-      
-      {retryAction && showRetry && (
-        <button 
-          onClick={retryAction}
-          className="mt-2 px-4 py-2 text-sm bg-primary/90 hover:bg-primary text-primary-foreground rounded-md transition-colors"
-        >
-          Retry
-        </button>
-      )}
+    <div className="absolute inset-0 flex items-center justify-center bg-background/30 backdrop-blur-sm z-10">
+      <div className="flex flex-col items-center space-y-4">
+        {showSpinner && !simpleMode && (
+          <div className="relative h-12 w-12">
+            <div className="absolute inset-0 rounded-full border-3 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
+          </div>
+        )}
+        
+        {showSpinner && simpleMode && (
+          <div className="h-8 w-8 rounded-full border-2 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin"></div>
+        )}
+        
+        <p className="font-medium text-center">{message}</p>
+        
+        {progress !== undefined && !simpleMode && (
+          <div className="w-64 bg-secondary/20 rounded-full h-2.5 mt-1">
+            <div 
+              className="bg-primary h-2.5 rounded-full" 
+              style={{ width: `${Math.max(5, Math.min(100, progress))}%` }}
+            ></div>
+          </div>
+        )}
+        
+        {retryAction && showRetryButton && (
+          <button 
+            onClick={retryAction}
+            className="mt-2 px-4 py-2 bg-primary/80 hover:bg-primary text-white rounded-md text-sm transition-colors"
+          >
+            Retry Initialization
+          </button>
+        )}
+      </div>
     </div>
   );
 };

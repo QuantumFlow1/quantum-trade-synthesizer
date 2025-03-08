@@ -25,11 +25,11 @@ export const StatsOverlay = ({
   return (
     <div className="absolute top-4 right-6 z-10 flex flex-col space-y-2">
       <Badge className="bg-primary/20 text-primary border-primary/30 flex items-center gap-1.5">
-        <Activity className="w-3.5 h-3.5" aria-hidden="true" /> 
+        <Activity className="w-3.5 h-3.5" /> 
         <span>Avg: ${avgPrice.toFixed(2)}</span>
       </Badge>
       <Badge className={`bg-black/20 ${priceChangeColor} border-white/10 flex items-center gap-1.5`}>
-        <Sparkles className="w-3.5 h-3.5" aria-hidden="true" /> 
+        <Sparkles className="w-3.5 h-3.5" /> 
         <span>
           {priceChangeSymbol} ${Math.abs(priceChange).toFixed(2)} 
           ({priceChangePercent >= 0 ? '+' : ''}{priceChangePercent.toFixed(2)}%)

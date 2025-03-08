@@ -1,10 +1,21 @@
 
 import { useState, useEffect, Suspense } from "react";
+import { useThemeDetection } from "@/hooks/use-theme-detection";
+import { useProcessedTradingData } from "@/hooks/use-processed-trading-data";
+import { usePriceVolumeRanges } from "@/hooks/use-price-volume-ranges";
+import { useMarketSentiment } from "@/hooks/use-market-sentiment";
+import { useMarketEnvironment } from "@/hooks/use-market-environment";
 import { TradingDataPoint } from "@/utils/tradingData";
-import { useSceneData } from "./useSceneData";
-import { PriceVolumeContent } from "./PriceVolumeContent";
-import { EnvironmentContent } from "./EnvironmentContent";
-import { OptimizationLevel, EnvironmentPreset } from "./types";
+import { PriceVisualization } from "./PriceVisualization";
+import { VolumeVisualization } from "./VolumeVisualization";
+import { SceneBackground } from "./SceneBackground";
+import { SceneLighting } from "./SceneLighting";
+
+// Define the optimization level type
+export type OptimizationLevel = 'normal' | 'aggressive' | 'extreme';
+
+// Define the environment preset type
+export type EnvironmentPreset = 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby';
 
 interface SceneContainerProps {
   data: TradingDataPoint[];
@@ -25,58 +36,80 @@ export const SceneContainer = ({
   dataReductionFactor,
   environmentPreset: customEnvironment
 }: SceneContainerProps) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
+  const theme = useThemeDetection();
   
-  // Use our custom hook to handle all data processing
-  const {
-    hoveredIndex,
-    setHoveredIndex,
-    theme,
-    displayData,
-    maxPrice,
-    minPrice,
-    maxVolume,
-    marketSentiment,
-    finalEnvironmentPreset
-  } = useSceneData(data, optimizationLevel, dataReductionFactor, customEnvironment);
+  // Use custom hooks to manage data and calculations
+  const processedData = useProcessedTradingData(data);
+  const { maxPrice, minPrice, maxVolume } = usePriceVolumeRanges(processedData);
+  const marketSentiment = useMarketSentiment(processedData);
+  const defaultEnvironment = useMarketEnvironment(marketSentiment, theme);
+  
+  // Set environment preset based on props or default
+  const environmentPreset = customEnvironment || defaultEnvironment;
+  
+  // Calculate data reduction based on optimization level
+  const getReductionFactor = () => {
+    if (dataReductionFactor) return dataReductionFactor;
+    
+    switch (optimizationLevel) {
+      case 'extreme': return 8; // Show 1/8 of data points
+      case 'aggressive': return 4; // Show 1/4 of data points
+      case 'normal': return 2; // Show 1/2 of data points
+      default: return 4;
+    }
+  };
+  
+  // Apply data reduction for better performance
+  const displayData = processedData.filter((_, index) => 
+    index % getReductionFactor() === 0
+  );
   
   // Mark scene as ready immediately to avoid waiting
   useEffect(() => {
     setReady(true);
   }, []);
   
-  if (!ready) {
-    return null;
-  }
+  // Convert extreme optimization to aggressive for components that don't support extreme
+  const volumeOptimizationLevel = optimizationLevel === 'extreme' ? 'aggressive' : optimizationLevel;
   
   return (
     <Suspense fallback={null}>
-      <EnvironmentContent
-        theme={theme}
-        sentiment={marketSentiment}
-        hoveredIndex={hoveredIndex}
-        displayData={displayData}
-        showStars={showStars}
+      <SceneLighting 
+        theme={theme} 
+        hoveredIndex={hoveredIndex} 
+        processedData={displayData}
         optimizationLevel={optimizationLevel}
-        environmentPreset={finalEnvironmentPreset}
       />
       
-      {ready && (
-        <PriceVolumeContent
-          displayData={displayData}
+      <SceneBackground 
+        theme={theme} 
+        sentiment={marketSentiment} 
+        showStars={showStars}
+        optimizationLevel={optimizationLevel}
+        environmentPreset={environmentPreset}
+      />
+      
+      {showPrices && ready && (
+        <PriceVisualization 
+          processedData={displayData}
           maxPrice={maxPrice}
           minPrice={minPrice}
-          maxVolume={maxVolume}
           theme={theme}
           onHoverChange={setHoveredIndex}
           optimizationLevel={optimizationLevel}
-          showPrices={showPrices}
-          showVolume={showVolume}
+        />
+      )}
+      
+      {showVolume && ready && (
+        <VolumeVisualization 
+          processedData={displayData}
+          maxVolume={maxVolume}
+          theme={theme}
+          optimizationLevel={volumeOptimizationLevel}
         />
       )}
     </Suspense>
   );
 };
-
-// Fix: Change to "export type" for type re-exports
-export type { OptimizationLevel, EnvironmentPreset };

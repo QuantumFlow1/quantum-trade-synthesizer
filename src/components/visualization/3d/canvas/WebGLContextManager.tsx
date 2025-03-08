@@ -21,25 +21,6 @@ export const WebGLContextManager = ({
     console.error("WebGL context lost event triggered");
     event.preventDefault(); // Standard practice to allow recovery
     
-    // Log WebGL info to help diagnose issues
-    try {
-      const canvas = canvasRef.current;
-      if (canvas) {
-        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-        if (gl && gl instanceof WebGLRenderingContext) {
-          console.log("WebGL Debug Info:");
-          console.log("- Vendor:", gl.getParameter(gl.VENDOR));
-          console.log("- Renderer:", gl.getParameter(gl.RENDERER));
-          console.log("- Version:", gl.getParameter(gl.VERSION));
-          console.log("- Shading Language Version:", gl.getParameter(gl.SHADING_LANGUAGE_VERSION));
-          console.log("- Max Texture Size:", gl.getParameter(gl.MAX_TEXTURE_SIZE));
-          console.log("- Extensions:", gl.getSupportedExtensions());
-        }
-      }
-    } catch (err) {
-      console.warn("Could not log WebGL debug info:", err);
-    }
-    
     // Pause all video textures when context is lost
     if (videoTextureEnabled && videoTexturesRef.current.size > 0) {
       console.log(`Pausing ${videoTexturesRef.current.size} video textures due to context loss`);
@@ -53,7 +34,7 @@ export const WebGLContextManager = ({
     }
     
     onContextLost();
-  }, [onContextLost, videoTextureEnabled, canvasRef]);
+  }, [onContextLost, videoTextureEnabled]);
   
   const handleContextRestored = useCallback((event: Event) => {
     console.log("WebGL context restored event triggered");
@@ -109,29 +90,12 @@ export const WebGLContextManager = ({
     if (canvas && !eventsAttachedRef.current) {
       try {
         // Add event listeners with properly typed event handlers
-        console.log("Attaching WebGL context event listeners");
         canvas.addEventListener('webglcontextlost', handleContextLost as EventListener);
         canvas.addEventListener('webglcontextrestored', handleContextRestored as EventListener);
-        
-        // Log initial WebGL state
-        try {
-          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-          if (gl && gl instanceof WebGLRenderingContext) {
-            console.log("WebGL is available. Initial context created successfully.");
-            console.log("- Vendor:", gl.getParameter(gl.VENDOR));
-            console.log("- Renderer:", gl.getParameter(gl.RENDERER));
-          } else {
-            console.warn("Failed to get WebGL context despite canvas being available");
-          }
-        } catch (err) {
-          console.error("Error checking initial WebGL state:", err);
-        }
-        
         eventsAttachedRef.current = true;
         
         return () => {
           try {
-            console.log("Removing WebGL context event listeners");
             canvas.removeEventListener('webglcontextlost', handleContextLost as EventListener);
             canvas.removeEventListener('webglcontextrestored', handleContextRestored as EventListener);
             eventsAttachedRef.current = false;
