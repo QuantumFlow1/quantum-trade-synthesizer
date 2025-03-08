@@ -14,15 +14,16 @@ import {
 
 interface MinimalPriceChartProps {
   data: TradingDataPoint[];
+  className?: string;
 }
 
-export const MinimalPriceChart = ({ data }: MinimalPriceChartProps) => {
+export const MinimalPriceChart = ({ data, className = "" }: MinimalPriceChartProps) => {
   if (!data || data.length === 0) {
-    return <div className="h-[400px] flex items-center justify-center">No data available</div>;
+    return <div className={`flex items-center justify-center ${className}`}>No data available</div>;
   }
 
   return (
-    <div className="h-[400px] bg-card border rounded-lg p-4">
+    <div className={`bg-card border rounded-lg p-4 ${className}`}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={data}
