@@ -82,12 +82,15 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       return;
     }
     
+    // Log the key being saved for debugging
+    console.log('Saving Groq API key:', groqKey ? `${groqKey.substring(0, 4)}...${groqKey.substring(groqKey.length - 4)}` : 'none', 'Length:', groqKey.length);
+    
     // Save keys to localStorage
-    localStorage.setItem('openaiApiKey', openaiKey.trim());
-    localStorage.setItem('claudeApiKey', claudeKey.trim());
-    localStorage.setItem('geminiApiKey', geminiKey.trim());
-    localStorage.setItem('deepseekApiKey', deepseekKey.trim());
-    localStorage.setItem('groqApiKey', groqKey.trim());
+    if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
+    if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
+    if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
+    if (deepseekKey.trim()) localStorage.setItem('deepseekApiKey', deepseekKey.trim());
+    if (groqKey.trim()) localStorage.setItem('groqApiKey', groqKey.trim());
     
     // Call onSave callback if provided
     if (onSave) {
@@ -105,6 +108,7 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     });
     
     // Trigger multiple events to ensure all components are notified
+    console.log("Dispatching events after saving API keys");
     window.dispatchEvent(new Event('apikey-updated'));
     window.dispatchEvent(new Event('localStorage-changed'));
     window.dispatchEvent(new Event('storage'));

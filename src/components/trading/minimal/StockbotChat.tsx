@@ -1,3 +1,4 @@
+
 import { useRef, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -41,26 +42,32 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
   useEffect(() => {
     const checkApiKey = () => {
       const actualApiKey = localStorage.getItem("groqApiKey");
+      const keyExists = !!actualApiKey && actualApiKey.trim().length > 0;
+      
       setApiKeyStatus({
-        exists: !!actualApiKey,
-        keyLength: actualApiKey ? actualApiKey.length : 0
+        exists: keyExists,
+        keyLength: actualApiKey ? actualApiKey.trim().length : 0
+      });
+      
+      console.log("StockbotChat - API Key Status:", { 
+        exists: keyExists, 
+        keyLength: actualApiKey ? actualApiKey.trim().length : 0,
+        key: actualApiKey ? `${actualApiKey.substring(0, 4)}...${actualApiKey.substring(actualApiKey.length - 4)}` : 'none'
       });
     };
 
     checkApiKey();
 
-    const handleStorageChange = () => checkApiKey();
+    const handleStorageChange = () => {
+      console.log("Storage change detected in StockbotChat");
+      checkApiKey();
+    };
+    
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('apikey-updated', handleStorageChange);
     window.addEventListener('localStorage-changed', handleStorageChange);
 
     const intervalId = setInterval(checkApiKey, 1000);
-
-    console.log("API Key Status:", { 
-      hasApiKeyProp: hasApiKey, 
-      actualKeyExists: apiKeyStatus.exists,
-      apiKeyLength: apiKeyStatus.keyLength
-    });
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -68,17 +75,17 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
       window.removeEventListener('localStorage-changed', handleStorageChange);
       clearInterval(intervalId);
     };
-  }, [hasApiKey]);
+  }, []);
 
   const handleDialogClose = () => {
     setIsKeyDialogOpen(false);
     
     const actualApiKey = localStorage.getItem("groqApiKey");
-    const keyExists = !!actualApiKey;
+    const keyExists = !!actualApiKey && actualApiKey.trim().length > 0;
     
     setApiKeyStatus({
       exists: keyExists,
-      keyLength: actualApiKey ? actualApiKey.length : 0
+      keyLength: actualApiKey ? actualApiKey.trim().length : 0
     });
     
     if (keyExists) {
@@ -93,8 +100,11 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
       }
     }
     
+    // Force event triggering to ensure other components are notified
+    console.log("Dispatching events after dialog close");
     window.dispatchEvent(new Event('apikey-updated'));
     window.dispatchEvent(new Event('localStorage-changed'));
+    window.dispatchEvent(new Event('storage'));
   };
 
   return (

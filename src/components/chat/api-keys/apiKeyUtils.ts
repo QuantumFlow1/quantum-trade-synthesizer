@@ -37,12 +37,16 @@ export const validateApiKey = (key: string, type: string): boolean => {
   }
   
   if (type === 'groq' && !key.startsWith('gsk_')) {
-    toast({
-      title: "Invalid Groq API Key",
-      description: "Groq API keys typically start with 'gsk_'",
-      variant: "destructive"
-    });
-    return false;
+    // Groq keys can start with gsk_ or be in other formats too
+    // Just check if it's a reasonable length
+    if (key.trim().length < 10) {
+      toast({
+        title: "Invalid Groq API Key",
+        description: "The Groq API key you entered seems too short",
+        variant: "destructive"
+      });
+      return false;
+    }
   }
   
   return true;
@@ -78,7 +82,8 @@ export const saveApiKeys = (
     claude: updatedKeys.claudeApiKey ? 'present' : 'not set',
     gemini: updatedKeys.geminiApiKey ? 'present' : 'not set',
     deepseek: updatedKeys.deepseekApiKey ? 'present' : 'not set',
-    groq: updatedKeys.groqApiKey ? 'present' : 'not set'
+    groq: updatedKeys.groqApiKey ? 'present' : 'not set',
+    groqKeyLength: updatedKeys.groqApiKey ? updatedKeys.groqApiKey.length : 0
   });
   
   // Dispatch a custom event to notify other components that the API key has been updated

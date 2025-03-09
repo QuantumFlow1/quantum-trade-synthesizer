@@ -20,11 +20,12 @@ export const useStockbotState = () => {
   // Function to check API key
   const checkApiKey = useCallback(() => {
     const groqKey = localStorage.getItem('groqApiKey');
-    const hasKey = !!groqKey;
+    const hasKey = !!groqKey && groqKey.trim().length > 0;
     
     console.log("Checking Groq API key:", { 
       exists: hasKey, 
-      keyLength: groqKey ? groqKey.length : 0 
+      keyLength: groqKey ? groqKey.length : 0,
+      key: groqKey ? `${groqKey.substring(0, 4)}...${groqKey.substring(groqKey.length - 4)}` : 'none'
     });
     
     setHasApiKey(hasKey);
@@ -56,7 +57,7 @@ export const useStockbotState = () => {
     window.addEventListener('storage', handleApiKeyUpdate);
     
     // Set an interval to periodically check for API key updates
-    const intervalId = setInterval(checkApiKey, 2000);
+    const intervalId = setInterval(checkApiKey, 1000);
     
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyUpdate);
