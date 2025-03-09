@@ -59,14 +59,17 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   const [isSimulationMode, setIsSimulationMode] = useState(savedSettings.isSimulationMode);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   
-  // Reference to track initialization
+  // Reference to track initialization and prevent infinite loops
   const isInitialized = useRef(false);
   const apiCheckCount = useRef(0);
+  const manuallySetMode = useRef(false);
   
   // Persist simulation mode setting whenever it changes
   useEffect(() => {
-    saveStockbotSettings({ isSimulationMode });
-    console.log("Simulation mode changed to:", isSimulationMode);
+    if (manuallySetMode.current) {
+      saveStockbotSettings({ isSimulationMode });
+      console.log("Simulation mode changed to:", isSimulationMode);
+    }
   }, [isSimulationMode]);
   
   // Enhanced API key check with more thorough detection
@@ -119,7 +122,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     
     // Check frequently for API key changes during initialization
     const initialCheckInterval = setInterval(checkApiKey, 1000);
-    setTimeout(() => clearInterval(initialCheckInterval), 7000);
+    setTimeout(() => clearInterval(initialCheckInterval), 5000);
     
     // Also set up a broadcast channel listener if available
     let broadcastChannel: BroadcastChannel | null = null;
@@ -143,7 +146,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
         broadcastChannel.close();
       }
     };
-  }, [isSimulationMode]);
+  }, []);
   
   // Add welcome message on component mount
   useEffect(() => {
@@ -223,6 +226,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   // Expose the custom setIsSimulationMode function that also persists the setting
   const handleSetSimulationMode = useCallback((newMode: boolean) => {
     console.log('Setting simulation mode to:', newMode);
+    manuallySetMode.current = true;
     setIsSimulationMode(newMode);
     saveStockbotSettings({ isSimulationMode: newMode });
   }, []);

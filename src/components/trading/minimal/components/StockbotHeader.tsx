@@ -32,6 +32,12 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
 }) => {
   // Function to handle the simulation mode toggle directly
   const handleSimulationToggle = (checked: boolean) => {
+    // If there's no API key and user is trying to turn off simulation mode, show warning
+    if (!hasApiKey && !checked) {
+      console.log("Cannot turn off simulation mode without API key");
+      return;
+    }
+    
     console.log("Toggling simulation mode:", checked);
     setIsSimulationMode(checked);
   };
@@ -58,6 +64,7 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
             checked={isSimulationMode}
             onCheckedChange={handleSimulationToggle}
             aria-label="Toggle simulation mode"
+            disabled={!hasApiKey && !isSimulationMode}
           />
         </div>
         

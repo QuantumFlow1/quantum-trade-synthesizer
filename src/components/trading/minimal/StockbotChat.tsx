@@ -1,5 +1,5 @@
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStockbotChat } from "./hooks/useStockbotChat";
 import { StockbotHeader } from "./components/StockbotHeader";
@@ -34,6 +34,7 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { apiKeyStatus, setApiKeyStatus, handleForceReload } = useApiKeyStatus(initialHasApiKey, reloadApiKeys);
+  const [processingApiKey, setProcessingApiKey] = useState(false);
 
   // Auto-scroll when new messages are added
   useEffect(() => {
@@ -57,34 +58,50 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   const handleDialogClose = () => {
     setIsKeyDialogOpen(false);
     
-    const actualApiKey = localStorage.getItem("groqApiKey");
-    const keyExists = !!actualApiKey && actualApiKey.trim().length > 0;
+    if (processingApiKey) return;
+    setProcessingApiKey(true);
     
-    setApiKeyStatus({
-      exists: keyExists,
-      keyLength: actualApiKey ? actualApiKey.trim().length : 0
-    });
-    
-    if (keyExists) {
-      toast({
-        title: "API Key Detected",
-        description: "Groq API key has been configured successfully",
-        duration: 3000
+    try {
+      const actualApiKey = localStorage.getItem("groqApiKey");
+      const keyExists = !!actualApiKey && actualApiKey.trim().length > 0;
+      
+      setApiKeyStatus({
+        exists: keyExists,
+        keyLength: actualApiKey ? actualApiKey.trim().length : 0
       });
       
-      if (isSimulationMode) {
-        setIsSimulationMode(false);
+      if (keyExists) {
+        toast({
+          title: "API Key Detected",
+          description: "Groq API key has been configured successfully",
+          duration: 3000
+        });
       }
+      
+      // Force event triggering to ensure other components are notified
+      console.log("Dispatching events after dialog close");
+      window.dispatchEvent(new Event('apikey-updated'));
+      window.dispatchEvent(new Event('localStorage-changed'));
+      
+      // Let's not programmatically change simulation mode here, 
+      // but let the user decide using the toggle
+    } catch (error) {
+      console.error("Error handling dialog close:", error);
+    } finally {
+      // Force a reload of all API keys
+      setTimeout(() => {
+        reloadApiKeys();
+        setProcessingApiKey(false);
+      }, 300);
     }
-    
-    // Force event triggering to ensure other components are notified
-    console.log("Dispatching events after dialog close");
-    window.dispatchEvent(new Event('apikey-updated'));
-    window.dispatchEvent(new Event('localStorage-changed'));
-    window.dispatchEvent(new Event('storage'));
-    
-    // Force a reload of all API keys
-    reloadApiKeys();
+  };
+
+  const handleApiKeySuccess = () => {
+    // Execute additional logic after a successful API key save
+    setTimeout(() => {
+      console.log("API key saved successfully, refreshing state");
+      handleForceReload();
+    }, 500);
   };
 
   return (
@@ -125,6 +142,7 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
       <StockbotKeyDialog
         isKeyDialogOpen={isKeyDialogOpen}
         handleDialogClose={handleDialogClose}
+        onSuccessfulSave={handleApiKeySuccess}
       />
     </Card>
   );

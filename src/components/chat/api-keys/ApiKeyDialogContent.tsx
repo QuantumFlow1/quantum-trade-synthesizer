@@ -22,8 +22,8 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
   const [groqKey, setGroqKey] = useState('');
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  
   const groqInputRef = useRef<HTMLInputElement>(null);
+  const savingInProgress = useRef(false);
   
   useEffect(() => {
     if (apiKeys) {
@@ -78,6 +78,8 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
   };
   
   const handleSave = async () => {
+    if (savingInProgress.current) return;
+    
     if (!validateApiKey(openaiKey, 'openai') ||
         !validateApiKey(claudeKey, 'claude') ||
         !validateApiKey(geminiKey, 'gemini') ||
@@ -85,7 +87,9 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       return;
     }
     
+    savingInProgress.current = true;
     setIsSaving(true);
+    
     console.log('Saving API keys...', {
       openai: openaiKey ? 'present' : 'none',
       claude: claudeKey ? 'present' : 'none',
@@ -141,7 +145,6 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       }
       
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
       
       toast({
         title: "API Keys Saved",
@@ -149,40 +152,15 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
         variant: "default"
       });
       
-      try {
-        // Broadcast the API key update to other tabs
-        const broadcastChannel = new BroadcastChannel('api-key-updates');
-        broadcastChannel.postMessage({ 
-          hasApiKeys: true, 
-          timestamp: Date.now(),
-          updatedKeys: {
-            openai: !!openaiKey.trim(),
-            claude: !!claudeKey.trim(),
-            gemini: !!geminiKey.trim(),
-            deepseek: !!deepseekKey.trim(),
-            groq: !!groqKey.trim()
-          }
-        });
-        broadcastChannel.close();
-      } catch (e) {
-        console.error("Failed to broadcast API key update:", e);
-      }
-      
-      console.log("Dispatching events after saving API keys");
-      window.dispatchEvent(new Event('apikey-updated'));
+      // First dispatch storage events
       window.dispatchEvent(new Event('localStorage-changed'));
-      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('apikey-updated'));
       
-      try {
-        // Force a storage event by setting and removing a dummy key
-        localStorage.setItem('_dummy_key_', Date.now().toString());
-        localStorage.removeItem('_dummy_key_');
-      } catch (e) {
-        console.error("Failed to trigger storage event:", e);
-      }
-      
+      // Then call onClose with a delay to prevent state conflicts
       if (onClose) {
-        setTimeout(() => onClose(), 1000);
+        setTimeout(() => {
+          onClose();
+        }, 500);
       }
     } catch (error) {
       console.error('Error saving API keys:', error);
@@ -192,7 +170,11 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
         variant: "destructive"
       });
     } finally {
-      setIsSaving(false);
+      setTimeout(() => {
+        setSaved(false);
+        setIsSaving(false);
+        savingInProgress.current = false;
+      }, 2000);
     }
   };
   
