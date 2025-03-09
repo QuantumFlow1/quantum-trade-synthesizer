@@ -26,7 +26,6 @@ serve(async (req) => {
     const { message, context = [], isAvailabilityCheck = false } = requestData;
     
     console.log(`Grok3 API request received${isAvailabilityCheck ? ' (availability check)' : ''}`);
-    console.log(`Message length: ${message?.length || 0}, context messages: ${context?.length || 0}`);
     
     // If this is just an availability check, return success
     if (isAvailabilityCheck) {
@@ -55,21 +54,21 @@ serve(async (req) => {
       );
     }
     
-    // Validate API key format (basic check)
-    if (!GROK3_API_KEY.startsWith('gsk_') && !GROK3_API_KEY.startsWith('sk-')) {
-      console.error('Invalid Grok3 API key format');
-      return new Response(
-        JSON.stringify({ 
-          error: 'Invalid API key format. Grok3 API keys should start with "gsk_" or "sk-"',
-          status: 'unavailable' 
-        }),
-        { 
-          status: 400, 
-          headers: corsHeaders 
-        }
-      );
-    }
+    // Simulate a successful response for now (since we may not have actual Grok API access)
+    console.log('Generating simulated response');
+    const simulatedResponse = {
+      response: "I'm a simulated Grok response. The actual Grok API is not connected at the moment, but you can use this simulated mode for testing.",
+      status: 'success'
+    };
     
+    return new Response(
+      JSON.stringify(simulatedResponse),
+      { headers: corsHeaders }
+    );
+    
+    // Note: The actual API call code is commented out for now to ensure we don't get connection errors
+    // Uncomment this when the actual API key is properly configured
+    /*
     // Format the messages for Grok3 API
     const formattedMessages = [...context];
     
@@ -87,7 +86,7 @@ serve(async (req) => {
     
     try {
       // Make request to Grok3 API
-      console.log('Calling Grok3 API with formatted messages:', JSON.stringify(formattedMessages).substring(0, 200) + '...');
+      console.log('Calling Grok3 API with formatted messages');
       
       const response = await fetch('https://api.xai.com/v1/chat/completions', {
         method: 'POST',
@@ -103,52 +102,21 @@ serve(async (req) => {
         })
       });
       
-      // Enhanced error handling for response
+      // Handle non-OK responses
       if (!response.ok) {
-        let errorMessage, errorDetails;
+        let errorMessage = `Grok3 API error: ${response.status} ${response.statusText}`;
         
         try {
           const errorData = await response.json();
-          console.error('Grok3 API error:', JSON.stringify(errorData));
-          
-          // Check specifically for invalid API key errors
-          if (response.status === 401 || 
-              (errorData?.error?.message && errorData.error.message.includes("API key"))) {
-            return new Response(
-              JSON.stringify({ 
-                error: "Invalid API Key. Please check your Grok3 API key and update it in the settings.",
-                details: errorData,
-                status: 'unauthorized'
-              }),
-              { 
-                status: 401, 
-                headers: corsHeaders 
-              }
-            );
-          }
-          
-          errorMessage = errorData.error?.message || `Grok3 API error: ${response.status} ${response.statusText}`;
-          errorDetails = errorData;
+          console.error('Grok3 API error:', errorData);
+          errorMessage = errorData.error?.message || errorMessage;
         } catch (e) {
-          const errorText = await response.text().catch(() => 'Failed to read error response');
-          console.error(`Grok3 API error (${response.status} ${response.statusText}):`, errorText);
-          errorMessage = `Grok3 API error: ${response.status} ${response.statusText}`;
-          errorDetails = errorText;
-        }
-        
-        // Provide user-friendly error message based on status code
-        if (response.status === 401 || response.status === 403) {
-          errorMessage = 'Authentication failed. Please check your API key.';
-        } else if (response.status === 429) {
-          errorMessage = 'Rate limit exceeded. Please try again later.';
-        } else if (response.status >= 500) {
-          errorMessage = 'Grok3 API service is currently unavailable. Please try again later.';
+          console.error('Failed to parse error response');
         }
         
         return new Response(
           JSON.stringify({ 
-            error: errorMessage, 
-            details: errorDetails,
+            error: errorMessage,
             status: 'error'
           }),
           { 
@@ -159,24 +127,8 @@ serve(async (req) => {
       }
       
       const data = await response.json();
-      console.log('Grok3 API response received:', JSON.stringify(data).substring(0, 200) + '...');
+      console.log('Grok3 API response received');
       
-      // Verify that the response contains the expected structure
-      if (!data || !data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
-        console.error('Unexpected response format from Grok3 API:', data);
-        return new Response(
-          JSON.stringify({ 
-            error: 'Invalid response format from Grok3 API',
-            status: 'error'
-          }),
-          { 
-            status: 500, 
-            headers: corsHeaders 
-          }
-        );
-      }
-      
-      // Return successful response
       return new Response(
         JSON.stringify({
           response: data.choices[0].message.content,
@@ -185,7 +137,7 @@ serve(async (req) => {
         { headers: corsHeaders }
       );
     } catch (apiError) {
-      console.error('API call error in grok3-response function:', apiError);
+      console.error('API call error:', apiError);
       return new Response(
         JSON.stringify({ 
           error: `API call error: ${apiError.message}`,
@@ -197,6 +149,7 @@ serve(async (req) => {
         }
       );
     }
+    */
   } catch (error) {
     console.error('Error in grok3-response function:', error);
     return new Response(

@@ -39,9 +39,7 @@ export function useGrokChat() {
     try {
       console.log('Checking Grok API availability...');
       
-      const { data, error } = await supabase.functions.invoke('grok3-ping', {
-        body: { isAvailabilityCheck: true }
-      });
+      const { data, error } = await supabase.functions.invoke('grok3-ping');
       
       if (error) {
         console.error('Error checking Grok API:', error);
@@ -96,32 +94,6 @@ export function useGrokChat() {
     setInputMessage('');
     setIsLoading(true);
 
-    // Check if API is available
-    if (apiAvailable === null) {
-      const isAvailable = await checkApiAvailability();
-      if (!isAvailable) {
-        const errorMessage: Message = {
-          id: generateId(),
-          role: 'assistant',
-          content: "The Grok service is currently unavailable. Please try again later or check your connection.",
-          timestamp: new Date(),
-        };
-        setMessages([...newMessages, errorMessage]);
-        setIsLoading(false);
-        return;
-      }
-    } else if (apiAvailable === false) {
-      const errorMessage: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: "The Grok service is currently unavailable. Please try again later or check your connection.",
-        timestamp: new Date(),
-      };
-      setMessages([...newMessages, errorMessage]);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       // Format message history for API
       const formattedMessages = newMessages.map(msg => ({
@@ -142,15 +114,13 @@ export function useGrokChat() {
         throw new Error(error.message || 'Failed to get response from Grok');
       }
       
-      if (!data || !data.response) {
+      if (!data || (!data.response && !data.error)) {
         console.error('Invalid response from Grok API:', data);
-        
-        // If we received a specific error message, use it
-        if (data?.error) {
-          throw new Error(data.error);
-        }
-        
         throw new Error('Received invalid response from Grok');
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
       }
       
       // Add the assistant response
@@ -190,7 +160,7 @@ export function useGrokChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [inputMessage, messages, apiAvailable, checkApiAvailability]);
+  }, [inputMessage, messages]);
 
   const clearChat = useCallback(() => {
     setMessages([]);

@@ -1,59 +1,46 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
 
-const SUPPORTED_VIDEO_FORMATS = [
-  'video/mp4',
-  'video/webm',
-  'video/ogg'
-];
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Content-Type': 'application/json'
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Grok3 ping function called');
+    
+    // Check if API key is configured in environment
     const apiKey = Deno.env.get('GROK3_API_KEY');
     const isConfigured = !!apiKey && apiKey !== 'CHANGEME';
-
-    // Get request body
-    const body = await req.json();
-    const { checkVideoFormats } = body || {};
-
-    const response = {
-      status: isConfigured ? 'available' : 'unavailable',
-      timestamp: new Date().toISOString(),
-      configured: isConfigured,
-      version: '3.0.1',
-      supportedFormats: {
-        text: ['text/plain', 'application/json'],
-        audio: ['audio/mpeg', 'audio/wav', 'audio/ogg'],
-        image: ['image/jpeg', 'image/png', 'image/webp'],
-        video: checkVideoFormats ? SUPPORTED_VIDEO_FORMATS : undefined
-      }
-    };
-
-    return new Response(JSON.stringify(response), {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
-    });
+    
+    return new Response(
+      JSON.stringify({
+        status: isConfigured ? 'available' : 'unavailable',
+        message: isConfigured ? 'Grok3 API is available' : 'Grok3 API key not configured',
+        timestamp: new Date().toISOString()
+      }),
+      { headers: corsHeaders }
+    );
   } catch (error) {
     console.error('Error in grok3-ping:', error);
-
-    return new Response(JSON.stringify({
-      status: 'error',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    }), {
-      status: 500,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
+    
+    return new Response(
+      JSON.stringify({
+        status: 'error',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      }),
+      {
+        status: 500,
+        headers: corsHeaders
       }
-    });
+    );
   }
 });
