@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, Legend } from 'recharts';
 import { ChartData } from '../types';
 import { CustomTooltip } from './CustomTooltip';
 import { renderCustomLegend } from './CustomLegend';
@@ -27,12 +27,12 @@ export const LineChartView: React.FC<LineChartViewProps> = ({
       <Tooltip content={<CustomTooltip />} />
       <Legend 
         payload={[
-          { value: 'Price', color: '#8b5cf6', type: 'line' as const },
-          { value: 'High', color: '#4ade80', type: 'line' as const },
-          { value: 'Low', color: '#ef4444', type: 'line' as const },
+          { value: 'Price', color: '#8b5cf6', type: 'line' },
+          { value: 'High', color: '#4ade80', type: 'line' },
+          { value: 'Low', color: '#ef4444', type: 'line' },
           ...(hasProjections ? [
-            { value: 'Projection', color: '#f59e0b', type: 'line' as const },
-            { value: 'Confidence Band', color: '#f59e0b', type: 'area' as const }
+            { value: 'Projection', color: '#f59e0b', type: 'line' },
+            { value: 'Confidence Band', color: '#f59e0b', type: 'area' }
           ] : [])
         ]}
         content={renderCustomLegend} 
