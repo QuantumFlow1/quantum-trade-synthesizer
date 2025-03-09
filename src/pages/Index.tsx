@@ -1,5 +1,5 @@
 
-import React, { Suspense } from "react";
+import React, { Suspense, useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { LoginComponent } from "@/components/auth/LoginComponent";
 import AdminPanel from "@/components/AdminPanel";
@@ -12,9 +12,10 @@ import { LoadingProfile } from "@/components/LoadingProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
-import { Users } from "lucide-react";
+import { Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
@@ -23,8 +24,26 @@ const Index = () => {
   const { toast } = useToast();
   const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error'>('checking');
   const [dashboardPage, setDashboardPage] = React.useState("overview");
+  const [renderError, setRenderError] = useState<string | null>(null);
   
   useOAuthRedirect();
+
+  // Error boundary effect
+  useEffect(() => {
+    const handleError = (error: ErrorEvent) => {
+      console.error("Caught runtime error:", error);
+      setRenderError(error.message || "An unexpected error occurred");
+      
+      toast({
+        title: "Application Error",
+        description: "We encountered an issue loading the dashboard. Please try refreshing the page.",
+        variant: "destructive",
+      });
+    };
+    
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, [toast]);
 
   // Expose dashboard navigation handler to window for cross-component communication
   React.useEffect(() => {
@@ -38,6 +57,33 @@ const Index = () => {
   // Show loading screen while fetching profile
   if (user && !userProfile) {
     return <LoadingProfile />;
+  }
+
+  // If we have a render error, show an error component
+  if (renderError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <Alert variant="destructive" className="max-w-lg">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle>Something went wrong</AlertTitle>
+          <AlertDescription>
+            <p className="mb-2">The application failed to load properly. This might be due to:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Network connectivity issues</li>
+              <li>API key configuration problems</li>
+              <li>Temporary service disruption</li>
+            </ul>
+            <Button 
+              className="mt-4" 
+              onClick={() => window.location.reload()}
+              variant="outline"
+            >
+              Refresh Page
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   // Helper function to determine if user is a super admin
