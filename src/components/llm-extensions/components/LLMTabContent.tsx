@@ -1,32 +1,38 @@
 
-import React from 'react';
 import { TabsContent } from '@/components/ui/tabs';
-import { DisabledTabContent } from './DisabledTabContent';
+import { Button } from '@/components/ui/button';
 import { DeepSeekChat } from '../DeepSeekChat';
 import { OpenAIChat } from '../OpenAIChat';
 import { GrokChat } from '../GrokChat';
 import { ClaudeChat } from '../ClaudeChat';
+import { ChatEmpty } from './ChatEmpty';
 
 interface LLMTabContentProps {
-  tabValue: 'deepseek' | 'openai' | 'grok' | 'claude';
+  tabValue: string;
   isEnabled: boolean;
-  toggleLLM: (llm: 'deepseek' | 'openai' | 'grok' | 'claude') => void;
-  connectionStatus?: 'connected' | 'connecting' | 'disconnected' | 'error';
+  toggleLLM: (llm: string, enabled: boolean) => void;
+  connectionStatus: 'connected' | 'disconnected' | 'unavailable' | 'checking';
 }
 
-export const LLMTabContent: React.FC<LLMTabContentProps> = ({ 
+export function LLMTabContent({ 
   tabValue, 
   isEnabled, 
   toggleLLM,
   connectionStatus 
-}) => {
-  const renderContent = () => {
+}: LLMTabContentProps) {
+  // Render appropriate chat component based on tab value
+  const renderChatComponent = () => {
     if (!isEnabled) {
       return (
-        <DisabledTabContent 
-          modelName={tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} 
-          onEnable={() => toggleLLM(tabValue)} 
-        />
+        <div className="h-full flex flex-col items-center justify-center p-6">
+          <p className="text-gray-500 mb-4 text-center max-w-md">
+            This LLM extension is currently disabled.
+            Enable it to use {getLLMName(tabValue)} capabilities.
+          </p>
+          <Button onClick={() => toggleLLM(tabValue, true)}>
+            Enable {getLLMName(tabValue)}
+          </Button>
+        </div>
       );
     }
 
@@ -40,13 +46,29 @@ export const LLMTabContent: React.FC<LLMTabContentProps> = ({
       case 'claude':
         return <ClaudeChat />;
       default:
-        return null;
+        return <ChatEmpty />;
+    }
+  };
+
+  // Get user-friendly LLM name
+  const getLLMName = (value: string) => {
+    switch (value) {
+      case 'deepseek':
+        return 'DeepSeek';
+      case 'openai':
+        return 'OpenAI';
+      case 'grok':
+        return 'Grok';
+      case 'claude':
+        return 'Claude';
+      default:
+        return value;
     }
   };
 
   return (
-    <TabsContent value={tabValue}>
-      {renderContent()}
+    <TabsContent value={tabValue} className="mt-0 h-[500px] border-none p-0">
+      {renderChatComponent()}
     </TabsContent>
   );
-};
+}
