@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-groq-api-key',
   'Content-Type': 'application/json'
 };
 
@@ -14,22 +14,34 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Grok3 ping function called');
+    console.log('API ping function called');
     
-    // Check if API key is configured in environment
-    const apiKey = Deno.env.get('GROK3_API_KEY');
-    const isConfigured = !!apiKey && apiKey !== 'CHANGEME';
+    // Check if API keys are configured in environment
+    const grok3ApiKey = Deno.env.get('GROK3_API_KEY');
+    const groqApiKey = Deno.env.get('GROQ_API_KEY');
+    
+    // Check for client-provided Groq API key in header
+    const clientGroqKey = req.headers.get('x-groq-api-key');
+    
+    const isGrok3Configured = !!grok3ApiKey && grok3ApiKey !== 'CHANGEME';
+    const isGroqConfigured = !!(groqApiKey || clientGroqKey);
+    
+    const isConfigured = isGrok3Configured || isGroqConfigured;
     
     return new Response(
       JSON.stringify({
         status: isConfigured ? 'available' : 'unavailable',
-        message: isConfigured ? 'Grok3 API is available' : 'Grok3 API key not configured',
+        message: isConfigured 
+          ? 'API is available'
+          : 'API key not configured. Please set a Grok3 or Groq API key.',
+        grok3Available: isGrok3Configured,
+        groqAvailable: isGroqConfigured,
         timestamp: new Date().toISOString()
       }),
       { headers: corsHeaders }
     );
   } catch (error) {
-    console.error('Error in grok3-ping:', error);
+    console.error('Error in API ping:', error);
     
     return new Response(
       JSON.stringify({
@@ -38,7 +50,7 @@ serve(async (req) => {
         timestamp: new Date().toISOString()
       }),
       {
-        status: 500,
+        status: 200, // Still return 200 to avoid HTTP errors
         headers: corsHeaders
       }
     );

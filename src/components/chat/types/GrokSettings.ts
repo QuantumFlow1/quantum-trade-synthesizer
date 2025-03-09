@@ -1,3 +1,4 @@
+
 export type ModelId = 
   | 'grok3' 
   | 'gpt-4' 
@@ -10,7 +11,8 @@ export type ModelId =
   | 'openai'
   | 'gemini'
   | 'claude'
-  | 'deepseek';
+  | 'deepseek'
+  | 'groq';
 
 // Add this type alias for the messageService to use
 export type AIModelType = ModelId;
@@ -28,6 +30,7 @@ export const AI_MODELS: ModelInfo[] = [
   { id: 'claude', name: 'Claude 3', description: 'Uitstekend voor nuancering en logica', needsApiKey: true },
   { id: 'gemini', name: 'Gemini Pro', description: 'Geavanceerde AI van Google', needsApiKey: true },
   { id: 'deepseek', name: 'DeepSeek Coder', description: 'Gespecialiseerd in code en technische analyses', needsApiKey: true },
+  { id: 'groq', name: 'Groq LLM', description: 'Ultrasnelle LLM voor analyses en code', needsApiKey: true },
 ];
 
 export interface ApiKeySettings {

@@ -5,7 +5,7 @@ import { AlertCircle, Bot, ChevronRight, Key } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 
@@ -48,6 +48,16 @@ export const StockbotAccess = () => {
       return;
     }
     
+    // Validate key format
+    if (!groqApiKey.trim().startsWith('gsk_')) {
+      toast({
+        title: "Ongeldige API sleutel",
+        description: "Groq API sleutels beginnen gewoonlijk met 'gsk_'",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Save key to localStorage
     localStorage.setItem('groqApiKey', groqApiKey.trim());
     
@@ -85,13 +95,26 @@ export const StockbotAccess = () => {
             and sentiment data. Stockbot helps you make more informed trading decisions.
           </p>
           
-          <Alert className="bg-blue-50 border-blue-200">
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertTitle>Pro Tip</AlertTitle>
-            <AlertDescription className="text-xs text-blue-700">
-              You can find Stockbot in the Trading Dashboard under the "Trading Agents" tab.
-            </AlertDescription>
-          </Alert>
+          {!hasApiKey && (
+            <Alert className="bg-amber-50 border-amber-200">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertTitle>API Key Required</AlertTitle>
+              <AlertDescription className="text-xs text-amber-700">
+                You need to set up a Groq API key to use Stockbot's full capabilities. 
+                Click the "Configure Groq API Key" button below.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {hasApiKey && (
+            <Alert className="bg-blue-50 border-blue-200">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertTitle>Pro Tip</AlertTitle>
+              <AlertDescription className="text-xs text-blue-700">
+                You can find Stockbot in the Trading Dashboard under the "Trading Agents" tab.
+              </AlertDescription>
+            </Alert>
+          )}
           
           <div className="flex flex-col space-y-2">
             <Button 
@@ -104,13 +127,13 @@ export const StockbotAccess = () => {
             </Button>
             
             <Button
-              variant="outline"
+              variant={hasApiKey ? "outline" : "secondary"}
               size="sm"
               onClick={() => setIsKeyDialogOpen(true)}
               className="w-full"
             >
               <Key className="w-4 h-4 mr-2" />
-              <span>{hasApiKey ? "Update Groq API Key" : "Set Groq API Key"}</span>
+              <span>{hasApiKey ? "Update Groq API Key" : "Configure Groq API Key"}</span>
             </Button>
           </div>
         </div>
@@ -121,6 +144,9 @@ export const StockbotAccess = () => {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Configure Groq API Key</DialogTitle>
+            <DialogDescription>
+              Your API key is stored securely in your browser and is required for Stockbot to access the Groq AI model.
+            </DialogDescription>
           </DialogHeader>
           
           <div className="py-4">
@@ -136,7 +162,6 @@ export const StockbotAccess = () => {
             </div>
             
             <div className="mt-4 text-xs text-gray-500">
-              <p>Your API key is stored securely in your browser. It is not shared with anyone.</p>
               <p className="mt-1">Get a Groq API key from <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">Groq's website</a></p>
             </div>
           </div>

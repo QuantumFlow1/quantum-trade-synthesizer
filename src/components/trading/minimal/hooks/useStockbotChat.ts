@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 
@@ -15,12 +15,30 @@ export function useStockbotChat() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   const [isSimulationMode, setIsSimulationMode] = useState(true);
 
-  // Check for Groq API key on mount
-  useEffect(() => {
+  // Check for Groq API key on mount and when localStorage changes
+  const checkApiKey = useCallback(() => {
     const groqApiKey = localStorage.getItem('groqApiKey');
-    setHasApiKey(!!groqApiKey);
+    const keyExists = !!groqApiKey;
+    setHasApiKey(keyExists);
+    
+    // If key exists, enable live mode, otherwise use simulation
+    if (keyExists) {
+      setIsSimulationMode(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkApiKey();
+    
+    // Listen for API key updates
+    const handleApiKeyUpdate = () => {
+      checkApiKey();
+    };
+    
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
     
     // Load saved messages from localStorage
     const savedMessages = localStorage.getItem('stockbotChatMessages');
@@ -43,7 +61,11 @@ export function useStockbotChat() {
         timestamp: new Date()
       }]);
     }
-  }, []);
+    
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+    };
+  }, [checkApiKey]);
 
   // Save messages to localStorage when they change
   useEffect(() => {
@@ -51,6 +73,10 @@ export function useStockbotChat() {
       localStorage.setItem('stockbotChatMessages', JSON.stringify(messages));
     }
   }, [messages]);
+
+  const showApiKeyDialog = () => {
+    setIsKeyDialogOpen(true);
+  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -70,7 +96,9 @@ export function useStockbotChat() {
       const groqApiKey = localStorage.getItem('groqApiKey');
       
       if (!groqApiKey && !isSimulationMode) {
-        throw new Error("Groq API key is missing. Please set it in the settings.");
+        // Switch to simulation mode if no API key and we're trying to use live mode
+        setIsSimulationMode(true);
+        throw new Error("Groq API key is missing. Please set it in the settings. Using simulation mode for now.");
       }
 
       // Format message history for API
@@ -91,35 +119,68 @@ export function useStockbotChat() {
         // Simulate response in demo mode
         await simulateResponse(inputMessage);
       } else {
-        // Call the edge function to get a response from Groq
-        const { data, error } = await supabase.functions.invoke('generate-trading-advice', {
-          body: { 
-            message: inputMessage,
-            previousMessages: messageHistory,
-            userLevel: 'intermediate'
-          },
-          headers: {
-            'x-groq-api-key': groqApiKey || ''
+        // First try the direct edge function for trading advice
+        try {
+          const { data, error } = await supabase.functions.invoke('generate-trading-advice', {
+            body: { 
+              message: inputMessage,
+              previousMessages: messageHistory,
+              userLevel: 'intermediate'
+            },
+            headers: {
+              'x-groq-api-key': groqApiKey || ''
+            }
+          });
+          
+          if (error) {
+            console.error('Error from trading advice edge function:', error);
+            throw new Error(error.message || 'Failed to get response from Stockbot');
           }
-        });
-        
-        if (error) {
-          console.error('Error from edge function:', error);
-          throw new Error(error.message || 'Failed to get response from Stockbot');
+          
+          if (!data || !data.response) {
+            throw new Error('Received invalid response from Stockbot');
+          }
+          
+          const assistantMessage: ChatMessage = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: data.response,
+            timestamp: new Date()
+          };
+          
+          setMessages(prev => [...prev, assistantMessage]);
+        } catch (tradingApiError) {
+          console.error('Trading API error, falling back to grok3-response:', tradingApiError);
+          
+          // Fall back to the general grok3-response function if trading-specific fails
+          const { data, error } = await supabase.functions.invoke('grok3-response', {
+            body: { 
+              message: inputMessage,
+              context: messageHistory
+            },
+            headers: {
+              'x-groq-api-key': groqApiKey || ''
+            }
+          });
+          
+          if (error) {
+            console.error('Error from grok3-response fallback:', error);
+            throw new Error(error.message || 'Failed to get response');
+          }
+          
+          if (!data || !data.response) {
+            throw new Error('Received invalid response from fallback API');
+          }
+          
+          const assistantMessage: ChatMessage = {
+            id: Date.now().toString(),
+            role: 'assistant',
+            content: data.response,
+            timestamp: new Date()
+          };
+          
+          setMessages(prev => [...prev, assistantMessage]);
         }
-        
-        if (!data || !data.response) {
-          throw new Error('Received invalid response from Stockbot');
-        }
-        
-        const assistantMessage: ChatMessage = {
-          id: Date.now().toString(),
-          role: 'assistant',
-          content: data.response,
-          timestamp: new Date()
-        };
-        
-        setMessages(prev => [...prev, assistantMessage]);
       }
     } catch (error) {
       console.error('Error in sendMessage:', error);
@@ -128,7 +189,7 @@ export function useStockbotChat() {
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `Error: ${error instanceof Error ? error.message : "Failed to get response from Stockbot"}`,
+        content: `Error: ${error instanceof Error ? error.message : "Failed to get response from Stockbot"}. ${!hasApiKey ? "Please set your Groq API key to enable full functionality." : ""}`,
         timestamp: new Date()
       };
       
@@ -140,6 +201,11 @@ export function useStockbotChat() {
         variant: "destructive",
         duration: 5000
       });
+      
+      // If the error was due to missing API key, show the dialog
+      if (!hasApiKey && !isSimulationMode) {
+        showApiKeyDialog();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -206,6 +272,9 @@ export function useStockbotChat() {
     isSimulationMode,
     setIsSimulationMode,
     handleSendMessage,
+    showApiKeyDialog,
+    isKeyDialogOpen,
+    setIsKeyDialogOpen,
     clearChat
   };
 }
