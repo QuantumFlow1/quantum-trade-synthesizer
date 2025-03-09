@@ -2,17 +2,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 import { corsHeaders } from "../_shared/cors.ts"
-import { OpenAI } from "https://esm.sh/openai@3.3.0"
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') || ''
+const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || ''
 
 // Create a Supabase client
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-// Initialize OpenAI
-const openai = new OpenAI({ apiKey: OPENAI_API_KEY })
 
 serve(async (req) => {
   // This is needed if you're planning to invoke your function from a browser.
@@ -34,8 +30,23 @@ serve(async (req) => {
     console.log(`Generating trading advice for message: ${message.substring(0, 100)}...`)
     console.log(`User level: ${userLevel}`)
 
+    // Get the API key - first try the environment variable, then the client-provided key
+    let apiKey = GROQ_API_KEY
+    const clientProvidedKey = req.headers.get('x-groq-api-key')
+    
+    if (!apiKey && clientProvidedKey) {
+      apiKey = clientProvidedKey
+    }
+    
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'Groq API key is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
     // Build the prompt based on user level
-    let systemPrompt = 'You are EdriziAI, a professional trading assistant specialized in helping users with market analysis and trading advice. You are powered by T.S.A.A. (Trading Strategie Advies Agents) that analyze market data and provide recommendations. '
+    let systemPrompt = 'You are Stockbot, a professional trading assistant specialized in helping users with market analysis and trading advice. You are powered by T.S.A.A. (Trading Strategie Advies Agents) that analyze market data and provide recommendations. '
     
     // Add level-specific instructions
     switch (userLevel) {
@@ -85,24 +96,36 @@ serve(async (req) => {
       { role: "user", content: message }
     ]
 
-    console.log('Sending request to OpenAI with messages:', JSON.stringify(messages.slice(0, 2)))
+    console.log('Sending request to Groq API with messages')
     
-    // Call OpenAI API
-    const completion = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
-      messages: messages,
-      max_tokens: 1000,
-      temperature: 0.7,
+    // Call Groq API
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama3-70b-8192',
+        messages: messages,
+        max_tokens: 1000,
+        temperature: 0.7,
+      })
     })
 
-    // Extract the assistant's response
-    const response = completion.data.choices[0]?.message?.content || "I apologize, but I couldn't generate a response. Please try asking in a different way."
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(`Groq API error: ${errorData.error?.message || response.statusText}`)
+    }
+
+    const data = await response.json()
+    const aiResponse = data.choices[0]?.message?.content || "I apologize, but I couldn't generate a response. Please try asking in a different way."
     
-    console.log(`Generated response: ${response.substring(0, 100)}...`)
+    console.log(`Generated response: ${aiResponse.substring(0, 100)}...`)
 
     // Return the response
     return new Response(
-      JSON.stringify({ response }),
+      JSON.stringify({ response: aiResponse }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
