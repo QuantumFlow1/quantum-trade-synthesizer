@@ -12,7 +12,7 @@ interface IndicatorControlsProps {
     rsi: boolean;
     bollingerBands: boolean;
   };
-  toggleIndicator: (indicator: keyof typeof visibleIndicators) => void;
+  toggleIndicator: (indicator: string) => void;
 }
 
 export const IndicatorControls = ({
@@ -31,7 +31,7 @@ export const IndicatorControls = ({
           size="sm" 
           variant="default" 
           className="h-6 px-2 text-xs capitalize"
-          onClick={() => toggleIndicator(indicator as keyof typeof visibleIndicators)}
+          onClick={() => toggleIndicator(indicator)}
         >
           {indicator === "ema" ? "EMA" : indicator === "sma" ? "SMA" : indicator === "rsi" ? "RSI" : indicator === "macd" ? "MACD" : indicator === "bollingerBands" ? "BB" : indicator}
         </Button>
@@ -57,7 +57,7 @@ export const IndicatorControls = ({
                 variant="ghost"
                 size="sm"
                 className="w-full justify-start h-8 text-xs capitalize"
-                onClick={() => toggleIndicator(key as keyof typeof visibleIndicators)}
+                onClick={() => toggleIndicator(key)}
               >
                 <span className="w-4 h-4 mr-2 flex items-center justify-center">
                   {isVisible && <Check className="h-3 w-3" />}
