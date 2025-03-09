@@ -2,17 +2,16 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@/tests/utils/test-utils';
 import { RecommendationList } from '@/components/trading/portfolio/RecommendationList';
-import { AgentRecommendation as AgentRecommendationType } from '@/types/agent';
+import { AgentRecommendation } from '@/components/trading/portfolio/types/portfolioTypes';
 
 describe('RecommendationList', () => {
-  const mockRecommendations: AgentRecommendationType[] = [
+  const mockRecommendations: AgentRecommendation[] = [
     {
       agentId: 'value-investor-001',
       action: 'BUY',
       confidence: 85,
       reasoning: 'Strong fundamentals',
       ticker: 'BTC',
-      price: 45000,
       timestamp: new Date().toISOString()
     },
     {
@@ -21,7 +20,6 @@ describe('RecommendationList', () => {
       confidence: 70,
       reasoning: 'Bearish pattern',
       ticker: 'BTC',
-      price: 45000,
       timestamp: new Date().toISOString()
     }
   ];

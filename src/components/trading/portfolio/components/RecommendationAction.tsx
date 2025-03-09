@@ -1,34 +1,36 @@
 
 import React from 'react';
-import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Pause, Brain } from "lucide-react";
+import { ArrowUp, ArrowDown, MinusIcon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface RecommendationActionProps {
-  action: string;
+  action: "BUY" | "SELL" | "HOLD";
 }
 
 export const RecommendationAction: React.FC<RecommendationActionProps> = ({ action }) => {
-  // Function to get action icon
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case "BUY":
-        return <TrendingUp className="h-4 w-4 text-green-500" />;
-      case "SELL":
-        return <TrendingDown className="h-4 w-4 text-red-500" />;
-      case "HOLD":
-        return <Pause className="h-4 w-4 text-yellow-500" />;
-      default:
-        return <Brain className="h-4 w-4 text-primary" />;
-    }
-  };
-
-  return (
-    <Badge 
-      variant={action === "BUY" ? "success" : action === "SELL" ? "destructive" : "outline"}
-      className="flex gap-1 items-center"
-    >
-      {getActionIcon(action)}
-      {action}
-    </Badge>
-  );
+  switch (action) {
+    case "BUY":
+      return (
+        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+          <ArrowUp className="h-3 w-3 mr-1" />
+          Buy
+        </Badge>
+      );
+    case "SELL":
+      return (
+        <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">
+          <ArrowDown className="h-3 w-3 mr-1" />
+          Sell
+        </Badge>
+      );
+    case "HOLD":
+      return (
+        <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
+          <MinusIcon className="h-3 w-3 mr-1" />
+          Hold
+        </Badge>
+      );
+    default:
+      return null;
+  }
 };

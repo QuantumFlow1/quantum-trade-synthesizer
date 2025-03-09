@@ -21,7 +21,9 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
     portfolioDecision,
     loadingDecision,
     handleExecuteDecision,
-    handleRefreshAnalysis
+    handleRefreshAnalysis,
+    agentPerformance,
+    agentAccuracy
   } = usePortfolioManager(currentData);
   
   // Initialize the Groq agent
@@ -49,7 +51,11 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
         />
       ) : (
         <>
-          <RecommendationList recommendations={agentRecommendations} />
+          <RecommendationList 
+            recommendations={agentRecommendations}
+            agentPerformance={agentPerformance}
+            agentAccuracy={agentAccuracy}
+          />
           
           {loadingDecision ? (
             <LoadingDecision />

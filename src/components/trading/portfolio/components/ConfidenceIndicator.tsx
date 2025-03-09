@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ConfidenceIndicatorProps {
   confidence: number;
@@ -8,40 +8,34 @@ interface ConfidenceIndicatorProps {
 }
 
 export const ConfidenceIndicator: React.FC<ConfidenceIndicatorProps> = ({ 
-  confidence, 
-  confidenceInterval = [0, 0] 
+  confidence,
+  confidenceInterval
 }) => {
+  const color = confidence > 80 ? 'bg-green-500' : 
+                confidence > 65 ? 'bg-blue-500' : 
+                confidence > 50 ? 'bg-yellow-500' : 'bg-red-500';
+  
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative w-20 h-1.5 bg-secondary rounded-full overflow-hidden">
-        <div 
-          className={`absolute left-0 top-0 h-full rounded-full ${
-            confidence > 75 ? 'bg-green-500' : 
-            confidence > 50 ? 'bg-yellow-500' : 
-            'bg-red-500'
-          }`}
-          style={{ width: `${confidence}%` }}
-        />
-      </div>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="text-xs font-medium flex items-center gap-1 cursor-help">
-            {confidence}%
-            {confidenceInterval[0] > 0 && (
-              <span className="text-[10px] text-muted-foreground">
-                ±{(confidenceInterval[1] - confidenceInterval[0])/2}%
-              </span>
-            )}
-          </span>
-        </TooltipTrigger>
-        <TooltipContent className="text-xs max-w-56">
-          {confidenceInterval[0] > 0 ? (
-            <p>Confidence interval: {confidenceInterval[0]}% - {confidenceInterval[1]}%</p>
-          ) : (
-            <p>Confidence score based on agent's analysis</p>
+    <Tooltip>
+      <TooltipTrigger className="flex items-center">
+        <div className="flex items-center gap-1">
+          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className={`h-full ${color} rounded-full`} 
+              style={{ width: `${confidence}%` }}
+            />
+          </div>
+          <span className="text-xs font-medium">{confidence}%</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="space-y-1 text-xs">
+          <p>Confidence score: {confidence}%</p>
+          {confidenceInterval && (
+            <p>Confidence interval: [{confidenceInterval[0].toFixed(0)}% - {confidenceInterval[1].toFixed(0)}%]</p>
           )}
-        </TooltipContent>
-      </Tooltip>
-    </div>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 };

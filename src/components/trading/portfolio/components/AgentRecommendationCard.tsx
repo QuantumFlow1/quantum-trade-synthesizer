@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Brain, BarChart3, AlertTriangle, TrendingUp } from "lucide-react";
-import { AgentRecommendation } from "@/types/agent";
-import { AgentPerformance } from "../types/portfolioTypes";
+import { AgentRecommendation, AgentPerformance } from "../types/portfolioTypes";
 import { ConfidenceIndicator } from './ConfidenceIndicator';
 import { RecommendationAction } from './RecommendationAction';
 import { PerformanceMetrics } from './PerformanceMetrics';

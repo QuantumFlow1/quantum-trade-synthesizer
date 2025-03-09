@@ -61,8 +61,13 @@ export interface PortfolioManagerHookReturn {
   collaborationMessages: any[];
   collaborationScore: number;
   activeDiscussions: any[];
-  agentPerformance: any;
-  agentAccuracy: any;
+  agentPerformance: Record<string, AgentPerformance>;
+  agentAccuracy: Record<string, {
+    overall: number;
+    recent: number;
+    confidence: [number, number];
+    predictionHistory?: Array<{correct: boolean, date: string, prediction: string}>;
+  }>;
   backtestResults: any[];
   tradingAgents: TradingAgent[];
   handleExecuteDecision: (isSimulationMode: boolean) => void;
