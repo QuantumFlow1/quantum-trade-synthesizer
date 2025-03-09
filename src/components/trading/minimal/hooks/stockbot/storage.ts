@@ -1,47 +1,26 @@
 
 import { ChatMessage } from './types';
 
-const STORAGE_KEY = 'stockbot-messages';
-
-/**
- * Save messages to localStorage
- */
-export const saveMessages = (messages: ChatMessage[]): void => {
+// Save chat history to localStorage
+export const saveStockbotChatHistory = (messages: ChatMessage[]) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    localStorage.setItem('stockbotChatHistory', JSON.stringify(messages));
   } catch (error) {
-    console.error('Error saving messages to localStorage:', error);
+    console.error('Error saving stockbot chat history:', error);
   }
 };
 
-/**
- * Load messages from localStorage
- */
-export const loadMessages = (): ChatMessage[] | null => {
+// Load chat history from localStorage
+export const loadStockbotChatHistory = (): ChatMessage[] => {
   try {
-    const savedMessages = localStorage.getItem(STORAGE_KEY);
-    if (savedMessages) {
-      const parsed = JSON.parse(savedMessages);
-      return Array.isArray(parsed) ? parsed : null;
-    }
-    return null;
+    const history = localStorage.getItem('stockbotChatHistory');
+    return history ? JSON.parse(history) : [];
   } catch (error) {
-    console.error('Error loading messages from localStorage:', error);
-    return null;
+    console.error('Error loading stockbot chat history:', error);
+    return [];
   }
 };
 
-/**
- * Clear all messages from localStorage
- */
-export const clearMessages = (): void => {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error('Error clearing messages from localStorage:', error);
-  }
-};
-
-// Add the exports that useStockbotState is looking for
-export const loadStockbotChatHistory = loadMessages;
-export const saveStockbotChatHistory = saveMessages;
+// Aliases for backwards compatibility
+export const saveMessages = saveStockbotChatHistory;
+export const loadMessages = loadStockbotChatHistory;

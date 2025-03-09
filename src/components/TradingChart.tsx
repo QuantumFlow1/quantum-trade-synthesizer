@@ -10,7 +10,10 @@ import { useTradingChartData } from "@/hooks/use-trading-chart-data";
 import { useSimulationMode } from "@/hooks/use-simulation-mode";
 import { Button } from "./ui/button";
 import { BoxIcon } from "lucide-react";
-import { TradingDataPoint } from "@/hooks/trading-chart/types";
+import { PriceDataPoint, TradingDataPoint as ChartTradingDataPoint } from "@/hooks/trading-chart/types";
+
+// Import the TradingDataPoint type from the utils file
+import type { TradingDataPoint as UtilsTradingDataPoint } from "@/utils/tradingData";
 
 const TradingChart = memo(() => {
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls(1);
@@ -28,8 +31,8 @@ const TradingChart = memo(() => {
   
   const { forceSimulation, toggleSimulationMode } = useSimulationMode(handleRetryConnection);
 
-  // Convert PriceDataPoint[] to TradingDataPoint[]
-  const convertToTradingDataPoint = (data: any[]): TradingDataPoint[] => {
+  // Convert PriceDataPoint[] to our ChartTradingDataPoint[]
+  const convertToChartTradingDataPoint = (data: PriceDataPoint[]): ChartTradingDataPoint[] => {
     return data.map(item => ({
       ...item,
       name: new Date(item.timestamp).toLocaleDateString(),
@@ -47,8 +50,22 @@ const TradingChart = memo(() => {
     }));
   };
 
-  // Convert data for the components that expect TradingDataPoint
-  const tradingData = convertToTradingDataPoint(data);
+  // Convert ChartTradingDataPoint[] to UtilsTradingDataPoint[] for compatibility with the views
+  const convertToUtilsTradingDataPoint = (data: ChartTradingDataPoint[]): UtilsTradingDataPoint[] => {
+    return data.map(item => ({
+      ...item,
+      date: new Date(item.timestamp), // Convert timestamp to Date object
+      macdSignal: item.signal,
+      macdHistogram: item.histogram,
+      bollingerUpper: item.bollinger_upper,
+      bollingerLower: item.bollinger_lower,
+      bollingerMiddle: item.bollinger_middle
+    })) as UtilsTradingDataPoint[];
+  };
+
+  // Convert the data for the components
+  const chartTradingData = convertToChartTradingDataPoint(data);
+  const tradingData = convertToUtilsTradingDataPoint(chartTradingData);
 
   const handleNavigateToVisualization = () => {
     const dashboardNavHandler = (window as any).__dashboardNavigationHandler;
@@ -87,7 +104,7 @@ const TradingChart = memo(() => {
           handleZoomOut={handleZoomOut}
           handleResetZoom={handleResetZoom}
           apiStatus={apiStatus}
-          rawMarketData={convertToTradingDataPoint(rawMarketData)}
+          rawMarketData={convertToUtilsTradingDataPoint(convertToChartTradingDataPoint(rawMarketData))}
           onSimulationToggle={toggleSimulationMode}
           isSimulationMode={forceSimulation}
           apiKeysAvailable={apiKeysAvailable}
@@ -103,7 +120,7 @@ const TradingChart = memo(() => {
           handleZoomOut={handleZoomOut}
           handleResetZoom={handleResetZoom}
           apiStatus={apiStatus}
-          rawMarketData={convertToTradingDataPoint(rawMarketData)}
+          rawMarketData={convertToUtilsTradingDataPoint(convertToChartTradingDataPoint(rawMarketData))}
           onSimulationToggle={toggleSimulationMode}
           isSimulationMode={forceSimulation}
           apiKeysAvailable={apiKeysAvailable}

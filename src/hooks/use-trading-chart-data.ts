@@ -1,4 +1,3 @@
-
 // Update this file to use the correct types and fix the errors
 import { useState, useEffect, useCallback } from 'react';
 import { TradingChartState, PriceDataPoint, ApiStatus, MarketDataParams } from './trading-chart/types';
@@ -192,5 +191,5 @@ export const useTradingChartData = (
   };
 };
 
-// Export ApiStatus type for components that need it
+// Use export type for ApiStatus to avoid conflicts  
 export type { ApiStatus } from './trading-chart/types';
