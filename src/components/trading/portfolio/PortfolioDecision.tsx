@@ -2,11 +2,23 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { PortfolioDecision as PortfolioDecisionType } from "@/types/agent";
 import { AlertTriangle, ArrowDown, ArrowUp, Check, Pause } from "lucide-react";
 
+// Create a common interface that's compatible with both types
 interface PortfolioDecisionProps {
-  decision: PortfolioDecisionType;
+  decision: {
+    action: string;
+    confidence: number;
+    reasoning: string;
+    contributors?: string[];
+    timestamp: string;
+    ticker: string;
+    amount: number;
+    price: number;
+    riskScore: number;
+    stopLoss?: number;
+    takeProfit?: number;
+  };
   isSimulationMode: boolean;
   onExecuteDecision: () => void;
 }

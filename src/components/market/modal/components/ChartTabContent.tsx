@@ -1,19 +1,28 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowUpDown, Candlestick, AreaChart } from 'lucide-react';
-import MarketChartView from "../../MarketChartView"; // Fixed import
+import { ArrowUpDown, BarChart, AreaChart } from 'lucide-react';
+import MarketChartView from "../../MarketChartView";
 
 interface ChartTabContentProps {
   marketData: any;
+  marketName?: string;
+  data?: any[];
+  isPriceUp?: boolean;
 }
 
-export const ChartTabContent: React.FC<ChartTabContentProps> = ({ marketData }) => {
+export const ChartTabContent: React.FC<ChartTabContentProps> = ({ 
+  marketData,
+  marketName,
+  data,
+  isPriceUp
+}) => {
   return (
     <Card className="bg-card/50">
       <CardHeader>
-        <CardTitle>Price Chart</CardTitle>
+        <CardTitle>Price Chart {marketName && `for ${marketName}`}</CardTitle>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="price">
@@ -23,7 +32,7 @@ export const ChartTabContent: React.FC<ChartTabContentProps> = ({ marketData }) 
               Price
             </TabsTrigger>
             <TabsTrigger value="volume">
-              <Candlestick className="mr-2 h-4 w-4" />
+              <BarChart className="mr-2 h-4 w-4" />
               Volume
             </TabsTrigger>
             <TabsTrigger value="overview">

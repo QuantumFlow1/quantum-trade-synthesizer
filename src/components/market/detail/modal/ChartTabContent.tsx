@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowUpDown, Candlestick, AreaChart } from 'lucide-react';
-import MarketChartView from "../../MarketChartView"; // Fixed import
+import { ArrowUpDown, BarChart, AreaChart } from 'lucide-react';
+import MarketChartView from "../../MarketChartView";
 
 interface ChartTabContentProps {
   symbol: string;
@@ -36,7 +37,7 @@ export const ChartTabContent: React.FC<ChartTabContentProps> = ({ symbol }) => {
               <span>Line</span>
             </TabsTrigger>
             <TabsTrigger value="candle" className="flex items-center justify-center space-x-2">
-              <Candlestick className="h-4 w-4" />
+              <BarChart className="h-4 w-4" />
               <span>Candle</span>
             </TabsTrigger>
           </TabsList>

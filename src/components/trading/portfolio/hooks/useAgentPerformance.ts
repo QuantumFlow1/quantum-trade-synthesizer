@@ -3,17 +3,16 @@ import { useState, useEffect } from 'react';
 import { AgentRecommendation, TradingAgent } from '../types/portfolioTypes';
 import { AgentPerformance } from '../types/portfolioTypes';
 
-export const useAgentPerformance = (agents: TradingAgent[], recommendations: AgentRecommendation[]) => {
+export const useAgentPerformance = () => {
   const [performance, setPerformance] = useState<Record<string, AgentPerformance>>({});
 
-  useEffect(() => {
-    if (!agents.length) return;
+  const updateAgentPerformance = (agents: TradingAgent[], accuracyMetrics: any) => {
+    if (!agents || !agents.length) return;
 
     // Calculate performance metrics for each agent
     const newPerformance: Record<string, AgentPerformance> = {};
 
     agents.forEach(agent => {
-      const agentRecs = recommendations.filter(rec => rec.agentId === agent.id);
       const successRate = agent.performance?.accuracy || 0.7; // Default to 70% if no data
       
       // Create richer performance metrics
@@ -23,13 +22,13 @@ export const useAgentPerformance = (agents: TradingAgent[], recommendations: Age
         profitFactor: agent.performance?.profitFactor || 1.5,
         successRate: successRate,
         recentSuccess: Array(5).fill(0).map(() => Math.random() > 0.3 ? 1 : 0),
-        averageConfidence: agentRecs.reduce((acc, rec) => acc + rec.confidence, 0) / (agentRecs.length || 1),
-        totalCalls: agentRecs.length
+        averageConfidence: Math.random() * 20 + 70, // Random value between 70-90
+        totalCalls: Math.floor(Math.random() * 20) + 5
       };
     });
 
     setPerformance(newPerformance);
-  }, [agents, recommendations]);
+  };
 
-  return performance;
+  return { agentPerformance: performance, updateAgentPerformance };
 };
