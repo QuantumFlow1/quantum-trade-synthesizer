@@ -1,7 +1,7 @@
 
 import { Card } from "@/components/ui/card";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { WalletType } from "../WalletOverview";
+import { WalletType } from "../types/walletTypes";
 
 interface WalletBalanceCardsProps {
   balance: number;

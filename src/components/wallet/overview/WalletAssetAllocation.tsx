@@ -2,7 +2,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
-import { WalletType } from "../WalletOverview";
+import { WalletType } from "../types/walletTypes";
 
 interface WalletAssetAllocationProps {
   walletType: WalletType;

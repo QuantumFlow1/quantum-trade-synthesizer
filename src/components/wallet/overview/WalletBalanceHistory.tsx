@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { Card } from "@/components/ui/card";
 import { formatNumber } from "@/lib/utils";
-import { WalletType } from "../WalletOverview";
+import { WalletType } from "../types/walletTypes";
 
 interface WalletBalanceHistoryProps {
   currency: string;
