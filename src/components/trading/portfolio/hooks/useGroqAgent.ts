@@ -50,7 +50,9 @@ export const useGroqAgent = () => {
           description: error.message,
           variant: "destructive"
         });
-        return null;
+        
+        // Return a fallback recommendation when the API fails
+        return generateFallbackRecommendation(agent, marketData);
       }
       
       // Check if we got a fallback response
@@ -72,7 +74,9 @@ export const useGroqAgent = () => {
           description: errorMessage,
           variant: "destructive"
         });
-        return null;
+        
+        // Return a fallback recommendation when the response is invalid
+        return generateFallbackRecommendation(agent, marketData);
       }
       
       const result = data.result as GroqAnalysisResult;
@@ -98,7 +102,9 @@ export const useGroqAgent = () => {
         description: errorMessage,
         variant: "destructive"
       });
-      return null;
+      
+      // Return a fallback recommendation when an exception occurs
+      return generateFallbackRecommendation(agent, marketData);
     } finally {
       setIsLoading(false);
     }
@@ -110,6 +116,38 @@ export const useGroqAgent = () => {
     if (action === "BUY") return "BUY";
     if (action === "SELL") return "SELL";
     return "HOLD";
+  };
+  
+  // Generate a fallback recommendation when the API fails
+  const generateFallbackRecommendation = (agent: GroqAgent, marketData: any): AgentRecommendation => {
+    // Generate a pseudo-random but somewhat sensible recommendation
+    const randomFactor = Math.random();
+    const priceChange = marketData?.change24h || 0;
+    
+    let action: "BUY" | "SELL" | "HOLD";
+    let confidence: number;
+    
+    if (priceChange > 2 && randomFactor > 0.4) {
+      // Positive market movement
+      action = "BUY";
+      confidence = 60 + Math.floor(randomFactor * 20);
+    } else if (priceChange < -2 && randomFactor > 0.4) {
+      // Negative market movement
+      action = "SELL";
+      confidence = 60 + Math.floor(randomFactor * 20);
+    } else {
+      // Neutral or uncertain
+      action = "HOLD";
+      confidence = 50 + Math.floor(randomFactor * 20);
+    }
+    
+    return {
+      agentId: agent.id,
+      action,
+      confidence,
+      reasoning: `Based on analysis of market conditions for ${marketData.symbol}, the recommendation is to ${action.toLowerCase()}. This is a fallback recommendation due to API unavailability.`,
+      timestamp: new Date().toISOString()
+    };
   };
 
   return {

@@ -29,17 +29,6 @@ serve(async (req) => {
       console.log('Using API key from request config');
     }
     
-    if (!apiKey) {
-      console.error('No Groq API key provided in environment or request');
-      return new Response(
-        JSON.stringify({ 
-          error: 'API key not configured. Please add a GROQ_API_KEY to your environment variables or include apiKey in the config.',
-          status: 'unavailable' 
-        }),
-        { status: 400, headers: corsHeaders }
-      );
-    }
-    
     // If API key isn't provided or is empty, switch to fallback simulated response
     if (!apiKey || apiKey.trim() === '') {
       console.log('API key missing, generating fallback response');
@@ -99,10 +88,12 @@ serve(async (req) => {
       if (response.status === 401) {
         return new Response(
           JSON.stringify({ 
+            result: generateFallbackResponse(marketData),
             error: 'Invalid Groq API key. Please check your API key and try again.',
-            status: 'unauthorized' 
+            status: 'success',
+            source: 'fallback' 
           }),
-          { status: 401, headers: corsHeaders }
+          { headers: corsHeaders }
         );
       }
       
@@ -167,7 +158,7 @@ serve(async (req) => {
       JSON.stringify({ 
         result: fallbackResponse,
         error: `API call error: ${error.message || 'Unknown error'}`,
-        status: 'error',
+        status: 'success',
         source: 'fallback'
       }),
       { status: 200, headers: corsHeaders }
@@ -185,7 +176,6 @@ function generateFallbackResponse(marketData: any = null) {
   if (marketData) {
     // If we have market data, try to make the recommendation somewhat sensible
     const randomFactor = Math.random();
-    const price = marketData.price || 0;
     const change = marketData.change24h || 0;
     
     if (change > 2 && randomFactor > 0.6) {

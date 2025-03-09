@@ -7,7 +7,12 @@ import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StockbotAccess } from "@/components/trading/minimal/StockbotAccess";
 
-export function AIToolsPage() {
+interface AIToolsPageProps {
+  apiStatus?: 'available' | 'unavailable' | 'checking';
+  showApiAccess?: boolean;
+}
+
+export function AIToolsPage({ apiStatus, showApiAccess }: AIToolsPageProps) {
   const [activeTab, setActiveTab] = useState("stockbot");
 
   useEffect(() => {
