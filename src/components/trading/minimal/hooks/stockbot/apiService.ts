@@ -1,75 +1,85 @@
 
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/lib/supabase';
 import { ChatMessage, StockbotApiResponse } from './types';
 
 /**
- * Simulated API endpoint for Stockbot
+ * Makes a request to the Groq API via edge function
  */
-export async function callStockbotAPI(
-  message: string,
-  mockMarketData?: any[]
-): Promise<StockbotApiResponse> {
-  // This is a placeholder for actual API integration
-  // In a real implementation, this would make a fetch call to an API endpoint
-
+export const fetchGroqApiResponse = async (
+  prompt: string, 
+  apiKey?: string
+): Promise<StockbotApiResponse> => {
+  console.log('Making request to Groq API via edge function');
+  
   try {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Simple simulation logic - if message contains certain keywords, return specific responses
-    if (message.toLowerCase().includes('buy')) {
-      return { 
-        response: `Based on current market trends, buying now might be ${mockMarketData && mockMarketData.length > 0 ? 'a good strategy' : 'risky without more data'}. Before making any decision, consider your risk tolerance and investment horizon.`
-      };
-    } else if (message.toLowerCase().includes('sell')) {
-      return { 
-        response: `Selling decisions should be based on your investment goals. The current market ${mockMarketData && mockMarketData.length > 0 ? 'shows some volatility' : 'data is limited'}. Consider consulting with a financial advisor.`
-      };
-    } else if (message.toLowerCase().includes('market')) {
-      return { 
-        response: `The market is ${mockMarketData && mockMarketData.length > 0 ? 'showing some interesting patterns. Volume is ' + (Math.random() > 0.5 ? 'up' : 'down') + ' compared to yesterday.' : 'difficult to analyze without more comprehensive data.'}`
-      };
-    } else if (message.toLowerCase().includes('trend')) {
-      return { 
-        response: `Current trends indicate ${mockMarketData && mockMarketData.length > 0 ? 'a potential shift in market sentiment. Technical indicators are ' + (Math.random() > 0.5 ? 'bullish' : 'bearish') + ' on a short-term timeframe.' : 'insufficient data to make a confident assessment.'}`
-      };
-    } else {
-      return { 
-        response: `Thank you for your question about "${message}". ${mockMarketData && mockMarketData.length > 0 ? 'Based on available market data, I can assist with specific trading questions about price trends, volume analysis, or trading strategies.' : 'I can provide better insights with more specific questions about trading strategies or market analysis.'}`
+    // Call the Groq Edge Function
+    const { data, error } = await supabase.functions.invoke('groq-chat', {
+      body: { 
+        prompt,
+        apiKey
+      }
+    });
+    
+    if (error) {
+      console.error('Error calling Groq API:', error);
+      return {
+        response: "",
+        error: error.message || 'Failed to get response from Groq'
       };
     }
+    
+    if (!data || !data.response) {
+      console.error('Invalid response from Groq API:', data);
+      
+      if (data?.error) {
+        return {
+          response: "",
+          error: `Groq API error: ${data.error}`
+        };
+      }
+      
+      return {
+        response: "",
+        error: 'Invalid response from Groq API'
+      };
+    }
+    
+    return { response: data.response };
   } catch (error) {
-    console.error("Error calling Stockbot API:", error);
-    return { 
-      error: "Sorry, I encountered an error while processing your request. Please try again later."
+    console.error('Exception calling Groq API:', error);
+    return {
+      response: "",
+      error: error instanceof Error ? error.message : 'An error occurred'
     };
   }
-}
+};
 
 /**
- * Create a properly formatted response message
+ * Simulates an API response for testing purposes
  */
-export function createAssistantMessage(content: string): ChatMessage {
+export const simulateApiResponse = async (prompt: string): Promise<StockbotApiResponse> => {
+  console.log('Simulating Stockbot API response');
+  
+  // Add a delay to simulate network latency
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  // Generate a simple response based on the prompt
+  const response = `This is a simulated response to your query: "${prompt}"\n\nIn simulation mode, no real API calls are made. This allows testing without using API credits or requiring an API key.`;
+  
+  return { response };
+};
+
+/**
+ * Convert API response to a ChatMessage
+ */
+export const createResponseMessage = (response: string): ChatMessage => {
   return {
     id: uuidv4(),
     sender: 'assistant',
     role: 'assistant',
-    text: content,
-    content: content,
+    text: response,
+    content: response,
     timestamp: new Date()
   };
-}
-
-/**
- * Create an error message from Stockbot
- */
-export function createErrorMessage(errorText: string): ChatMessage {
-  return {
-    id: uuidv4(),
-    sender: 'assistant',
-    role: 'assistant',
-    text: errorText,
-    content: errorText,
-    timestamp: new Date()
-  };
-}
+};

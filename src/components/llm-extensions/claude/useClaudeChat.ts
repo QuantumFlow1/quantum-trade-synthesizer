@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { Message } from '../deepseek/types';
 import { supabase } from '@/lib/supabase';
@@ -26,9 +26,15 @@ export function useClaudeChat() {
     const savedMessages = localStorage.getItem('claudeChatMessages');
     if (savedMessages) {
       try {
-        setMessages(JSON.parse(savedMessages));
+        const parsed = JSON.parse(savedMessages);
+        setMessages(parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        })));
       } catch (e) {
         console.error('Error parsing saved Claude messages:', e);
+        // If parsing fails, clear the corrupted messages
+        localStorage.removeItem('claudeChatMessages');
       }
     }
     
@@ -58,12 +64,12 @@ export function useClaudeChat() {
   }, [messages]);
 
   // Generate a unique ID for messages
-  const generateId = () => {
+  const generateId = useCallback(() => {
     return Date.now().toString(36) + Math.random().toString(36).substring(2);
-  };
+  }, []);
   
   // Save API key
-  const saveApiKey = (newApiKey: string) => {
+  const saveApiKey = useCallback((newApiKey: string) => {
     setApiKey(newApiKey);
     localStorage.setItem('claudeApiKey', newApiKey);
     
@@ -75,9 +81,9 @@ export function useClaudeChat() {
     
     // Trigger custom event for other components
     window.dispatchEvent(new Event('apikey-updated'));
-  };
+  }, []);
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!inputMessage.trim()) return;
     
     if (!apiKey) {
@@ -110,40 +116,67 @@ export function useClaudeChat() {
         content: msg.content
       }));
       
-      // Call the Claude edge function
-      const { data, error } = await supabase.functions.invoke('claude-response', {
-        body: {
-          messages: [...history, { role: 'user', content: inputMessage }],
-          model: 'claude-3-haiku-20240307',
-          temperature: 0.7,
-          max_tokens: 1000,
-          apiKey
+      // Call the Claude edge function with error handling
+      try {
+        const { data, error } = await supabase.functions.invoke('claude-response', {
+          body: {
+            messages: [...history, { role: 'user', content: inputMessage }],
+            model: 'claude-3-haiku-20240307',
+            temperature: 0.7,
+            max_tokens: 1000,
+            apiKey
+          }
+        });
+        
+        if (error) {
+          throw new Error(error.message || 'Error calling Claude API');
         }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Add assistant response
-      const assistantMessage: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: data.response || "I couldn't generate a response at this time.",
-        timestamp: new Date(),
-      };
+        
+        if (!data || !data.response) {
+          throw new Error(data?.error || 'Invalid response from Claude API');
+        }
+        
+        // Add assistant response
+        const assistantMessage: Message = {
+          id: generateId(),
+          role: 'assistant',
+          content: data.response,
+          timestamp: new Date(),
+        };
 
-      setMessages([...newMessages, assistantMessage]);
+        setMessages([...newMessages, assistantMessage]);
+      } catch (apiError) {
+        // Handle API errors
+        console.error('Claude API error:', apiError);
+        
+        // Add error message to chat
+        const errorMessage: Message = {
+          id: generateId(),
+          role: 'assistant',
+          content: apiError instanceof Error 
+            ? `Error: ${apiError.message}` 
+            : 'An unknown error occurred with the Claude API.',
+          timestamp: new Date(),
+        };
+        
+        setMessages([...newMessages, errorMessage]);
+        
+        toast({
+          title: "Claude API Error",
+          description: apiError instanceof Error ? apiError.message : "Failed to get Claude response",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
-      console.error('Claude API error:', error);
+      console.error('Error in chat process:', error);
       
-      // Add error message to chat
+      // Add general error message
       const errorMessage: Message = {
         id: generateId(),
         role: 'assistant',
         content: error instanceof Error 
           ? `Error: ${error.message}` 
-          : 'An unknown error occurred. Please try again.',
+          : 'An unexpected error occurred. Please try again.',
         timestamp: new Date(),
       };
       
@@ -151,15 +184,15 @@ export function useClaudeChat() {
       
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get response",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [inputMessage, messages, apiKey, generateId]);
 
-  const clearChat = () => {
+  const clearChat = useCallback(() => {
     setMessages([]);
     localStorage.removeItem('claudeChatMessages');
     toast({
@@ -167,11 +200,11 @@ export function useClaudeChat() {
       description: "All messages have been removed.",
       duration: 3000,
     });
-  };
+  }, []);
 
-  const toggleSettings = () => {
+  const toggleSettings = useCallback(() => {
     setShowSettings(!showSettings);
-  };
+  }, [showSettings]);
 
   return {
     messages,

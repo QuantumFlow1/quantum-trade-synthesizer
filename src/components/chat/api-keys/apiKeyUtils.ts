@@ -4,9 +4,9 @@ import {
   showApiKeyInfoToast,
   showApiKeySavedToast, 
   showApiKeyErrorToast, 
-  showAllApiKeysRefreshedToast,
-  showApiKeyValidationToast 
+  showAllApiKeysRefreshedToast
 } from './ApiKeyToastNotification';
+import { toast } from '@/hooks/use-toast';
 
 /**
  * Validates an API key based on its type
@@ -16,17 +16,29 @@ export const validateApiKey = (key: string, type: string): boolean => {
   
   // Check if key has proper format based on provider
   if (type === 'openai' && !key.startsWith('sk-')) {
-    showApiKeyValidationToast('OpenAI', false, "OpenAI API keys should start with 'sk-'");
+    toast({
+      title: "OpenAI API Key Invalid",
+      description: "OpenAI API keys should start with 'sk-'",
+      variant: "destructive"
+    });
     return false;
   }
   
   if (type === 'claude' && !key.startsWith('sk-ant-')) {
-    showApiKeyValidationToast('Claude', false, "Claude API keys should start with 'sk-ant-'");
+    toast({
+      title: "Claude API Key Invalid",
+      description: "Claude API keys should start with 'sk-ant-'",
+      variant: "destructive"
+    });
     return false;
   }
   
   if (type === 'gemini' && !key.startsWith('AIza')) {
-    showApiKeyValidationToast('Gemini', false, "Gemini API keys typically start with 'AIza'");
+    toast({
+      title: "Gemini API Key Invalid",
+      description: "Gemini API keys typically start with 'AIza'",
+      variant: "destructive"
+    });
     return false;
   }
   
@@ -35,7 +47,11 @@ export const validateApiKey = (key: string, type: string): boolean => {
     // Allow any reasonably long key for Groq (minimum 20 characters)
     // This is more permissive as Groq API key formats may vary
     if (key.trim().length < 20) {
-      showApiKeyValidationToast('Groq', false, "The Groq API key you entered seems too short. It should be at least 20 characters.");
+      toast({
+        title: "Groq API Key Invalid",
+        description: "The Groq API key you entered seems too short. It should be at least 20 characters.",
+        variant: "destructive"
+      });
       return false;
     }
   }

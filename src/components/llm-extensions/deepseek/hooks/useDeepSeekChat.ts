@@ -41,7 +41,7 @@ export function useDeepSeekChat() {
     
     // Initialize connection check
     checkDeepSeekApiStatus();
-  }, []);
+  }, [checkDeepSeekApiStatus]);
 
   // Save messages to localStorage when they change
   useEffect(() => {
@@ -57,7 +57,7 @@ export function useDeepSeekChat() {
       title: 'Chat Cleared',
       description: 'All DeepSeek chat messages have been cleared.'
     });
-  }, []);
+  }, [toast]);
 
   const sendMessage = useCallback(async (userMessage: string) => {
     if (!userMessage.trim()) return;
@@ -118,17 +118,40 @@ export function useDeepSeekChat() {
         content: userMessage
       });
       
-      // Send the message to the DeepSeek API
-      const response = await sendMessageToDeepSeek(messageHistory, deepseekApiKey);
-      
-      // Update the assistant message with the response
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === assistantMsg.id 
-            ? { ...msg, content: response, isLoading: false } 
-            : msg
-        )
-      );
+      try {
+        // Send the message to the DeepSeek API
+        const response = await sendMessageToDeepSeek(messageHistory, deepseekApiKey);
+        
+        // Update the assistant message with the response
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === assistantMsg.id 
+              ? { ...msg, content: response, isLoading: false } 
+              : msg
+          )
+        );
+      } catch (apiError) {
+        console.error('Error from DeepSeek API:', apiError);
+        // Provide a fallback response
+        const errorMessage = apiError instanceof Error 
+          ? `Error: ${apiError.message}` 
+          : 'Failed to get response from DeepSeek.';
+          
+        // Update the message to show the error
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === assistantMsg.id 
+              ? { ...msg, content: errorMessage, isLoading: false } 
+              : msg
+          )
+        );
+        
+        toast({
+          title: 'DeepSeek Error',
+          description: errorMessage,
+          variant: 'destructive'
+        });
+      }
     } catch (error) {
       console.error('Error sending message to DeepSeek:', error);
       
@@ -138,7 +161,7 @@ export function useDeepSeekChat() {
           msg.id === assistantMsg.id 
             ? { 
                 ...msg, 
-                content: `Error: ${error instanceof Error ? error.message : 'Failed to get response from DeepSeek.'}`, 
+                content: `Error: ${error instanceof Error ? error.message : 'Failed to process your request.'}`, 
                 isLoading: false 
               } 
             : msg
@@ -147,13 +170,13 @@ export function useDeepSeekChat() {
       
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to get response from DeepSeek.',
+        description: error instanceof Error ? error.message : 'Failed to process your request.',
         variant: 'destructive'
       });
     } finally {
       setIsProcessing(false);
     }
-  }, [messages, sendMessageToDeepSeek]);
+  }, [messages, sendMessageToDeepSeek, toast]);
   
   const checkApiStatus = useCallback(async () => {
     return await checkDeepSeekApiStatus();
