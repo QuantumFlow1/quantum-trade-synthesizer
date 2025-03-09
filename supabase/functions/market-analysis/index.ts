@@ -60,23 +60,76 @@ serve(async (req) => {
       );
     }
 
-    // Create a prompt that includes market context
-    const marketContext = marketData 
-      ? `Current market data:
-        Market: ${marketData.market || 'unknown'}
-        Symbol: ${marketData.symbol || 'unknown'}
-        Current Price: $${marketData.price || 0}
-        24h Change: ${marketData.change24h || 0}%
-        24h High: $${marketData.high24h || 0}
-        24h Low: $${marketData.low24h || 0}
-        Volume: ${marketData.volume || 0}
-        Market Cap: ${marketData.marketCap || 0}
-        You are a market analysis AI assistant specializing in financial analysis. Provide accurate, insightful analysis based on this data.`
-      : 'You are a market analysis AI assistant. No specific market data is available, so provide general trading advice.';
-
-    console.log("Sending request to OpenAI with market context");
+    // Enhance the prompt with additional real-time market context if available
+    let enhancedPrompt = message;
     
-    // Call OpenAI API
+    if (marketData) {
+      // Try to fetch some additional market data for context
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/global');
+        if (response.ok) {
+          const globalData = await response.json();
+          
+          enhancedPrompt = `
+Current market data:
+Market: ${marketData.market || 'Cryptocurrency'}
+Symbol: ${marketData.symbol || 'unknown'}
+Current Price: $${marketData.price || 0}
+24h Change: ${marketData.change24h || 0}%
+24h High: $${marketData.high24h || 0}
+24h Low: $${marketData.low24h || 0}
+Volume: ${marketData.volume24h || 0}
+Market Cap: ${marketData.marketCap || 0}
+
+Global crypto market:
+Total Market Cap: $${globalData.data?.total_market_cap?.usd?.toLocaleString() || 'N/A'}
+24h Volume: $${globalData.data?.total_volume?.usd?.toLocaleString() || 'N/A'}
+BTC Dominance: ${globalData.data?.market_cap_percentage?.btc?.toFixed(2) || 'N/A'}%
+
+User query: ${message}
+
+You are a market analysis AI assistant specializing in cryptocurrency analysis. Provide accurate, insightful analysis based on this data. Include potential support and resistance levels, trend analysis, and a short-term outlook.`;
+        } else {
+          // Fall back to basic prompt if global data fetch fails
+          enhancedPrompt = `
+Current market data:
+Market: ${marketData.market || 'Cryptocurrency'}
+Symbol: ${marketData.symbol || 'unknown'}
+Current Price: $${marketData.price || 0}
+24h Change: ${marketData.change24h || 0}%
+24h High: $${marketData.high24h || 0}
+24h Low: $${marketData.low24h || 0}
+Volume: ${marketData.volume24h || 0}
+Market Cap: ${marketData.marketCap || 0}
+
+User query: ${message}
+
+You are a market analysis AI assistant specializing in cryptocurrency analysis. Provide accurate, insightful analysis based on this data.`;
+        }
+      } catch (error) {
+        console.log("Error fetching additional market context:", error);
+        // Fall back to basic prompt with available data
+        enhancedPrompt = `
+Current market data:
+Market: ${marketData.market || 'unknown'}
+Symbol: ${marketData.symbol || 'unknown'}
+Current Price: $${marketData.price || 0}
+24h Change: ${marketData.change24h || 0}%
+
+User query: ${message}
+
+You are a market analysis AI assistant. Provide your best analysis based on this limited data.`;
+      }
+    } else {
+      enhancedPrompt = `
+User query: ${message}
+
+You are a market analysis AI assistant. No specific market data is available, so provide general cryptocurrency trading advice and analysis based on your knowledge.`;
+    }
+
+    console.log("Sending request to OpenAI with enhanced market context");
+    
+    // Call OpenAI API with the enhanced prompt
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -86,11 +139,11 @@ serve(async (req) => {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: marketContext },
-          { role: 'user', content: message }
+          { role: 'system', content: 'You are a cryptocurrency market analysis assistant with expertise in technical and fundamental analysis.' },
+          { role: 'user', content: enhancedPrompt }
         ],
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 800
       })
     });
 
