@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -33,14 +32,12 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [apiKeyStatus, setApiKeyStatus] = useState({ exists: false, keyLength: 0 });
 
-  // Auto-scroll to bottom when messages update
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Check for API key in localStorage and keep updated
   useEffect(() => {
     const checkApiKey = () => {
       const actualApiKey = localStorage.getItem("groqApiKey");
@@ -50,19 +47,15 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
       });
     };
 
-    // Initial check
     checkApiKey();
 
-    // Set up event listener for local storage changes
     const handleStorageChange = () => checkApiKey();
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('apikey-updated', handleStorageChange);
     window.addEventListener('localStorage-changed', handleStorageChange);
 
-    // Set an interval to periodically check for API key updates
     const intervalId = setInterval(checkApiKey, 1000);
 
-    // Log the API key status for debugging
     console.log("API Key Status:", { 
       hasApiKeyProp: hasApiKey, 
       actualKeyExists: apiKeyStatus.exists,
@@ -77,11 +70,9 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
     };
   }, [hasApiKey]);
 
-  // Handle API key dialog close - check if key was added
   const handleDialogClose = () => {
     setIsKeyDialogOpen(false);
     
-    // Force a check for the API key
     const actualApiKey = localStorage.getItem("groqApiKey");
     const keyExists = !!actualApiKey;
     
@@ -97,13 +88,11 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
         duration: 3000
       });
       
-      // Turn off simulation mode if we have a key
       if (isSimulationMode) {
         setIsSimulationMode(false);
       }
     }
     
-    // Trigger events to notify other components
     window.dispatchEvent(new Event('apikey-updated'));
     window.dispatchEvent(new Event('localStorage-changed'));
   };
@@ -115,7 +104,7 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
         setIsSimulationMode={setIsSimulationMode}
         clearChat={clearChat}
         showApiKeyDialog={showApiKeyDialog}
-        hasApiKey={apiKeyStatus.exists} // Use the local state
+        hasApiKey={apiKeyStatus.exists}
       />
 
       <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">
@@ -166,7 +155,7 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
           messages={messages}
           isLoading={isLoading}
           messagesEndRef={messagesEndRef}
-          hasApiKey={apiKeyStatus.exists} // Use the local state
+          hasApiKey={apiKeyStatus.exists}
           onConfigureApiKey={showApiKeyDialog}
         />
         
@@ -178,7 +167,6 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
         />
       </CardContent>
 
-      {/* API Key Configuration Dialog */}
       <Dialog open={isKeyDialogOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="sm:max-w-[425px]">
           <ApiKeyDialogContent 
