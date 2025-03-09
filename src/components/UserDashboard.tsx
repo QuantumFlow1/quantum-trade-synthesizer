@@ -37,6 +37,17 @@ const UserDashboard = () => {
   
   const [activePage, setActivePage] = useState<string>(getActivePageFromPath());
   const [showVirtualEnvironment, setShowVirtualEnvironment] = useState<boolean>(false);
+  const [openAgentsTab, setOpenAgentsTab] = useState<boolean>(false);
+
+  // Synchronize with localStorage for persistent tab selection
+  useEffect(() => {
+    const storedOpenAgentsTab = localStorage.getItem('openTradingAgentsTab');
+    if (storedOpenAgentsTab === 'true') {
+      setOpenAgentsTab(true);
+      // Clear the flag after reading it
+      localStorage.removeItem('openTradingAgentsTab');
+    }
+  }, []);
 
   useEffect(() => {
     // Update active page when location changes
@@ -99,7 +110,15 @@ const UserDashboard = () => {
     
     // Set localStorage flag to open the Trading Agents tab
     localStorage.setItem('openTradingAgentsTab', 'true');
+    setOpenAgentsTab(true);
   };
+
+  // Clear the openAgentsTab state after it's been used
+  useEffect(() => {
+    if (openAgentsTab && activePage === 'trading') {
+      setOpenAgentsTab(false);
+    }
+  }, [activePage, openAgentsTab]);
 
   // Render the correct page based on activePage state
   const renderActivePage = () => {
@@ -114,7 +133,7 @@ const UserDashboard = () => {
       case "market":
         return <MarketPage />;
       case "trading":
-        return <MinimalTradingPage />;
+        return <MinimalTradingPage initialOpenAgentsTab={openAgentsTab} />;
       case "analytics":
         return <AnalyticsPage />;
       case "wallet":

@@ -4,7 +4,11 @@ import { TradingPairsList } from "@/components/trading/minimal/components/Tradin
 import { MarketSummary } from "@/components/trading/minimal/components/MarketSummary";
 import { PriceAlerts } from "@/components/trading/minimal/components/PriceAlerts";
 
-export const MinimalTradingPage = () => {
+interface MinimalTradingPageProps {
+  initialOpenAgentsTab?: boolean;
+}
+
+export const MinimalTradingPage = ({ initialOpenAgentsTab = false }: MinimalTradingPageProps) => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
@@ -22,7 +26,7 @@ export const MinimalTradingPage = () => {
         </div>
         
         <div className="lg:col-span-3">
-          <MinimalTradingTab />
+          <MinimalTradingTab initialOpenAgentsTab={initialOpenAgentsTab} />
         </div>
       </div>
     </div>
