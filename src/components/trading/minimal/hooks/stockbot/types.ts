@@ -8,6 +8,11 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface StockbotApiResponse {
+  response: string;
+  error?: string;
+}
+
 export interface StockbotChatHook {
   messages: ChatMessage[];
   inputMessage: string;
@@ -22,9 +27,4 @@ export interface StockbotChatHook {
   isKeyDialogOpen: boolean;
   setIsKeyDialogOpen: (isOpen: boolean) => void;
   reloadApiKeys: () => void;
-}
-
-export interface StockbotApiResponse {
-  response: string;
-  error?: string;
 }

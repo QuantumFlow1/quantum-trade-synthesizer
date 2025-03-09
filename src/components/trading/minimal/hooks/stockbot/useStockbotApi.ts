@@ -1,66 +1,65 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 import { v4 as uuidv4 } from 'uuid';
-import { callStockbotApi, createResponseMessage, createErrorMessage } from './apiService';
-import { ChatMessage, StockbotChatHook } from './types';
+import { ChatMessage, StockbotChatHook } from "./types";
+import { callStockbotAPI, createAssistantMessage, createErrorMessage } from "./apiService";
 
-export const useStockbotApi = () => {
+/**
+ * Core hook for Stockbot API integration
+ */
+export const useStockbotApi = (marketData: any[] = []): Partial<StockbotChatHook> => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const sendMessage = useCallback(async (
-    message: string,
-    apiKey: string | null
-  ): Promise<ChatMessage> => {
+
+  const handleSendMessage = useCallback(async () => {
+    if (!inputMessage.trim()) return;
+    
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: uuidv4(),
+      sender: 'user',
+      role: 'user',
+      text: inputMessage,
+      content: inputMessage,
+      timestamp: new Date()
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
     
     try {
-      // Create user message
-      const userMessage: ChatMessage = {
-        id: uuidv4(),
-        sender: 'user',
-        role: 'user',
-        text: message,
-        content: message,
-        timestamp: new Date()
-      };
+      // Call API
+      const response = await callStockbotAPI(inputMessage, marketData);
       
-      // Add user message to chat
-      setMessages(prev => [...prev, userMessage]);
-      
-      // Call API if key exists
-      if (apiKey) {
-        const response = await callStockbotApi(message, apiKey);
-        
-        // Create response message
-        const responseMessage = createResponseMessage(response.response);
-        
-        // Add response to chat
-        setMessages(prev => [...prev, responseMessage]);
-        return responseMessage;
+      if (response.error) {
+        // Handle error response
+        const errorMessage = createErrorMessage(response.error);
+        setMessages(prev => [...prev, errorMessage]);
       } else {
-        throw new Error('No API key available');
+        // Handle success response
+        const assistantMessage = createAssistantMessage(response.response);
+        setMessages(prev => [...prev, assistantMessage]);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
-      
-      // Create error message
-      const errorMessage = createErrorMessage(
-        error instanceof Error ? error.message : 'Failed to get response'
-      );
+      console.error("Error handling message:", error);
       
       // Add error message to chat
+      const errorMessage = createErrorMessage(
+        error instanceof Error ? error.message : "An unknown error occurred while processing your request."
+      );
       setMessages(prev => [...prev, errorMessage]);
-      return errorMessage;
     } finally {
       setIsLoading(false);
+      setInputMessage('');
     }
-  }, []);
-  
+  }, [inputMessage, marketData]);
+
   return {
     messages,
-    setMessages,
+    inputMessage,
+    setInputMessage,
     isLoading,
-    sendMessage
+    handleSendMessage
   };
 };

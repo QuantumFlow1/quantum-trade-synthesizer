@@ -88,69 +88,74 @@ export const showAllApiKeysRefreshedToast = () => {
 };
 
 /**
+ * Shows a toast notification for API key validation status
+ */
+export const showApiKeyValidationToast = (serviceName: string, isValid: boolean, message?: string) => {
+  if (isValid) {
+    toast({
+      title: `${serviceName} API Key Valid`,
+      description: message || "The API key format is valid",
+      variant: "default",
+      duration: 3000,
+    });
+  } else {
+    toast({
+      title: `${serviceName} API Key Invalid`,
+      description: message || "The API key format is invalid",
+      variant: "destructive",
+      duration: 5000,
+    });
+  }
+};
+
+// Component versions of toast notifications are below, using strings for titles
+// instead of ReactElements to avoid type errors
+
+/**
  * Component version of the API key success notification
  */
 export const ApiKeySuccessToast = ({ serviceName }: { serviceName: string }) => {
-  return (
-    <div className="flex items-start">
-      <div className="mr-2">
-        <Check className="h-5 w-5 text-green-500" />
-      </div>
-      <div>
-        <h3 className="font-medium">{serviceName} API Key Configured</h3>
-        <p className="text-sm text-gray-500">API key has been set up successfully</p>
-      </div>
-    </div>
-  );
+  toast({
+    title: `${serviceName} API Key Configured`,
+    description: "API key has been set up successfully",
+    duration: 3000,
+  });
+  return null;
 };
 
 /**
  * Component version of the API key error notification
  */
 export const ApiKeyErrorToast = ({ serviceName, errorMessage }: { serviceName: string, errorMessage?: string }) => {
-  return (
-    <div className="flex items-start">
-      <div className="mr-2">
-        <X className="h-5 w-5 text-red-500" />
-      </div>
-      <div>
-        <h3 className="font-medium">{serviceName} API Key Error</h3>
-        <p className="text-sm text-gray-500">{errorMessage || "Failed to configure API key"}</p>
-      </div>
-    </div>
-  );
+  toast({
+    title: `${serviceName} API Key Error`,
+    description: errorMessage || "Failed to configure API key",
+    variant: "destructive",
+    duration: 3000,
+  });
+  return null;
 };
 
 /**
  * Component version of the API key info notification
  */
 export const ApiKeyInfoToast = ({ message }: { message: string }) => {
-  return (
-    <div className="flex items-start">
-      <div className="mr-2">
-        <Info className="h-5 w-5 text-blue-500" />
-      </div>
-      <div>
-        <h3 className="font-medium">API Key Info</h3>
-        <p className="text-sm text-gray-500">{message}</p>
-      </div>
-    </div>
-  );
+  toast({
+    title: "API Key Info",
+    description: message,
+    duration: 3000,
+  });
+  return null;
 };
 
 /**
  * Component version of the API key warning notification
  */
 export const ApiKeyWarningToast = ({ message }: { message: string }) => {
-  return (
-    <div className="flex items-start">
-      <div className="mr-2">
-        <AlertTriangle className="h-5 w-5 text-amber-500" />
-      </div>
-      <div>
-        <h3 className="font-medium">API Key Warning</h3>
-        <p className="text-sm text-gray-500">{message}</p>
-      </div>
-    </div>
-  );
+  toast({
+    title: "API Key Warning",
+    description: message,
+    duration: 3000,
+  });
+  return null;
 };
