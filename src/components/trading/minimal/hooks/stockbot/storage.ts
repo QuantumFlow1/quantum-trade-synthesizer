@@ -1,4 +1,3 @@
-
 import { ChatMessage } from './types';
 
 /**
@@ -28,6 +27,10 @@ export const loadStockbotChatHistory = (): ChatMessage[] => {
   }
   return [];
 };
+
+// Alias functions for compatibility with the useStockbotApi hook
+export const saveMessages = saveStockbotChatHistory;
+export const loadMessages = loadStockbotChatHistory;
 
 // Load API key from storage
 export const loadApiKey = (provider: string = 'groq'): string | null => {

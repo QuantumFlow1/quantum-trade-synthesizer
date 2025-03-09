@@ -76,3 +76,17 @@ export function generateStockbotResponse(userInput: string, marketData: any[] = 
     timestamp: new Date()
   };
 }
+
+/**
+ * Generate an error response message
+ */
+export function generateErrorResponse(errorMessage: string): ChatMessage {
+  return {
+    id: uuidv4(),
+    sender: 'assistant',
+    role: 'assistant',
+    text: errorMessage,
+    content: errorMessage,
+    timestamp: new Date()
+  };
+}
