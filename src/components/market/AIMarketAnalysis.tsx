@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { MarketData } from "./types";
+import { supabase } from "@/lib/supabase";
 
 interface AIMarketAnalysisProps {
   marketData?: MarketData;
@@ -33,48 +34,48 @@ export function AIMarketAnalysis({ marketData, className }: AIMarketAnalysisProp
   const [aiError, setAiError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Generate a response based on the user's message and current market data
+  // Call the Supabase edge function to get an AI-generated response
   const generateResponse = async (userMessage: string) => {
     setIsLoading(true);
     setAiError(null);
     
     try {
-      // Create a prompt that includes market context
-      const marketContext = marketData 
-        ? `Current market: ${marketData.market}, Symbol: ${marketData.symbol}, Price: $${marketData.price}, 24h Change: ${marketData.change24h}%`
-        : 'No specific market data available';
+      console.log("Calling market-analysis function with message:", userMessage);
       
-      // In a real implementation, this would call the Groq API or another AI service
-      // For this proof of concept, we'll simulate a response
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the Supabase edge function
+      const { data, error } = await supabase.functions.invoke('market-analysis', {
+        body: { 
+          message: userMessage,
+          marketData: marketData 
+        }
+      });
       
-      // Simulate market analysis response based on user message
-      let aiResponse = '';
-      if (userMessage.toLowerCase().includes('trend')) {
-        aiResponse = marketData?.change24h && marketData.change24h > 0
-          ? `The market for ${marketData?.symbol} is trending upward with a ${marketData?.change24h}% increase in the last 24 hours. This suggests positive momentum.`
-          : `The market for ${marketData?.symbol} is trending downward with a ${marketData?.change24h}% decrease in the last 24 hours. This suggests negative momentum.`;
-      } else if (userMessage.toLowerCase().includes('volume')) {
-        aiResponse = `The trading volume for ${marketData?.symbol} is ${marketData?.volume?.toLocaleString()} which is ${marketData?.volume && marketData.volume > 1000000 ? 'relatively high' : 'moderate to low'}.`;
-      } else if (userMessage.toLowerCase().includes('predict') || userMessage.toLowerCase().includes('forecast')) {
-        aiResponse = `While I can't predict the future with certainty, the current market indicators for ${marketData?.symbol} suggest ${marketData?.change24h && marketData.change24h > 0 ? 'continued positive momentum if market conditions remain stable' : 'potential volatility ahead'}.`;
-      } else {
-        aiResponse = `Based on the current data for ${marketData?.symbol}, we're seeing a ${marketData?.change24h && marketData.change24h > 0 ? 'positive' : 'negative'} trend with a price of $${marketData?.price}. The 24-hour high was $${marketData?.high24h} and the low was $${marketData?.low24h}.`;
+      if (error) {
+        console.error('Error calling market-analysis function:', error);
+        throw new Error(error.message || "Failed to connect to AI service");
       }
+      
+      if (!data || !data.response) {
+        console.error('Invalid response from market-analysis function:', data);
+        throw new Error("Received invalid response from AI service");
+      }
+      
+      console.log('Received AI response:', data.response.substring(0, 100) + '...');
       
       const newMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: aiResponse
+        content: data.response
       };
       
       setMessages(prev => [...prev, newMessage]);
+      
     } catch (error) {
       console.error('Error generating AI response:', error);
       setAiError('Failed to generate market analysis. Please try again later.');
       toast({
         title: "AI Analysis Error",
-        description: "Could not generate market analysis response",
+        description: error instanceof Error ? error.message : "Could not generate market analysis response",
         variant: "destructive",
       });
     } finally {
