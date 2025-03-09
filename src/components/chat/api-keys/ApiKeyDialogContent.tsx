@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface ApiKeyDialogContentProps {
   apiKeys: ApiKeySettings;
-  onSave: (openaiKey: string, claudeKey: string, geminiKey: string, deepseekKey: string) => void;
+  onSave: (openaiKey: string, claudeKey: string, geminiKey: string, deepseekKey: string, groqKey: string) => void;
 }
 
 export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProps) {
@@ -18,6 +18,7 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
   const [claudeKey, setClaudeKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [deepseekKey, setDeepseekKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
   const [saved, setSaved] = useState(false);
   
   // Load API keys from props when they change
@@ -26,6 +27,7 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
     setClaudeKey(apiKeys.claudeApiKey || '');
     setGeminiKey(apiKeys.geminiApiKey || '');
     setDeepseekKey(apiKeys.deepseekApiKey || '');
+    setGroqKey(apiKeys.groqApiKey || '');
   }, [apiKeys]);
   
   // Load API keys from localStorage when dialog opens
@@ -34,22 +36,25 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
     const claudeKey = localStorage.getItem('claudeApiKey') || '';
     const geminiKey = localStorage.getItem('geminiApiKey') || '';
     const deepKey = localStorage.getItem('deepseekApiKey') || '';
+    const groqKey = localStorage.getItem('groqApiKey') || '';
     
     if (openKey) setOpenaiKey(openKey);
     if (claudeKey) setClaudeKey(claudeKey);
     if (geminiKey) setGeminiKey(geminiKey);
     if (deepKey) setDeepseekKey(deepKey);
+    if (groqKey) setGroqKey(groqKey);
   }, []);
   
   const handleSave = () => {
     // Validate keys
     if (!validateApiKey(openaiKey, 'openai') ||
         !validateApiKey(claudeKey, 'claude') ||
-        !validateApiKey(geminiKey, 'gemini')) {
+        !validateApiKey(geminiKey, 'gemini') ||
+        !validateApiKey(groqKey, 'groq')) {
       return;
     }
     
-    onSave(openaiKey, claudeKey, geminiKey, deepseekKey);
+    onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
     
     // Show saved animation
     setSaved(true);
@@ -114,6 +119,17 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
             placeholder="sk-..." 
           />
           <p className="text-xs text-gray-500">Vereist voor DeepSeek Coder</p>
+        </div>
+        
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Groq API Sleutel</label>
+          <Input 
+            type="password" 
+            value={groqKey} 
+            onChange={e => setGroqKey(e.target.value)} 
+            placeholder="gsk_..." 
+          />
+          <p className="text-xs text-gray-500">Vereist voor Stockbot Trading Assistant</p>
         </div>
       </div>
       

@@ -1,4 +1,3 @@
-
 export type ModelId = 
   | 'grok3' 
   | 'gpt-4' 
@@ -36,6 +35,7 @@ export interface ApiKeySettings {
   claudeApiKey?: string;
   geminiApiKey?: string;
   deepseekApiKey?: string;
+  groqApiKey?: string;
 }
 
 export interface GrokSettings {

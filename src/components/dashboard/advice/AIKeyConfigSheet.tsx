@@ -20,6 +20,7 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
   const [claudeKey, setClaudeKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [deepseekKey, setDeepseekKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   
   // Load saved API keys on component mount
@@ -32,18 +33,21 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
     const savedClaude = localStorage.getItem('claudeApiKey') || '';
     const savedGemini = localStorage.getItem('geminiApiKey') || '';
     const savedDeepseek = localStorage.getItem('deepseekApiKey') || '';
+    const savedGroq = localStorage.getItem('groqApiKey') || '';
     
     console.log('Loading API keys from localStorage:', {
       openai: savedOpenAI ? 'present' : 'not found',
       claude: savedClaude ? 'present' : 'not found',
       gemini: savedGemini ? 'present' : 'not found',
-      deepseek: savedDeepseek ? 'present' : 'not found'
+      deepseek: savedDeepseek ? 'present' : 'not found',
+      groq: savedGroq ? 'present' : 'not found'
     });
     
     setOpenaiKey(savedOpenAI);
     setClaudeKey(savedClaude);
     setGeminiKey(savedGemini);
     setDeepseekKey(savedDeepseek);
+    setGroqKey(savedGroq);
   };
   
   const saveApiKeys = async () => {
@@ -55,18 +59,21 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
       const prevClaude = localStorage.getItem('claudeApiKey');
       const prevGemini = localStorage.getItem('geminiApiKey');
       const prevDeepseek = localStorage.getItem('deepseekApiKey');
+      const prevGroq = localStorage.getItem('groqApiKey');
       
       // Save new values
       if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
       if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
       if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
       if (deepseekKey.trim()) localStorage.setItem('deepseekApiKey', deepseekKey.trim());
+      if (groqKey.trim()) localStorage.setItem('groqApiKey', groqKey.trim());
       
       console.log('Saved API keys to localStorage:', {
         openai: openaiKey ? 'present' : 'not set',
         claude: claudeKey ? 'present' : 'not set',
         gemini: geminiKey ? 'present' : 'not set',
-        deepseek: deepseekKey ? 'present' : 'not set'
+        deepseek: deepseekKey ? 'present' : 'not set',
+        groq: groqKey ? 'present' : 'not set'
       });
       
       toast({
@@ -97,6 +104,12 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
       if (prevDeepseek !== deepseekKey && deepseekKey) {
         window.dispatchEvent(new CustomEvent('connection-status-changed', {
           detail: { provider: 'deepseek', status: 'connected' }
+        }));
+      }
+      
+      if (prevGroq !== groqKey && groqKey) {
+        window.dispatchEvent(new CustomEvent('connection-status-changed', {
+          detail: { provider: 'groq', status: 'connected' }
         }));
       }
       
@@ -181,6 +194,18 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
               onChange={(e) => setDeepseekKey(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">Vereist voor DeepSeek modellen</p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="groq-api-key">Groq API Sleutel</Label>
+            <Input 
+              id="groq-api-key"
+              type="password" 
+              placeholder="gsk_..." 
+              value={groqKey}
+              onChange={(e) => setGroqKey(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Vereist voor Stockbot en Groq functionaliteit</p>
           </div>
           
           <Button 

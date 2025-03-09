@@ -33,15 +33,16 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
       openai: updatedKeys.openaiApiKey ? 'present' : 'not found',
       claude: updatedKeys.claudeApiKey ? 'present' : 'not found',
       gemini: updatedKeys.geminiApiKey ? 'present' : 'not found',
-      deepseek: updatedKeys.deepseekApiKey ? 'present' : 'not found'
+      deepseek: updatedKeys.deepseekApiKey ? 'present' : 'not found',
+      groq: updatedKeys.groqApiKey ? 'present' : 'not found'
     });
     
     // Update the parent component's state with loaded keys
     onApiKeysChange(updatedKeys);
   }, [onApiKeysChange]);
 
-  const handleSave = (openaiKey: string, claudeKey: string, geminiKey: string, deepseekKey: string) => {
-    const updatedKeys = saveApiKeys(openaiKey, claudeKey, geminiKey, deepseekKey);
+  const handleSave = (openaiKey: string, claudeKey: string, geminiKey: string, deepseekKey: string, groqKey: string) => {
+    const updatedKeys = saveApiKeys(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
     onApiKeysChange(updatedKeys);
   };
 

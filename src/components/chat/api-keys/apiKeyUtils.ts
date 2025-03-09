@@ -36,6 +36,15 @@ export const validateApiKey = (key: string, type: string): boolean => {
     return false;
   }
   
+  if (type === 'groq' && !key.startsWith('gsk_')) {
+    toast({
+      title: "Invalid Groq API Key",
+      description: "Groq API keys typically start with 'gsk_'",
+      variant: "destructive"
+    });
+    return false;
+  }
+  
   return true;
 };
 
@@ -46,13 +55,15 @@ export const saveApiKeys = (
   openaiKey: string, 
   claudeKey: string, 
   geminiKey: string, 
-  deepseekKey: string
+  deepseekKey: string,
+  groqKey: string
 ): ApiKeySettings => {
   const updatedKeys: ApiKeySettings = {
     openaiApiKey: openaiKey.trim(),
     claudeApiKey: claudeKey.trim(),
     geminiApiKey: geminiKey.trim(),
-    deepseekApiKey: deepseekKey.trim()
+    deepseekApiKey: deepseekKey.trim(),
+    groqApiKey: groqKey.trim()
   };
   
   // Save to localStorage
@@ -60,12 +71,14 @@ export const saveApiKeys = (
   if (updatedKeys.claudeApiKey) localStorage.setItem('claudeApiKey', updatedKeys.claudeApiKey);
   if (updatedKeys.geminiApiKey) localStorage.setItem('geminiApiKey', updatedKeys.geminiApiKey);
   if (updatedKeys.deepseekApiKey) localStorage.setItem('deepseekApiKey', updatedKeys.deepseekApiKey);
+  if (updatedKeys.groqApiKey) localStorage.setItem('groqApiKey', updatedKeys.groqApiKey);
   
   console.log('Saved API keys to localStorage:', {
     openai: updatedKeys.openaiApiKey ? 'present' : 'not set',
     claude: updatedKeys.claudeApiKey ? 'present' : 'not set',
     gemini: updatedKeys.geminiApiKey ? 'present' : 'not set',
-    deepseek: updatedKeys.deepseekApiKey ? 'present' : 'not set'
+    deepseek: updatedKeys.deepseekApiKey ? 'present' : 'not set',
+    groq: updatedKeys.groqApiKey ? 'present' : 'not set'
   });
   
   return updatedKeys;
@@ -96,6 +109,9 @@ export const hasCurrentModelKey = (
     case 'deepseek':
     case 'deepseek-chat':
       return !!apiKeys.deepseekApiKey;
+    case 'groq':
+    case 'groq-llm':
+      return !!apiKeys.groqApiKey;
     default:
       return true;
   }
@@ -109,11 +125,13 @@ export const loadApiKeysFromStorage = (): ApiKeySettings => {
   const savedClaudeKey = localStorage.getItem('claudeApiKey') || '';
   const savedGeminiKey = localStorage.getItem('geminiApiKey') || '';
   const savedDeepseekKey = localStorage.getItem('deepseekApiKey') || '';
+  const savedGroqKey = localStorage.getItem('groqApiKey') || '';
   
   return {
     openaiApiKey: savedOpenAIKey,
     claudeApiKey: savedClaudeKey,
     geminiApiKey: savedGeminiKey,
-    deepseekApiKey: savedDeepseekKey
+    deepseekApiKey: savedDeepseekKey,
+    groqApiKey: savedGroqKey
   };
 };
