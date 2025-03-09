@@ -8,7 +8,7 @@ import { getSimulatedResponse } from "./responseSimulator";
 export const useStockbotApi = (
   marketData: any[],
   messages: ChatMessage[],
-  setMessages: (messages: ChatMessage[]) => void,
+  setMessages: (messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void,
   setIsLoading: (isLoading: boolean) => void
 ) => {
   const handleSendMessage = async (inputMessage: string, isSimulationMode: boolean) => {
@@ -22,7 +22,7 @@ export const useStockbotApi = (
       timestamp: new Date()
     };
     
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev: ChatMessage[]) => [...prev, userMessage]);
     setIsLoading(true);
     
     try {
@@ -103,7 +103,7 @@ export const useStockbotApi = (
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev: ChatMessage[]) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
       
@@ -115,7 +115,7 @@ export const useStockbotApi = (
         timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev: ChatMessage[]) => [...prev, errorMessage]);
       
       toast({
         title: "Error",

@@ -2,14 +2,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { ChatMessage } from "./types";
+import { loadStockbotChatHistory, saveStockbotChatHistory, clearStockbotChatHistory } from "./storage";
 
 export const useStockbotState = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadStockbotChatHistory());
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSimulationMode, setIsSimulationMode] = useState(false);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
+  
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    saveStockbotChatHistory(messages);
+  }, [messages]);
   
   // Function to check API key
   const checkApiKey = useCallback(() => {
@@ -60,17 +66,25 @@ export const useStockbotState = () => {
     };
   }, [checkApiKey]);
 
-  const clearChat = () => {
+  const clearChat = useCallback(() => {
     setMessages([]);
-  };
+    clearStockbotChatHistory();
+  }, []);
   
   const showApiKeyDialog = () => {
     setIsKeyDialogOpen(true);
   };
   
+  // Custom setMessages function that also saves to localStorage
+  const handleSetMessages = useCallback((messagesOrUpdater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+    setMessages(messagesOrUpdater);
+    // We don't need to explicitly call saveStockbotChatHistory here
+    // because the useEffect above will handle it whenever messages change
+  }, []);
+  
   return {
     messages,
-    setMessages,
+    setMessages: handleSetMessages,
     inputMessage,
     setInputMessage,
     isLoading,

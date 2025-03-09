@@ -4,7 +4,7 @@ import { useStockbotState } from "./stockbot/useStockbotState";
 import { useStockbotApi } from "./stockbot/useStockbotApi";
 import { StockbotChatHook } from "./stockbot/types";
 
-export { ChatMessage } from "./stockbot/types";
+export type { ChatMessage } from "./stockbot/types";
 
 export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   const {
