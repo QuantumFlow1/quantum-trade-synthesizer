@@ -1,11 +1,11 @@
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@/tests/utils/test-utils';
 import { SimulationAlert } from '@/components/trading/portfolio/SimulationAlert';
 
 describe('SimulationAlert', () => {
   it('renders the simulation alert correctly', () => {
-    const mockToggle = jest.fn();
+    const mockToggle = vi.fn(); // Using vitest's vi instead of jest
     render(<SimulationAlert onToggleSimulation={mockToggle} />);
     
     // Check if the alert message is displayed
