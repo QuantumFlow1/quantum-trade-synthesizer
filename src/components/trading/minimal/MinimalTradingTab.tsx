@@ -31,13 +31,36 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
   
   // Check if Groq API key exists in localStorage
   useEffect(() => {
-    const storedGroqKey = localStorage.getItem("groqApiKey");
-    setHasApiKey(!!storedGroqKey);
+    const checkApiKey = () => {
+      const storedGroqKey = localStorage.getItem("groqApiKey");
+      console.log("Groq API Key in MinimalTradingTab:", {
+        exists: !!storedGroqKey,
+        keyLength: storedGroqKey ? storedGroqKey.length : 0
+      });
+      setHasApiKey(!!storedGroqKey);
+    };
+    
+    // Initial check
+    checkApiKey();
+    
+    // Listen for API key updates
+    const handleApiKeyUpdate = () => {
+      checkApiKey();
+    };
+    
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
     
     // Simulate API status check
     setTimeout(() => {
+      const storedGroqKey = localStorage.getItem("groqApiKey");
       setApiStatus(storedGroqKey ? "available" : "unavailable");
     }, 1000);
+    
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
+    };
   }, []);
   
   // Handle initial tab based on prop or localStorage

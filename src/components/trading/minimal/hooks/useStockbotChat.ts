@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { toast } from "@/hooks/use-toast";
 
 export interface ChatMessage {
   id: string;
@@ -20,21 +21,44 @@ export const useStockbotChat = (marketData: any[] = []) => {
   const [hasApiKey, setHasApiKey] = useState(false);
   
   useEffect(() => {
-    const groqKey = localStorage.getItem('groqApiKey');
-    setHasApiKey(!!groqKey);
+    // Check API key on mount
+    checkApiKey();
     
     // Listen for API key updates
     const handleApiKeyUpdate = () => {
-      const updatedGroqKey = localStorage.getItem('groqApiKey');
-      setHasApiKey(!!updatedGroqKey);
+      checkApiKey();
     };
     
     window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
     
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
     };
   }, []);
+
+  // Function to check API key
+  const checkApiKey = () => {
+    const groqKey = localStorage.getItem('groqApiKey');
+    const hasKey = !!groqKey;
+    
+    console.log("Checking Groq API key:", { 
+      exists: hasKey, 
+      keyLength: groqKey ? groqKey.length : 0 
+    });
+    
+    setHasApiKey(hasKey);
+    
+    // If we have a key but are in simulation mode, notify the user
+    if (hasKey && isSimulationMode) {
+      toast({
+        title: "API Key Detected",
+        description: "You can now switch to real AI mode for more accurate responses.",
+        duration: 5000
+      });
+    }
+  };
   
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -52,6 +76,10 @@ export const useStockbotChat = (marketData: any[] = []) => {
     setIsLoading(true);
     
     try {
+      // Recheck API key before responding
+      const groqKey = localStorage.getItem('groqApiKey');
+      const hasKey = !!groqKey;
+      
       // Simulate API response delay
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -60,7 +88,7 @@ export const useStockbotChat = (marketData: any[] = []) => {
       if (isSimulationMode) {
         // Generate a simulated response
         responseContent = getSimulatedResponse(inputMessage, marketData);
-      } else if (hasApiKey) {
+      } else if (hasKey) {
         // In a real implementation, this would call the API
         responseContent = "This would be a real AI response from Groq API. For now, we're still in development.";
         
@@ -93,6 +121,16 @@ export const useStockbotChat = (marketData: any[] = []) => {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
+      
+      // Add error message
+      const errorMessage: ChatMessage = {
+        id: uuidv4(),
+        role: "assistant",
+        content: "Sorry, I encountered an error processing your request. Please try again.",
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }

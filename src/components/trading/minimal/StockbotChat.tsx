@@ -38,6 +38,19 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
     }
   }, [messages]);
 
+  // Check for API key in localStorage directly to double-check
+  const actualApiKey = localStorage.getItem("groqApiKey");
+  const apiKeyExists = !!actualApiKey;
+  
+  // Log the API key status for debugging
+  useEffect(() => {
+    console.log("API Key Status:", { 
+      hasApiKeyProp: hasApiKey, 
+      actualKeyExists: apiKeyExists,
+      apiKeyLength: actualApiKey ? actualApiKey.length : 0
+    });
+  }, [hasApiKey, apiKeyExists, actualApiKey]);
+
   return (
     <Card className="flex flex-col h-[500px] shadow-md overflow-hidden">
       <StockbotHeader 
@@ -45,11 +58,11 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
         setIsSimulationMode={setIsSimulationMode}
         clearChat={clearChat}
         showApiKeyDialog={showApiKeyDialog}
-        hasApiKey={hasApiKey}
+        hasApiKey={apiKeyExists} // Use direct check rather than prop
       />
 
       <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">
-        {!hasApiKey && !isSimulationMode && (
+        {!apiKeyExists && !isSimulationMode && (
           <Alert variant="warning" className="m-3">
             <AlertTitle>API Key Required</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
@@ -60,6 +73,15 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
               >
                 Configure API Key
               </button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {apiKeyExists && !isSimulationMode && (
+          <Alert variant="default" className="bg-green-50 border-green-200 text-green-700 m-3">
+            <AlertTitle>API Key Configured</AlertTitle>
+            <AlertDescription>
+              Your Groq API key is set up and ready to use with Stockbot.
             </AlertDescription>
           </Alert>
         )}
@@ -77,7 +99,7 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
           messages={messages}
           isLoading={isLoading}
           messagesEndRef={messagesEndRef}
-          hasApiKey={hasApiKey}
+          hasApiKey={apiKeyExists} // Use direct check rather than prop
           onConfigureApiKey={showApiKeyDialog}
         />
         
