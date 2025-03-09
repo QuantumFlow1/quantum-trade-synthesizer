@@ -2,6 +2,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
+interface ApiKeyResponse {
+  status: string;
+  secretSet?: boolean;
+  service?: string;
+  allKeys: Record<string, boolean>;
+  requestedProvider?: string;
+  available?: boolean;
+  message?: string;
+  timestamp: number;
+  error?: string;
+}
+
 serve(async (req) => {
   console.log('Checking API keys availability');
   
@@ -75,16 +87,18 @@ serve(async (req) => {
       const secretSet = !!secretKey;
       console.log(`Service ${service} secret is ${secretSet ? 'set' : 'not set'}`);
       
+      const response: ApiKeyResponse = {
+        status: 'success',
+        secretSet,
+        service,
+        allKeys,
+        requestedProvider: provider,
+        timestamp: new Date().getTime()
+      };
+      
       // Return comprehensive information about available keys
       return new Response(
-        JSON.stringify({ 
-          status: 'success', 
-          secretSet,
-          service,
-          allKeys,
-          requestedProvider: provider,
-          timestamp: new Date().getTime()
-        }),
+        JSON.stringify(response),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -93,26 +107,38 @@ serve(async (req) => {
     // Check if any key is available
     const anyKeyAvailable = Object.values(allKeys).some(value => value === true);
     
+    const response: ApiKeyResponse = {
+      status: 'success',
+      message: 'API key check completed',
+      available: anyKeyAvailable,
+      allKeys,
+      timestamp: new Date().getTime()
+    };
+    
     return new Response(
-      JSON.stringify({ 
-        status: 'success', 
-        message: 'API key check completed',
-        available: anyKeyAvailable,
-        allKeys,
-        timestamp: new Date().getTime()
-      }),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error in check-api-keys function:', error);
     
+    const errorResponse: ApiKeyResponse = {
+      status: 'error',
+      message: `API key check failed: ${error.message}`,
+      error: error.message,
+      allKeys: {
+        openai: false,
+        claude: false,
+        gemini: false,
+        grok3: false,
+        groq: false,
+        deepseek: false
+      },
+      timestamp: new Date().getTime()
+    };
+    
     return new Response(
-      JSON.stringify({ 
-        status: 'error', 
-        message: `API key check failed: ${error.message}`,
-        error: error.message,
-        timestamp: new Date().getTime()
-      }),
+      JSON.stringify(errorResponse),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

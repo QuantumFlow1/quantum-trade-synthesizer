@@ -2,6 +2,7 @@
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 import { ChatMessage } from "./types";
+import { getSimpleApiAvailability } from "@/hooks/trading-chart/api-key-manager";
 
 /**
  * Makes an API call to generate trading advice via the Supabase edge function
@@ -14,8 +15,13 @@ export const fetchTradingAdvice = async (
   console.log("Making real API call to Groq via Supabase edge function");
   
   if (!groqKey) {
-    console.error("No Groq API key provided");
-    throw new Error("Groq API key is missing. Please configure your API key.");
+    // First check if we have a server-side API key available
+    const serverKeyAvailable = await getSimpleApiAvailability('groq', true);
+    
+    if (!serverKeyAvailable) {
+      console.error("No Groq API key provided");
+      throw new Error("Groq API key is missing. Please configure your API key.");
+    }
   }
   
   try {
@@ -26,9 +32,9 @@ export const fetchTradingAdvice = async (
         userLevel: 'intermediate', // Could be made configurable
         previousMessages: contextMessages
       },
-      headers: {
+      headers: groqKey ? {
         'x-groq-api-key': groqKey
-      }
+      } : {} // If no client key, use server key
     });
     
     if (error) {

@@ -5,10 +5,28 @@ import { toast } from "@/components/ui/use-toast";
 // Create a broadcast channel for cross-tab communication
 const apiKeyChannel = typeof window !== 'undefined' ? new BroadcastChannel('api-key-status') : null;
 
+// Define types for API key response
+export interface ApiKeyAvailability {
+  available: boolean;
+  service: string;
+  source: string;
+  allKeys: {
+    openai: boolean;
+    claude: boolean;
+    groq: boolean;
+    gemini: boolean;
+    grok3: boolean;
+    deepseek: boolean;
+  };
+  secretSet?: boolean;
+  data?: any;
+  error?: string;
+}
+
 /**
  * Checks if any API keys are available, either in localStorage or Supabase
  */
-export const checkApiKeysAvailability = async (serviceName = 'any', checkSecret = true) => {
+export const checkApiKeysAvailability = async (serviceName = 'any', checkSecret = true): Promise<ApiKeyAvailability> => {
   try {
     console.log(`Checking API availability for ${serviceName}`);
     
@@ -169,7 +187,20 @@ export const checkApiKeysAvailability = async (serviceName = 'any', checkSecret 
         variant: "destructive"
       });
       
-      return { available: false, error: error.message };
+      return { 
+        available: false, 
+        service: serviceName,
+        source: 'error',
+        error: error.message,
+        allKeys: {
+          openai: false,
+          claude: false,
+          groq: false,
+          gemini: false,
+          grok3: false,
+          deepseek: false
+        }
+      };
     }
   } catch (error) {
     console.error('Error checking API availability:', error);
@@ -180,7 +211,20 @@ export const checkApiKeysAvailability = async (serviceName = 'any', checkSecret 
       variant: "destructive"
     });
     
-    return { available: false, error: error.message };
+    return { 
+      available: false, 
+      service: 'error',
+      source: 'error',
+      error: error.message,
+      allKeys: {
+        openai: false,
+        claude: false,
+        groq: false,
+        gemini: false,
+        grok3: false,
+        deepseek: false
+      }
+    };
   }
 };
 
@@ -221,10 +265,18 @@ export const broadcastApiKeyChange = (type, service, source = 'localStorage') =>
   });
   
   // Also dispatch a regular event for components on the same page
-  window.dispatchEvent(new CustomEvent('api-key-changed', {
-    detail: { type, service, source }
-  }));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('api-key-changed', {
+      detail: { type, service, source }
+    }));
+  }
 };
 
 // Expose the channel for direct use
 export const getApiKeyChannel = () => apiKeyChannel;
+
+// Helper to extract simple boolean API availability
+export const getSimpleApiAvailability = async (serviceName = 'any', checkSecret = true): Promise<boolean> => {
+  const result = await checkApiKeysAvailability(serviceName, checkSecret);
+  return result.available;
+};

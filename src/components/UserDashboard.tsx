@@ -44,9 +44,11 @@ const UserDashboard = () => {
 
   // Check if we came from admin page
   useEffect(() => {
+    // Always check for fromAdminPage flag to ensure proper back button visibility
     const fromAdmin = localStorage.getItem('fromAdminPage');
     setShowBackButton(!!fromAdmin);
-  }, []);
+    console.log("Back button visibility check:", !!fromAdmin);
+  }, [location.pathname]); // Re-check when pathname changes
 
   // Synchronize with localStorage for persistent tab selection
   useEffect(() => {
@@ -106,6 +108,7 @@ const UserDashboard = () => {
 
   // Handle back to admin
   const handleBackToAdmin = () => {
+    console.log("Navigating back to admin");
     localStorage.removeItem('fromAdminPage');
     navigate('/admin');
   };
