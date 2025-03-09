@@ -24,9 +24,17 @@ serve(async (req) => {
     }
     
     // Validate key type
-    if (!['groq', 'openai', 'anthropic', 'mistral'].includes(keyType)) {
+    if (!['groq', 'openai', 'anthropic', 'claude', 'gemini', 'mistral', 'deepseek'].includes(keyType)) {
       return new Response(
-        JSON.stringify({ error: 'Invalid key type' }),
+        JSON.stringify({ error: `Invalid key type: ${keyType}` }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+    
+    // Validate key content
+    if (apiKey.trim().length < 10) {
+      return new Response(
+        JSON.stringify({ error: 'API key is too short' }),
         { status: 400, headers: corsHeaders }
       );
     }
@@ -34,7 +42,7 @@ serve(async (req) => {
     // Map key type to environment variable name
     const envVarName = `${keyType.toUpperCase()}_API_KEY`;
     
-    console.log(`Setting ${envVarName} in Supabase secrets`);
+    console.log(`Setting ${envVarName} in Supabase secrets (key length: ${apiKey.length})`);
     
     // Here we would normally save the API key to Supabase secrets
     // However, this requires administrative privileges that edge functions don't have
@@ -45,7 +53,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `${keyType} API key saved successfully` 
+        message: `${keyType} API key saved successfully`,
+        keyLength: apiKey.length,
+        firstFourChars: apiKey.substring(0, 4),
+        lastFourChars: apiKey.substring(apiKey.length - 4),
       }),
       { headers: corsHeaders }
     );

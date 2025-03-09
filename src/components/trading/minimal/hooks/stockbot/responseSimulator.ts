@@ -1,6 +1,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage } from './types';
+import { forceApiKeyReload } from '@/components/chat/api-keys/apiKeyUtils';
 
 /**
  * Generate a simulated stockbot response based on user input
@@ -20,10 +21,17 @@ export function generateStockbotResponse(userInput: string, marketData: any[] = 
       key: groqApiKey ? `${groqApiKey.substring(0, 4)}...${groqApiKey.substring(groqApiKey.length - 4)}` : 'none'
     });
     
+    // Try to force reload API keys
+    try {
+      forceApiKeyReload();
+    } catch (e) {
+      console.error("Failed to force reload API keys:", e);
+    }
+    
     if (!groqApiKey) {
-      responseText = 'I don\'t see a Groq API key configured. Please make sure you\'ve set your API key in the settings. Click the settings icon in the top-right of the chat window to add your key.';
+      responseText = 'I don\'t see a Groq API key configured. Please make sure you\'ve set your API key in the settings. Click the settings icon in the top-right of the chat window to add your key.\n\nFor a valid Groq API key:\n1. Go to https://console.groq.com/keys\n2. Create a new API key\n3. Copy the full key (it should be quite long)\n4. Paste it in the settings dialog';
     } else {
-      responseText = `I detected a Groq API key (${groqApiKey.length} characters long). If you're still seeing the simulation mode message, try clicking the "Switch to real AI mode" button. If that doesn't work, try refreshing the page or checking that your API key is valid.`;
+      responseText = `I detected a Groq API key (${groqApiKey.length} characters long). If you're still seeing the simulation mode message, try clicking the "Switch to real AI mode" button. If that doesn't work, try refreshing the page or checking that your API key is valid.\n\nThe system was just instructed to reload API keys across all components.`;
     }
     
     // Trigger multiple events to force components to re-check API key
@@ -141,8 +149,15 @@ export function generateErrorResponse(errorMessage: string): ChatMessage {
       key: groqApiKey ? `${groqApiKey.substring(0, 4)}...${groqApiKey.substring(groqApiKey.length - 4)}` : 'none'
     });
     
+    // Try to force reload API keys
+    try {
+      forceApiKeyReload();
+    } catch (e) {
+      console.error("Failed to force reload API keys:", e);
+    }
+    
     // Enhance error message with helpful information
-    errorMessage = `${errorMessage}\n\nPlease verify that your Groq API key is correct and has been properly saved. You can update your API key by clicking the settings icon in the chat header.`;
+    errorMessage = `${errorMessage}\n\nPlease verify that your Groq API key is correct and has been properly saved. You can update your API key by clicking the settings icon in the chat header.\n\nIf you recently set your API key, try refreshing the page or restarting your browser.`;
     
     // Force a refresh of API key status
     window.dispatchEvent(new Event('apikey-updated'));

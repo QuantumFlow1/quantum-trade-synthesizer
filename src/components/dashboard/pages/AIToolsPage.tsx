@@ -7,6 +7,9 @@ import { AlertCircle, ArrowRight, Bot, Brain, Code, Key, LineChart, MessageSquar
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useDashboardNavigation } from "@/hooks/use-dashboard-navigation";
+import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogDescription } from "@/components/ui/dialog";
+import { useState } from "react";
+import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
 
 interface AIToolsPageProps {
   apiStatus?: 'checking' | 'available' | 'unavailable';
@@ -21,6 +24,7 @@ export const AIToolsPage = ({
 }: AIToolsPageProps) => {
   const navigate = useNavigate();
   const { openTradingAgentsTab } = useDashboardNavigation();
+  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   
   // Function to navigate to different AI tools
   const handleNavigate = (destination: string, action?: () => void) => {
@@ -42,6 +46,23 @@ export const AIToolsPage = ({
           Advanced AI capabilities to enhance your trading experience
         </p>
       </div>
+      
+      <Alert className="bg-blue-50 border-blue-200">
+        <Key className="h-4 w-4 text-blue-500" />
+        <AlertTitle>API Key Required</AlertTitle>
+        <AlertDescription className="flex flex-col gap-2">
+          <p>Most AI features require an API key to connect to external AI services.</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-2 w-fit"
+            onClick={() => setIsApiKeyDialogOpen(true)}
+          >
+            <Key className="h-4 w-4 mr-2" />
+            Configure API Keys
+          </Button>
+        </AlertDescription>
+      </Alert>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* AI Trading Advice */}
@@ -249,7 +270,7 @@ export const AIToolsPage = ({
               variant="outline" 
               size="sm" 
               className="mt-2 w-fit"
-              onClick={() => navigate('/dashboard/settings')}
+              onClick={() => setIsApiKeyDialogOpen(true)}
             >
               <Key className="h-4 w-4 mr-2" />
               Configure API Keys
@@ -257,6 +278,21 @@ export const AIToolsPage = ({
           </AlertDescription>
         </Alert>
       )}
+      
+      <Dialog open={isApiKeyDialogOpen} onOpenChange={setIsApiKeyDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Configure API Keys</DialogTitle>
+            <DialogDescription>
+              Enter your API keys for different AI services below. These are stored locally in your browser.
+            </DialogDescription>
+          </DialogHeader>
+          <ApiKeyDialogContent 
+            initialTab="groq" 
+            onClose={() => setIsApiKeyDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

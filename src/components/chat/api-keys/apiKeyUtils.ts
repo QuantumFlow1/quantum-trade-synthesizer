@@ -36,13 +36,14 @@ export const validateApiKey = (key: string, type: string): boolean => {
     return false;
   }
   
-  if (type === 'groq' && !key.startsWith('gsk_')) {
-    // Accept Groq keys if they're reasonably long, even without the gsk_ prefix
-    // as different API versions might use different prefixes
-    if (key.trim().length < 10) {
+  // More lenient validation for Groq keys
+  if (type === 'groq') {
+    // Allow any reasonably long key for Groq (minimum 20 characters)
+    // This is more permissive as Groq API key formats may vary
+    if (key.trim().length < 20) {
       toast({
         title: "Invalid Groq API Key",
-        description: "The Groq API key you entered seems too short",
+        description: "The Groq API key you entered seems too short. It should be at least 20 characters.",
         variant: "destructive"
       });
       return false;
@@ -83,7 +84,10 @@ export const saveApiKeys = (
   if (updatedKeys.deepseekApiKey) localStorage.setItem('deepseekApiKey', updatedKeys.deepseekApiKey);
   else localStorage.removeItem('deepseekApiKey');
   
-  if (updatedKeys.groqApiKey) localStorage.setItem('groqApiKey', updatedKeys.groqApiKey);
+  if (updatedKeys.groqApiKey) {
+    localStorage.setItem('groqApiKey', updatedKeys.groqApiKey);
+    console.log('Saved Groq API key to localStorage. Length:', updatedKeys.groqApiKey.length);
+  }
   else localStorage.removeItem('groqApiKey');
   
   console.log('Saved API keys to localStorage:', {
@@ -95,17 +99,43 @@ export const saveApiKeys = (
     groqKeyLength: updatedKeys.groqApiKey ? updatedKeys.groqApiKey.length : 0
   });
   
-  // Dispatch events to notify other components about API key changes
-  window.dispatchEvent(new Event('apikey-updated'));
-  window.dispatchEvent(new Event('localStorage-changed'));
-  window.dispatchEvent(new Event('storage'));
+  // Trigger multiple events to ensure all components are notified
+  try {
+    // Dispatch events to notify other components about API key changes
+    window.dispatchEvent(new Event('apikey-updated'));
+    window.dispatchEvent(new Event('localStorage-changed'));
+    window.dispatchEvent(new Event('storage'));
+    
+    // Force a storage event by setting and removing a dummy key
+    localStorage.setItem('_dummy_key_', Date.now().toString());
+    localStorage.removeItem('_dummy_key_');
+    
+    // Try broadcasting channel if available
+    if (typeof BroadcastChannel !== 'undefined') {
+      const broadcastChannel = new BroadcastChannel('api-key-updates');
+      broadcastChannel.postMessage({ 
+        hasApiKeys: true, 
+        timestamp: Date.now(),
+        updatedKeys: {
+          openai: !!updatedKeys.openaiApiKey,
+          claude: !!updatedKeys.claudeApiKey,
+          gemini: !!updatedKeys.geminiApiKey,
+          deepseek: !!updatedKeys.deepseekApiKey,
+          groq: !!updatedKeys.groqApiKey
+        }
+      });
+      broadcastChannel.close();
+    }
+  } catch (e) {
+    console.error("Error while dispatching API key events:", e);
+  }
   
-  // Show toast notification
+  // Show toast notification for Groq specifically
   if (updatedKeys.groqApiKey) {
     toast({
       title: "Groq API Key Saved",
-      description: "Your Groq API key has been saved and will be used for AI-powered features.",
-      duration: 3000
+      description: "Your Groq API key has been saved and will be used for Stockbot and other AI-powered features.",
+      duration: 5000
     });
   }
   
@@ -170,4 +200,29 @@ export const loadApiKeysFromStorage = (): ApiKeySettings => {
     deepseekApiKey: savedDeepseekKey,
     groqApiKey: savedGroqKey
   };
+};
+
+// Add new utility function to forcefully reload API keys across components
+export const forceApiKeyReload = (): void => {
+  console.log('Forcing API key reload across all components');
+  
+  // Dispatch multiple events
+  window.dispatchEvent(new Event('apikey-updated'));
+  window.dispatchEvent(new Event('localStorage-changed'));
+  window.dispatchEvent(new Event('storage'));
+  
+  // Force a storage event by setting and removing a dummy key
+  try {
+    localStorage.setItem('_dummy_key_', Date.now().toString());
+    localStorage.removeItem('_dummy_key_');
+  } catch (err) {
+    console.error('Error triggering storage event:', err);
+  }
+  
+  // Show toast
+  toast({
+    title: "API Keys Reloaded",
+    description: "All components have been notified to reload API keys.",
+    duration: 3000
+  });
 };

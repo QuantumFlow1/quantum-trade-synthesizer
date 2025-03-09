@@ -1,8 +1,9 @@
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, StockbotChatHook } from "./stockbot/types";
 import { generateStockbotResponse, generateErrorResponse } from "./stockbot/responseSimulator";
+import { forceApiKeyReload } from "@/components/chat/api-keys/apiKeyUtils";
 
 export type { ChatMessage } from "./stockbot/types";
 
@@ -14,6 +15,10 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   const [isSimulationMode, setIsSimulationMode] = useState(true);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   
+  // Reference to track initialization
+  const isInitialized = useRef(false);
+  const apiCheckCount = useRef(0);
+  
   // Enhanced API key check with more thorough detection
   useEffect(() => {
     const checkApiKey = () => {
@@ -23,7 +28,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
       // Check if it exists and is valid (non-empty after trimming)
       const keyExists = !!key && key.trim().length > 0;
       
-      console.log('useStockbotChat - API key check:', {
+      console.log('useStockbotChat - API key check #' + (apiCheckCount.current++), {
         exists: keyExists,
         length: key ? key.trim().length : 0,
         key: key ? `${key.substring(0, 4)}...${key.substring(key.length - 4)}` : 'none',
@@ -38,10 +43,17 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
         console.log('API key exists but still in simulation mode - switching to AI mode');
         setIsSimulationMode(false);
       }
+      
+      // If we don't have a key but we're not in simulation mode, turn it on
+      if (!keyExists && !isSimulationMode) {
+        console.log('No API key found but not in simulation mode - switching to simulation mode');
+        setIsSimulationMode(true);
+      }
     };
     
     // Initial check
     checkApiKey();
+    isInitialized.current = true;
     
     // Set up multiple event listeners to catch any possible key changes
     window.addEventListener('apikey-updated', checkApiKey);
@@ -50,12 +62,29 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     
     // Check frequently for API key changes during initialization
     const initialCheckInterval = setInterval(checkApiKey, 1000);
-    setTimeout(() => clearInterval(initialCheckInterval), 5000);
+    setTimeout(() => clearInterval(initialCheckInterval), 7000);
+    
+    // Also set up a broadcast channel listener if available
+    let broadcastChannel: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        broadcastChannel = new BroadcastChannel('api-key-updates');
+        broadcastChannel.onmessage = () => {
+          console.log('Received broadcast message - checking API keys');
+          checkApiKey();
+        };
+      }
+    } catch (e) {
+      console.error("Failed to setup broadcast channel:", e);
+    }
     
     return () => {
       window.removeEventListener('apikey-updated', checkApiKey);
       window.removeEventListener('localStorage-changed', checkApiKey);
       window.removeEventListener('storage', checkApiKey);
+      if (broadcastChannel) {
+        broadcastChannel.close();
+      }
     };
   }, [isSimulationMode]);
   
@@ -80,6 +109,12 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   
   const showApiKeyDialog = useCallback(() => {
     setIsKeyDialogOpen(true);
+  }, []);
+  
+  // Force reload API keys
+  const reloadApiKeys = useCallback(() => {
+    console.log('Forced reload of API keys requested');
+    forceApiKeyReload();
   }, []);
   
   // Handle sending a message
@@ -110,6 +145,9 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
           key: groqApiKey ? `${groqApiKey.substring(0, 4)}...${groqApiKey.substring(groqApiKey.length - 4)}` : 'none',
           simulationMode: isSimulationMode
         });
+        
+        // Try to force a reload of API keys
+        forceApiKeyReload();
       }
       
       // Simulate response delay
@@ -145,6 +183,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     clearChat,
     showApiKeyDialog,
     isKeyDialogOpen,
-    setIsKeyDialogOpen
+    setIsKeyDialogOpen,
+    reloadApiKeys
   };
 };

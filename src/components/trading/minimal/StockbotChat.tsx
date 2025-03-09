@@ -9,13 +9,15 @@ import { StockbotInput } from "./components/StockbotInput";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
 import { toast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface StockbotChatProps {
-  hasApiKey: boolean;
+  hasApiKey?: boolean;
   marketData?: any[];
 }
 
-export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) => {
+export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData = [] }: StockbotChatProps) => {
   const { 
     messages, 
     inputMessage, 
@@ -27,11 +29,14 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
     clearChat,
     showApiKeyDialog,
     isKeyDialogOpen,
-    setIsKeyDialogOpen
+    setIsKeyDialogOpen,
+    reloadApiKeys,
+    hasApiKey
   } = useStockbotChat(marketData);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [apiKeyStatus, setApiKeyStatus] = useState({ exists: false, keyLength: 0 });
+  const [apiKeyStatus, setApiKeyStatus] = useState({ exists: initialHasApiKey, keyLength: 0 });
+  const [keyRecheckCount, setKeyRecheckCount] = useState(0);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -49,11 +54,13 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
         keyLength: actualApiKey ? actualApiKey.trim().length : 0
       });
       
-      console.log("StockbotChat - API Key Status:", { 
+      console.log("StockbotChat - API Key Status Check #" + keyRecheckCount, { 
         exists: keyExists, 
         keyLength: actualApiKey ? actualApiKey.trim().length : 0,
         key: actualApiKey ? `${actualApiKey.substring(0, 4)}...${actualApiKey.substring(actualApiKey.length - 4)}` : 'none'
       });
+      
+      setKeyRecheckCount(prev => prev + 1);
     };
 
     checkApiKey();
@@ -67,7 +74,7 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
     window.addEventListener('apikey-updated', handleStorageChange);
     window.addEventListener('localStorage-changed', handleStorageChange);
 
-    const intervalId = setInterval(checkApiKey, 1000);
+    const intervalId = setInterval(checkApiKey, 2000);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -75,7 +82,19 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
       window.removeEventListener('localStorage-changed', handleStorageChange);
       clearInterval(intervalId);
     };
-  }, []);
+  }, [keyRecheckCount]);
+
+  // Also update when hasApiKey from hook changes
+  useEffect(() => {
+    console.log("hasApiKey changed in hook:", hasApiKey);
+    if (hasApiKey !== apiKeyStatus.exists) {
+      const actualApiKey = localStorage.getItem("groqApiKey");
+      setApiKeyStatus({
+        exists: hasApiKey,
+        keyLength: actualApiKey ? actualApiKey.trim().length : 0
+      });
+    }
+  }, [hasApiKey, apiKeyStatus.exists]);
 
   const handleDialogClose = () => {
     setIsKeyDialogOpen(false);
@@ -105,6 +124,31 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
     window.dispatchEvent(new Event('apikey-updated'));
     window.dispatchEvent(new Event('localStorage-changed'));
     window.dispatchEvent(new Event('storage'));
+    
+    // Force a reload of all API keys
+    reloadApiKeys();
+  };
+  
+  const handleForceReload = () => {
+    console.log("Forcing API key reload");
+    reloadApiKeys();
+    
+    // Also check again right now
+    const actualApiKey = localStorage.getItem("groqApiKey");
+    const keyExists = !!actualApiKey && actualApiKey.trim().length > 0;
+    
+    setApiKeyStatus({
+      exists: keyExists,
+      keyLength: actualApiKey ? actualApiKey.trim().length : 0
+    });
+    
+    toast({
+      title: "API Status Refreshed",
+      description: keyExists 
+        ? "Groq API key detected, length: " + (actualApiKey?.length || 0) + " characters" 
+        : "No Groq API key found in storage",
+      duration: 3000
+    });
   };
 
   return (
@@ -123,12 +167,23 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
             <AlertTitle>API Key Required</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
               <p>Please set your Groq API key to enable full Stockbot functionality.</p>
-              <button 
-                onClick={showApiKeyDialog}
-                className="text-amber-800 underline font-medium self-start"
-              >
-                Configure API Key
-              </button>
+              <div className="flex flex-wrap gap-2 mt-1">
+                <button 
+                  onClick={showApiKeyDialog}
+                  className="text-amber-800 underline font-medium self-start"
+                >
+                  Configure API Key
+                </button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleForceReload}
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Refresh Status
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -136,8 +191,11 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
         {apiKeyStatus.exists && !isSimulationMode && (
           <Alert variant="default" className="bg-green-50 border-green-200 text-green-700 m-3">
             <AlertTitle>API Key Configured</AlertTitle>
-            <AlertDescription>
-              Your Groq API key is set up and ready to use with Stockbot.
+            <AlertDescription className="flex flex-col gap-1">
+              <p>Your Groq API key is set up and ready to use with Stockbot.</p>
+              <div className="text-xs text-green-600 mt-1">
+                Key length: {apiKeyStatus.keyLength} characters
+              </div>
             </AlertDescription>
           </Alert>
         )}
@@ -146,17 +204,26 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
           <Alert variant="warning" className="m-3">
             <AlertTitle>Simulation Mode Active</AlertTitle>
             <AlertDescription>
-              Stockbot is using simulated responses instead of real AI analysis.
-              {apiKeyStatus.exists && (
-                <p className="mt-1">
+              <p>Stockbot is using simulated responses instead of real AI analysis.</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {apiKeyStatus.exists && (
                   <button 
                     onClick={() => setIsSimulationMode(false)}
                     className="text-amber-800 underline font-medium"
                   >
                     Switch to real AI mode
                   </button>
-                </p>
-              )}
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleForceReload}
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Refresh API Status
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         )}
