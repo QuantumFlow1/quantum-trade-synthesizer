@@ -1,136 +1,169 @@
+<lov-codelov-code>
+import React, { useEffect, useState } from 'react';
+import { useTradingChartData } from './hooks/use-trading-chart-data';
+import { convertToTradingDataPoints, ensureDateObjects } from './hooks/trading-chart/data-conversion-utils';
+import { TradingDataPoint } from './hooks/trading-chart/types';
 
-import { useState, memo } from "react";
-import { useZoomControls } from "@/hooks/use-zoom-controls";
-import { PriceCards } from "./trading/PriceCards";
-import { ViewModeSelector, ViewModeType } from "./trading/ViewModeSelector";
-import { ApiUnavailableWarning } from "./trading/ApiUnavailableWarning";
-import { StandardView } from "./trading/views/StandardView";
-import { CombinedView } from "./trading/views/CombinedView";
-import { useTradingChartData } from "@/hooks/use-trading-chart-data";
-import { useSimulationMode } from "@/hooks/use-simulation-mode";
-import { Button } from "./ui/button";
-import { BoxIcon } from "lucide-react";
-import { PriceDataPoint, TradingDataPoint as ChartTradingDataPoint } from "@/hooks/trading-chart/types";
+interface TradingChartProps {
+  symbol?: string;
+  interval?: string;
+  height?: number;
+  width?: number;
+  showControls?: boolean;
+  onSymbolChange?: (symbol: string) => void;
+  onIntervalChange?: (interval: string) => void;
+  simulationMode?: boolean;
+}
 
-// Import the TradingDataPoint type from the utils file
-import type { TradingDataPoint as UtilsTradingDataPoint } from "@/utils/tradingData";
-
-const TradingChart = memo(() => {
-  const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls(1);
-  const [viewMode, setViewMode] = useState<ViewModeType>("standard");
-  
-  const {
-    data,
+const TradingChart: React.FC<TradingChartProps> = ({ 
+  symbol = 'BTC',
+  interval = '1h',
+  height = 400,
+  width = 800,
+  showControls = true,
+  onSymbolChange,
+  onIntervalChange,
+  simulationMode = false
+}) => {
+  // Use our custom hook to handle the data fetching and processing
+  const { 
+    data, 
+    loading, 
+    error, 
     apiStatus,
-    apiKeysAvailable,
-    lastAPICheckTime,
-    rawMarketData,
-    handleRetryConnection,
-    isLoading
-  } = useTradingChartData(false);
+    refreshData,
+    symbol: currentSymbol,
+    interval: currentInterval
+  } = useTradingChartData(simulationMode, symbol, interval);
   
-  const { forceSimulation, toggleSimulationMode } = useSimulationMode(handleRetryConnection);
+  // State for the processed data ready for chart rendering
+  const [chartData, setChartData] = useState<TradingDataPoint[]>([]);
+  
+  // Process the data when it changes
+  useEffect(() => {
+    if (data && data.length > 0) {
+      // Ensure Date objects are properly set
+      const dataWithDates = ensureDateObjects(data);
+      
+      // Convert to TradingDataPoint type with all required indicators
+      const tradingData = convertToTradingDataPoints(dataWithDates);
+      
+      setChartData(tradingData);
+    }
+  }, [data]);
 
-  // Convert PriceDataPoint[] to our ChartTradingDataPoint[]
-  const convertToChartTradingDataPoint = (data: PriceDataPoint[]): ChartTradingDataPoint[] => {
-    return data.map(item => ({
-      ...item,
-      name: new Date(item.timestamp).toLocaleDateString(),
-      sma: 0,
-      ema: 0,
-      rsi: 0,
-      macd: 0,
-      signal: 0,
-      histogram: 0,
-      bollinger_upper: 0,
-      bollinger_middle: 0,
-      bollinger_lower: 0,
-      atr: 0,
-      cci: 0
-    }));
-  };
-
-  // Convert ChartTradingDataPoint[] to UtilsTradingDataPoint[] for compatibility with the views
-  const convertToUtilsTradingDataPoint = (data: ChartTradingDataPoint[]): UtilsTradingDataPoint[] => {
-    return data.map(item => ({
-      ...item,
-      date: new Date(item.timestamp), // Convert timestamp to Date object
-      macdSignal: item.signal,
-      macdHistogram: item.histogram,
-      bollingerUpper: item.bollinger_upper,
-      bollingerLower: item.bollinger_lower,
-      bollingerMiddle: item.bollinger_middle
-    })) as UtilsTradingDataPoint[];
-  };
-
-  // Convert the data for the components
-  const chartTradingData = convertToChartTradingDataPoint(data);
-  const tradingData = convertToUtilsTradingDataPoint(chartTradingData);
-
-  const handleNavigateToVisualization = () => {
-    const dashboardNavHandler = (window as any).__dashboardNavigationHandler;
-    if (typeof dashboardNavHandler === 'function') {
-      dashboardNavHandler('visualization');
+  // Handle changing the symbol
+  const handleSymbolChange = (newSymbol: string) => {
+    if (onSymbolChange) {
+      onSymbolChange(newSymbol);
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <ApiUnavailableWarning
-        apiStatus={apiStatus}
-        apiKeysAvailable={apiKeysAvailable}
-        lastAPICheckTime={lastAPICheckTime}
-        handleRetryConnection={handleRetryConnection}
-      />
-      
-      <div className="flex justify-between items-center">
-        <PriceCards data={data} />
-        <Button 
-          variant="outline" 
-          className="flex items-center gap-2" 
-          onClick={handleNavigateToVisualization}
-        >
-          <BoxIcon className="h-4 w-4" /> 
-          Open 3D View
-        </Button>
-      </div>
-      
-      <ViewModeSelector viewMode={viewMode} setViewMode={setViewMode} />
+  // Handle changing the interval
+  const handleIntervalChange = (newInterval: string) => {
+    if (onIntervalChange) {
+      onIntervalChange(newInterval);
+    }
+  };
 
-      {viewMode === "standard" && (
-        <StandardView
-          scale={scale}
-          handleZoomIn={handleZoomIn}
-          handleZoomOut={handleZoomOut}
-          handleResetZoom={handleResetZoom}
-          apiStatus={apiStatus}
-          rawMarketData={convertToUtilsTradingDataPoint(convertToChartTradingDataPoint(rawMarketData))}
-          onSimulationToggle={toggleSimulationMode}
-          isSimulationMode={forceSimulation}
-          apiKeysAvailable={apiKeysAvailable}
-          isLoading={isLoading}
-        />
+  // Refresh chart data
+  const handleRefresh = () => {
+    refreshData();
+  };
+
+  // Show an error message if there was a problem loading the data
+  if (error) {
+    return (
+      <div className="p-4 text-red-500">
+        <h3>Error loading chart data:</h3>
+        <p>{error}</p>
+        <button 
+          onClick={handleRefresh}
+          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const symbols = ['BTC', 'ETH', 'LTC'];
+  const intervals = ['1m', '5m', '15m', '30m', '1h', '4h', '1d'];
+
+  return (
+    <div className="trading-chart" style={{ height, width }}>
+      {/* Render chart controls if enabled */}
+      {showControls && (
+        <div className="chart-controls flex justify-between mb-4">
+          {/* Symbol selector */}
+          <div className="symbol-selector">
+            <label htmlFor="symbol">Symbol:</label>
+            <select
+              id="symbol"
+              value={currentSymbol}
+              onChange={(e) => {
+                handleSymbolChange(e.target.value);
+              }}
+            >
+              {symbols.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Interval selector */}
+          <div className="interval-selector">
+            <label htmlFor="interval">Interval:</label>
+            <select
+              id="interval"
+              value={currentInterval}
+              onChange={(e) => {
+                handleIntervalChange(e.target.value);
+              }}
+            >
+              {intervals.map((i) => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Refresh button */}
+          <button 
+            onClick={handleRefresh}
+            className="refresh-button px-3 py-1 bg-blue-500 text-white rounded"
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
       )}
       
-      {viewMode === "combined" && (
-        <CombinedView
-          data={tradingData}
-          scale={scale}
-          handleZoomIn={handleZoomIn}
-          handleZoomOut={handleZoomOut}
-          handleResetZoom={handleResetZoom}
-          apiStatus={apiStatus}
-          rawMarketData={convertToUtilsTradingDataPoint(convertToChartTradingDataPoint(rawMarketData))}
-          onSimulationToggle={toggleSimulationMode}
-          isSimulationMode={forceSimulation}
-          apiKeysAvailable={apiKeysAvailable}
-          isLoading={isLoading}
-        />
-      )}
+      {/* Chart area */}
+      <div className="chart-area" style={{ height: showControls ? height - 60 : height }}>
+        {loading ? (
+          <div className="loading-indicator flex items-center justify-center h-full">
+            <p>Loading chart data...</p>
+          </div>
+        ) : chartData.length > 0 ? (
+          <div className="chart-container h-full">
+            {/* This is where the actual chart would be rendered */}
+            <p className="text-center">Chart goes here - {chartData.length} data points available</p>
+            <p className="text-center">{currentSymbol} - {currentInterval}</p>
+            <p className="text-center">API Status: {apiStatus}</p>
+          </div>
+        ) : (
+          <div className="no-data-message flex items-center justify-center h-full">
+            <p>No chart data available</p>
+          </div>
+        )}
+      </div>
     </div>
   );
-});
-
-TradingChart.displayName = "TradingChart";
+};
 
 export default TradingChart;
+</lov-code>

@@ -1,38 +1,22 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { ChatMessage, StockbotStatus } from './types';
+import { ChatMessage } from './types';
 import { loadStockbotChatHistory, saveStockbotChatHistory } from './storage';
 
 export const useStockbotState = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Load chat history from localStorage on initial render
+  const [messages, setMessages] = useState<ChatMessage[]>(loadStockbotChatHistory() || []);
   const [inputMessage, setInputMessage] = useState('');
-  const [status, setStatus] = useState<StockbotStatus>('idle');
-  const [isSimulationMode, setIsSimulationMode] = useState(true);
-  
-  // Load chat history from localStorage on component mount
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Save messages to localStorage whenever they change
   useEffect(() => {
-    const savedMessages = loadStockbotChatHistory();
-    if (savedMessages) {
-      setMessages(savedMessages);
-    }
-  }, []);
-  
-  // Save messages to localStorage whenever messages change
-  useEffect(() => {
-    if (messages.length > 0) {
-      saveStockbotChatHistory(messages);
-    }
+    saveStockbotChatHistory(messages);
   }, [messages]);
-  
-  // Add a new message to the chat
-  const addMessage = useCallback((message: ChatMessage) => {
-    setMessages(prev => [...prev, message]);
-  }, []);
-  
-  // Add a user message to the chat
-  const addUserMessage = useCallback((content: string) => {
-    const message: ChatMessage = {
+
+  const addUserMessage = (content: string) => {
+    const userMessage: ChatMessage = {
       id: uuidv4(),
       sender: 'user',
       role: 'user',
@@ -40,13 +24,13 @@ export const useStockbotState = () => {
       content: content,
       timestamp: new Date()
     };
-    addMessage(message);
-    return message;
-  }, [addMessage]);
-  
-  // Add an assistant message to the chat
-  const addAssistantMessage = useCallback((content: string) => {
-    const message: ChatMessage = {
+    
+    setMessages(prev => [...prev, userMessage]);
+    return userMessage;
+  };
+
+  const addAssistantMessage = (content: string) => {
+    const assistantMessage: ChatMessage = {
       id: uuidv4(),
       sender: 'assistant',
       role: 'assistant',
@@ -54,30 +38,24 @@ export const useStockbotState = () => {
       content: content,
       timestamp: new Date()
     };
-    addMessage(message);
-    return message;
-  }, [addMessage]);
-  
-  // Clear all messages
-  const clearChat = useCallback(() => {
+    
+    setMessages(prev => [...prev, assistantMessage]);
+    return assistantMessage;
+  };
+
+  const clearChat = () => {
     setMessages([]);
-    localStorage.removeItem('stockbot-messages');
-  }, []);
-  
+  };
+
   return {
     messages,
     setMessages,
     inputMessage,
     setInputMessage,
-    status,
-    setStatus,
-    isSimulationMode,
-    setIsSimulationMode,
-    addMessage,
+    isLoading,
+    setIsLoading,
     addUserMessage,
     addAssistantMessage,
     clearChat
   };
 };
-
-export default useStockbotState;

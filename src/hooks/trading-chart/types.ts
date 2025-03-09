@@ -45,7 +45,10 @@ export interface TradingDataPoint extends PriceDataPoint {
   bollinger_lower: number;
   atr: number;
   cci: number;
-  // Add the additional fields from utils/tradingData.ts TradingDataPoint
+  stochastic: number;
+  adx: number;
+  trend: string;
+  // Optional properties for compatibility with existing code
   macdSignal?: number;
   macdHistogram?: number;
   bollingerUpper?: number;
@@ -59,5 +62,5 @@ export interface DataValidationResult {
   data?: PriceDataPoint[];
 }
 
-// Use export type to avoid conflicts
-export type { ApiStatus };
+// Export type to avoid conflicts
+export type { ApiStatus as ApiStatusType };
