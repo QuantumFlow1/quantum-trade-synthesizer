@@ -193,4 +193,4 @@ export const useTradingChartData = (
 };
 
 // Export ApiStatus type for components that need it
-export { ApiStatus } from './trading-chart/types';
+export type { ApiStatus } from './trading-chart/types';

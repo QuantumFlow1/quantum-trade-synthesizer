@@ -10,6 +10,7 @@ import { useTradingChartData } from "@/hooks/use-trading-chart-data";
 import { useSimulationMode } from "@/hooks/use-simulation-mode";
 import { Button } from "./ui/button";
 import { BoxIcon } from "lucide-react";
+import { TradingDataPoint } from "@/hooks/trading-chart/types";
 
 const TradingChart = memo(() => {
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls(1);
@@ -26,6 +27,28 @@ const TradingChart = memo(() => {
   } = useTradingChartData(false);
   
   const { forceSimulation, toggleSimulationMode } = useSimulationMode(handleRetryConnection);
+
+  // Convert PriceDataPoint[] to TradingDataPoint[]
+  const convertToTradingDataPoint = (data: any[]): TradingDataPoint[] => {
+    return data.map(item => ({
+      ...item,
+      name: new Date(item.timestamp).toLocaleDateString(),
+      sma: 0,
+      ema: 0,
+      rsi: 0,
+      macd: 0,
+      signal: 0,
+      histogram: 0,
+      bollinger_upper: 0,
+      bollinger_middle: 0,
+      bollinger_lower: 0,
+      atr: 0,
+      cci: 0
+    }));
+  };
+
+  // Convert data for the components that expect TradingDataPoint
+  const tradingData = convertToTradingDataPoint(data);
 
   const handleNavigateToVisualization = () => {
     const dashboardNavHandler = (window as any).__dashboardNavigationHandler;
@@ -64,7 +87,7 @@ const TradingChart = memo(() => {
           handleZoomOut={handleZoomOut}
           handleResetZoom={handleResetZoom}
           apiStatus={apiStatus}
-          rawMarketData={rawMarketData}
+          rawMarketData={convertToTradingDataPoint(rawMarketData)}
           onSimulationToggle={toggleSimulationMode}
           isSimulationMode={forceSimulation}
           apiKeysAvailable={apiKeysAvailable}
@@ -74,13 +97,13 @@ const TradingChart = memo(() => {
       
       {viewMode === "combined" && (
         <CombinedView
-          data={data}
+          data={tradingData}
           scale={scale}
           handleZoomIn={handleZoomIn}
           handleZoomOut={handleZoomOut}
           handleResetZoom={handleResetZoom}
           apiStatus={apiStatus}
-          rawMarketData={rawMarketData}
+          rawMarketData={convertToTradingDataPoint(rawMarketData)}
           onSimulationToggle={toggleSimulationMode}
           isSimulationMode={forceSimulation}
           apiKeysAvailable={apiKeysAvailable}

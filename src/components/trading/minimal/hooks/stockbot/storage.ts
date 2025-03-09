@@ -41,3 +41,7 @@ export const clearMessages = (): void => {
     console.error('Error clearing messages from localStorage:', error);
   }
 };
+
+// Add the exports that useStockbotState is looking for
+export const loadStockbotChatHistory = loadMessages;
+export const saveStockbotChatHistory = saveMessages;

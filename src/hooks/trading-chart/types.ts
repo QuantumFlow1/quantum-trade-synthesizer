@@ -53,5 +53,5 @@ export interface DataValidationResult {
   data?: PriceDataPoint[];
 }
 
-// Export ApiStatus for components that need it
-export { ApiStatus };
+// Export ApiStatus for components that need it - use export type to avoid conflicts
+export type { ApiStatus };
