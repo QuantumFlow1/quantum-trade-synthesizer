@@ -1,3 +1,4 @@
+
 export interface TradingDataPoint {
   name: string;
   open: number;
@@ -16,6 +17,11 @@ export interface TradingDataPoint {
   stochastic: number;
   adx: number;
   trend: "up" | "down" | "neutral";
+  visualX?: number;  // Added missing property
+  visualY?: number;  // Added missing property
+  visualZ?: number;  // Added missing property
+  color?: string;    // Added missing property
+  change?: number;   // Added missing property
 }
 
 export const generateTradingData = (

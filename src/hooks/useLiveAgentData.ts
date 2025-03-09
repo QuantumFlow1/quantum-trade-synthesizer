@@ -1,49 +1,45 @@
 
 import { useState, useEffect } from 'react';
+import { Agent } from '@/types/agent';
 import { liveAgentService } from '@/services/agentData/liveAgentService';
-import { Agent, AgentRecommendation } from '@/types/agent';
 
-export function useLiveAgentData() {
+export const useLiveAgentData = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [recommendations, setRecommendations] = useState<AgentRecommendation[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  
-  // Connect to agent network on mount
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchAgents = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const data = await liveAgentService.fetchAgents();
+      setAgents(data);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to fetch agents'));
+      console.error('Error fetching agents:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const connect = async () => {
-      setIsConnecting(true);
-      const success = await liveAgentService.connectToAgentNetwork();
-      setIsConnected(success);
-      setIsConnecting(false);
-    };
+    fetchAgents();
     
-    connect();
-  }, []);
-  
-  // Subscribe to agent updates
-  useEffect(() => {
-    const handleAgentsUpdate = (updatedAgents: Agent[]) => {
-      setAgents(updatedAgents);
-    };
-    
-    const handleRecommendationsUpdate = (updatedRecommendations: AgentRecommendation[]) => {
-      setRecommendations(updatedRecommendations);
-    };
-    
-    liveAgentService.addListener(handleAgentsUpdate);
-    liveAgentService.addRecommendationListener(handleRecommendationsUpdate);
+    // Set up an interval to refresh the data
+    const intervalId = setInterval(() => {
+      fetchAgents();
+    }, 30000); // Refresh every 30 seconds
     
     return () => {
-      liveAgentService.removeListener(handleAgentsUpdate);
-      liveAgentService.removeRecommendationListener(handleRecommendationsUpdate);
+      clearInterval(intervalId);
     };
   }, []);
-  
+
   return {
     agents,
-    recommendations,
-    isConnected,
-    isConnecting
+    isLoading,
+    error,
+    refreshAgents: fetchAgents
   };
-}
+};
