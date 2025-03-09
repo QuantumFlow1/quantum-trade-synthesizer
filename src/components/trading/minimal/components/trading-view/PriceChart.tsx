@@ -1,5 +1,5 @@
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Legend } from "recharts";
 
 interface PriceChartProps {
   chartType: string;
@@ -8,6 +8,9 @@ interface PriceChartProps {
     volume: boolean;
     ema: boolean;
     sma: boolean;
+    macd: boolean;
+    rsi: boolean;
+    bollingerBands: boolean;
   };
 }
 
@@ -27,12 +30,24 @@ export const PriceChart = ({ chartType, data, visibleIndicators }: PriceChartPro
             <XAxis dataKey="formattedDate" />
             <YAxis domain={['auto', 'auto']} />
             <Tooltip />
-            <Area type="monotone" dataKey="close" stroke="#8884d8" fillOpacity={1} fill="url(#colorPrice)" />
+            {visibleIndicators.bollingerBands && (
+              <>
+                <Line type="monotone" dataKey="upperBand" name="Upper Band" stroke="#82ca9d" dot={false} strokeWidth={1} strokeDasharray="3 3" />
+                <Line type="monotone" dataKey="lowerBand" name="Lower Band" stroke="#82ca9d" dot={false} strokeWidth={1} strokeDasharray="3 3" />
+              </>
+            )}
+            <Area type="monotone" dataKey="close" name="Price" stroke="#8884d8" fillOpacity={1} fill="url(#colorPrice)" />
             {visibleIndicators.sma && (
-              <Line type="monotone" dataKey="sma" stroke="#ff7300" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="sma" name="SMA" stroke="#ff7300" dot={false} strokeWidth={2} />
             )}
             {visibleIndicators.ema && (
-              <Line type="monotone" dataKey="ema" stroke="#387908" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="ema" name="EMA" stroke="#387908" dot={false} strokeWidth={2} />
+            )}
+            {visibleIndicators.rsi && data[0]?.rsi && (
+              <Line type="monotone" dataKey="rsi" name="RSI" stroke="#d363ff" dot={false} strokeWidth={2} />
+            )}
+            {visibleIndicators.bollingerBands && visibleIndicators.volume && (
+              <Legend verticalAlign="top" height={36}/>
             )}
           </AreaChart>
         ) : (
@@ -41,12 +56,24 @@ export const PriceChart = ({ chartType, data, visibleIndicators }: PriceChartPro
             <XAxis dataKey="formattedDate" />
             <YAxis domain={['auto', 'auto']} />
             <Tooltip />
-            <Line type="monotone" dataKey="close" stroke="#8884d8" strokeWidth={2} />
+            {visibleIndicators.bollingerBands && (
+              <>
+                <Line type="monotone" dataKey="upperBand" name="Upper Band" stroke="#82ca9d" dot={false} strokeWidth={1} strokeDasharray="3 3" />
+                <Line type="monotone" dataKey="lowerBand" name="Lower Band" stroke="#82ca9d" dot={false} strokeWidth={1} strokeDasharray="3 3" />
+              </>
+            )}
+            <Line type="monotone" dataKey="close" name="Price" stroke="#8884d8" strokeWidth={2} />
             {visibleIndicators.sma && (
-              <Line type="monotone" dataKey="sma" stroke="#ff7300" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="sma" name="SMA" stroke="#ff7300" dot={false} strokeWidth={2} />
             )}
             {visibleIndicators.ema && (
-              <Line type="monotone" dataKey="ema" stroke="#387908" dot={false} strokeWidth={2} />
+              <Line type="monotone" dataKey="ema" name="EMA" stroke="#387908" dot={false} strokeWidth={2} />
+            )}
+            {visibleIndicators.rsi && data[0]?.rsi && (
+              <Line type="monotone" dataKey="rsi" name="RSI" stroke="#d363ff" dot={false} strokeWidth={2} />
+            )}
+            {visibleIndicators.bollingerBands && visibleIndicators.volume && (
+              <Legend verticalAlign="top" height={36}/>
             )}
           </LineChart>
         )}

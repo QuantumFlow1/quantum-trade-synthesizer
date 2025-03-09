@@ -1,45 +1,78 @@
 
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, Plus } from "lucide-react";
 
 interface IndicatorControlsProps {
   visibleIndicators: {
     volume: boolean;
     ema: boolean;
     sma: boolean;
+    macd: boolean;
+    rsi: boolean;
+    bollingerBands: boolean;
   };
-  toggleIndicator: (indicator: "volume" | "ema" | "sma") => void;
+  toggleIndicator: (indicator: keyof typeof visibleIndicators) => void;
 }
 
 export const IndicatorControls = ({
   visibleIndicators,
   toggleIndicator
 }: IndicatorControlsProps) => {
+  const activeIndicators = Object.entries(visibleIndicators)
+    .filter(([_, isVisible]) => isVisible)
+    .map(([key]) => key);
+  
   return (
     <div className="flex gap-2">
-      <Button 
-        size="sm" 
-        variant={visibleIndicators.sma ? "default" : "outline"} 
-        className="h-6 px-2 text-xs"
-        onClick={() => toggleIndicator("sma")}
-      >
-        SMA
-      </Button>
-      <Button 
-        size="sm" 
-        variant={visibleIndicators.ema ? "default" : "outline"} 
-        className="h-6 px-2 text-xs"
-        onClick={() => toggleIndicator("ema")}
-      >
-        EMA
-      </Button>
-      <Button 
-        size="sm" 
-        variant={visibleIndicators.volume ? "default" : "outline"} 
-        className="h-6 px-2 text-xs"
-        onClick={() => toggleIndicator("volume")}
-      >
-        Vol
-      </Button>
+      {activeIndicators.map((indicator) => (
+        <Button 
+          key={indicator}
+          size="sm" 
+          variant="default" 
+          className="h-6 px-2 text-xs capitalize"
+          onClick={() => toggleIndicator(indicator as keyof typeof visibleIndicators)}
+        >
+          {indicator === "ema" ? "EMA" : indicator === "sma" ? "SMA" : indicator === "rsi" ? "RSI" : indicator === "macd" ? "MACD" : indicator === "bollingerBands" ? "BB" : indicator}
+        </Button>
+      ))}
+      
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="h-6 px-2 text-xs"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Add
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-48">
+          <div className="space-y-1">
+            <p className="text-xs font-medium pb-1">Indicators</p>
+            {Object.entries(visibleIndicators).map(([key, isVisible]) => (
+              <Button
+                key={key}
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start h-8 text-xs capitalize"
+                onClick={() => toggleIndicator(key as keyof typeof visibleIndicators)}
+              >
+                <span className="w-4 h-4 mr-2 flex items-center justify-center">
+                  {isVisible && <Check className="h-3 w-3" />}
+                </span>
+                {key === "ema" ? "Moving Avg (EMA)" : 
+                 key === "sma" ? "Moving Avg (SMA)" : 
+                 key === "rsi" ? "RSI" : 
+                 key === "macd" ? "MACD" : 
+                 key === "bollingerBands" ? "Bollinger Bands" : 
+                 key}
+              </Button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 };
