@@ -5,11 +5,17 @@ import { StockbotHeader } from "./components/StockbotHeader";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
 import { toast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TradingView } from "./components/TradingView";
+import { StockbotChat } from "./StockbotChat";
+import { TradingAgents } from "./components/TradingAgents";
+import { ChartLine, MessagesSquare, Bot } from "lucide-react";
 
 export const MinimalTradingTab = () => {
   const [isSimulationMode, setIsSimulationMode] = useState(true);
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [activeTab, setActiveTab] = useState("trading-view");
   
   // Use the trading chart data hook
   const { 
@@ -23,6 +29,14 @@ export const MinimalTradingTab = () => {
   useEffect(() => {
     const groqKey = localStorage.getItem('groqApiKey');
     setHasApiKey(!!groqKey);
+    
+    // Check if we should open the Trading Agents tab by default
+    const openTradingAgentsTab = localStorage.getItem('openTradingAgentsTab');
+    if (openTradingAgentsTab === 'true') {
+      setActiveTab('trading-agents');
+      // Clear the flag after processing
+      localStorage.removeItem('openTradingAgentsTab');
+    }
     
     // Listen for API key updates
     const handleApiKeyUpdate = () => {
@@ -74,29 +88,34 @@ export const MinimalTradingTab = () => {
         toggleRealData={toggleRealData}
       />
       
-      <div className="flex-1 p-4 overflow-auto">
-        {/* Add your trading chart and chat components here */}
-        <div className="mb-4 p-4 border rounded bg-gray-50">
-          <h3 className="font-medium mb-2">Market Data Source</h3>
-          <p className="text-sm text-gray-600">
-            {useRealData 
-              ? "Using real cryptocurrency data from CoinGecko API" 
-              : "Using simulated market data"}
-          </p>
-          <p className="text-sm text-gray-600 mt-2">
-            API Status: {apiStatus === 'available' 
-              ? "Available" 
-              : apiStatus === 'checking' 
-                ? "Checking..." 
-                : "Unavailable"}
-          </p>
-          <p className="text-sm text-gray-600 mt-2">
-            Data points: {data.length}
-          </p>
-        </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <TabsList className="mx-4 mt-2 justify-start">
+          <TabsTrigger value="trading-view" className="flex items-center space-x-2">
+            <ChartLine className="h-4 w-4" />
+            <span>Trading View</span>
+          </TabsTrigger>
+          <TabsTrigger value="stockbot-chat" className="flex items-center space-x-2">
+            <MessagesSquare className="h-4 w-4" />
+            <span>Chat</span>
+          </TabsTrigger>
+          <TabsTrigger value="trading-agents" className="flex items-center space-x-2">
+            <Bot className="h-4 w-4" />
+            <span>Trading Agents</span>
+          </TabsTrigger>
+        </TabsList>
         
-        {/* Add your other components here */}
-      </div>
+        <TabsContent value="trading-view" className="flex-1 p-4 overflow-auto">
+          <TradingView chartData={data} apiStatus={apiStatus} useRealData={useRealData} />
+        </TabsContent>
+        
+        <TabsContent value="stockbot-chat" className="flex-1 overflow-hidden">
+          <StockbotChat hasApiKey={hasApiKey} marketData={data} />
+        </TabsContent>
+        
+        <TabsContent value="trading-agents" className="flex-1 p-4 overflow-auto">
+          <TradingAgents hasApiKey={hasApiKey} showApiKeyDialog={openApiKeyDialog} />
+        </TabsContent>
+      </Tabs>
       
       <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
         <DialogContent>
