@@ -1,114 +1,58 @@
 
-import { MarketData } from "@/components/market/types";
+import { MarketData } from '../../types';
 
-/**
- * Validates market data structure and content
- */
-export const validateMarketData = (marketData: any): { 
-  isValid: boolean; 
-  errorMessage: string;
-} => {
-  try {
-    if (!marketData) {
-      return { isValid: false, errorMessage: "Geen marktdata ontvangen" };
-    }
-
-    // Check if the data is in the expected format or wrapped inside a data property
-    const dataToValidate = Array.isArray(marketData) ? marketData : 
-                          (marketData.data && Array.isArray(marketData.data)) ? marketData.data : null;
-    
-    if (!dataToValidate) {
-      console.error('Market data is not an array or does not contain data array:', marketData);
-      return { isValid: false, errorMessage: "Ongeldig dataformaat ontvangen" };
-    }
-
-    if (dataToValidate.length === 0) {
-      return { isValid: false, errorMessage: "Lege marktdata ontvangen" };
-    }
-
-    // Basic validation for data structure
-    const isValidData = dataToValidate.every(item => 
-      item && 
-      typeof item.market === 'string' &&
-      typeof item.symbol === 'string' &&
-      // Allow price to be either number or string (will convert later)
-      (typeof item.price === 'number' || (typeof item.price === 'string' && !isNaN(parseFloat(item.price))))
-    );
-
-    if (!isValidData) {
-      return { isValid: false, errorMessage: "Ongeldige datastructuur" };
-    }
-
-    return { isValid: true, errorMessage: "" };
-  } catch (error) {
-    console.error('Error validating market data:', error);
-    return { 
-      isValid: false, 
-      errorMessage: error instanceof Error ? error.message : "Onbekende fout bij validatie"
-    };
+export const validateMarketData = (marketData: any): { isValid: boolean; errorMessage: string } => {
+  // Check if data exists
+  if (!marketData) {
+    return { isValid: false, errorMessage: 'No market data received' };
   }
+  
+  // Handle both array format and { data: [] } format
+  const dataArray = Array.isArray(marketData) ? marketData : 
+                    (marketData.data && Array.isArray(marketData.data)) ? marketData.data : null;
+  
+  if (!dataArray) {
+    return { isValid: false, errorMessage: 'Invalid market data format' };
+  }
+  
+  if (dataArray.length === 0) {
+    return { isValid: false, errorMessage: 'Empty market data array' };
+  }
+  
+  // Check if data has required fields
+  for (const item of dataArray) {
+    if (!item.name || (item.price === undefined) || (item.market === undefined)) {
+      return { 
+        isValid: false, 
+        errorMessage: 'Market data items missing required fields (name, price, market)' 
+      };
+    }
+  }
+  
+  return { isValid: true, errorMessage: '' };
 };
 
-/**
- * Normalizes market data to ensure consistent structure
- */
-export const normalizeMarketData = (marketData: any): MarketData[] => {
-  // Check if the data is in the expected format or wrapped inside a data property
-  const dataToNormalize = Array.isArray(marketData) ? marketData : 
-                         (marketData.data && Array.isArray(marketData.data)) ? marketData.data : [];
+export const normalizeMarketData = (data: any): MarketData[] => {
+  // Handle both array format and { data: [] } format
+  const dataArray = Array.isArray(data) ? data : 
+                    (data.data && Array.isArray(data.data)) ? data.data : [];
   
-  if (dataToNormalize.length === 0) {
-    return [];
-  }
-
-  return dataToNormalize.map(item => ({
-    market: item.market,
-    symbol: item.symbol,
-    name: item.name || item.symbol,
-    price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
-    change24h: typeof item.change24h === 'number' ? item.change24h : 
-              typeof item.change24h === 'string' ? parseFloat(item.change24h) : 0,
-    high24h: typeof item.high24h === 'number' ? item.high24h : 
-            typeof item.high24h === 'string' ? parseFloat(item.high24h) : 
-            (item.price * 1.05), // Estimate if missing
-    low24h: typeof item.low24h === 'number' ? item.low24h : 
-           typeof item.low24h === 'string' ? parseFloat(item.low24h) : 
-           (item.price * 0.95), // Estimate if missing
-    volume: typeof item.volume === 'number' ? item.volume : 
-           typeof item.volume === 'string' ? parseFloat(item.volume) : 
-           100000, // Default value if missing
-    timestamp: item.timestamp || Date.now(),
-    marketCap: item.marketCap || (typeof item.price === 'number' ? item.price * 1000000 : 0),
-    totalVolume24h: item.totalVolume24h || item.volume || 0,
-    high: item.high || item.high24h || (typeof item.price === 'number' ? item.price * 1.05 : 0),
-    low: item.low || item.low24h || (typeof item.price === 'number' ? item.price * 0.95 : 0)
+  return dataArray.map(item => ({
+    name: item.name || 'Unknown',
+    price: item.price || 0,
+    change: item.change || 0,
+    volume: item.volume || 0,
+    market: item.market || 'Unknown',
+    timestamp: item.timestamp || new Date().toISOString()
   }));
 };
 
-export const groupMarketDataByMarket = (marketData: MarketData[]): Record<string, any[]> => {
-  if (!Array.isArray(marketData)) {
-    console.error('Cannot group non-array marketData:', marketData);
-    return {};
-  }
-  
-  return marketData.reduce((acc, item) => {
-    if (!item.market) {
-      return acc;
-    }
-    
+export const groupMarketDataByMarket = (data: MarketData[]): Record<string, MarketData[]> => {
+  return data.reduce((acc, item) => {
     if (!acc[item.market]) {
       acc[item.market] = [];
     }
-    
-    acc[item.market].push({
-      name: item.symbol,
-      volume: item.volume,
-      price: item.price,
-      change: item.change24h,
-      high: item.high24h,
-      low: item.low24h
-    });
-    
+    acc[item.market].push(item);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, MarketData[]>);
 };

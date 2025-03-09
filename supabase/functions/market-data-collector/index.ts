@@ -6,112 +6,90 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-function generateMockData() {
-  const markets = [
-    { market: 'NYSE', symbols: ['JPM', 'BAC', 'WMT', 'PG', 'JNJ'] },
-    { market: 'NASDAQ', symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META'] },
-    { market: 'Crypto', symbols: ['BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'XRP/USD'] },
-    { market: 'AEX', symbols: ['ASML', 'ADYEN', 'UNILEVER', 'ING', 'AKZO'] },
-  ];
-
-  const result = [];
+// Generate mock market data
+function generateMarketData() {
+  const markets = ['NYSE', 'NASDAQ', 'AEX', 'DAX', 'CAC40', 'NIKKEI', 'HSI', 'SSE', 'Crypto'];
+  const data = [];
   
-  // Current timestamp
-  const now = Date.now();
-
-  markets.forEach(marketGroup => {
-    marketGroup.symbols.forEach(symbol => {
-      // Generate realistic-looking price based on symbol
-      let basePrice = 0;
+  // Generate data for each market
+  for (const market of markets) {
+    const symbols = [];
+    
+    // Different number of symbols per market
+    const symbolCount = market === 'Crypto' ? 5 : 
+                        (market === 'NYSE' || market === 'NASDAQ') ? 8 : 4;
+    
+    // Generate symbols for this market
+    for (let i = 1; i <= symbolCount; i++) {
+      const basePrice = market === 'Crypto' ? (Math.random() * 50000 + 100) : 
+                        (Math.random() * 200 + 10);
       
-      if (symbol === 'BTC/USD') basePrice = 35000 + Math.random() * 2000;
-      else if (symbol === 'ETH/USD') basePrice = 1800 + Math.random() * 200;
-      else if (symbol.includes('USD')) basePrice = 1 + Math.random() * 10;
-      else if (symbol === 'AAPL') basePrice = 170 + Math.random() * 10;
-      else if (symbol === 'MSFT') basePrice = 330 + Math.random() * 20;
-      else if (symbol === 'GOOGL') basePrice = 130 + Math.random() * 10;
-      else if (symbol === 'AMZN') basePrice = 150 + Math.random() * 10;
-      else if (symbol === 'ASML') basePrice = 650 + Math.random() * 40;
-      else basePrice = 50 + Math.random() * 150;
-
-      // Random change percentage
-      const change24h = (Math.random() * 10) - 5; // -5% to +5%
+      const change = (Math.random() * 10 - 5) / 100; // -5% to +5%
+      const volume = Math.floor(Math.random() * 1000000) + 100000;
       
-      // High/low derived from price and change
-      const high24h = basePrice * (1 + Math.abs(change24h) / 100 * 1.5);
-      const low24h = basePrice * (1 - Math.abs(change24h) / 100 * 1.5);
-      
-      // Volume based on price
-      const volume = Math.floor(basePrice * 1000 * (0.5 + Math.random() * 2));
-
-      result.push({
-        market: marketGroup.market,
-        symbol,
-        name: symbol.replace('/', ' to '),
+      symbols.push({
+        name: market === 'Crypto' ? 
+              ['BTC', 'ETH', 'SOL', 'XRP', 'BNB'][i - 1] || `CRYPTO${i}` : 
+              `${market}-S${i}`,
         price: basePrice,
-        change24h,
-        high24h,
-        low24h,
-        volume,
-        timestamp: now,
-        high: high24h,
-        low: low24h
+        change: change,
+        volume: volume,
+        market: market,
+        timestamp: new Date().toISOString()
       });
-    });
-  });
-
-  return result;
+    }
+    
+    // Add symbols to data array
+    data.push(...symbols);
+  }
+  
+  return data;
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
-    });
+    return new Response('ok', { headers: corsHeaders })
   }
-
+  
   try {
-    console.log('Generating market data...');
-    const mockData = generateMockData();
+    // Parse the request body if present
+    let params = {}
+    if (req.body) {
+      const body = await req.json()
+      params = body
+    }
     
-    // Return data in expected format
-    const response = {
-      status: "success",
-      data: mockData,
-      timestamp: Date.now()
-    };
-    
-    console.log(`Generated ${mockData.length} market data points`);
+    // If this is a status check, just return ok
+    if (params.action === 'status_check') {
+      return new Response(
+        JSON.stringify({ status: 'ok', message: 'Market data collector is running' }),
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      )
+    }
 
+    // Generate market data
+    console.log('Generating market data...')
+    const marketData = generateMarketData()
+    console.log(`Market data generated: ${marketData.length} items`)
+    
+    // Return the market data
     return new Response(
-      JSON.stringify(response),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-        status: 200 
-      },
+      JSON.stringify(marketData),
+      { headers: { 'Content-Type': 'application/json', ...corsHeaders } }
     )
   } catch (error) {
-    console.error('Error in market-data-collector:', error);
+    console.error('Error in market-data-collector:', error)
     
-    // Return error in expected format
     return new Response(
       JSON.stringify({ 
-        status: "error", 
-        error: error.message,
-        timestamp: Date.now()
+        error: error.message || 'Unknown error',
+        timestamp: new Date().toISOString()
       }),
       { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-        status: 500 
-      },
+        status: 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders } 
+      }
     )
   }
 })

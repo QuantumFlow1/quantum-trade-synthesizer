@@ -37,11 +37,17 @@ export function useWebGLState() {
         }
         
         initialCheckDone.current = true;
+        
+        // Force trigger loading done after a short delay to allow component to fully initialize
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 500);
       } catch (e) {
         console.error("Error checking WebGL support:", e);
         setWebGLAvailable(false);
         setHasError(true);
         initialCheckDone.current = true;
+        setIsLoading(false);
       }
     };
     
@@ -127,7 +133,7 @@ export function useWebGLState() {
     setLoadingTime(0);
     startTimeRef.current = Date.now();
     
-    // Reset loading state after a minimal delay
+    // Reset loading state after a minimal delay to allow for component reinitialization
     setTimeout(() => setIsLoading(false), 100);
   }, []);
   
