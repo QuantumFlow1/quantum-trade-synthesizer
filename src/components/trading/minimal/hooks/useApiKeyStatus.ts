@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { toast } from "@/hooks/use-toast";
+import { showApiKeyDetectedToast } from "@/components/chat/api-keys/ApiKeyToastNotification";
 
 export interface ApiKeyStatus {
   exists: boolean;
@@ -49,13 +49,12 @@ export const useApiKeyStatus = (
       keyLength: actualApiKey ? actualApiKey.trim().length : 0
     });
     
-    toast({
-      title: "API Status Refreshed",
-      description: keyExists 
-        ? "Groq API key detected, length: " + (actualApiKey?.length || 0) + " characters" 
-        : "No Groq API key found in storage",
-      duration: 3000
-    });
+    // Use our custom toast component
+    if (keyExists) {
+      showApiKeyDetectedToast('Groq');
+    } else {
+      showApiKeyErrorToast('Groq', "No Groq API key found in storage");
+    }
   };
 
   useEffect(() => {

@@ -1,6 +1,5 @@
-
 import { ApiKeySettings, ModelInfo } from '../types/GrokSettings';
-import { toast } from '@/hooks/use-toast';
+import { showApiKeyValidationToast, showApiKeySavedToast, showApiKeyErrorToast, showAllApiKeysRefreshedToast } from './ApiKeyToastNotification';
 
 /**
  * Validates an API key based on its type
@@ -10,29 +9,17 @@ export const validateApiKey = (key: string, type: string): boolean => {
   
   // Check if key has proper format based on provider
   if (type === 'openai' && !key.startsWith('sk-')) {
-    toast({
-      title: "Invalid OpenAI API Key",
-      description: "OpenAI API keys should start with 'sk-'",
-      variant: "destructive"
-    });
+    showApiKeyValidationToast('OpenAI', false, "OpenAI API keys should start with 'sk-'");
     return false;
   }
   
   if (type === 'claude' && !key.startsWith('sk-ant-')) {
-    toast({
-      title: "Invalid Claude API Key",
-      description: "Claude API keys should start with 'sk-ant-'",
-      variant: "destructive"
-    });
+    showApiKeyValidationToast('Claude', false, "Claude API keys should start with 'sk-ant-'");
     return false;
   }
   
   if (type === 'gemini' && !key.startsWith('AIza')) {
-    toast({
-      title: "Invalid Gemini API Key",
-      description: "Gemini API keys typically start with 'AIza'",
-      variant: "destructive"
-    });
+    showApiKeyValidationToast('Gemini', false, "Gemini API keys typically start with 'AIza'");
     return false;
   }
   
@@ -41,11 +28,7 @@ export const validateApiKey = (key: string, type: string): boolean => {
     // Allow any reasonably long key for Groq (minimum 20 characters)
     // This is more permissive as Groq API key formats may vary
     if (key.trim().length < 20) {
-      toast({
-        title: "Invalid Groq API Key",
-        description: "The Groq API key you entered seems too short. It should be at least 20 characters.",
-        variant: "destructive"
-      });
+      showApiKeyValidationToast('Groq', false, "The Groq API key you entered seems too short. It should be at least 20 characters.");
       return false;
     }
   }
@@ -132,11 +115,7 @@ export const saveApiKeys = (
   
   // Show toast notification for Groq specifically
   if (updatedKeys.groqApiKey) {
-    toast({
-      title: "Groq API Key Saved",
-      description: "Your Groq API key has been saved and will be used for Stockbot and other AI-powered features.",
-      duration: 5000
-    });
+    showApiKeySavedToast('Groq', updatedKeys.groqApiKey.length);
   }
   
   return updatedKeys;
@@ -220,9 +199,5 @@ export const forceApiKeyReload = (): void => {
   }
   
   // Show toast
-  toast({
-    title: "API Keys Reloaded",
-    description: "All components have been notified to reload API keys.",
-    duration: 3000
-  });
+  showAllApiKeysRefreshedToast();
 };
