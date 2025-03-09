@@ -35,6 +35,7 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { apiKeyStatus, setApiKeyStatus, handleForceReload } = useApiKeyStatus(initialHasApiKey, reloadApiKeys);
   const [processingApiKey, setProcessingApiKey] = useState(false);
+  const [keyChangeCounter, setKeyChangeCounter] = useState(0);
 
   // Auto-scroll when new messages are added
   useEffect(() => {
@@ -48,22 +49,59 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
     console.log("hasApiKey changed in hook:", hasApiKey);
     if (hasApiKey !== apiKeyStatus.exists) {
       const actualApiKey = localStorage.getItem("groqApiKey");
+      console.log("Updating API key status:", { 
+        exists: !!actualApiKey, 
+        keyLength: actualApiKey ? actualApiKey.trim().length : 0 
+      });
+      
       setApiKeyStatus({
-        exists: hasApiKey,
+        exists: !!actualApiKey,
         keyLength: actualApiKey ? actualApiKey.trim().length : 0
       });
     }
   }, [hasApiKey, apiKeyStatus.exists, setApiKeyStatus]);
 
+  // Check localStorage directly for changes
+  useEffect(() => {
+    const checkStorage = () => {
+      const groqKey = localStorage.getItem("groqApiKey");
+      const exists = !!groqKey && groqKey.trim().length > 0;
+      
+      console.log("Direct localStorage check:", {
+        exists,
+        keyLength: groqKey ? groqKey.trim().length : 0
+      });
+      
+      if (exists !== apiKeyStatus.exists) {
+        setApiKeyStatus({
+          exists,
+          keyLength: groqKey ? groqKey.trim().length : 0
+        });
+        setKeyChangeCounter(prev => prev + 1);
+      }
+    };
+    
+    const interval = setInterval(checkStorage, 2000);
+    
+    return () => clearInterval(interval);
+  }, [setApiKeyStatus, apiKeyStatus.exists]);
+
   const handleDialogClose = () => {
+    console.log("Dialog closing, checking for API key");
     setIsKeyDialogOpen(false);
     
     if (processingApiKey) return;
     setProcessingApiKey(true);
     
     try {
+      // Force a direct check of localStorage
       const actualApiKey = localStorage.getItem("groqApiKey");
       const keyExists = !!actualApiKey && actualApiKey.trim().length > 0;
+      
+      console.log("API key after dialog close:", {
+        exists: keyExists,
+        length: actualApiKey ? actualApiKey.trim().length : 0
+      });
       
       setApiKeyStatus({
         exists: keyExists,
@@ -79,12 +117,10 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
       }
       
       // Force event triggering to ensure other components are notified
-      console.log("Dispatching events after dialog close");
       window.dispatchEvent(new Event('apikey-updated'));
       window.dispatchEvent(new Event('localStorage-changed'));
+      window.dispatchEvent(new Event('storage'));
       
-      // Let's not programmatically change simulation mode here, 
-      // but let the user decide using the toggle
     } catch (error) {
       console.error("Error handling dialog close:", error);
     } finally {
@@ -101,6 +137,7 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
     setTimeout(() => {
       console.log("API key saved successfully, refreshing state");
       handleForceReload();
+      setKeyChangeCounter(prev => prev + 1);
     }, 500);
   };
 

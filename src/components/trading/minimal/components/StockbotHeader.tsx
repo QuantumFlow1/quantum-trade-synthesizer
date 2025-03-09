@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { toast } from "@/hooks/use-toast";
 
 interface StockbotHeaderProps {
   isSimulationMode: boolean;
@@ -32,13 +33,20 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
 }) => {
   // Function to handle the simulation mode toggle directly
   const handleSimulationToggle = (checked: boolean) => {
-    // If there's no API key and user is trying to turn off simulation mode, show warning
+    console.log("Toggling simulation mode:", checked);
+    console.log("Current API key status:", { hasApiKey });
+    
+    // If there's no API key and user is trying to turn off simulation mode
     if (!hasApiKey && !checked) {
       console.log("Cannot turn off simulation mode without API key");
+      toast({
+        title: "API Key Required",
+        description: "You need to configure an API key to use real AI mode",
+        variant: "warning"
+      });
       return;
     }
     
-    console.log("Toggling simulation mode:", checked);
     setIsSimulationMode(checked);
   };
 

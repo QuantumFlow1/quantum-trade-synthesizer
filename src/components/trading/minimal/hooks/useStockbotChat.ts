@@ -5,6 +5,7 @@ import { ChatMessage, StockbotChatHook } from "./stockbot/types";
 import { generateStockbotResponse, generateErrorResponse } from "./stockbot/responseSimulator";
 import { forceApiKeyReload } from "@/components/chat/api-keys/apiKeyUtils";
 import { showApiKeyDetectedToast, showApiKeyErrorToast } from "@/components/chat/api-keys/ApiKeyToastNotification";
+import { toast } from "@/hooks/use-toast";
 
 // Storage key for Stockbot settings
 const STOCKBOT_SETTINGS_KEY = 'stockbot-settings';
@@ -63,6 +64,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   const isInitialized = useRef(false);
   const apiCheckCount = useRef(0);
   const manuallySetMode = useRef(false);
+  const apiKeyCheckTimer = useRef<NodeJS.Timeout | null>(null);
   
   // Persist simulation mode setting whenever it changes
   useEffect(() => {
@@ -71,6 +73,41 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
       console.log("Simulation mode changed to:", isSimulationMode);
     }
   }, [isSimulationMode]);
+  
+  // Direct localStorage check function
+  const checkApiKeyInStorage = useCallback(() => {
+    const key = localStorage.getItem('groqApiKey');
+    const keyExists = !!key && key.trim().length > 0;
+    
+    if (keyExists !== hasApiKey) {
+      console.log('useStockbotChat - Direct localStorage check found key change:', {
+        exists: keyExists,
+        length: key ? key.trim().length : 0,
+        previousState: hasApiKey
+      });
+      
+      setHasApiKey(keyExists);
+      
+      // Only auto-switch modes if we haven't been manually set
+      if (!manuallySetMode.current) {
+        if (keyExists && isSimulationMode) {
+          console.log('API key exists but still in simulation mode - switching to AI mode');
+          setIsSimulationMode(false);
+          saveStockbotSettings({ isSimulationMode: false });
+          showApiKeyDetectedToast('Groq');
+        } else if (!keyExists && !isSimulationMode) {
+          console.log('No API key found but not in simulation mode - switching to simulation mode');
+          setIsSimulationMode(true);
+          saveStockbotSettings({ isSimulationMode: true });
+          toast({
+            title: "Simulation Mode Activated",
+            description: "No API key found, switching to simulation mode",
+            variant: "warning"
+          });
+        }
+      }
+    }
+  }, [hasApiKey, isSimulationMode]);
   
   // Enhanced API key check with more thorough detection
   useEffect(() => {
@@ -90,25 +127,6 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
       
       // Update state based on key presence
       setHasApiKey(keyExists);
-      
-      // Only auto-switch modes if we haven't been manually set
-      if (!isInitialized.current) {
-        // If we have a key but we're still in simulation mode, turn it off
-        if (keyExists && isSimulationMode) {
-          console.log('API key exists but still in simulation mode - switching to AI mode');
-          setIsSimulationMode(false);
-          saveStockbotSettings({ isSimulationMode: false });
-          showApiKeyDetectedToast('Groq');
-        }
-        
-        // If we don't have a key but we're not in simulation mode, turn it on
-        if (!keyExists && !isSimulationMode) {
-          console.log('No API key found but not in simulation mode - switching to simulation mode');
-          setIsSimulationMode(true);
-          saveStockbotSettings({ isSimulationMode: true });
-          showApiKeyErrorToast('Groq', 'No API key found, switching to simulation mode');
-        }
-      }
     };
     
     // Initial check
@@ -116,37 +134,32 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     isInitialized.current = true;
     
     // Set up multiple event listeners to catch any possible key changes
-    window.addEventListener('apikey-updated', checkApiKey);
-    window.addEventListener('localStorage-changed', checkApiKey);
-    window.addEventListener('storage', checkApiKey);
+    const handleApiKeyUpdate = () => {
+      console.log("Key event listener triggered");
+      checkApiKey();
+    };
     
-    // Check frequently for API key changes during initialization
-    const initialCheckInterval = setInterval(checkApiKey, 1000);
-    setTimeout(() => clearInterval(initialCheckInterval), 5000);
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
+    window.addEventListener('storage', handleApiKeyUpdate);
     
-    // Also set up a broadcast channel listener if available
-    let broadcastChannel: BroadcastChannel | null = null;
-    try {
-      if (typeof BroadcastChannel !== 'undefined') {
-        broadcastChannel = new BroadcastChannel('api-key-updates');
-        broadcastChannel.onmessage = () => {
-          console.log('Received broadcast message - checking API keys');
-          checkApiKey();
-        };
-      }
-    } catch (e) {
-      console.error("Failed to setup broadcast channel:", e);
+    // Check frequently for API key changes
+    if (apiKeyCheckTimer.current) {
+      clearInterval(apiKeyCheckTimer.current);
     }
     
+    apiKeyCheckTimer.current = setInterval(checkApiKeyInStorage, 2000);
+    
     return () => {
-      window.removeEventListener('apikey-updated', checkApiKey);
-      window.removeEventListener('localStorage-changed', checkApiKey);
-      window.removeEventListener('storage', checkApiKey);
-      if (broadcastChannel) {
-        broadcastChannel.close();
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
+      window.removeEventListener('storage', handleApiKeyUpdate);
+      
+      if (apiKeyCheckTimer.current) {
+        clearInterval(apiKeyCheckTimer.current);
       }
     };
-  }, []);
+  }, [checkApiKeyInStorage]);
   
   // Add welcome message on component mount
   useEffect(() => {
@@ -167,6 +180,17 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   const reloadApiKeys = useCallback(() => {
     console.log('Forced reload of API keys requested');
     forceApiKeyReload();
+    
+    // Also do a direct check of localStorage
+    const key = localStorage.getItem('groqApiKey');
+    const keyExists = !!key && key.trim().length > 0;
+    
+    console.log('Manual reload check:', {
+      exists: keyExists,
+      length: key ? key.trim().length : 0
+    });
+    
+    setHasApiKey(keyExists);
   }, []);
   
   // Handle sending a message

@@ -98,9 +98,19 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       groq: groqKey ? 'present' : 'none'
     });
     
-    // Store the keys directly in localStorage
     try {
-      // Clear existing keys if empty string is provided
+      if (groqKey) {
+        localStorage.setItem('groqApiKey', groqKey.trim());
+        const savedKey = localStorage.getItem('groqApiKey');
+        console.log('Immediately after saving Groq key:', {
+          saved: !!savedKey,
+          length: savedKey ? savedKey.length : 0,
+          matches: savedKey === groqKey.trim()
+        });
+      } else {
+        localStorage.removeItem('groqApiKey');
+      }
+      
       if (openaiKey === '') localStorage.removeItem('openaiApiKey');
       else localStorage.setItem('openaiApiKey', openaiKey.trim());
       
@@ -113,10 +123,6 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       if (deepseekKey === '') localStorage.removeItem('deepseekApiKey');
       else localStorage.setItem('deepseekApiKey', deepseekKey.trim());
       
-      if (groqKey === '') localStorage.removeItem('groqApiKey');
-      else localStorage.setItem('groqApiKey', groqKey.trim());
-      
-      // Also try to save to Supabase if we have a Groq key (for demonstration/compatibility)
       if (groqKey) {
         try {
           const response = await fetch('/api/save-api-key', {
@@ -152,11 +158,10 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
         variant: "default"
       });
       
-      // First dispatch storage events
       window.dispatchEvent(new Event('localStorage-changed'));
       window.dispatchEvent(new Event('apikey-updated'));
+      window.dispatchEvent(new Event('storage'));
       
-      // Then call onClose with a delay to prevent state conflicts
       if (onClose) {
         setTimeout(() => {
           onClose();
