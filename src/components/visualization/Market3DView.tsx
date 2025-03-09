@@ -89,8 +89,8 @@ export const Market3DView = ({
     const color = priceChange > 0 ? '#22c55e' : priceChange < 0 ? '#ef4444' : '#3b82f6';
     
     return {
-      position: [index * 0.3 - data.length * 0.15, normalizedPrice, 0],
-      size: [0.1, 0.1, normalizedVolume * 5 + 0.1],
+      position: [index * 0.3 - data.length * 0.15, normalizedPrice, 0] as [number, number, number],
+      size: [0.1, 0.1, normalizedVolume * 5 + 0.1] as [number, number, number],
       color,
       price,
       volume: item.volume || 0,
@@ -133,7 +133,7 @@ export const Market3DView = ({
         {normalizeData.filter((_, i) => i % 5 === 0).map((item, index) => (
           <Text
             key={`text-${index}`}
-            position={[item.position[0], item.position[1] + 0.2, item.position[2]]}
+            position={item.position.map((val, idx) => idx === 1 ? val + 0.2 : val) as [number, number, number]}
             fontSize={0.1}
             color="white"
             anchorX="center"
