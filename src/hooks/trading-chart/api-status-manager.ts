@@ -1,6 +1,6 @@
 
 import { ApiStatus } from "./types";
-import { checkApiKeysAvailability } from "./api-key-manager";
+import { checkApiKeysAvailability, getSimpleApiAvailability } from "./api-key-manager";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,10 +25,10 @@ export const checkApiStatus = async (
       return;
     }
     
-    const hasApiKeys = await checkApiKeysAvailability();
-    setApiKeysAvailable(hasApiKeys);
+    const apiKeyResult = await checkApiKeysAvailability();
+    setApiKeysAvailable(apiKeyResult.available);
     
-    if (!hasApiKeys) {
+    if (!apiKeyResult.available) {
       console.log("No API keys available, setting API as unavailable");
       setApiStatus('unavailable');
       setLastAPICheckTime(new Date());
@@ -90,7 +90,6 @@ export const checkApiStatus = async (
 export const retryConnection = async (
   setApiStatus: (status: ApiStatus) => void,
   setLastAPICheckTime: (time: Date) => void,
-  checkApiKeysAvailability: () => Promise<boolean>,
   setApiKeysAvailable: (available: boolean) => void,
   fetchMarketData: () => Promise<any>
 ): Promise<void> => {
@@ -102,10 +101,10 @@ export const retryConnection = async (
   try {
     setApiStatus('checking');
     
-    const hasApiKeys = await checkApiKeysAvailability();
-    setApiKeysAvailable(hasApiKeys);
+    const apiKeyResult = await checkApiKeysAvailability();
+    setApiKeysAvailable(apiKeyResult.available);
     
-    if (!hasApiKeys) {
+    if (!apiKeyResult.available) {
       setApiStatus('unavailable');
       toast({
         title: "API Keys Missing",
