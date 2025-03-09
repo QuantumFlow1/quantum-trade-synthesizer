@@ -1,114 +1,128 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BrainCircuit, Bot, MessageSquare, Zap } from "lucide-react";
-import { GrokChat } from "@/components/llm-extensions/GrokChat";
-import { DeepSeekChat } from "@/components/llm-extensions/DeepSeekChat";
-import { OpenAIChat } from "@/components/llm-extensions/OpenAIChat";
-import { ClaudeChat } from "@/components/llm-extensions/ClaudeChat";
-import { useEffect, useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StockbotAccess } from "@/components/trading/minimal/StockbotAccess";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AIAdvicePanel } from "@/components/dashboard/AIAdvicePanel";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle, ArrowRight, Bot, Brain, Sparkles } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 interface AIToolsPageProps {
-  apiStatus?: 'available' | 'unavailable' | 'checking';
+  apiStatus?: 'checking' | 'available' | 'unavailable';
   showApiAccess?: boolean;
+  openTradingAgents?: () => void;
 }
 
-export function AIToolsPage({ apiStatus, showApiAccess }: AIToolsPageProps) {
-  const [activeTab, setActiveTab] = useState("stockbot");
-
-  useEffect(() => {
-    // Check if we have a tab preference in localStorage
-    const savedTab = localStorage.getItem("aiToolsActiveTab");
-    if (savedTab) {
-      setActiveTab(savedTab);
-    }
-  }, []);
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    localStorage.setItem("aiToolsActiveTab", value);
-  };
-
+export const AIToolsPage = ({ 
+  apiStatus = 'checking', 
+  showApiAccess = false,
+  openTradingAgents
+}: AIToolsPageProps) => {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">AI Tools</h1>
+      <div className="flex flex-col gap-2">
+        <h2 className="text-3xl font-bold">AI Tools</h2>
+        <p className="text-muted-foreground">
+          Advanced AI capabilities to enhance your trading experience
+        </p>
+      </div>
       
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid grid-cols-5 mb-4">
-          <TabsTrigger value="stockbot" className="flex items-center">
-            <Bot className="w-4 h-4 mr-2" />
-            <span>Stockbot</span>
-          </TabsTrigger>
-          <TabsTrigger value="openai" className="flex items-center">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            <span>OpenAI</span>
-          </TabsTrigger>
-          <TabsTrigger value="claude" className="flex items-center">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            <span>Claude</span>
-          </TabsTrigger>
-          <TabsTrigger value="deepseek" className="flex items-center">
-            <BrainCircuit className="w-4 h-4 mr-2" />
-            <span>DeepSeek</span>
-          </TabsTrigger>
-          <TabsTrigger value="grok" className="flex items-center">
-            <Zap className="w-4 h-4 mr-2" />
-            <span>Grok</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="stockbot" className="space-y-4">
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Bot className="w-5 h-5 mr-2 text-blue-500" />
-                Stockbot Trading Assistant
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="mb-6">
-                Stockbot is your AI-powered trading assistant that provides market analysis and 
-                personalized trading recommendations based on real-time market data, technical indicators,
-                and sentiment analysis.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <StockbotAccess />
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Stockbot Features</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="list-disc list-inside space-y-2 text-sm">
-                      <li>Multiple AI agents with different specializations</li>
-                      <li>Groq LLM-powered market analysis</li>
-                      <li>Collaborative trading recommendations</li>
-                      <li>Risk assessment and portfolio management</li>
-                      <li>Simulated or real market data analysis</li>
-                    </ul>
-                  </CardContent>
-                </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Sparkles className="h-5 w-5 mr-2 text-purple-500" />
+              AI Trading Advice
+              {apiStatus === 'available' && (
+                <Badge className="ml-2 bg-green-100 text-green-700" variant="outline">
+                  Available
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Get personalized trading insights and advice powered by advanced language models
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AIAdvicePanel apiStatus={apiStatus} />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Bot className="h-5 w-5 mr-2 text-blue-500" />
+              Trading Agents
+              <Badge className="ml-2 bg-blue-100 text-blue-800" variant="outline">
+                Beta
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              AI-powered agents that can analyze markets and execute trades on your behalf
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="min-h-[200px] flex items-center justify-center">
+            {apiStatus === 'available' ? (
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 mx-auto bg-blue-50 rounded-full flex items-center justify-center">
+                  <Bot className="h-8 w-8 text-blue-500" />
+                </div>
+                <h3 className="text-xl font-medium">Trading Agents Ready</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Our AI trading agents can analyze market conditions, identify opportunities, 
+                  and help you make better trading decisions.
+                </p>
+                <Button onClick={openTradingAgents} className="mt-2">
+                  Launch Trading Agents
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="openai">
-          <OpenAIChat />
-        </TabsContent>
-
-        <TabsContent value="claude">
-          <ClaudeChat />
-        </TabsContent>
-
-        <TabsContent value="deepseek">
-          <DeepSeekChat />
-        </TabsContent>
-
-        <TabsContent value="grok">
-          <GrokChat />
-        </TabsContent>
-      </Tabs>
+            ) : apiStatus === 'unavailable' ? (
+              <Alert className="border-amber-200 bg-amber-50">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertTitle>API Not Available</AlertTitle>
+                <AlertDescription>
+                  Trading agents require API connection. Check your API keys in settings.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="flex justify-center">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Brain className="h-5 w-5 mr-2 text-emerald-500" />
+              Market Analysis
+              <Badge className="ml-2 bg-slate-100 text-slate-800" variant="outline">
+                Coming Soon
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Deep AI-powered analysis of market trends and patterns
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="min-h-[200px] flex items-center justify-center text-center">
+            <div className="space-y-2">
+              <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
+                <Brain className="h-8 w-8 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-medium text-slate-700">Coming Soon</h3>
+              <p className="text-sm text-slate-500 max-w-md">
+                Advanced AI market analysis is currently in development and will be available soon.
+              </p>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button variant="outline" disabled className="w-full opacity-70">
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Coming Soon
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   );
-}
+};

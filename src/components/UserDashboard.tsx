@@ -84,6 +84,23 @@ const UserDashboard = () => {
     navigate(`/dashboard/${page === "overview" ? "" : page}`);
   };
 
+  // Helper function to check if a path is active
+  const isActivePath = (path: string) => {
+    return activePage === path;
+  };
+
+  // Open trading agents tab from different parts of the UI
+  const openTradingAgentsTab = () => {
+    // First navigate to trading page if not already there
+    if (!isActivePath('trading')) {
+      setActivePage('trading');
+      navigate('/dashboard/trading');
+    }
+    
+    // Set localStorage flag to open the Trading Agents tab
+    localStorage.setItem('openTradingAgentsTab', 'true');
+  };
+
   // Render the correct page based on activePage state
   const renderActivePage = () => {
     switch (activePage) {
@@ -105,7 +122,11 @@ const UserDashboard = () => {
       case "risk":
         return <RiskPage />;
       case "ai":
-        return <AIToolsPage apiStatus={apiStatus} showApiAccess={visibleWidgets.apiAccess} />;
+        return <AIToolsPage 
+          apiStatus={apiStatus} 
+          showApiAccess={visibleWidgets.apiAccess} 
+          openTradingAgents={openTradingAgentsTab}
+        />;
       case "gamification":
         return <GamificationPage />;
       case "visualization":
