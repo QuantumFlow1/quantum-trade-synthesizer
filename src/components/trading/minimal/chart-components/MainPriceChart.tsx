@@ -23,6 +23,10 @@ interface MainPriceChartProps {
 const renderCustomLegend = (props: any) => {
   const { payload } = props;
   
+  if (!payload || payload.length === 0) {
+    return null;
+  }
+  
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-1 pb-1 text-xs">
       {payload.map((entry: any, index: number) => {
@@ -46,6 +50,15 @@ const renderCustomLegend = (props: any) => {
 };
 
 export const MainPriceChart = ({ data, showVolume, showIndicators }: MainPriceChartProps) => {
+  // Check if we have valid data
+  if (!data || data.length === 0) {
+    return (
+      <div className="h-[400px] bg-card border rounded-lg p-4 flex items-center justify-center">
+        <p className="text-gray-500">No chart data available</p>
+      </div>
+    );
+  }
+  
   // Calculate min and max values for better axis scaling
   const minPrice = Math.min(...data.map(d => d.low)) * 0.99;
   const maxPrice = Math.max(...data.map(d => d.high)) * 1.01;

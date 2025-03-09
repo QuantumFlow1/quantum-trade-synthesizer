@@ -1,5 +1,5 @@
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useStockbotChat } from "./hooks/useStockbotChat";
@@ -37,25 +37,25 @@ export const StockbotChat = () => {
         clearChat={clearChat}
       />
 
-      {!hasApiKey && !isSimulationMode && (
-        <Alert variant="warning" className="m-3">
-          <AlertTitle>API Key Required</AlertTitle>
-          <AlertDescription>
-            Please set your Groq API key in the settings to enable full Stockbot functionality.
-          </AlertDescription>
-        </Alert>
-      )}
+      <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">
+        {!hasApiKey && !isSimulationMode && (
+          <Alert variant="warning" className="m-3">
+            <AlertTitle>API Key Required</AlertTitle>
+            <AlertDescription>
+              Please set your Groq API key in the settings to enable full Stockbot functionality.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {isSimulationMode && (
-        <Alert variant="warning" className="m-3">
-          <AlertTitle>Simulation Mode Active</AlertTitle>
-          <AlertDescription>
-            Stockbot is using simulated responses instead of real AI analysis.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <CardContent className="flex-grow p-0 overflow-hidden">
+        {isSimulationMode && (
+          <Alert variant="warning" className="m-3">
+            <AlertTitle>Simulation Mode Active</AlertTitle>
+            <AlertDescription>
+              Stockbot is using simulated responses instead of real AI analysis.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <StockbotMessages 
           messages={messages}
           isLoading={isLoading}
@@ -72,6 +72,3 @@ export const StockbotChat = () => {
     </Card>
   );
 };
-
-// Need to import useEffect separately
-import { useEffect } from "react";

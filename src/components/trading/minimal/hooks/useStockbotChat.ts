@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 export interface ChatMessage {
   id: string;
@@ -85,6 +85,8 @@ export function useStockbotChat() {
         content: inputMessage
       });
 
+      console.log("Processing message in", isSimulationMode ? "simulation" : "live", "mode");
+
       if (isSimulationMode) {
         // Simulate response in demo mode
         await simulateResponse(inputMessage);
@@ -126,7 +128,7 @@ export function useStockbotChat() {
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `Error: ${error instanceof Error ? error.message : 'Failed to get response from Stockbot'}`,
+        content: `Error: ${error instanceof Error ? error.message : "Failed to get response from Stockbot"}`,
         timestamp: new Date()
       };
       
@@ -145,6 +147,8 @@ export function useStockbotChat() {
 
   // Simulate a response (for demo/testing)
   const simulateResponse = async (userMessage: string) => {
+    console.log("Simulating response for:", userMessage);
+    
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
     
@@ -165,6 +169,8 @@ export function useStockbotChat() {
     } else {
       response = "I've analyzed the current market conditions and noticed some interesting patterns. Overall market sentiment is neutral with a slight bearish bias. Technical indicators show potential resistance levels approaching. Would you like specific analysis on a particular asset or trading strategy?";
     }
+    
+    console.log("Generated simulated response:", response.substring(0, 50) + "...");
     
     const assistantMessage: ChatMessage = {
       id: Date.now().toString(),
