@@ -31,7 +31,7 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
   
   // Check if Groq API key exists in localStorage
   useEffect(() => {
-    const storedGroqKey = localStorage.getItem("groq_api_key");
+    const storedGroqKey = localStorage.getItem("groqApiKey");
     setHasApiKey(!!storedGroqKey);
     
     // Simulate API status check

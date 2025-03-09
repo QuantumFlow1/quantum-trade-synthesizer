@@ -21,6 +21,8 @@ const AdminPanel = () => {
   }
 
   const handleDashboardClick = () => {
+    // Set flag in localStorage to indicate we're coming from admin page
+    localStorage.setItem('fromAdminPage', 'true');
     setShowUserDashboard(true);
     setShowAccountManagement(false);
   };

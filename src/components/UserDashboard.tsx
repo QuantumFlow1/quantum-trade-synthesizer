@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "./auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -8,6 +8,8 @@ import { DashboardLayout } from "./dashboard/DashboardLayout";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { DashboardNavigation } from "./dashboard/DashboardNavigation";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 
 // Import all page components
 import { OverviewPage } from "./dashboard/pages/OverviewPage";
@@ -38,6 +40,13 @@ const UserDashboard = () => {
   const [activePage, setActivePage] = useState<string>(getActivePageFromPath());
   const [showVirtualEnvironment, setShowVirtualEnvironment] = useState<boolean>(false);
   const [openAgentsTab, setOpenAgentsTab] = useState<boolean>(false);
+  const [showBackButton, setShowBackButton] = useState<boolean>(false);
+
+  // Check if we came from admin page
+  useEffect(() => {
+    const fromAdmin = localStorage.getItem('fromAdminPage');
+    setShowBackButton(!!fromAdmin);
+  }, []);
 
   // Synchronize with localStorage for persistent tab selection
   useEffect(() => {
@@ -93,6 +102,12 @@ const UserDashboard = () => {
   const handlePageChange = (page: string) => {
     setActivePage(page);
     navigate(`/dashboard/${page === "overview" ? "" : page}`);
+  };
+
+  // Handle back to admin
+  const handleBackToAdmin = () => {
+    localStorage.removeItem('fromAdminPage');
+    navigate('/admin');
   };
 
   // Helper function to check if a path is active
@@ -164,6 +179,20 @@ const UserDashboard = () => {
 
   return (
     <DashboardLayout>
+      {showBackButton && (
+        <div className="px-4 py-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBackToAdmin}
+            className="mb-2"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Admin
+          </Button>
+        </div>
+      )}
+      
       <DashboardHeader 
         userEmail={userProfile?.email} 
         isLovTrader={isLovTrader}
