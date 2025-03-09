@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, LineChart, Brain } from 'lucide-react';
@@ -16,7 +17,7 @@ export const AnalyticsPage = () => {
     price: 62549.23,
     change24h: 2.34,
     marketCap: 1.21,
-    volume: 32500000000, // Fixed to use volume instead of volume24h
+    volume: 32500000000,
     timestamp: Date.now(),
     high: 63100.50,
     low: 61800.75,
