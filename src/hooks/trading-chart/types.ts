@@ -28,6 +28,23 @@ export interface PriceDataPoint {
 }
 
 /**
+ * Trading data point with additional technical indicators
+ */
+export interface TradingDataPoint extends PriceDataPoint {
+  name: string;
+  sma: number;
+  ema: number;
+  rsi: number;
+  macd: number;
+  signal: number;
+  histogram: number;
+  bollingerUpper: number;
+  bollingerMiddle: number;
+  bollingerLower: number;
+  atr: number;
+}
+
+/**
  * Market data with additional sentiment information
  */
 export interface EnhancedMarketData extends PriceDataPoint {
@@ -67,6 +84,7 @@ export interface MarketDataValidationResult {
   valid: boolean;
   message?: string;
   data?: PriceDataPoint[];
+  error?: string;
 }
 
 /**
@@ -78,4 +96,11 @@ export interface TradingChartState {
   data: PriceDataPoint[];
   loading: boolean;
   error: string | null;
+  apiStatus?: ApiStatus;
+  lastAPICheckTime?: number;
+  apiKeysAvailable?: boolean;
+  rawMarketData?: any[];
+  isLoading?: boolean;
+  errorCount?: number;
+  lastFetchTime?: number;
 }
