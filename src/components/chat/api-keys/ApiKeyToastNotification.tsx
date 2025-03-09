@@ -1,184 +1,156 @@
 
-import React from "react";
-import { useToast } from "@/hooks/use-toast";
-import { AlertCircle, CheckCircle, Info, Key } from "lucide-react";
-import { ToastAction } from "@/components/ui/toast";
-
-interface ApiKeyToastProps {
-  /**
-   * The type of notification to display
-   */
-  type: "success" | "error" | "info" | "warning";
-  
-  /**
-   * The name of the API provider (e.g., "Groq", "OpenAI")
-   */
-  provider: string;
-  
-  /**
-   * The main message to display
-   */
-  message: string;
-  
-  /**
-   * Optional additional description
-   */
-  description?: string;
-  
-  /**
-   * Optional duration in milliseconds
-   */
-  duration?: number;
-  
-  /**
-   * Optional action button configuration
-   */
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
-}
+import React from 'react';
+import { toast } from '@/hooks/use-toast';
+import { Check, AlertTriangle, Info, X } from 'lucide-react';
 
 /**
- * A component that displays standardized toast notifications for API key operations
+ * Shows a standardized toast notification for API key success
  */
-export const apiKeyToast = ({
-  type,
-  provider,
-  message,
-  description,
-  duration = 4000,
-  action
-}: ApiKeyToastProps) => {
-  const { toast } = useToast();
-  
-  // Return icon based on type
-  const getIcon = () => {
-    switch (type) {
-      case "success": return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case "error": return <AlertCircle className="h-5 w-5 text-red-500" />;
-      case "warning": return <AlertCircle className="h-5 w-5 text-amber-500" />;
-      case "info": 
-      default: return <Info className="h-5 w-5 text-blue-500" />;
-    }
-  };
-
-  const getVariant = () => {
-    switch (type) {
-      case "success": return "success";
-      case "error": return "destructive";
-      case "warning": return "warning";
-      default: return "default";
-    }
-  };
-
-  return toast({
-    title: (
-      <div className="flex items-center gap-2">
-        {getIcon()}
-        <span>{provider} API Key - {message}</span>
-      </div>
-    ),
-    description: description,
-    variant: getVariant(),
-    duration: duration,
-    action: action ? (
-      <ToastAction altText={action.label} onClick={action.onClick}>
-        {action.label}
-      </ToastAction>
-    ) : undefined,
-  });
-};
-
-/**
- * Convenience functions for common API key toast notifications
- */
-
-export const showApiKeySavedToast = (provider: string, keyLength?: number) => {
-  return apiKeyToast({
-    type: "success",
-    provider,
-    message: "Saved Successfully",
-    description: keyLength 
-      ? `Your ${provider} API key (${keyLength} characters) has been saved.` 
-      : `Your ${provider} API key has been saved.`,
-  });
-};
-
-export const showApiKeyErrorToast = (provider: string, errorMessage?: string) => {
-  return apiKeyToast({
-    type: "error",
-    provider,
-    message: "Error",
-    description: errorMessage || `There was an issue with your ${provider} API key.`,
+export const showApiKeyDetectedToast = (serviceName: string) => {
+  toast({
+    title: `${serviceName} API Key Detected`,
+    description: "API key has been configured successfully",
+    variant: "default",
     duration: 5000,
   });
 };
 
-export const showApiKeyDetectedToast = (provider: string) => {
-  return apiKeyToast({
-    type: "success",
-    provider,
-    message: "Detected",
-    description: `${provider} API key has been configured successfully.`,
+/**
+ * Shows a standardized toast notification for API key errors
+ */
+export const showApiKeyErrorToast = (serviceName: string, errorMessage: string) => {
+  toast({
+    title: `${serviceName} API Key Error`,
+    description: errorMessage || "Failed to configure API key",
+    variant: "destructive",
+    duration: 8000,
   });
 };
 
-export const showApiKeyRemovedToast = (provider: string) => {
-  return apiKeyToast({
-    type: "info",
-    provider,
-    message: "Removed",
-    description: `Your ${provider} API key has been removed.`,
+/**
+ * Shows a standardized toast notification for API key info
+ */
+export const showApiKeyInfoToast = (message: string) => {
+  toast({
+    title: "API Key Info",
+    description: message,
+    variant: "default",
+    duration: 5000,
   });
 };
 
-export const showApiKeyValidationToast = (provider: string, isValid: boolean, message?: string) => {
-  if (isValid) {
-    return apiKeyToast({
-      type: "success",
-      provider,
-      message: "Validation Successful",
-      description: message || `Your ${provider} API key is valid.`,
-    });
-  } else {
-    return apiKeyToast({
-      type: "error",
-      provider,
-      message: "Validation Failed",
-      description: message || `Your ${provider} API key is invalid.`,
-    });
-  }
+/**
+ * Shows a standardized toast notification for API key warnings
+ */
+export const showApiKeyWarningToast = (message: string) => {
+  toast({
+    title: "API Key Warning",
+    description: message,
+    variant: "default",
+    duration: 6000,
+  });
 };
 
+/**
+ * Shows a toast notification for a successful API key save
+ */
+export const showApiKeySavedToast = (serviceName: string) => {
+  toast({
+    title: `${serviceName} API Key Saved`,
+    description: "API key has been saved successfully",
+    variant: "default",
+    duration: 5000,
+  });
+};
+
+/**
+ * Shows a toast notification for when API keys are removed
+ */
+export const showApiKeyRemovedToast = (serviceName: string) => {
+  toast({
+    title: `${serviceName} API Key Removed`,
+    description: "API key has been removed",
+    variant: "default",
+    duration: 5000,
+  });
+};
+
+/**
+ * Shows a toast notification for when all API keys are refreshed
+ */
 export const showAllApiKeysRefreshedToast = () => {
-  return apiKeyToast({
-    type: "info",
-    provider: "All",
-    message: "Reloaded",
-    description: "All components have been notified to reload API keys.",
-    duration: 3000,
+  toast({
+    title: "API Keys Refreshed",
+    description: "All API keys have been refreshed",
+    variant: "default",
+    duration: 5000,
   });
 };
 
-export const showApiKeyReloadToast = (keysStatus: { [key: string]: boolean }) => {
-  const keysFound = Object.entries(keysStatus).filter(([_, exists]) => exists).map(([key]) => key);
-  
-  if (keysFound.length > 0) {
-    return apiKeyToast({
-      type: "success",
-      provider: "API Keys",
-      message: "Refreshed",
-      description: `Found keys for: ${keysFound.join(', ')}`,
-      duration: 3000,
-    });
-  } else {
-    return apiKeyToast({
-      type: "info",
-      provider: "API Keys",
-      message: "Refreshed",
-      description: "No API keys were found.",
-      duration: 3000,
-    });
-  }
+/**
+ * Component version of the API key success notification
+ */
+export const ApiKeySuccessToast = ({ serviceName }: { serviceName: string }) => {
+  return (
+    <div className="flex items-start">
+      <div className="mr-2">
+        <Check className="h-5 w-5 text-green-500" />
+      </div>
+      <div>
+        <h3 className="font-medium">{serviceName} API Key Configured</h3>
+        <p className="text-sm text-gray-500">API key has been set up successfully</p>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Component version of the API key error notification
+ */
+export const ApiKeyErrorToast = ({ serviceName, errorMessage }: { serviceName: string, errorMessage?: string }) => {
+  return (
+    <div className="flex items-start">
+      <div className="mr-2">
+        <X className="h-5 w-5 text-red-500" />
+      </div>
+      <div>
+        <h3 className="font-medium">{serviceName} API Key Error</h3>
+        <p className="text-sm text-gray-500">{errorMessage || "Failed to configure API key"}</p>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Component version of the API key info notification
+ */
+export const ApiKeyInfoToast = ({ message }: { message: string }) => {
+  return (
+    <div className="flex items-start">
+      <div className="mr-2">
+        <Info className="h-5 w-5 text-blue-500" />
+      </div>
+      <div>
+        <h3 className="font-medium">API Key Info</h3>
+        <p className="text-sm text-gray-500">{message}</p>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Component version of the API key warning notification
+ */
+export const ApiKeyWarningToast = ({ message }: { message: string }) => {
+  return (
+    <div className="flex items-start">
+      <div className="mr-2">
+        <AlertTriangle className="h-5 w-5 text-amber-500" />
+      </div>
+      <div>
+        <h3 className="font-medium">API Key Warning</h3>
+        <p className="text-sm text-gray-500">{message}</p>
+      </div>
+    </div>
+  );
 };

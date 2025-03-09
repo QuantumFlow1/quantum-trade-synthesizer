@@ -23,3 +23,8 @@ export interface StockbotChatHook {
   setIsKeyDialogOpen: (isOpen: boolean) => void;
   reloadApiKeys: () => void;
 }
+
+export interface StockbotApiResponse {
+  response: string;
+  error?: string;
+}

@@ -9,12 +9,12 @@ interface ClaudeMessageProps {
 
 export const ClaudeMessage: React.FC<ClaudeMessageProps> = ({ message }) => {
   return (
-    <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
       <div 
         className={`rounded-lg px-4 py-3 max-w-[85%] chat-message ${
           message.role === 'user' 
-            ? 'bg-green-600 text-white' 
-            : 'bg-gray-100 border border-gray-200'
+            ? 'user-message text-white' 
+            : 'assistant-message'
         }`}
       >
         <div className="flex items-start gap-2">
@@ -27,10 +27,10 @@ export const ClaudeMessage: React.FC<ClaudeMessageProps> = ({ message }) => {
           </div>
           
           <div className="flex-1">
-            <div className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+            <div className="whitespace-pre-wrap break-words text-sm leading-relaxed message-text">
               {message.content}
             </div>
-            <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-green-100' : 'text-gray-500'}`}>
+            <div className={`text-xs mt-1 message-time ${message.role === 'user' ? 'text-green-100' : 'text-gray-500'}`}>
               {message.timestamp.toLocaleTimeString()}
             </div>
           </div>

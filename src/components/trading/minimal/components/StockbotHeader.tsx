@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Settings, RefreshCw, Key, Database } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,12 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
   isUsingRealData = false,
   toggleRealData = () => {}
 }) => {
+  // Function to handle the simulation mode toggle directly
+  const handleSimulationToggle = (checked: boolean) => {
+    console.log("Toggling simulation mode:", checked);
+    setIsSimulationMode(checked);
+  };
+
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b">
       <div className="flex items-center space-x-2">
@@ -44,12 +51,13 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
       </div>
 
       <div className="flex items-center space-x-2">
-        <div className="flex items-center mr-2">
+        {/* Move the simulation toggle outside the dropdown for direct access */}
+        <div className="flex items-center mr-2 border rounded px-2 py-1 bg-gray-50">
           <span className="text-xs mr-2">Simulation</span>
           <Switch
             checked={isSimulationMode}
-            onCheckedChange={setIsSimulationMode}
-            className="h-4 w-7"
+            onCheckedChange={handleSimulationToggle}
+            aria-label="Toggle simulation mode"
           />
         </div>
         

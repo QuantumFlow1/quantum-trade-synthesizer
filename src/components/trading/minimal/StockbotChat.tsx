@@ -1,5 +1,5 @@
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStockbotChat } from "./hooks/useStockbotChat";
 import { StockbotHeader } from "./components/StockbotHeader";
@@ -35,6 +35,7 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { apiKeyStatus, setApiKeyStatus, handleForceReload } = useApiKeyStatus(initialHasApiKey, reloadApiKeys);
 
+  // Auto-scroll when new messages are added
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
