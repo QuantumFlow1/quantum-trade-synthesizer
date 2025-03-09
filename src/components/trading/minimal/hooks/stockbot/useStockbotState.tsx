@@ -91,7 +91,7 @@ export const useStockbotState = () => {
       const hasKey = checkApiKey();
       setIsSimulationMode(!hasKey);
       
-      // Listen for API key updates
+      // Listen for API key updates - both from this tab and from other tabs
       const handleApiKeyUpdate = () => {
         const keyExists = checkApiKey();
         if (keyExists && isSimulationMode) {
@@ -117,9 +117,11 @@ export const useStockbotState = () => {
         }
       };
       
+      // Listen for various events that might indicate API key changes
       window.addEventListener('apikey-updated', handleApiKeyUpdate);
       window.addEventListener('localStorage-changed', handleApiKeyUpdate);
       window.addEventListener('storage', handleApiKeyUpdate);
+      window.addEventListener('api-key-changed', handleApiKeyUpdate);
       
       // Set up interval to periodically check for API key updates and fetch data
       const intervalId = setInterval(() => {
@@ -134,6 +136,7 @@ export const useStockbotState = () => {
         window.removeEventListener('apikey-updated', handleApiKeyUpdate);
         window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
         window.removeEventListener('storage', handleApiKeyUpdate);
+        window.removeEventListener('api-key-changed', handleApiKeyUpdate);
         clearInterval(intervalId);
       };
     } catch (error) {

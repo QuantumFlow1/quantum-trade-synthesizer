@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -25,7 +24,6 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
   
   const groqInputRef = useRef<HTMLInputElement>(null);
   
-  // Load API keys from props when they change
   useEffect(() => {
     if (apiKeys) {
       setOpenaiKey(apiKeys.openaiApiKey || '');
@@ -36,7 +34,6 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     }
   }, [apiKeys]);
   
-  // Load API keys from localStorage when dialog opens
   useEffect(() => {
     const openKey = localStorage.getItem('openaiApiKey') || '';
     const claudeKey = localStorage.getItem('claudeApiKey') || '';
@@ -50,7 +47,6 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     if (deepKey) setDeepseekKey(deepKey);
     if (groqKey) setGroqKey(groqKey);
     
-    // If initialTab is 'groq', focus on the Groq field
     if (initialTab === 'groq') {
       setTimeout(() => {
         if (groqInputRef.current) {
@@ -61,20 +57,18 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     }
   }, [initialTab]);
 
-  // Handle pasting for the Groq API key field
   const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string>>) => {
     try {
       const text = e.clipboardData.getData('text/plain');
       console.log('Paste detected, content length:', text.length);
       setter(text);
-      e.preventDefault(); // Prevent default to manually handle the paste
+      e.preventDefault();
     } catch (error) {
       console.error('Error pasting text:', error);
     }
   };
   
   const handleSave = () => {
-    // Validate keys
     if (!validateApiKey(openaiKey, 'openai') ||
         !validateApiKey(claudeKey, 'claude') ||
         !validateApiKey(geminiKey, 'gemini') ||
@@ -82,22 +76,18 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       return;
     }
     
-    // Log the key being saved for debugging
     console.log('Saving Groq API key:', groqKey ? `${groqKey.substring(0, 4)}...${groqKey.substring(groqKey.length - 4)}` : 'none', 'Length:', groqKey.length);
     
-    // Save keys to localStorage
     if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
     if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
     if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
     if (deepseekKey.trim()) localStorage.setItem('deepseekApiKey', deepseekKey.trim());
     if (groqKey.trim()) localStorage.setItem('groqApiKey', groqKey.trim());
     
-    // Call onSave callback if provided
     if (onSave) {
       onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
     }
     
-    // Show saved animation
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
     
@@ -107,22 +97,36 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       variant: "default"
     });
     
-    // Trigger multiple events to ensure all components are notified
+    try {
+      const broadcastChannel = new BroadcastChannel('api-key-updates');
+      broadcastChannel.postMessage({ 
+        hasApiKeys: true, 
+        timestamp: Date.now(),
+        updatedKeys: {
+          openai: !!openaiKey.trim(),
+          claude: !!claudeKey.trim(),
+          gemini: !!geminiKey.trim(),
+          deepseek: !!deepseekKey.trim(),
+          groq: !!groqKey.trim()
+        }
+      });
+      broadcastChannel.close();
+    } catch (e) {
+      console.error("Failed to broadcast API key update:", e);
+    }
+    
     console.log("Dispatching events after saving API keys");
     window.dispatchEvent(new Event('apikey-updated'));
     window.dispatchEvent(new Event('localStorage-changed'));
     window.dispatchEvent(new Event('storage'));
     
-    // Force a window storage event which some components might be listening for
     try {
-      // This is a hack to trigger the storage event
       localStorage.setItem('_dummy_key_', Date.now().toString());
       localStorage.removeItem('_dummy_key_');
     } catch (e) {
       console.error("Failed to trigger storage event:", e);
     }
     
-    // Close dialog if onClose is provided
     if (onClose) {
       setTimeout(() => onClose(), 1000);
     }

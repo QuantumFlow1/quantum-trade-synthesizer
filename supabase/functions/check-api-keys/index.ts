@@ -37,13 +37,26 @@ serve(async (req) => {
         case 'groq':
           secretKey = Deno.env.get('GROQ_API_KEY');
           break;
-        default:
+        case 'deepseek':
+          secretKey = Deno.env.get('DEEPSEEK_API_KEY');
+          break;
+        case 'any':
           // If service not specified, check if any API key is available
           secretKey = Deno.env.get('OPENAI_API_KEY') || 
                       Deno.env.get('CLAUDE_API_KEY') || 
                       Deno.env.get('GEMINI_API_KEY') ||
                       Deno.env.get('GROK3_API_KEY') ||
-                      Deno.env.get('GROQ_API_KEY');
+                      Deno.env.get('GROQ_API_KEY') ||
+                      Deno.env.get('DEEPSEEK_API_KEY');
+          break;
+        default:
+          // Check if any API key is available
+          secretKey = Deno.env.get('OPENAI_API_KEY') || 
+                      Deno.env.get('CLAUDE_API_KEY') || 
+                      Deno.env.get('GEMINI_API_KEY') ||
+                      Deno.env.get('GROK3_API_KEY') ||
+                      Deno.env.get('GROQ_API_KEY') ||
+                      Deno.env.get('DEEPSEEK_API_KEY');
       }
       
       const secretSet = !!secretKey;

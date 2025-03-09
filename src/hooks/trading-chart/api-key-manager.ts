@@ -3,6 +3,26 @@ import { loadApiKeysFromStorage } from "@/components/chat/api-keys/apiKeyUtils";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 
+// Create a global BroadcastChannel for API key updates
+const apiKeyChannel = typeof window !== 'undefined' ? new BroadcastChannel('api-key-updates') : null;
+
+/**
+ * Broadcasts API key status to all open tabs
+ */
+const broadcastApiKeyStatus = (hasKeys: boolean) => {
+  if (apiKeyChannel) {
+    try {
+      apiKeyChannel.postMessage({ 
+        hasApiKeys: hasKeys, 
+        timestamp: Date.now() 
+      });
+      console.log("Broadcasted API key status to all tabs:", hasKeys);
+    } catch (err) {
+      console.error("Error broadcasting API key status:", err);
+    }
+  }
+};
+
 /**
  * Checks if API keys are available either from user storage or admin settings
  */
@@ -23,6 +43,8 @@ export const checkApiKeysAvailability = async (): Promise<boolean> => {
     });
     
     if (hasUserKeys) {
+      // Broadcast the API key status to all tabs
+      broadcastApiKeyStatus(true);
       return true; // If user has keys, we can use them
     }
     
@@ -41,11 +63,17 @@ export const checkApiKeysAvailability = async (): Promise<boolean> => {
           variant: "destructive",
           duration: 5000
         });
+        
+        // Broadcast the API key status to all tabs
+        broadcastApiKeyStatus(false);
         return false;
       }
       
       const hasAdminKeys = data?.secretSet === true;
       console.log("Admin API keys availability:", hasAdminKeys);
+      
+      // Broadcast the API key status to all tabs
+      broadcastApiKeyStatus(hasAdminKeys);
       
       if (!hasAdminKeys) {
         // Log that no admin keys are available
@@ -73,13 +101,30 @@ export const checkApiKeysAvailability = async (): Promise<boolean> => {
           duration: 5000
         });
       }
+      
+      // Broadcast the API key status to all tabs
+      broadcastApiKeyStatus(false);
       return false;
     }
   } catch (e) {
     console.error("Error in checkApiKeysAvailability:", e);
+    
+    // Broadcast the API key status to all tabs
+    broadcastApiKeyStatus(false);
     return false;
   }
 };
+
+// Listen for API key updates from other tabs
+if (typeof window !== 'undefined' && apiKeyChannel) {
+  apiKeyChannel.onmessage = (event) => {
+    console.log("Received API key update from another tab:", event.data);
+    // You can update the local state or trigger a refresh based on this message
+    window.dispatchEvent(new CustomEvent('api-key-changed', { 
+      detail: event.data 
+    }));
+  };
+}
 
 /**
  * Gets the appropriate API key for a given service
