@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -7,6 +8,14 @@ export interface TextareaProps
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => {
+    // Added onPaste event handling
+    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      console.log('Content pasted in textarea');
+      if (props.onPaste) {
+        props.onPaste(e);
+      }
+    };
+
     return (
       <textarea
         className={cn(
@@ -14,6 +23,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className
         )}
         ref={ref}
+        onPaste={handlePaste}
         {...props}
       />
     )

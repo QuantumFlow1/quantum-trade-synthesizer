@@ -1,8 +1,8 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Save, Check } from 'lucide-react';
+import { Save, Check, Clipboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ApiKeySettings } from '../types/GrokSettings';
 import { validateApiKey } from './apiKeyUtils';
@@ -22,6 +22,8 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
   const [deepseekKey, setDeepseekKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
   const [saved, setSaved] = useState(false);
+  
+  const groqInputRef = useRef<HTMLInputElement>(null);
   
   // Load API keys from props when they change
   useEffect(() => {
@@ -48,17 +50,28 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     if (deepKey) setDeepseekKey(deepKey);
     if (groqKey) setGroqKey(groqKey);
     
-    // If initialTab is 'groq', scroll to the Groq section
+    // If initialTab is 'groq', focus on the Groq field
     if (initialTab === 'groq') {
       setTimeout(() => {
-        const groqField = document.getElementById('groq-key-field');
-        if (groqField) {
-          groqField.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          groqField.focus();
+        if (groqInputRef.current) {
+          groqInputRef.current.focus();
+          groqInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }, 100);
     }
   }, [initialTab]);
+
+  // Handle pasting for the Groq API key field
+  const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string>>) => {
+    try {
+      const text = e.clipboardData.getData('text/plain');
+      console.log('Paste detected, content length:', text.length);
+      setter(text);
+      e.preventDefault(); // Prevent default to manually handle the paste
+    } catch (error) {
+      console.error('Error pasting text:', error);
+    }
+  };
   
   const handleSave = () => {
     // Validate keys
@@ -115,7 +128,8 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
           <Input 
             type="password" 
             value={openaiKey} 
-            onChange={e => setOpenaiKey(e.target.value)} 
+            onChange={e => setOpenaiKey(e.target.value)}
+            onPaste={e => handlePaste(e, setOpenaiKey)}
             placeholder="sk-..." 
           />
           <p className="text-xs text-gray-500">Vereist voor GPT-4o</p>
@@ -127,6 +141,7 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
             type="password" 
             value={claudeKey} 
             onChange={e => setClaudeKey(e.target.value)} 
+            onPaste={e => handlePaste(e, setClaudeKey)}
             placeholder="sk-ant-..." 
           />
           <p className="text-xs text-gray-500">Vereist voor Claude 3</p>
@@ -138,6 +153,7 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
             type="password" 
             value={geminiKey} 
             onChange={e => setGeminiKey(e.target.value)} 
+            onPaste={e => handlePaste(e, setGeminiKey)}
             placeholder="AIza..." 
           />
           <p className="text-xs text-gray-500">Vereist voor Gemini Pro</p>
@@ -149,6 +165,7 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
             type="password" 
             value={deepseekKey} 
             onChange={e => setDeepseekKey(e.target.value)} 
+            onPaste={e => handlePaste(e, setDeepseekKey)}
             placeholder="sk-..." 
           />
           <p className="text-xs text-gray-500">Vereist voor DeepSeek Coder</p>
@@ -156,12 +173,44 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
         
         <div className="space-y-2" id="groq-key-field">
           <label className="text-sm font-medium">Groq API Sleutel</label>
-          <Input 
-            type="password" 
-            value={groqKey} 
-            onChange={e => setGroqKey(e.target.value)} 
-            placeholder="gsk_..." 
-          />
+          <div className="relative">
+            <Input 
+              ref={groqInputRef}
+              type="password" 
+              value={groqKey} 
+              onChange={e => setGroqKey(e.target.value)} 
+              onPaste={e => handlePaste(e, setGroqKey)}
+              placeholder="gsk_..." 
+              className="pr-10"
+            />
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="icon" 
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+              onClick={async () => {
+                try {
+                  const text = await navigator.clipboard.readText();
+                  setGroqKey(text);
+                  toast({
+                    title: "Geplakt",
+                    description: "Inhoud uit klembord geplakt",
+                    duration: 2000
+                  });
+                } catch (err) {
+                  console.error('Fout bij plakken uit klembord:', err);
+                  toast({
+                    title: "Plakken mislukt",
+                    description: "Kon niet plakken uit klembord",
+                    variant: "destructive",
+                    duration: 3000
+                  });
+                }
+              }}
+            >
+              <Clipboard className="h-4 w-4" />
+            </Button>
+          </div>
           <p className="text-xs text-gray-500">Vereist voor Stockbot Trading Assistant</p>
         </div>
       </div>

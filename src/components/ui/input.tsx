@@ -5,13 +5,21 @@ import { cn } from "@/lib/utils"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
-    // Added debug log for input focus events
+    // Added debug log for input focus and paste events
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-      console.log('Input focused', e.target.id || 'unnamed input')
+      console.log('Input focused', e.target.id || 'unnamed input');
       if (props.onFocus) {
-        props.onFocus(e)
+        props.onFocus(e);
       }
-    }
+    };
+    
+    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+      console.log('Content pasted in input', e.target.id || 'unnamed input');
+      // Let the default paste behavior continue
+      if (props.onPaste) {
+        props.onPaste(e);
+      }
+    };
 
     return (
       <input
@@ -22,6 +30,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
         )}
         ref={ref}
         onFocus={handleFocus}
+        onPaste={handlePaste}
         {...props}
       />
     )
