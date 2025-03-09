@@ -1,4 +1,6 @@
+
 import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "./auth/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -24,8 +26,22 @@ const UserDashboard = () => {
   const { userProfile, isLovTrader } = useAuth();
   const { toast } = useToast();
   const { visibleWidgets, setVisibleWidgets, apiStatus, setApiStatus } = useDashboard();
-  const [activePage, setActivePage] = useState<string>("overview");
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Extract active page from URL path
+  const getActivePageFromPath = () => {
+    const path = location.pathname.split('/').filter(Boolean)[1] || "overview";
+    return path;
+  };
+  
+  const [activePage, setActivePage] = useState<string>(getActivePageFromPath());
   const [showVirtualEnvironment, setShowVirtualEnvironment] = useState<boolean>(false);
+
+  useEffect(() => {
+    // Update active page when location changes
+    setActivePage(getActivePageFromPath());
+  }, [location.pathname]);
 
   useEffect(() => {
     // Check if API is available
@@ -65,6 +81,7 @@ const UserDashboard = () => {
   // Handle page navigation
   const handlePageChange = (page: string) => {
     setActivePage(page);
+    navigate(`/dashboard/${page === "overview" ? "" : page}`);
   };
 
   // Render the correct page based on activePage state

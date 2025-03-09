@@ -15,7 +15,6 @@ import Finance from "./pages/admin/dashboard/Finance";
 import AdminPanel from "./components/AdminPanel";
 import ChatPage from "./pages/chat";
 import UserDashboard from "./components/UserDashboard";
-import { MinimalTradingPage } from "./components/dashboard/pages/MinimalTradingPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,7 +43,8 @@ const App = () => (
               <Route path="/admin/dashboard/system" element={<System />} />
               <Route path="/admin/dashboard/finance" element={<Finance />} />
               <Route path="/dashboard/*" element={<UserDashboard />} />
-              <Route path="/dashboard/minimal-trading" element={<MinimalTradingPage />} />
+              {/* This direct route has been removed because it creates a navigation problem */}
+              {/* <Route path="/dashboard/minimal-trading" element={<MinimalTradingPage />} /> */}
               {/* Redirect all auth callback URLs to the main page */}
               <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFound />} />
