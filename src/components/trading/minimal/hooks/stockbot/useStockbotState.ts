@@ -11,6 +11,7 @@ export const useStockbotState = () => {
   const [isSimulationMode, setIsSimulationMode] = useState(false);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [realMarketData, setRealMarketData] = useState<any[]>([]);
   
   // Save messages to localStorage whenever they change
   useEffect(() => {
@@ -42,6 +43,30 @@ export const useStockbotState = () => {
     return hasKey;
   }, [isSimulationMode]);
   
+  // Fetch real market data periodically
+  const fetchRealMarketData = useCallback(async () => {
+    try {
+      // Check if we have API key before fetching
+      const hasKey = checkApiKey();
+      if (!hasKey) return;
+      
+      console.log("Fetching real market data for backtesting...");
+      const { data, error } = await supabase.functions.invoke('real-crypto-data');
+      
+      if (error) {
+        console.error("Error fetching real market data:", error);
+        return;
+      }
+      
+      if (data && data.success && Array.isArray(data.data)) {
+        console.log("Successfully fetched real market data for backtesting:", data.data.length, "items");
+        setRealMarketData(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch real market data:", err);
+    }
+  }, [checkApiKey]);
+  
   useEffect(() => {
     // Check API key on mount and set simulation mode based on key existence
     const hasKey = checkApiKey();
@@ -49,15 +74,40 @@ export const useStockbotState = () => {
     
     // Listen for API key updates
     const handleApiKeyUpdate = () => {
-      checkApiKey();
+      const keyExists = checkApiKey();
+      if (keyExists && isSimulationMode) {
+        // If key detected and in simulation mode, prompt to switch
+        toast({
+          title: "Live Mode Available",
+          description: "API key detected. Switch to live mode for real data?",
+          action: (
+            <button 
+              onClick={() => setIsSimulationMode(false)}
+              className="bg-green-500 text-white px-3 py-1 rounded text-xs"
+            >
+              Switch Now
+            </button>
+          ),
+          duration: 8000
+        });
+        
+        // Fetch real data when key is added
+        fetchRealMarketData();
+      }
     };
     
     window.addEventListener('apikey-updated', handleApiKeyUpdate);
     window.addEventListener('localStorage-changed', handleApiKeyUpdate);
     window.addEventListener('storage', handleApiKeyUpdate);
     
-    // Set an interval to periodically check for API key updates
-    const intervalId = setInterval(checkApiKey, 1000);
+    // Set up interval to periodically check for API key updates and fetch data
+    const intervalId = setInterval(() => {
+      checkApiKey();
+      // Only fetch data if we have an API key and not in simulation mode
+      if (hasApiKey && !isSimulationMode) {
+        fetchRealMarketData();
+      }
+    }, 5000); // Check every 5 seconds
     
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyUpdate);
@@ -65,7 +115,7 @@ export const useStockbotState = () => {
       window.removeEventListener('storage', handleApiKeyUpdate);
       clearInterval(intervalId);
     };
-  }, [checkApiKey]);
+  }, [checkApiKey, fetchRealMarketData, hasApiKey, isSimulationMode]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
@@ -96,6 +146,7 @@ export const useStockbotState = () => {
     isKeyDialogOpen,
     setIsKeyDialogOpen,
     clearChat,
-    showApiKeyDialog
+    showApiKeyDialog,
+    realMarketData
   };
 };

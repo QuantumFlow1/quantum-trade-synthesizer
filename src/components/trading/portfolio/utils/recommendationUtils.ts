@@ -1,104 +1,222 @@
 
-import { AgentRecommendation, TradingAgent } from "../types/portfolioTypes";
-import { GroqAgent } from "../types/groqAgentTypes";
-import { useGroqAgent } from "../hooks/useGroqAgent";
+import { AgentRecommendation } from '../types/portfolioTypes';
+import { supabase } from "@/lib/supabase";
 
-// Add Groq agent instance - will be initialized when used
-let groqAgentInstance: ReturnType<typeof useGroqAgent> | null = null;
-
-export const generateAgentRecommendations = async (
-  currentData: any,
-  agents: TradingAgent[],
-  accuracyMetrics: Record<string, any>
-): Promise<AgentRecommendation[]> => {
-  const recommendations: AgentRecommendation[] = [];
-  
-  // Process each agent to generate recommendations
-  for (const agent of agents) {
-    // Handle special case for Groq agent
-    if ('type' in agent && agent.type === 'groq') {
-      if (groqAgentInstance) {
-        try {
-          console.log("Generating recommendation from Groq agent");
-          const groqRecommendation = await groqAgentInstance.generateGroqRecommendation(
-            currentData,
-            agent as GroqAgent
-          );
-          
-          if (groqRecommendation) {
-            recommendations.push(groqRecommendation);
-          }
-        } catch (error) {
-          console.error("Error generating Groq recommendation:", error);
-        }
-      } else {
-        console.log("Skipping Groq agent because it's not initialized");
-      }
-      continue;
+// Function to initialize Groq-powered trading agent
+// This is a placeholder for potential future implementation
+export const setGroqAgentInstance = async (agentId: string, apiKey: string) => {
+  try {
+    if (!apiKey) {
+      return null;
     }
     
-    // Generate standard agent recommendations
-    const accuracy = accuracyMetrics[agent.id] ? accuracyMetrics[agent.id].overall / 100 : 0.5;
-    const confidenceAdjustment = Math.random() * 0.2 - 0.1; // -10% to +10%
-    const confidence = Math.min(Math.max(Math.round(agent.confidence * (accuracy + confidenceAdjustment)), 30), 95);
-    
-    // Determine action based on price movement and agent specialty
-    let action: "BUY" | "SELL" | "HOLD";
-    const priceChange = currentData?.change24h || 0;
-    const random = Math.random();
-    
-    if (agent.specialization === "fundamental") {
-      // Value investors tend to buy on dips if fundamentals are strong
-      action = random > 0.6 ? "BUY" : 
-               random > 0.2 ? "HOLD" : "SELL";
-    } else if (agent.specialization === "technical") {
-      // Technical analysts follow trends
-      action = priceChange > 1.5 ? "BUY" : 
-               priceChange < -1.5 ? "SELL" : "HOLD";
-    } else if (agent.specialization === "sentiment") {
-      // Sentiment analysis is more volatile
-      action = random > 0.7 ? "BUY" : 
-               random > 0.4 ? "HOLD" : "SELL";
-    } else if (agent.specialization === "risk") {
-      // Risk managers tend to be conservative
-      action = random > 0.8 ? "BUY" : 
-               random > 0.4 ? "HOLD" : "SELL";
-    } else if (agent.specialization === "volatility") {
-      // Volatility experts look for big moves
-      action = Math.abs(priceChange) > 3 ? (priceChange > 0 ? "BUY" : "SELL") : "HOLD";
-    } else if (agent.specialization === "macro") {
-      // Macro economists take a broader view
-      action = random > 0.6 ? "HOLD" : 
-               random > 0.3 ? "BUY" : "SELL";
-    } else {
-      // Default behavior
-      action = random > 0.6 ? "BUY" : 
-               random > 0.3 ? "SELL" : "HOLD";
-    }
-    
-    // Generate reasoning based on agent type and action
-    let reasoning = "";
-    if (action === "BUY") {
-      reasoning = `Based on ${agent.specialization} analysis, market conditions favor accumulation at current price levels.`;
-    } else if (action === "SELL") {
-      reasoning = `${agent.specialization} indicators suggest downside pressure, recommending reducing exposure.`;
-    } else {
-      reasoning = `Current market conditions indicate a neutral stance from a ${agent.specialization} perspective.`;
-    }
-    
-    recommendations.push({
-      agentId: agent.id,
-      action,
-      confidence,
-      reasoning,
-      timestamp: new Date().toISOString()
-    });
+    console.log(`Initializing Groq-powered agent: ${agentId}`);
+    return {
+      id: agentId,
+      isActive: true,
+      lastUpdated: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error(`Error initializing Groq agent ${agentId}:`, error);
+    return null;
   }
-  
-  return recommendations;
 };
 
-// Make the groqAgentInstance setter available for components to use
-export const setGroqAgentInstance = (instance: ReturnType<typeof useGroqAgent>) => {
-  groqAgentInstance = instance;
+// Generate recommendations from trading agents
+export const generateAgentRecommendations = async (
+  currentData: any,
+  agents: any[],
+  accuracyMetrics: any = {},
+  realMarketData?: any[]
+): Promise<AgentRecommendation[]> => {
+  const ticker = currentData?.symbol || "BTC";
+  const currentPrice = currentData?.price || 45000;
+  
+  // Determine if we're using real data
+  const usingRealData = !!realMarketData && Array.isArray(realMarketData) && realMarketData.length > 0;
+  console.log(`Generating agent recommendations for ${ticker} at $${currentPrice} using ${usingRealData ? 'real' : 'simulated'} data`);
+  
+  try {
+    // If we have real market data, try to get enhanced recommendations
+    if (usingRealData) {
+      try {
+        const { data, error } = await supabase.functions.invoke('real-crypto-data', {
+          body: { action: 'analyze', symbol: ticker, price: currentPrice }
+        });
+        
+        if (!error && data?.recommendations) {
+          console.log("Using enhanced recommendations from real market data");
+          return data.recommendations;
+        }
+      } catch (e) {
+        console.error("Error getting enhanced recommendations:", e);
+        // Fall back to simulated recommendations
+      }
+    }
+    
+    // Fallback to simulated recommendations generation
+    const recommendations: AgentRecommendation[] = [];
+    
+    // Process each agent
+    for (const agent of agents) {
+      // Skip inactive agents
+      if (!agent.isActive) continue;
+      
+      // Get accuracy metrics for this agent if available
+      const agentAccuracy = accuracyMetrics[agent.id] || { overall: 50, recent: 50 };
+      
+      // Generate recommendation based on agent type
+      let recommendation: AgentRecommendation | null = null;
+      
+      // Add randomness but favor certain actions based on agent type
+      const roll = Math.random();
+      
+      // Value investor tends to focus on fundamentals
+      if (agent.id === 'value-investor') {
+        if (roll > 0.6) {
+          recommendation = generateBuyRecommendation(agent, ticker, currentPrice);
+        } else if (roll > 0.3) {
+          recommendation = generateHoldRecommendation(agent, ticker, currentPrice);
+        } else {
+          recommendation = generateSellRecommendation(agent, ticker, currentPrice);
+        }
+      }
+      // Technical analyst focuses on chart patterns
+      else if (agent.id === 'technical-analyst') {
+        if (roll > 0.6) {
+          recommendation = generateSellRecommendation(agent, ticker, currentPrice);
+        } else if (roll > 0.2) {
+          recommendation = generateBuyRecommendation(agent, ticker, currentPrice);
+        } else {
+          recommendation = generateHoldRecommendation(agent, ticker, currentPrice);
+        }
+      }
+      // Sentiment analyzer focuses on market sentiment
+      else if (agent.id === 'sentiment-analyst') {
+        if (roll > 0.6) {
+          recommendation = generateHoldRecommendation(agent, ticker, currentPrice);
+        } else if (roll > 0.3) {
+          recommendation = generateBuyRecommendation(agent, ticker, currentPrice);
+        } else {
+          recommendation = generateSellRecommendation(agent, ticker, currentPrice);
+        }
+      }
+      // News analyzer focuses on recent news
+      else if (agent.id === 'news-analyzer') {
+        if (roll > 0.7) {
+          recommendation = generateBuyRecommendation(agent, ticker, currentPrice);
+        } else if (roll > 0.4) {
+          recommendation = generateHoldRecommendation(agent, ticker, currentPrice);
+        } else {
+          recommendation = generateSellRecommendation(agent, ticker, currentPrice);
+        }
+      }
+      // Risk manager is usually more conservative
+      else if (agent.id === 'risk-manager') {
+        if (roll > 0.7) {
+          recommendation = generateHoldRecommendation(agent, ticker, currentPrice);
+        } else if (roll > 0.3) {
+          recommendation = generateSellRecommendation(agent, ticker, currentPrice);
+        } else {
+          recommendation = generateBuyRecommendation(agent, ticker, currentPrice);
+        }
+      }
+      // Fallback for any other agent type
+      else {
+        if (roll > 0.6) {
+          recommendation = generateBuyRecommendation(agent, ticker, currentPrice);
+        } else if (roll > 0.3) {
+          recommendation = generateHoldRecommendation(agent, ticker, currentPrice);
+        } else {
+          recommendation = generateSellRecommendation(agent, ticker, currentPrice);
+        }
+      }
+      
+      // Ensure we have a valid recommendation
+      if (recommendation) {
+        // Adjust confidence based on agent's accuracy metrics
+        const accuracyBoost = Math.max(0, (agentAccuracy.overall - 50) / 2);
+        recommendation.confidence = Math.min(95, recommendation.confidence + accuracyBoost);
+        
+        recommendations.push(recommendation);
+      }
+    }
+    
+    return recommendations;
+  } catch (error) {
+    console.error("Error generating agent recommendations:", error);
+    return [];
+  }
+};
+
+// Helper function to generate a BUY recommendation
+const generateBuyRecommendation = (
+  agent: any, 
+  ticker: string, 
+  price: number
+): AgentRecommendation => {
+  const baseReasoning = {
+    'value-investor': `${ticker} appears undervalued at the current price of $${price}. Based on fundamentals analysis, the fair value is higher.`,
+    'technical-analyst': `Technical indicators for ${ticker} show a bullish pattern. The price of $${price} has formed a support level and RSI indicates oversold conditions.`,
+    'sentiment-analyst': `Market sentiment for ${ticker} is turning positive. Social media metrics show increasing interest and positive mentions at the $${price} level.`,
+    'news-analyzer': `Recent news for ${ticker} is positive. Several developments suggest potential growth that isn't reflected in the current $${price}.`,
+    'risk-manager': `Risk assessment for ${ticker} at $${price} shows favorable risk-reward ratio. Downside risk is limited compared to upside potential.`
+  };
+  
+  return {
+    agentId: agent.id,
+    action: "BUY",
+    ticker,
+    confidence: 65 + Math.floor(Math.random() * 20),
+    reasoning: baseReasoning[agent.id] || `Analysis suggests ${ticker} is a good buy at $${price}.`,
+    timestamp: new Date().toISOString()
+  };
+};
+
+// Helper function to generate a SELL recommendation
+const generateSellRecommendation = (
+  agent: any, 
+  ticker: string, 
+  price: number
+): AgentRecommendation => {
+  const baseReasoning = {
+    'value-investor': `${ticker} appears overvalued at the current price of $${price}. Based on fundamentals analysis, the fair value is lower.`,
+    'technical-analyst': `Technical indicators for ${ticker} show a bearish pattern. The price of $${price} has broken through support levels and RSI indicates overbought conditions.`,
+    'sentiment-analyst': `Market sentiment for ${ticker} is turning negative. Social media metrics show decreasing interest and negative mentions at the $${price} level.`,
+    'news-analyzer': `Recent news for ${ticker} is concerning. Several developments suggest potential risks that aren't reflected in the current $${price}.`,
+    'risk-manager': `Risk assessment for ${ticker} at $${price} shows unfavorable risk-reward ratio. Downside risk exceeds upside potential.`
+  };
+  
+  return {
+    agentId: agent.id,
+    action: "SELL",
+    ticker,
+    confidence: 65 + Math.floor(Math.random() * 20),
+    reasoning: baseReasoning[agent.id] || `Analysis suggests ${ticker} is a sell at $${price}.`,
+    timestamp: new Date().toISOString()
+  };
+};
+
+// Helper function to generate a HOLD recommendation
+const generateHoldRecommendation = (
+  agent: any, 
+  ticker: string, 
+  price: number
+): AgentRecommendation => {
+  const baseReasoning = {
+    'value-investor': `${ticker} appears fairly valued at the current price of $${price}. Based on fundamentals analysis, the price reflects fair value.`,
+    'technical-analyst': `Technical indicators for ${ticker} are mixed. The price of $${price} is within a consolidation range and no clear trend is visible.`,
+    'sentiment-analyst': `Market sentiment for ${ticker} is neutral. Social media metrics show stable interest without strong directional bias at the $${price} level.`,
+    'news-analyzer': `Recent news for ${ticker} is mixed. There are both positive and negative developments that balance out at the current $${price}.`,
+    'risk-manager': `Risk assessment for ${ticker} at $${price} shows balanced risk-reward ratio. Recommend holding current position.`
+  };
+  
+  return {
+    agentId: agent.id,
+    action: "HOLD",
+    ticker,
+    confidence: 60 + Math.floor(Math.random() * 20),
+    reasoning: baseReasoning[agent.id] || `Analysis suggests holding ${ticker} at $${price}.`,
+    timestamp: new Date().toISOString()
+  };
 };

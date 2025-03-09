@@ -1,27 +1,26 @@
 
 export interface ChatMessage {
   id: string;
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
 }
 
-export interface StockbotChatState {
+export interface StockbotChatHook {
   messages: ChatMessage[];
   inputMessage: string;
+  setInputMessage: (message: string) => void;
   isLoading: boolean;
   hasApiKey: boolean;
   isSimulationMode: boolean;
-  isKeyDialogOpen: boolean;
-}
-
-export interface StockbotChatActions {
-  setInputMessage: (message: string) => void;
-  setIsSimulationMode: (isSimulation: boolean) => void;
+  setIsSimulationMode: (isSimulationMode: boolean) => void;
   handleSendMessage: () => Promise<void>;
   clearChat: () => void;
   showApiKeyDialog: () => void;
+  isKeyDialogOpen: boolean;
   setIsKeyDialogOpen: (isOpen: boolean) => void;
 }
 
-export type StockbotChatHook = StockbotChatState & StockbotChatActions;
+export interface StockbotApiHook {
+  handleSendMessage: (inputMessage: string, isSimulationMode: boolean) => Promise<void>;
+}

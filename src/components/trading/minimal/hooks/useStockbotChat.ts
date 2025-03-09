@@ -20,11 +20,13 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     isKeyDialogOpen,
     setIsKeyDialogOpen,
     clearChat,
-    showApiKeyDialog
+    showApiKeyDialog,
+    realMarketData
   } = useStockbotState();
   
   const { handleSendMessage: apiHandleSendMessage } = useStockbotApi(
-    marketData,
+    // Use realMarketData if available, otherwise use provided marketData
+    realMarketData.length > 0 ? realMarketData : marketData,
     messages,
     setMessages,
     setIsLoading

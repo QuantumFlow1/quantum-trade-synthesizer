@@ -1,168 +1,143 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { corsHeaders } from "../_shared/cors.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || ''
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-groq-api-key',
+};
+
+// System prompt template for trading advice
+const getSystemPrompt = (userLevel: string) => `
+You are an expert trading advisor specializing in cryptocurrency and financial markets analysis.
+Respond in a professional, informative tone appropriate for a ${userLevel || 'intermediate'} trader.
+
+Key guidelines:
+- Provide data-backed analysis and insights whenever possible
+- Explain trading concepts clearly using examples and analogies
+- Include relevant risk considerations and warnings
+- When asked about specific assets, include technical and fundamental analysis
+- Stay neutral and objective, avoiding pushing particular investments
+- Never guarantee returns or make promises about future performance
+- Format your responses clearly with proper spacing between paragraphs
+
+Remember that trading involves significant risk, and you should always emphasize responsible risk management.
+`;
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get request body
-    const { message, userId, userLevel = 'beginner', previousMessages = [] } = await req.json()
-
+    // Extract Groq API key from headers
+    const groqApiKey = req.headers.get('x-groq-api-key');
+    
+    if (!groqApiKey) {
+      console.error("Missing Groq API key in request headers");
+      return new Response(
+        JSON.stringify({
+          error: "Missing Groq API key. Please provide your API key in the request headers."
+        }),
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    // Parse the request body
+    const { message, userLevel, previousMessages, marketData } = await req.json();
+    
     if (!message) {
       return new Response(
-        JSON.stringify({ error: 'Message is required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
-    }
-
-    console.log(`Generating trading advice for message: ${message.substring(0, 100)}...`)
-    console.log(`User level: ${userLevel}`)
-
-    // Get the API key - first try the environment variable, then the client-provided key
-    let apiKey = GROQ_API_KEY
-    const clientProvidedKey = req.headers.get('x-groq-api-key')
-    
-    if (!apiKey && clientProvidedKey) {
-      apiKey = clientProvidedKey
-      console.log('Using client-provided Groq API key')
+        JSON.stringify({ error: "Message is required" }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
-    if (!apiKey) {
-      console.error('No Groq API key available')
-      return new Response(
-        JSON.stringify({ error: 'Groq API key is required' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
-    }
-
-    // Build the prompt based on user level
-    let systemPrompt = 'You are Stockbot, a professional trading assistant specialized in helping users with market analysis and trading advice. You are powered by T.S.A.A. (Trading Strategie Advies Agents) that analyze market data and provide recommendations. '
+    console.log("Processing trading advice request:", {
+      messageLength: message.length,
+      userLevel: userLevel || 'intermediate',
+      marketDataAvailable: !!marketData,
+      previousMessagesCount: previousMessages?.length || 0
+    });
     
-    // Add level-specific instructions
-    switch (userLevel) {
-      case 'expert':
-        systemPrompt += 'The user is an expert trader. Use advanced terminology and detailed analysis. Skip basic explanations.'
-        break
-      case 'intermediate':
-        systemPrompt += 'The user has intermediate trading knowledge. Provide detailed explanations and some deeper insights.'
-        break
-      case 'beginner':
-      default:
-        systemPrompt += 'The user is new to trading. Explain concepts clearly and avoid jargon. Focus on basics and educational content.'
-        break
+    // Build request to Groq API
+    const systemMessage = getSystemPrompt(userLevel);
+    
+    // Prepare context with market data if available
+    let contextMessage = '';
+    if (marketData && Array.isArray(marketData)) {
+      contextMessage = `
+Recent market data (for reference):
+${marketData.slice(0, 5).map(item => (
+  `- ${item.symbol}: $${item.price.toFixed(2)}, Change: ${item.change24h.toFixed(2)}%`
+)).join('\n')}
+      `;
     }
     
-    // Add response guidelines
-    systemPrompt += ' Always respond in the same language as the user\'s question. Provide factual, helpful information about trading and market analysis. Never pretend to access real-time market data if you don\'t have it.'
-
-    // Check for patterns that might indicate web requests or other unsupported tasks
-    if (message.toLowerCase().includes('open') || 
-        message.toLowerCase().includes('search') || 
-        message.toLowerCase().includes('browse') ||
-        message.toLowerCase().includes('http') ||
-        message.toLowerCase().includes('website') ||
-        message.toLowerCase().includes('www')) {
-      
-      const response = `I can't open external websites or browse internet links. As an AI assistant, I don't have access to the web. I can help with trading information, analysis, and education based on my training. How can I assist with your trading questions?`
-      
-      return new Response(
-        JSON.stringify({ response }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      )
+    // Create conversation history, including previous messages if available
+    let conversationHistory = [
+      { role: "system", content: systemMessage }
+    ];
+    
+    // Add context message if we have market data
+    if (contextMessage) {
+      conversationHistory.push({ role: "system", content: contextMessage });
     }
     
-    // Add context from previous messages if available
-    const chatContext = previousMessages.length > 0 
-      ? previousMessages.map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        }))
-      : []
+    // Add previous messages for context
+    if (previousMessages && Array.isArray(previousMessages)) {
+      conversationHistory = [
+        ...conversationHistory,
+        ...previousMessages.slice(-6) // Only use the last 6 messages for context
+      ];
+    }
     
-    // Create messages array for the API request
-    const messages = [
-      { role: "system", content: systemPrompt },
-      ...chatContext,
-      { role: "user", content: message }
-    ]
-
-    console.log('Sending request to Groq API with messages:', JSON.stringify(messages.length))
+    // Add the current user message
+    conversationHistory.push({ role: "user", content: message });
     
-    try {
-      // Call Groq API
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'llama3-70b-8192',
-          messages: messages,
-          max_tokens: 1000,
-          temperature: 0.7,
-        })
+    console.log("Sending request to Groq API with", conversationHistory.length, "messages");
+    
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${groqApiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "llama3-70b-8192",
+        messages: conversationHistory,
+        temperature: 0.7,
+        max_tokens: 1024
       })
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Groq API error: Status ${response.status}, Response:`, errorText);
-        
-        let errorMessage = `Groq API error: ${response.statusText}`;
-        try {
-          const errorData = JSON.parse(errorText);
-          if (errorData.error?.message) {
-            errorMessage = `Groq API error: ${errorData.error.message}`;
-          }
-        } catch (e) {
-          // If we can't parse the error as JSON, just use the status text
-          console.error("Failed to parse error response:", e);
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json()
-      const aiResponse = data.choices[0]?.message?.content || "I apologize, but I couldn't generate a response. Please try asking in a different way."
-      
-      console.log(`Generated response: ${aiResponse.substring(0, 100)}...`)
-
-      // Return the response
-      return new Response(
-        JSON.stringify({ response: aiResponse }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-      
-    } catch (apiError) {
-      console.error('Groq API call failed:', apiError);
-      
-      // If the API call fails, return a fallback response
-      const fallbackResponse = "I'm sorry, but I'm having trouble connecting to my analysis systems right now. Here's a general suggestion: Consider monitoring key support and resistance levels, set clear stop losses, and don't overcommit your capital to a single position. Would you like me to try analyzing your question again?";
-      
-      return new Response(
-        JSON.stringify({ response: fallbackResponse }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      )
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("Groq API error:", errorData);
+      throw new Error(`Groq API error: ${errorData.error?.message || "Unknown error"}`);
     }
-
-  } catch (error) {
-    console.error('Error generating trading advice:', error)
+    
+    const result = await response.json();
+    const aiResponse = result.choices[0].message.content;
+    
+    console.log("Successfully generated trading advice response");
     
     return new Response(
-      JSON.stringify({ error: error.message || 'Failed to generate trading advice' }),
+      JSON.stringify({ response: aiResponse }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error("Error in generate-trading-advice function:", error);
+    
+    return new Response(
+      JSON.stringify({ error: error.message || "An error occurred generating trading advice" }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: 500, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    )
+    );
   }
-})
+});
