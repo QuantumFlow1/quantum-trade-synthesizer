@@ -1,12 +1,13 @@
 
-import { Settings, RefreshCw, Key } from "lucide-react";
+import { Settings, RefreshCw, Key, Database } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 
 interface StockbotHeaderProps {
@@ -15,6 +16,8 @@ interface StockbotHeaderProps {
   clearChat: () => void;
   showApiKeyDialog: () => void;
   hasApiKey: boolean;
+  isUsingRealData?: boolean;
+  toggleRealData?: () => void;
 }
 
 export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
@@ -22,7 +25,9 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
   setIsSimulationMode,
   clearChat,
   showApiKeyDialog,
-  hasApiKey
+  hasApiKey,
+  isUsingRealData = false,
+  toggleRealData = () => {}
 }) => {
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b">
@@ -31,6 +36,11 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
         <span className={`text-xs px-1.5 py-0.5 rounded ${hasApiKey ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
           {hasApiKey ? 'Live' : 'Limited'}
         </span>
+        {isUsingRealData && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+            Real Data
+          </span>
+        )}
       </div>
 
       <div className="flex items-center space-x-2">
@@ -57,6 +67,11 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
             <DropdownMenuItem onClick={showApiKeyDialog}>
               <Key className="mr-2 h-4 w-4" />
               Configure API Key
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={toggleRealData}>
+              <Database className="mr-2 h-4 w-4" />
+              {isUsingRealData ? "Use Simulated Data" : "Use Real Market Data"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

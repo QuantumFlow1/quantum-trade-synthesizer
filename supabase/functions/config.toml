@@ -1,11 +1,8 @@
 
 project_id = "tfmlretexydslgowlkid"
+# This is a basic configuration for Supabase Edge Functions
+# Each function configuration is defined as a separate [[functions]] object
 
-[functions.groq-analysis]
-verify_jwt = false
-
-[functions.save-api-key]
-verify_jwt = false
-
-[functions.check-api-keys]
+[[functions]]
+name = "real-crypto-data"
 verify_jwt = false

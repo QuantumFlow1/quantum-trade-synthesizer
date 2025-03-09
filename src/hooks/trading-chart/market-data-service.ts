@@ -13,7 +13,8 @@ export const fetchMarketData = async (
   apiStatus: string,
   forceSimulation: boolean,
   setRawMarketData: (data: any) => void,
-  setErrorCount: (count: number | ((prev: number) => number)) => void
+  setErrorCount: (count: number | ((prev: number) => number)) => void,
+  useRealData: boolean = false
 ): Promise<any[]> => {
   // Prevent multiple concurrent calls
   if (isLoading) {
@@ -29,8 +30,35 @@ export const fetchMarketData = async (
   
   try {
     if (forceSimulation) {
+      console.log("Forcing simulation mode, using generated data");
       const generatedData = generateTradingData();
       return generatedData;
+    }
+    
+    // Check if we should use real market data from CoinGecko
+    if (useRealData && apiStatus === 'available') {
+      console.log("Fetching real cryptocurrency market data...");
+      try {
+        const { data: realMarketData, error } = await supabase.functions.invoke('real-crypto-data');
+        
+        if (error) {
+          console.error("Error fetching real market data:", error);
+          throw new Error(`Real data fetch failed: ${error.message}`);
+        }
+        
+        if (realMarketData && realMarketData.success && Array.isArray(realMarketData.data)) {
+          console.log("Successfully fetched real market data:", realMarketData.data.length, "items");
+          setRawMarketData(realMarketData);
+          setErrorCount(0); // Reset error count on success
+          return realMarketData.data;
+        } else {
+          console.warn("Invalid response from real-crypto-data function:", realMarketData);
+          throw new Error("Invalid real market data response");
+        }
+      } catch (realDataError) {
+        console.error("Failed to fetch real market data:", realDataError);
+        // Fall back to simulated data or other options
+      }
     }
     
     if (apiStatus !== 'available') {

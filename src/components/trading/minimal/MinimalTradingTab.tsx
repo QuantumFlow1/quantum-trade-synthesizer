@@ -1,90 +1,111 @@
 
-import { useEffect, useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MinimalPriceChart } from "./MinimalPriceChart";
-import { MinimalMarketData } from "./MinimalMarketData";
-import { MinimalTradingControls } from "./MinimalTradingControls";
-import { PriceAlerts } from "./components/PriceAlerts";
-import { OrderBook } from "./components/OrderBook";
-import { NewsFeed } from "./components/NewsFeed";
-import { TechnicalIndicators } from "./components/TechnicalIndicators";
-import { TradingAgents } from "./components/TradingAgents";
-import { generateTradingData, TradingDataPoint } from "@/utils/tradingData";
+import { useState, useEffect } from "react";
+import { useTradingChartData } from "@/hooks/use-trading-chart-data";
+import { StockbotHeader } from "./components/StockbotHeader";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
+import { toast } from "@/hooks/use-toast";
 
 export const MinimalTradingTab = () => {
-  const [activeTab, setActiveTab] = useState("chart");
-  const [tradingData, setTradingData] = useState<TradingDataPoint[]>(generateTradingData());
-  const [selectedPair, setSelectedPair] = useState("BTC/USDT");
-  const [currentTimeframe, setCurrentTimeframe] = useState("1h");
+  const [isSimulationMode, setIsSimulationMode] = useState(true);
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+  
+  // Use the trading chart data hook
+  const { 
+    data, 
+    apiStatus, 
+    useRealData, 
+    toggleRealData 
+  } = useTradingChartData(isSimulationMode);
 
-  // Check if we should open the trading agents tab based on localStorage flag
+  // Check if Groq API key is available
   useEffect(() => {
-    const shouldOpenTradingAgentsTab = localStorage.getItem('openTradingAgentsTab');
-    if (shouldOpenTradingAgentsTab === 'true') {
-      setActiveTab('agents');
-      // Clear the flag after use
-      localStorage.removeItem('openTradingAgentsTab');
-    }
-  }, []);
-
-  const handleRefresh = () => {
-    setTradingData(generateTradingData());
-  };
-
-  const handleTimeframeChange = (timeframe: string) => {
-    setCurrentTimeframe(timeframe);
-    setTradingData(generateTradingData()); // Regenerate data for the new timeframe
-  };
-
-  const handlePairChange = (pair: string) => {
-    setSelectedPair(pair);
-    setTradingData(generateTradingData()); // Regenerate data for the new pair
-  };
-
-  return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-      <TabsList className="grid grid-cols-4 w-full md:w-auto">
-        <TabsTrigger value="chart">Price Chart</TabsTrigger>
-        <TabsTrigger value="orders">Order Book</TabsTrigger>
-        <TabsTrigger value="alerts">Alerts</TabsTrigger>
-        <TabsTrigger value="agents">Trading Agents</TabsTrigger>
-      </TabsList>
+    const groqKey = localStorage.getItem('groqApiKey');
+    setHasApiKey(!!groqKey);
+    
+    // Listen for API key updates
+    const handleApiKeyUpdate = () => {
+      const updatedGroqKey = localStorage.getItem('groqApiKey');
+      setHasApiKey(!!updatedGroqKey);
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2">
-          <TabsContent value="chart" className="space-y-4">
-            <MinimalMarketData />
-            <MinimalPriceChart data={tradingData} />
-            <MinimalTradingControls 
-              onRefresh={handleRefresh}
-              onTimeframeChange={handleTimeframeChange}
-              currentTimeframe={currentTimeframe}
-              selectedPair={selectedPair}
-              onPairChange={handlePairChange}
-            />
-          </TabsContent>
-          
-          <TabsContent value="orders" className="space-y-4">
-            <MinimalMarketData />
-            <OrderBook selectedPair={selectedPair} />
-          </TabsContent>
-          
-          <TabsContent value="alerts" className="space-y-4">
-            <MinimalMarketData />
-            <PriceAlerts selectedPair={selectedPair} />
-          </TabsContent>
-          
-          <TabsContent value="agents" className="space-y-4">
-            <MinimalMarketData />
-            <TradingAgents />
-          </TabsContent>
+      if (updatedGroqKey) {
+        toast({
+          title: "API Key Configured",
+          description: "Stockbot trading assistant is now ready to use",
+          duration: 3000
+        });
+      }
+    };
+    
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+    };
+  }, []);
+  
+  const clearChat = () => {
+    // Implement clear chat functionality
+    toast({
+      title: "Chat Cleared",
+      description: "Your conversation history has been cleared",
+      duration: 3000
+    });
+  };
+  
+  const openApiKeyDialog = () => {
+    setShowApiKeyDialog(true);
+  };
+  
+  const closeApiKeyDialog = () => {
+    setShowApiKeyDialog(false);
+  };
+  
+  return (
+    <div className="flex flex-col h-[calc(100vh-12rem)] border rounded-lg overflow-hidden">
+      <StockbotHeader 
+        isSimulationMode={isSimulationMode}
+        setIsSimulationMode={setIsSimulationMode}
+        clearChat={clearChat}
+        showApiKeyDialog={openApiKeyDialog}
+        hasApiKey={hasApiKey}
+        isUsingRealData={useRealData}
+        toggleRealData={toggleRealData}
+      />
+      
+      <div className="flex-1 p-4 overflow-auto">
+        {/* Add your trading chart and chat components here */}
+        <div className="mb-4 p-4 border rounded bg-gray-50">
+          <h3 className="font-medium mb-2">Market Data Source</h3>
+          <p className="text-sm text-gray-600">
+            {useRealData 
+              ? "Using real cryptocurrency data from CoinGecko API" 
+              : "Using simulated market data"}
+          </p>
+          <p className="text-sm text-gray-600 mt-2">
+            API Status: {apiStatus === 'available' 
+              ? "Available" 
+              : apiStatus === 'checking' 
+                ? "Checking..." 
+                : "Unavailable"}
+          </p>
+          <p className="text-sm text-gray-600 mt-2">
+            Data points: {data.length}
+          </p>
         </div>
         
-        <div className="space-y-4">
-          <TechnicalIndicators />
-          <NewsFeed selectedPair={selectedPair} />
-        </div>
+        {/* Add your other components here */}
       </div>
-    </Tabs>
+      
+      <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
+        <DialogContent>
+          <ApiKeyDialogContent 
+            initialTab="groq" 
+            onClose={closeApiKeyDialog}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
