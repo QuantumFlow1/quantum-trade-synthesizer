@@ -14,18 +14,24 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   const [isSimulationMode, setIsSimulationMode] = useState(true);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   
-  // Enhanced API key check
+  // Enhanced API key check with more thorough detection
   useEffect(() => {
     const checkApiKey = () => {
+      // Get the API key from localStorage
       const key = localStorage.getItem('groqApiKey');
-      const keyExists = !!key && key.length > 0;
-      setHasApiKey(keyExists);
+      
+      // Check if it exists and is valid (non-empty after trimming)
+      const keyExists = !!key && key.trim().length > 0;
       
       console.log('useStockbotChat - API key check:', {
         exists: keyExists,
-        length: key ? key.length : 0,
+        length: key ? key.trim().length : 0,
+        key: key ? `${key.substring(0, 4)}...${key.substring(key.length - 4)}` : 'none',
         simulationMode: isSimulationMode
       });
+      
+      // Update state based on key presence
+      setHasApiKey(keyExists);
       
       // If we have a key but we're still in simulation mode, turn it off
       if (keyExists && isSimulationMode) {
@@ -34,6 +40,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
       }
     };
     
+    // Initial check
     checkApiKey();
     
     // Set up multiple event listeners to catch any possible key changes
@@ -100,6 +107,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
         console.log('User asking about API key - current status:', {
           exists: !!groqApiKey,
           length: groqApiKey ? groqApiKey.length : 0,
+          key: groqApiKey ? `${groqApiKey.substring(0, 4)}...${groqApiKey.substring(groqApiKey.length - 4)}` : 'none',
           simulationMode: isSimulationMode
         });
       }

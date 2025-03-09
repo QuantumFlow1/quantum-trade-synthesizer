@@ -16,7 +16,8 @@ export function generateStockbotResponse(userInput: string, marketData: any[] = 
     const groqApiKey = localStorage.getItem('groqApiKey');
     console.log('Checking Groq API key status:', {
       exists: !!groqApiKey,
-      length: groqApiKey ? groqApiKey.length : 0
+      length: groqApiKey ? groqApiKey.length : 0,
+      key: groqApiKey ? `${groqApiKey.substring(0, 4)}...${groqApiKey.substring(groqApiKey.length - 4)}` : 'none'
     });
     
     if (!groqApiKey) {
@@ -25,8 +26,26 @@ export function generateStockbotResponse(userInput: string, marketData: any[] = 
       responseText = `I detected a Groq API key (${groqApiKey.length} characters long). If you're still seeing the simulation mode message, try clicking the "Switch to real AI mode" button. If that doesn't work, try refreshing the page or checking that your API key is valid.`;
     }
     
-    // Trigger a localStorage event to force components to re-check API key
+    // Trigger multiple events to force components to re-check API key
     window.dispatchEvent(new Event('apikey-updated'));
+    window.dispatchEvent(new Event('localStorage-changed'));
+    window.dispatchEvent(new Event('storage'));
+    
+    // Also try to trigger a storage event by modifying and then restoring a dummy value
+    try {
+      const dummyValue = localStorage.getItem('_dummy_key_') || '';
+      localStorage.setItem('_dummy_key_', Date.now().toString());
+      setTimeout(() => {
+        if (dummyValue) {
+          localStorage.setItem('_dummy_key_', dummyValue);
+        } else {
+          localStorage.removeItem('_dummy_key_');
+        }
+      }, 100);
+    } catch (e) {
+      console.error("Failed to trigger storage event:", e);
+    }
+    
     return {
       id: uuidv4(),
       sender: 'assistant',
@@ -118,7 +137,8 @@ export function generateErrorResponse(errorMessage: string): ChatMessage {
     const groqApiKey = localStorage.getItem('groqApiKey');
     console.log('API key error detected, checking status:', {
       exists: !!groqApiKey,
-      length: groqApiKey ? groqApiKey.length : 0
+      length: groqApiKey ? groqApiKey.length : 0,
+      key: groqApiKey ? `${groqApiKey.substring(0, 4)}...${groqApiKey.substring(groqApiKey.length - 4)}` : 'none'
     });
     
     // Enhance error message with helpful information

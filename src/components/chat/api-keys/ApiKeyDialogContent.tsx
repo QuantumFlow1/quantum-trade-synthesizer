@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -41,6 +42,15 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     const deepKey = localStorage.getItem('deepseekApiKey') || '';
     const groqKey = localStorage.getItem('groqApiKey') || '';
     
+    console.log('Loading API keys from localStorage in ApiKeyDialogContent:', {
+      openai: openKey ? 'present' : 'not found',
+      claude: claudeKey ? 'present' : 'not found',
+      gemini: geminiKey ? 'present' : 'not found',
+      deepseek: deepKey ? 'present' : 'not found',
+      groq: groqKey ? 'present' : 'not found',
+      groqKeyLength: groqKey ? groqKey.length : 0
+    });
+    
     if (openKey) setOpenaiKey(openKey);
     if (claudeKey) setClaudeKey(claudeKey);
     if (geminiKey) setGeminiKey(geminiKey);
@@ -78,11 +88,21 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     
     console.log('Saving Groq API key:', groqKey ? `${groqKey.substring(0, 4)}...${groqKey.substring(groqKey.length - 4)}` : 'none', 'Length:', groqKey.length);
     
-    if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
-    if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
-    if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
-    if (deepseekKey.trim()) localStorage.setItem('deepseekApiKey', deepseekKey.trim());
-    if (groqKey.trim()) localStorage.setItem('groqApiKey', groqKey.trim());
+    // Clear existing keys if empty string is provided
+    if (openaiKey === '') localStorage.removeItem('openaiApiKey');
+    else localStorage.setItem('openaiApiKey', openaiKey.trim());
+    
+    if (claudeKey === '') localStorage.removeItem('claudeApiKey');
+    else localStorage.setItem('claudeApiKey', claudeKey.trim());
+    
+    if (geminiKey === '') localStorage.removeItem('geminiApiKey');
+    else localStorage.setItem('geminiApiKey', geminiKey.trim());
+    
+    if (deepseekKey === '') localStorage.removeItem('deepseekApiKey');
+    else localStorage.setItem('deepseekApiKey', deepseekKey.trim());
+    
+    if (groqKey === '') localStorage.removeItem('groqApiKey');
+    else localStorage.setItem('groqApiKey', groqKey.trim());
     
     if (onSave) {
       onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
@@ -98,6 +118,7 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     });
     
     try {
+      // Broadcast the API key update to other tabs
       const broadcastChannel = new BroadcastChannel('api-key-updates');
       broadcastChannel.postMessage({ 
         hasApiKeys: true, 
@@ -121,6 +142,7 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     window.dispatchEvent(new Event('storage'));
     
     try {
+      // Force a storage event by setting and removing a dummy key
       localStorage.setItem('_dummy_key_', Date.now().toString());
       localStorage.removeItem('_dummy_key_');
     } catch (e) {

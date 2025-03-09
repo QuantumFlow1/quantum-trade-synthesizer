@@ -37,8 +37,8 @@ export const validateApiKey = (key: string, type: string): boolean => {
   }
   
   if (type === 'groq' && !key.startsWith('gsk_')) {
-    // Groq keys can start with gsk_ or be in other formats too
-    // Just check if it's a reasonable length
+    // Accept Groq keys if they're reasonably long, even without the gsk_ prefix
+    // as different API versions might use different prefixes
     if (key.trim().length < 10) {
       toast({
         title: "Invalid Groq API Key",
@@ -70,12 +70,21 @@ export const saveApiKeys = (
     groqApiKey: groqKey.trim()
   };
   
-  // Save to localStorage
+  // Save to localStorage with clear handling of empty strings
   if (updatedKeys.openaiApiKey) localStorage.setItem('openaiApiKey', updatedKeys.openaiApiKey);
+  else localStorage.removeItem('openaiApiKey');
+  
   if (updatedKeys.claudeApiKey) localStorage.setItem('claudeApiKey', updatedKeys.claudeApiKey);
+  else localStorage.removeItem('claudeApiKey');
+  
   if (updatedKeys.geminiApiKey) localStorage.setItem('geminiApiKey', updatedKeys.geminiApiKey);
+  else localStorage.removeItem('geminiApiKey');
+  
   if (updatedKeys.deepseekApiKey) localStorage.setItem('deepseekApiKey', updatedKeys.deepseekApiKey);
+  else localStorage.removeItem('deepseekApiKey');
+  
   if (updatedKeys.groqApiKey) localStorage.setItem('groqApiKey', updatedKeys.groqApiKey);
+  else localStorage.removeItem('groqApiKey');
   
   console.log('Saved API keys to localStorage:', {
     openai: updatedKeys.openaiApiKey ? 'present' : 'not set',
@@ -86,9 +95,10 @@ export const saveApiKeys = (
     groqKeyLength: updatedKeys.groqApiKey ? updatedKeys.groqApiKey.length : 0
   });
   
-  // Dispatch a custom event to notify other components that the API key has been updated
-  const event = new Event('apikey-updated');
-  window.dispatchEvent(event);
+  // Dispatch events to notify other components about API key changes
+  window.dispatchEvent(new Event('apikey-updated'));
+  window.dispatchEvent(new Event('localStorage-changed'));
+  window.dispatchEvent(new Event('storage'));
   
   // Show toast notification
   if (updatedKeys.groqApiKey) {
@@ -143,6 +153,15 @@ export const loadApiKeysFromStorage = (): ApiKeySettings => {
   const savedGeminiKey = localStorage.getItem('geminiApiKey') || '';
   const savedDeepseekKey = localStorage.getItem('deepseekApiKey') || '';
   const savedGroqKey = localStorage.getItem('groqApiKey') || '';
+  
+  console.log('Loading API keys from localStorage in loadApiKeysFromStorage:', {
+    openai: savedOpenAIKey ? 'present' : 'not found',
+    claude: savedClaudeKey ? 'present' : 'not found',
+    gemini: savedGeminiKey ? 'present' : 'not found',
+    deepseek: savedDeepseekKey ? 'present' : 'not found',
+    groq: savedGroqKey ? 'present' : 'not found',
+    groqKeyLength: savedGroqKey ? savedGroqKey.length : 0
+  });
   
   return {
     openaiApiKey: savedOpenAIKey,
