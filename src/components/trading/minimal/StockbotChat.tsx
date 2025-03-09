@@ -1,10 +1,10 @@
 
 import { useState, useEffect, useRef } from "react";
-import { Bot, Send, Settings, Trash2 } from "lucide-react";
+import { Bot, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/lib/supabase";
@@ -83,7 +83,7 @@ export const StockbotChat = () => {
     try {
       const groqApiKey = localStorage.getItem('groqApiKey');
       
-      if (!groqApiKey) {
+      if (!groqApiKey && !isSimulationMode) {
         throw new Error("Groq API key is missing. Please set it in the settings.");
       }
 
@@ -113,6 +113,7 @@ export const StockbotChat = () => {
         });
         
         if (error) {
+          console.error('Error from edge function:', error);
           throw new Error(error.message || 'Failed to get response from Stockbot');
         }
         
@@ -223,11 +224,11 @@ export const StockbotChat = () => {
         </div>
       </CardHeader>
 
-      {!hasApiKey && (
+      {!hasApiKey && !isSimulationMode && (
         <Alert variant="warning" className="m-3">
           <AlertTitle>API Key Required</AlertTitle>
           <AlertDescription>
-            Please set your Groq API key to enable full Stockbot functionality.
+            Please set your Groq API key in the settings to enable full Stockbot functionality.
           </AlertDescription>
         </Alert>
       )}

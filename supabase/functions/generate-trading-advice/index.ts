@@ -1,14 +1,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
 import { corsHeaders } from "../_shared/cors.ts"
 
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || ''
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || ''
-
-// Create a Supabase client
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 serve(async (req) => {
   // This is needed if you're planning to invoke your function from a browser.
@@ -73,7 +67,7 @@ serve(async (req) => {
         message.toLowerCase().includes('website') ||
         message.toLowerCase().includes('www')) {
       
-      const response = `Ik kan geen externe websites openen of bezoeken. Als AI-assistent kan ik geen toegang krijgen tot internet links of webpagina's. Ik kan je wel helpen met trading informatie, analyse en educatie op basis van mijn training. Hoe kan ik je verder helpen met je trading vragen?`
+      const response = `I can't open external websites or browse internet links. As an AI assistant, I don't have access to the web. I can help with trading information, analysis, and education based on my training. How can I assist with your trading questions?`
       
       return new Response(
         JSON.stringify({ response }),
