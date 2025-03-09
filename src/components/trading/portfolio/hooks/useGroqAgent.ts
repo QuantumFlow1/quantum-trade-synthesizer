@@ -25,11 +25,20 @@ export const useGroqAgent = () => {
     try {
       console.log(`Generating recommendation using Groq agent ${agent.id} for ${marketData.symbol}`);
       
+      // Get API key from local storage if available
+      const groqApiKey = localStorage.getItem('groqApiKey');
+      
+      // Include API key in the request if available
+      const config = {
+        ...agent.config,
+        apiKey: groqApiKey || undefined
+      };
+      
       // Call the Supabase edge function
       const { data, error } = await supabase.functions.invoke('groq-analysis', {
         body: {
           marketData: marketData,
-          config: agent.config
+          config: config
         }
       });
       
@@ -42,6 +51,16 @@ export const useGroqAgent = () => {
           variant: "destructive"
         });
         return null;
+      }
+      
+      // Check if we got a fallback response
+      if (data?.source === 'fallback') {
+        console.log('Received fallback response from Groq service');
+        toast({
+          title: "Using Simulated Analysis",
+          description: "The Groq AI service is unavailable. Using simulated market analysis instead.",
+          variant: "warning"
+        });
       }
       
       if (!data || data.status === 'error' || !data.result) {

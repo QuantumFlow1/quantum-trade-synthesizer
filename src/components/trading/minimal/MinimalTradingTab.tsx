@@ -116,6 +116,8 @@ export const MinimalTradingTab = () => {
   // Handle tab change
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    // Also store active tab in localStorage
+    localStorage.setItem('tradingActiveTab', value);
   };
 
   // Toggle order book visibility
@@ -136,6 +138,19 @@ export const MinimalTradingTab = () => {
     const intervalId = setInterval(() => {
       refreshData();
     }, 15000);
+    
+    // Check if we should open the trading agents tab from localStorage
+    const shouldOpenTradingAgentsTab = localStorage.getItem('openTradingAgentsTab');
+    if (shouldOpenTradingAgentsTab === 'true') {
+      setActiveTab('agents');
+      localStorage.removeItem('openTradingAgentsTab');
+    } else {
+      // Check for previously selected tab
+      const savedTab = localStorage.getItem('tradingActiveTab');
+      if (savedTab) {
+        setActiveTab(savedTab);
+      }
+    }
     
     return () => clearInterval(intervalId);
   }, []);
@@ -216,4 +231,4 @@ export const MinimalTradingTab = () => {
       </Tabs>
     </div>
   );
-};
+}
