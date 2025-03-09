@@ -27,8 +27,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
           )}
         </div>
         <div className="flex-1">
-          <p className="whitespace-pre-line text-sm">{message.content}</p>
-          <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-orange-200' : 'text-gray-400'}`}>
+          <p className="whitespace-pre-line text-sm leading-relaxed">
+            {message.content}
+          </p>
+          <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-orange-200' : 'text-gray-500'}`}>
             {message.timestamp.toLocaleTimeString()}
           </p>
         </div>

@@ -63,9 +63,11 @@ export const StockbotMessages: React.FC<StockbotMessagesProps> = ({
                 : 'bg-white border border-gray-200 text-gray-800 rounded-tl-none'
             }`}
           >
-            <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+            <p className="text-sm whitespace-pre-wrap break-words leading-relaxed font-normal">
+              {message.content}
+            </p>
             <p className={`text-xs mt-2 ${
-              message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
+              message.role === 'user' ? 'text-blue-100' : 'text-gray-500'
             }`}>
               {message.timestamp.toLocaleTimeString ? message.timestamp.toLocaleTimeString() : 
                new Date(message.timestamp).toLocaleTimeString()}

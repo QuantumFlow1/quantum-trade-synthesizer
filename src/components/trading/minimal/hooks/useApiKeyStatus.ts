@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { showApiKeyDetectedToast } from "@/components/chat/api-keys/ApiKeyToastNotification";
+import { showApiKeyDetectedToast, showApiKeyErrorToast } from "@/components/chat/api-keys/ApiKeyToastNotification";
 
 export interface ApiKeyStatus {
   exists: boolean;

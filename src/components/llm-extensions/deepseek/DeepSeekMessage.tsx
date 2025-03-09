@@ -12,10 +12,10 @@ export function DeepSeekMessage({ message }: DeepSeekMessageProps) {
       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
     >
       <div 
-        className={`rounded-lg px-4 py-2 max-w-[85%] flex ${
+        className={`rounded-lg px-4 py-2 max-w-[85%] flex chat-bubble ${
           message.role === 'user' 
-            ? 'bg-blue-600 text-white' 
-            : 'bg-gray-100 border border-gray-200'
+            ? 'bg-blue-600 text-white user-message' 
+            : 'bg-gray-100 border border-gray-200 assistant-message'
         }`}
       >
         <div className={`mr-2 mt-1 ${message.role === 'user' ? 'text-white' : 'text-blue-600'}`}>
@@ -26,8 +26,8 @@ export function DeepSeekMessage({ message }: DeepSeekMessageProps) {
           )}
         </div>
         <div className="flex-1">
-          <p className="whitespace-pre-line text-sm">{message.content}</p>
-          <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-blue-200' : 'text-gray-400'}`}>
+          <p className="whitespace-pre-line text-sm message-text">{message.content}</p>
+          <p className={`text-xs mt-1 message-time ${message.role === 'user' ? 'text-blue-200' : 'text-gray-500'}`}>
             {message.timestamp.toLocaleTimeString()}
           </p>
         </div>

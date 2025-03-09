@@ -51,6 +51,7 @@ export const apiKeyToast = ({
 }: ApiKeyToastProps) => {
   const { toast } = useToast();
   
+  // Return icon as ReactNode without wrapping in JSX to avoid type error
   const getIcon = () => {
     switch (type) {
       case "success": return <CheckCircle className="h-5 w-5 text-green-500" />;
@@ -71,12 +72,11 @@ export const apiKeyToast = ({
   };
 
   return toast({
-    title: (
-      <div className="flex items-center gap-2">
-        {getIcon()}
-        <span>{provider} API Key - {message}</span>
-      </div>
-    ),
+    // Use a div wrapper for the title to avoid the string & ReactNode type error
+    title: <div className="flex items-center gap-2">
+      {getIcon()}
+      <span>{provider} API Key - {message}</span>
+    </div>,
     description: description,
     variant: getVariant(),
     duration: duration,
@@ -151,3 +151,36 @@ export const showApiKeyValidationToast = (provider: string, isValid: boolean, me
     });
   }
 };
+
+export const showAllApiKeysRefreshedToast = () => {
+  return apiKeyToast({
+    type: "info",
+    provider: "All",
+    message: "Reloaded",
+    description: "All components have been notified to reload API keys.",
+    duration: 3000,
+  });
+};
+
+export const showApiKeyReloadToast = (keysStatus: { [key: string]: boolean }) => {
+  const keysFound = Object.entries(keysStatus).filter(([_, exists]) => exists).map(([key]) => key);
+  
+  if (keysFound.length > 0) {
+    return apiKeyToast({
+      type: "success",
+      provider: "API Keys",
+      message: "Refreshed",
+      description: `Found keys for: ${keysFound.join(', ')}`,
+      duration: 3000,
+    });
+  } else {
+    return apiKeyToast({
+      type: "info",
+      provider: "API Keys",
+      message: "Refreshed",
+      description: "No API keys were found.",
+      duration: 3000,
+    });
+  }
+};
+

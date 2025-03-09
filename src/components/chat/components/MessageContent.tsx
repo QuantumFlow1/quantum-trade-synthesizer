@@ -19,8 +19,10 @@ export function MessageContent({ role, content, timestamp }: MessageContentProps
         )}
       </div>
       <div className="flex-1">
-        <p className="whitespace-pre-line">{content || "Error: Empty message content"}</p>
-        <p className={`text-xs mt-2 ${role === 'user' ? 'text-indigo-200' : 'text-gray-400'}`}>
+        <p className="whitespace-pre-line text-base leading-relaxed font-normal">
+          {content || "Error: Empty message content"}
+        </p>
+        <p className={`text-xs mt-2 ${role === 'user' ? 'text-indigo-200' : 'text-gray-500'}`}>
           {timestamp.toLocaleTimeString()} - {timestamp.toLocaleDateString()}
         </p>
       </div>

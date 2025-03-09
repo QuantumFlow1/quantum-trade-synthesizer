@@ -30,13 +30,15 @@ export const AIMessageList = ({ messages, isLoading, aiError }: AIMessageListPro
           className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
         >
           <div 
-            className={`max-w-[80%] p-3 rounded-lg ${
+            className={`max-w-[80%] p-3 rounded-lg chat-bubble ${
               message.role === 'user' 
-                ? 'bg-primary text-primary-foreground' 
-                : 'bg-muted'
+                ? 'bg-primary text-primary-foreground user-message' 
+                : 'bg-muted assistant-message'
             }`}
           >
-            {message.content}
+            <p className="message-text whitespace-pre-wrap break-words leading-relaxed">
+              {message.content}
+            </p>
           </div>
         </div>
       ))}
