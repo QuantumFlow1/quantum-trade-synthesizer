@@ -13,7 +13,7 @@ interface PortfolioDecisionProps {
     contributors?: string[];
     timestamp: string;
     ticker: string;
-    amount: number;
+    amount: number; // This is now required, not optional
     price: number;
     riskScore: number;
     stopLoss?: number;

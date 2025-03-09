@@ -20,10 +20,12 @@ export interface PortfolioDecision {
   reasoning: string;
   contributors: string[];
   timestamp: string;
-  ticker: string; // Changed from optional to required to match the type in agent.ts
-  amount?: number;
-  price?: number;
-  riskScore?: number;
+  ticker: string;
+  amount: number; // Changed from optional to required
+  price: number; // Changed from optional to required
+  riskScore: number; // Changed from optional to required
+  stopLoss?: number;
+  takeProfit?: number;
 }
 
 export interface TradingAgent {
