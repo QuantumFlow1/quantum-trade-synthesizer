@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Save, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ApiKeySettings } from '../types/GrokSettings';
@@ -9,11 +9,13 @@ import { validateApiKey } from './apiKeyUtils';
 import { toast } from '@/hooks/use-toast';
 
 interface ApiKeyDialogContentProps {
-  apiKeys: ApiKeySettings;
-  onSave: (openaiKey: string, claudeKey: string, geminiKey: string, deepseekKey: string, groqKey: string) => void;
+  apiKeys?: ApiKeySettings;
+  onSave?: (openaiKey: string, claudeKey: string, geminiKey: string, deepseekKey: string, groqKey: string) => void;
+  initialTab?: string;
+  onClose?: () => void;
 }
 
-export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProps) {
+export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose }: ApiKeyDialogContentProps) {
   const [openaiKey, setOpenaiKey] = useState('');
   const [claudeKey, setClaudeKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
@@ -23,11 +25,13 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
   
   // Load API keys from props when they change
   useEffect(() => {
-    setOpenaiKey(apiKeys.openaiApiKey || '');
-    setClaudeKey(apiKeys.claudeApiKey || '');
-    setGeminiKey(apiKeys.geminiApiKey || '');
-    setDeepseekKey(apiKeys.deepseekApiKey || '');
-    setGroqKey(apiKeys.groqApiKey || '');
+    if (apiKeys) {
+      setOpenaiKey(apiKeys.openaiApiKey || '');
+      setClaudeKey(apiKeys.claudeApiKey || '');
+      setGeminiKey(apiKeys.geminiApiKey || '');
+      setDeepseekKey(apiKeys.deepseekApiKey || '');
+      setGroqKey(apiKeys.groqApiKey || '');
+    }
   }, [apiKeys]);
   
   // Load API keys from localStorage when dialog opens
@@ -43,7 +47,18 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
     if (geminiKey) setGeminiKey(geminiKey);
     if (deepKey) setDeepseekKey(deepKey);
     if (groqKey) setGroqKey(groqKey);
-  }, []);
+    
+    // If initialTab is 'groq', scroll to the Groq section
+    if (initialTab === 'groq') {
+      setTimeout(() => {
+        const groqField = document.getElementById('groq-key-field');
+        if (groqField) {
+          groqField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          groqField.focus();
+        }
+      }, 100);
+    }
+  }, [initialTab]);
   
   const handleSave = () => {
     // Validate keys
@@ -54,7 +69,17 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
       return;
     }
     
-    onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
+    // Save keys to localStorage
+    localStorage.setItem('openaiApiKey', openaiKey.trim());
+    localStorage.setItem('claudeApiKey', claudeKey.trim());
+    localStorage.setItem('geminiApiKey', geminiKey.trim());
+    localStorage.setItem('deepseekApiKey', deepseekKey.trim());
+    localStorage.setItem('groqApiKey', groqKey.trim());
+    
+    // Call onSave callback if provided
+    if (onSave) {
+      onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
+    }
     
     // Show saved animation
     setSaved(true);
@@ -65,10 +90,18 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
       description: "Your API keys have been saved successfully",
       variant: "default"
     });
+    
+    // Trigger an event to notify that the API key has been updated
+    window.dispatchEvent(new Event('apikey-updated'));
+    
+    // Close dialog if onClose is provided
+    if (onClose) {
+      setTimeout(() => onClose(), 1000);
+    }
   };
   
   return (
-    <DialogContent className="sm:max-w-[425px]">
+    <>
       <DialogHeader>
         <DialogTitle>API Sleutels Beheren</DialogTitle>
         <DialogDescription>
@@ -121,7 +154,7 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
           <p className="text-xs text-gray-500">Vereist voor DeepSeek Coder</p>
         </div>
         
-        <div className="space-y-2">
+        <div className="space-y-2" id="groq-key-field">
           <label className="text-sm font-medium">Groq API Sleutel</label>
           <Input 
             type="password" 
@@ -148,6 +181,6 @@ export function ApiKeyDialogContent({ apiKeys, onSave }: ApiKeyDialogContentProp
           )}
         </Button>
       </DialogFooter>
-    </DialogContent>
+    </>
   );
 }

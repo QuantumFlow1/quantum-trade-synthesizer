@@ -39,7 +39,7 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
           <Switch
             checked={isSimulationMode}
             onCheckedChange={setIsSimulationMode}
-            size="sm"
+            className="h-4 w-7"
           />
         </div>
         
