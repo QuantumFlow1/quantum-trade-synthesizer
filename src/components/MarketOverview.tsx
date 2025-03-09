@@ -17,17 +17,17 @@ const MarketOverview = () => {
   const [showAIInsights, setShowAIInsights] = useState(false);
   const { toast } = useToast();
 
+  // Set a longer initial loading state to ensure data is properly fetched
   useEffect(() => {
-    // Set initial loading state
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
-    }, 2000);
+    }, 3000);
 
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    // Handle data validation
+    // Data validation and error handling
     try {
       if (!marketData) {
         console.log('No market data received');
@@ -50,7 +50,7 @@ const MarketOverview = () => {
         return;
       }
 
-      // Validation for data structure
+      // Basic validation for data structure
       const isValidData = marketData.every(item => 
         item && 
         typeof item.market === 'string' &&
@@ -65,6 +65,7 @@ const MarketOverview = () => {
         return;
       }
 
+      // Data is valid
       setHasError(false);
       setErrorMessage("");
     } catch (error) {
@@ -130,7 +131,7 @@ const MarketOverview = () => {
   }
 
   // If no data after initial loading, show message
-  if (!marketData.length) {
+  if (!marketData || marketData.length === 0) {
     return (
       <Alert>
         <AlertCircle className="h-4 w-4" />
@@ -151,6 +152,7 @@ const MarketOverview = () => {
     );
   }
 
+  // Group data by market for tabs
   const groupedData = marketData.reduce((acc, item) => {
     if (!acc[item.market]) {
       acc[item.market] = [];
@@ -227,7 +229,7 @@ const MarketOverview = () => {
                 >
                   <MarketCharts 
                     data={groupedData[market] || []} 
-                    isLoading={!marketData.length} 
+                    isLoading={false} 
                     type="overview" 
                   />
                 </TabsContent>
