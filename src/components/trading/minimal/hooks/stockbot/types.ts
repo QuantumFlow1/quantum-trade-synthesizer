@@ -4,6 +4,8 @@ export interface ChatMessage {
   sender: 'user' | 'assistant';
   text: string;
   timestamp: Date;
+  role?: 'user' | 'assistant'; // Added for compatibility with components
+  content?: string; // Added for compatibility with components
 }
 
 export type StockbotStatus = 'idle' | 'thinking' | 'checking' | 'error';

@@ -129,6 +129,9 @@ export const useTradingChartData = (
     fetchData(state.symbol, state.interval, limit);
   }, [fetchData, state.symbol, state.interval, limit]);
   
+  // Alias for refresh method needed by visualizationPage
+  const refresh = refreshData;
+  
   // Handle retry connection
   const handleRetryConnection = useCallback(() => {
     checkAPIStatus().then(({ available }) => {
@@ -182,8 +185,12 @@ export const useTradingChartData = (
   return {
     ...state,
     refreshData,
+    refresh, // Alias for refreshData
     checkAPIStatus,
     fetchData,
     handleRetryConnection
   };
 };
+
+// Export ApiStatus type for components that need it
+export { ApiStatus } from './trading-chart/types';

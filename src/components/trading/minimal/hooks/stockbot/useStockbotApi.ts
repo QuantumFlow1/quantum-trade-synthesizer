@@ -1,92 +1,94 @@
 
-import { v4 as uuidv4 } from "uuid";
-import { ChatMessage } from "./types";
-import { getSimulatedResponse } from "./responseSimulator";
-import { 
-  fetchTradingAdvice,
-  enhanceResponseWithMarketData,
-  showApiErrorToast
-} from "./apiService";
+import { useState, useCallback, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { ChatMessage, StockbotApiHook } from './types';
+import { generateStockbotResponse, generateErrorResponse } from './responseSimulator';
+import { saveMessages, loadMessages } from './storage';
 
 export const useStockbotApi = (
-  marketData: any[],
   messages: ChatMessage[],
-  setMessages: (messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void,
-  setIsLoading: (isLoading: boolean) => void
-) => {
-  const handleSendMessage = async (inputMessage: string, isSimulationMode: boolean) => {
-    if (!inputMessage.trim()) return;
+  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>,
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>,
+  marketData: any[] = []
+): StockbotApiHook => {
+  const [apiKey, setApiKey] = useState<string | null>(null);
+
+  // Load API key on mount
+  useEffect(() => {
+    const storedKey = localStorage.getItem('groqApiKey');
+    setApiKey(storedKey);
     
-    // Add user message
+    // Load previous messages
+    const savedMessages = loadMessages();
+    if (savedMessages && savedMessages.length > 0) {
+      setMessages(savedMessages);
+    }
+  }, [setMessages]);
+
+  // Send a message to the API
+  const handleSendMessage = useCallback(async (inputMessage: string, isSimulationMode: boolean = true) => {
+    if (!inputMessage.trim()) return;
+
+    // Create user message
     const userMessage: ChatMessage = {
       id: uuidv4(),
-      role: "user",
+      sender: 'user',
+      role: 'user',
+      text: inputMessage,
       content: inputMessage,
       timestamp: new Date()
     };
-    
-    setMessages((prev: ChatMessage[]) => [...prev, userMessage]);
+
+    // Add user message to the chat
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setIsLoading(true);
-    
+
     try {
-      // Recheck API key before responding
-      const groqKey = localStorage.getItem('groqApiKey');
-      const hasKey = !!groqKey;
-      
-      let responseContent = "";
-      
+      let response: ChatMessage;
+
       if (isSimulationMode) {
-        // Simulate API response delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Generate a simulated response
-        responseContent = getSimulatedResponse(inputMessage, marketData);
-      } else if (hasKey) {
-        // Prepare previous messages for context (limit to last 5 messages)
-        const contextMessages = messages.slice(-5).map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }));
-        
-        // Make the API call to get a response
-        responseContent = await fetchTradingAdvice(inputMessage, contextMessages, groqKey);
-        
-        // Enhance the response with market data if relevant
-        responseContent = enhanceResponseWithMarketData(inputMessage, responseContent, marketData);
+        // Use simulation mode (no API call)
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate delay
+        response = generateStockbotResponse(inputMessage, marketData);
       } else {
-        // No API key but not in simulation mode
-        await new Promise(resolve => setTimeout(resolve, 800));
-        responseContent = "I need a Groq API key to provide real AI responses. Please configure your API key to continue.";
+        // Check if API key exists
+        if (!apiKey) {
+          response = generateErrorResponse("API key is missing. Please add your API key in the settings.");
+        } else {
+          // Placeholder for real API call
+          // In a real implementation, you would call the API here
+          await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
+          response = generateStockbotResponse(inputMessage, marketData); // Fallback to simulation
+        }
       }
+
+      // Add assistant message to the chat
+      const finalMessages = [...updatedMessages, response];
+      setMessages(finalMessages);
       
-      // Add assistant response
-      const assistantMessage: ChatMessage = {
-        id: uuidv4(),
-        role: "assistant",
-        content: responseContent,
-        timestamp: new Date()
-      };
-      
-      setMessages((prev: ChatMessage[]) => [...prev, assistantMessage]);
+      // Save messages to local storage
+      saveMessages(finalMessages);
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error('Error sending message:', error);
       
-      // Add error message
+      // Create error message
       const errorMessage: ChatMessage = {
         id: uuidv4(),
-        role: "assistant",
-        content: "Sorry, I encountered an error processing your request. Please try again.",
+        sender: 'assistant',
+        role: 'assistant',
+        text: 'Sorry, I encountered an error processing your request.',
+        content: 'Sorry, I encountered an error processing your request.',
         timestamp: new Date()
       };
       
-      setMessages((prev: ChatMessage[]) => [...prev, errorMessage]);
-      
-      // Show error toast
-      showApiErrorToast(error);
+      setMessages([...updatedMessages, errorMessage]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [messages, setMessages, setIsLoading, apiKey, marketData]);
 
-  return { handleSendMessage };
+  return {
+    handleSendMessage
+  };
 };

@@ -1,7 +1,8 @@
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { v4 as uuidv4 } from 'uuid';
 import { ChatMessage, StockbotChatHook } from "./stockbot/types";
+import { generateStockbotResponse } from "./stockbot/responseSimulator";
 
 export type { ChatMessage } from "./stockbot/types";
 
@@ -14,7 +15,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   
   // Check for API key on mount
-  useState(() => {
+  useEffect(() => {
     const checkApiKey = () => {
       const key = localStorage.getItem('groqApiKey');
       setHasApiKey(!!key && key.length > 0);
@@ -26,7 +27,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     return () => {
       window.removeEventListener('apikey-updated', checkApiKey);
     };
-  });
+  }, []);
   
   const clearChat = useCallback(() => {
     setMessages([]);
@@ -44,7 +45,9 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     const userMessage: ChatMessage = {
       id: uuidv4(),
       sender: 'user',
+      role: 'user',
       text: inputMessage,
+      content: inputMessage,
       timestamp: new Date()
     };
     
@@ -56,26 +59,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Generate response based on message content
-      let responseText = "I'm your trading assistant. How can I help you today?";
-      
-      if (inputMessage.toLowerCase().includes('price')) {
-        const price = marketData && marketData.length > 0 
-          ? marketData[marketData.length - 1].close 
-          : 43500.75;
-        responseText = `Based on the latest data, Bitcoin is trading at $${price.toFixed(2)}.`;
-      } else if (inputMessage.toLowerCase().includes('market')) {
-        responseText = "The market has been showing increased volatility. It's important to manage risk and avoid emotional decisions.";
-      } else if (inputMessage.toLowerCase().includes('strategy')) {
-        responseText = "For a good trading strategy, consider dollar-cost averaging and setting clear stop-loss levels. Would you like me to explain more?";
-      }
-      
-      // Add assistant response
-      const assistantMessage: ChatMessage = {
-        id: uuidv4(),
-        sender: 'assistant',
-        text: responseText,
-        timestamp: new Date()
-      };
+      const assistantMessage = generateStockbotResponse(inputMessage, marketData);
       
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {

@@ -40,3 +40,8 @@ export type ApiKeyProvider =
   | 'alphavantage' 
   | 'marketdata' 
   | 'any';
+
+/**
+ * API Status types
+ */
+export type ApiStatus = 'available' | 'unavailable' | 'checking';
