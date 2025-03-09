@@ -12,7 +12,7 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
   
   return (
     <div className={`min-h-screen flex flex-col ${theme === 'dark' ? 'bg-background text-foreground' : 'bg-white text-gray-900'}`}>
-      <header className="border-b border-white/10">
+      <header className="border-b border-border">
         <div className="container mx-auto py-4 px-4 md:px-6 flex justify-between items-center">
           <Link to="/" className="text-xl font-bold">TradingApp</Link>
           
@@ -35,7 +35,7 @@ export const Shell: React.FC<ShellProps> = ({ children }) => {
         {children}
       </main>
       
-      <footer className="border-t border-white/10 py-4">
+      <footer className="border-t border-border py-4">
         <div className="container mx-auto px-4 md:px-6 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} TradingApp. All rights reserved.
         </div>

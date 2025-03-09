@@ -17,7 +17,7 @@ const StockBot = lazy(() => import("@/pages/StockBot"));
 
 // Loading component
 const LazyLoadingComponent = () => (
-  <div className="flex h-screen w-screen items-center justify-center">
+  <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground">
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
   </div>
 );
@@ -25,7 +25,7 @@ const LazyLoadingComponent = () => (
 function App() {
   return (
     <Router>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ThemeProvider attribute="class" defaultTheme="dark" storageKey="vite-ui-theme">
         <AuthProvider>
           <Suspense fallback={<LazyLoadingComponent />}>
             <Routes>
