@@ -1,39 +1,66 @@
 
-import React from "react";
-import { CardHeader, CardTitle } from "@/components/ui/card";
+import { Settings, RefreshCw, Key } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Bot, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 interface StockbotHeaderProps {
   isSimulationMode: boolean;
-  setIsSimulationMode: (isSimulation: boolean) => void;
+  setIsSimulationMode: (mode: boolean) => void;
   clearChat: () => void;
+  showApiKeyDialog: () => void;
+  hasApiKey: boolean;
 }
 
 export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
   isSimulationMode,
   setIsSimulationMode,
-  clearChat
+  clearChat,
+  showApiKeyDialog,
+  hasApiKey
 }) => {
   return (
-    <CardHeader className="py-3 px-4 border-b flex flex-row items-center justify-between space-y-0">
-      <CardTitle className="text-lg font-medium flex items-center">
-        <Bot className="w-5 h-5 mr-2 text-blue-500" />
-        Stockbot Trading Assistant
-      </CardTitle>
-      <div className="flex space-x-2">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => setIsSimulationMode(!isSimulationMode)}
-          className={isSimulationMode ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : ""}
-        >
-          {isSimulationMode ? "Demo Mode" : "Live Mode"}
-        </Button>
-        <Button variant="ghost" size="icon" onClick={clearChat}>
-          <Trash2 className="h-4 w-4" />
-        </Button>
+    <div className="flex items-center justify-between px-4 py-2 border-b">
+      <div className="flex items-center space-x-2">
+        <h3 className="font-medium">Stockbot</h3>
+        <span className={`text-xs px-1.5 py-0.5 rounded ${hasApiKey ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+          {hasApiKey ? 'Live' : 'Limited'}
+        </span>
       </div>
-    </CardHeader>
+
+      <div className="flex items-center space-x-2">
+        <div className="flex items-center mr-2">
+          <span className="text-xs mr-2">Simulation</span>
+          <Switch
+            checked={isSimulationMode}
+            onCheckedChange={setIsSimulationMode}
+            size="sm"
+          />
+        </div>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={clearChat}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Clear Chat
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={showApiKeyDialog}>
+              <Key className="mr-2 h-4 w-4" />
+              Configure API Key
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   );
 };

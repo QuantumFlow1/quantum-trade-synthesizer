@@ -81,6 +81,19 @@ export const saveApiKeys = (
     groq: updatedKeys.groqApiKey ? 'present' : 'not set'
   });
   
+  // Dispatch a custom event to notify other components that the API key has been updated
+  const event = new Event('apikey-updated');
+  window.dispatchEvent(event);
+  
+  // Show toast notification
+  if (updatedKeys.groqApiKey) {
+    toast({
+      title: "Groq API Key Saved",
+      description: "Your Groq API key has been saved and will be used for AI-powered features.",
+      duration: 3000
+    });
+  }
+  
   return updatedKeys;
 };
 

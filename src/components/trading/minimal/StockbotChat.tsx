@@ -6,6 +6,8 @@ import { useStockbotChat } from "./hooks/useStockbotChat";
 import { StockbotHeader } from "./components/StockbotHeader";
 import { StockbotMessages } from "./components/StockbotMessages";
 import { StockbotInput } from "./components/StockbotInput";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
 
 export const StockbotChat = () => {
   const { 
@@ -17,7 +19,10 @@ export const StockbotChat = () => {
     isSimulationMode, 
     setIsSimulationMode, 
     handleSendMessage, 
-    clearChat 
+    clearChat,
+    showApiKeyDialog,
+    isKeyDialogOpen,
+    setIsKeyDialogOpen
   } = useStockbotChat();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -35,14 +40,22 @@ export const StockbotChat = () => {
         isSimulationMode={isSimulationMode}
         setIsSimulationMode={setIsSimulationMode}
         clearChat={clearChat}
+        showApiKeyDialog={showApiKeyDialog}
+        hasApiKey={hasApiKey}
       />
 
       <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">
         {!hasApiKey && !isSimulationMode && (
           <Alert variant="warning" className="m-3">
             <AlertTitle>API Key Required</AlertTitle>
-            <AlertDescription>
-              Please set your Groq API key in the settings to enable full Stockbot functionality.
+            <AlertDescription className="flex flex-col gap-2">
+              <p>Please set your Groq API key to enable full Stockbot functionality.</p>
+              <button 
+                onClick={showApiKeyDialog}
+                className="text-amber-800 underline font-medium self-start"
+              >
+                Configure API Key
+              </button>
             </AlertDescription>
           </Alert>
         )}
@@ -60,6 +73,8 @@ export const StockbotChat = () => {
           messages={messages}
           isLoading={isLoading}
           messagesEndRef={messagesEndRef}
+          hasApiKey={hasApiKey}
+          onConfigureApiKey={showApiKeyDialog}
         />
         
         <StockbotInput 
@@ -69,6 +84,16 @@ export const StockbotChat = () => {
           isLoading={isLoading}
         />
       </CardContent>
+
+      {/* API Key Configuration Dialog */}
+      <Dialog open={isKeyDialogOpen} onOpenChange={setIsKeyDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <ApiKeyDialogContent 
+            initialTab="groq"
+            onClose={() => setIsKeyDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

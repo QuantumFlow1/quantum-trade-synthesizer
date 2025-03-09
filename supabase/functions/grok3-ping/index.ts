@@ -28,16 +28,21 @@ serve(async (req) => {
     
     const isConfigured = isGrok3Configured || isGroqConfigured;
     
+    const responseData = {
+      status: isConfigured ? 'available' : 'unavailable',
+      message: isConfigured 
+        ? 'API is available'
+        : 'API key not configured. Please set a Grok3 or Groq API key.',
+      grok3Available: isGrok3Configured,
+      groqAvailable: isGroqConfigured,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Log the response for debugging
+    console.log('Ping response:', JSON.stringify(responseData));
+    
     return new Response(
-      JSON.stringify({
-        status: isConfigured ? 'available' : 'unavailable',
-        message: isConfigured 
-          ? 'API is available'
-          : 'API key not configured. Please set a Grok3 or Groq API key.',
-        grok3Available: isGrok3Configured,
-        groqAvailable: isGroqConfigured,
-        timestamp: new Date().toISOString()
-      }),
+      JSON.stringify(responseData),
       { headers: corsHeaders }
     );
   } catch (error) {

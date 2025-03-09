@@ -34,6 +34,7 @@ serve(async (req) => {
     }
     
     if (!apiKey) {
+      console.error('No Groq API key available')
       return new Response(
         JSON.stringify({ error: 'Groq API key is required' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
@@ -91,7 +92,7 @@ serve(async (req) => {
       { role: "user", content: message }
     ]
 
-    console.log('Sending request to Groq API with messages')
+    console.log('Sending request to Groq API with messages:', JSON.stringify(messages.length))
     
     try {
       // Call Groq API

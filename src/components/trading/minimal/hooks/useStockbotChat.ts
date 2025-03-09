@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 
@@ -17,16 +17,44 @@ export function useStockbotChat() {
   const [hasApiKey, setHasApiKey] = useState(false);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   const [isSimulationMode, setIsSimulationMode] = useState(true);
+  const apiCheckTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check for Groq API key on mount and when localStorage changes
-  const checkApiKey = useCallback(() => {
+  const checkApiKey = useCallback(async () => {
     const groqApiKey = localStorage.getItem('groqApiKey');
     const keyExists = !!groqApiKey;
-    setHasApiKey(keyExists);
     
-    // If key exists, enable live mode, otherwise use simulation
     if (keyExists) {
-      setIsSimulationMode(false);
+      try {
+        // Also check if the key is valid by calling the ping function
+        const { data, error } = await supabase.functions.invoke('grok3-ping', {
+          headers: {
+            'x-groq-api-key': groqApiKey
+          }
+        });
+        
+        if (error) {
+          console.error('Error checking API availability:', error);
+          setHasApiKey(false);
+          setIsSimulationMode(true);
+          return;
+        }
+        
+        const isAvailable = data?.groqAvailable === true;
+        console.log('API key check result:', isAvailable ? 'valid' : 'invalid');
+        
+        setHasApiKey(isAvailable);
+        if (isAvailable) {
+          setIsSimulationMode(false);
+        }
+      } catch (err) {
+        console.error('Exception checking API key:', err);
+        setHasApiKey(false);
+        setIsSimulationMode(true);
+      }
+    } else {
+      setHasApiKey(false);
+      setIsSimulationMode(true);
     }
   }, []);
 
@@ -34,6 +62,15 @@ export function useStockbotChat() {
     checkApiKey();
     
     // Listen for API key updates
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'groqApiKey') {
+        checkApiKey();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Create custom event listener for when API key is updated within the app
     const handleApiKeyUpdate = () => {
       checkApiKey();
     };
@@ -62,8 +99,17 @@ export function useStockbotChat() {
       }]);
     }
     
+    // Set up periodic API key checks
+    apiCheckTimeoutRef.current = setInterval(() => {
+      checkApiKey();
+    }, 60000); // Check every minute
+    
     return () => {
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+      if (apiCheckTimeoutRef.current) {
+        clearInterval(apiCheckTimeoutRef.current);
+      }
     };
   }, [checkApiKey]);
 
@@ -121,6 +167,8 @@ export function useStockbotChat() {
       } else {
         // First try the direct edge function for trading advice
         try {
+          console.log("Sending to generate-trading-advice with Groq key:", groqApiKey ? "present" : "missing");
+          
           const { data, error } = await supabase.functions.invoke('generate-trading-advice', {
             body: { 
               message: inputMessage,
