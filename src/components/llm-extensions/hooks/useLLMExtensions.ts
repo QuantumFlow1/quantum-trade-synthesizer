@@ -121,8 +121,8 @@ export function useLLMExtensions() {
     
     try {
       // Use the Supabase Edge Function to verify the connection
-      const { data, error } = await supabase.functions.invoke('check-api-keys', {
-        body: { service: llm, checkSecret: true }
+      const { data, error } = await supabase.functions.invoke(`${llm}-ping`, {
+        body: { apiKey, checkSecret: true }
       });
       
       if (error) {
@@ -134,23 +134,30 @@ export function useLLMExtensions() {
         return;
       }
       
-      // Check if the API key is valid
-      if (data?.secretSet) {
+      // Special handling for Grok which doesn't use standard API keys
+      if (llm === 'grok') {
+        const isAvailable = data?.status === 'available';
         setConnectionStatus(prev => ({
           ...prev,
-          [llm]: 'connected'
+          grok: isAvailable ? 'connected' : 'unavailable'
         }));
-        
-        // Display a toast notification
+        return;
+      }
+      
+      // Check if the API key is valid
+      const isConnected = data?.success === true || data?.status === 'available';
+      setConnectionStatus(prev => ({
+        ...prev,
+        [llm]: isConnected ? 'connected' : 'disconnected'
+      }));
+      
+      // If connected, show a toast notification
+      if (isConnected) {
         toast({
           title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} Connected`,
-          description: `Successfully connected to ${llm.charAt(0).toUpperCase() + llm.slice(1)} API.`
+          description: `Successfully connected to ${llm.charAt(0).toUpperCase() + llm.slice(1)} API.`,
+          duration: 3000
         });
-      } else {
-        setConnectionStatus(prev => ({
-          ...prev,
-          [llm]: 'disconnected'
-        }));
       }
     } catch (error) {
       console.error(`Error in ${llm} connection check:`, error);
@@ -190,7 +197,7 @@ export function useLLMExtensions() {
   // Specifically check Grok availability
   const checkGrokAvailability = useCallback(async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('grok3-ping', {
+      const { data, error } = await supabase.functions.invoke('grok-ping', {
         body: { isAvailabilityCheck: true }
       });
       
@@ -208,6 +215,14 @@ export function useLLMExtensions() {
         ...prev,
         grok: isAvailable ? 'connected' : 'unavailable'
       }));
+      
+      if (isAvailable) {
+        toast({
+          title: "Grok Connected",
+          description: "Successfully connected to Grok API.",
+          duration: 3000
+        });
+      }
     } catch (error) {
       console.error('Exception checking Grok availability:', error);
       setConnectionStatus(prev => ({
@@ -217,6 +232,11 @@ export function useLLMExtensions() {
     }
   }, []);
 
+  // Function to configure API key for an LLM
+  const configureApiKey = useCallback((llm: string) => {
+    window.location.href = '/dashboard/settings';
+  }, []);
+
   return {
     activeTab,
     setActiveTab,
@@ -224,6 +244,7 @@ export function useLLMExtensions() {
     connectionStatus,
     toggleLLM,
     checkConnectionStatus,
-    checkConnectionStatusForLLM
+    checkConnectionStatusForLLM,
+    configureApiKey
   };
 }

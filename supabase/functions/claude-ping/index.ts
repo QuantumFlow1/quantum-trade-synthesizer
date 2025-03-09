@@ -28,22 +28,23 @@ serve(async (req) => {
       )
     }
     
-    // Make a simple request to the DeepSeek API to check if the API key works
-    const response = await fetch('https://api.deepseek.com/v1/models', {
+    // Make a simple request to the Claude API to check if the API key works
+    const response = await fetch('https://api.anthropic.com/v1/models', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json'
       }
     })
     
     if (response.ok) {
-      console.log('DeepSeek API connection successful')
+      console.log('Claude API connection successful')
       return new Response(
         JSON.stringify({ 
           status: 'available', 
           success: true,
-          message: 'Successfully connected to DeepSeek API' 
+          message: 'Successfully connected to Claude API' 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -51,7 +52,7 @@ serve(async (req) => {
       )
     } else {
       const errorData = await response.json()
-      console.error('DeepSeek API connection failed:', errorData)
+      console.error('Claude API connection failed:', errorData)
       return new Response(
         JSON.stringify({ 
           status: 'unavailable', 
@@ -64,7 +65,7 @@ serve(async (req) => {
       )
     }
   } catch (error) {
-    console.error('Error in deepseek-ping function:', error)
+    console.error('Error in claude-ping function:', error)
     return new Response(
       JSON.stringify({ 
         status: 'error', 

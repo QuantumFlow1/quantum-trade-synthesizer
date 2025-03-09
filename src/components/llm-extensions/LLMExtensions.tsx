@@ -13,7 +13,8 @@ export function LLMExtensions() {
     enabledLLMs, 
     connectionStatus,
     toggleLLM,
-    checkConnectionStatusForLLM
+    checkConnectionStatusForLLM,
+    configureApiKey
   } = useLLMExtensions();
   
   return (
@@ -37,28 +38,36 @@ export function LLMExtensions() {
             tabValue="deepseek" 
             isEnabled={enabledLLMs.deepseek} 
             toggleLLM={toggleLLM}
-            connectionStatus={connectionStatus.deepseek} 
+            connectionStatus={connectionStatus.deepseek}
+            onRetryConnection={() => checkConnectionStatusForLLM('deepseek')}
+            onConfigure={() => configureApiKey('deepseek')}
           />
           
           <LLMTabContent 
             tabValue="openai" 
             isEnabled={enabledLLMs.openai} 
             toggleLLM={toggleLLM}
-            connectionStatus={connectionStatus.openai} 
+            connectionStatus={connectionStatus.openai}
+            onRetryConnection={() => checkConnectionStatusForLLM('openai')}
+            onConfigure={() => configureApiKey('openai')}
           />
           
           <LLMTabContent 
             tabValue="grok" 
             isEnabled={enabledLLMs.grok} 
             toggleLLM={toggleLLM}
-            connectionStatus={connectionStatus.grok} 
+            connectionStatus={connectionStatus.grok}
+            onRetryConnection={() => checkConnectionStatusForLLM('grok')}
+            onConfigure={() => configureApiKey('grok')}
           />
           
           <LLMTabContent 
             tabValue="claude" 
             isEnabled={enabledLLMs.claude} 
             toggleLLM={toggleLLM}
-            connectionStatus={connectionStatus.claude} 
+            connectionStatus={connectionStatus.claude}
+            onRetryConnection={() => checkConnectionStatusForLLM('claude')}
+            onConfigure={() => configureApiKey('claude')}
           />
         </Tabs>
       </CardContent>

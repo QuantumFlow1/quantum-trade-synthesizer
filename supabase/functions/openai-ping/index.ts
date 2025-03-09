@@ -28,8 +28,8 @@ serve(async (req) => {
       )
     }
     
-    // Make a simple request to the DeepSeek API to check if the API key works
-    const response = await fetch('https://api.deepseek.com/v1/models', {
+    // Make a simple request to the OpenAI API to check if the API key works
+    const response = await fetch('https://api.openai.com/v1/models', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -38,12 +38,12 @@ serve(async (req) => {
     })
     
     if (response.ok) {
-      console.log('DeepSeek API connection successful')
+      console.log('OpenAI API connection successful')
       return new Response(
         JSON.stringify({ 
           status: 'available', 
           success: true,
-          message: 'Successfully connected to DeepSeek API' 
+          message: 'Successfully connected to OpenAI API' 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -51,7 +51,7 @@ serve(async (req) => {
       )
     } else {
       const errorData = await response.json()
-      console.error('DeepSeek API connection failed:', errorData)
+      console.error('OpenAI API connection failed:', errorData)
       return new Response(
         JSON.stringify({ 
           status: 'unavailable', 
@@ -64,7 +64,7 @@ serve(async (req) => {
       )
     }
   } catch (error) {
-    console.error('Error in deepseek-ping function:', error)
+    console.error('Error in openai-ping function:', error)
     return new Response(
       JSON.stringify({ 
         status: 'error', 

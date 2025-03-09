@@ -1,10 +1,10 @@
 
 import { TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { DeepSeekChat } from '../DeepSeekChat';
-import { OpenAIChat } from '../OpenAIChat';
-import { GrokChat } from '../GrokChat';
-import { ClaudeChat } from '../ClaudeChat';
+import { DeepSeekChat } from '../deepseek/DeepSeekChat';
+import { OpenAIChat } from '../openai/OpenAIChat';
+import { GrokChat } from '../grok/GrokChat';
+import { ClaudeChat } from '../claude/ClaudeChat';
 import { ChatEmpty } from './ChatEmpty';
 import { Cpu, Sparkles, Brain, MessageSquare, Settings } from 'lucide-react';
 import { ConnectionStatus } from './ConnectionStatus';
@@ -14,13 +14,17 @@ interface LLMTabContentProps {
   isEnabled: boolean;
   toggleLLM: (llm: string, enabled: boolean) => void;
   connectionStatus: 'connected' | 'disconnected' | 'unavailable' | 'checking';
+  onRetryConnection?: () => void;
+  onConfigure?: () => void;
 }
 
 export function LLMTabContent({ 
   tabValue, 
   isEnabled, 
   toggleLLM,
-  connectionStatus 
+  connectionStatus,
+  onRetryConnection,
+  onConfigure
 }: LLMTabContentProps) {
   // Render appropriate chat component based on tab value
   const renderChatComponent = () => {
@@ -47,7 +51,7 @@ export function LLMTabContent({
           <p className="text-gray-500 mb-4 text-center max-w-md">
             {getLLMName(tabValue)} is not connected. Please set up your API key.
           </p>
-          <Button onClick={() => window.location.href = '/dashboard/settings'} className="flex items-center">
+          <Button onClick={onConfigure} className="flex items-center">
             <Settings className="w-4 h-4 mr-2" />
             Configure API Keys
           </Button>
@@ -62,7 +66,7 @@ export function LLMTabContent({
           <p className="text-gray-500 mb-4 text-center max-w-md">
             {getLLMName(tabValue)} service is currently unavailable. Please try again later.
           </p>
-          <Button onClick={() => window.location.reload()} className="flex items-center">
+          <Button onClick={onRetryConnection} className="flex items-center">
             Retry Connection
           </Button>
         </div>
@@ -130,7 +134,12 @@ export function LLMTabContent({
   return (
     <TabsContent value={tabValue} className="mt-0 h-[500px] border-none p-0">
       <div className="w-full h-full flex flex-col">
-        <ConnectionStatus status={connectionStatus} llm={tabValue} />
+        <ConnectionStatus 
+          status={connectionStatus} 
+          llm={tabValue} 
+          onRetryConnection={onRetryConnection}
+          onConfigure={onConfigure}
+        />
         {renderChatComponent()}
       </div>
     </TabsContent>

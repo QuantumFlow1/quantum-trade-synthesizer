@@ -1,12 +1,15 @@
 
 import { Check, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ConnectionStatusProps {
   status: 'connected' | 'disconnected' | 'unavailable' | 'checking';
   llm: string;
+  onRetryConnection?: () => void;
+  onConfigure?: () => void;
 }
 
-export function ConnectionStatus({ status, llm }: ConnectionStatusProps) {
+export function ConnectionStatus({ status, llm, onRetryConnection, onConfigure }: ConnectionStatusProps) {
   // If connected, don't show anything to save space
   if (status === 'connected') return null;
 
@@ -51,9 +54,23 @@ export function ConnectionStatus({ status, llm }: ConnectionStatusProps) {
   const config = statusConfig[status];
 
   return (
-    <div className={`p-2 px-4 text-sm flex items-center ${config.className}`}>
-      {config.icon}
-      {config.text}
+    <div className={`p-2 px-4 text-sm flex items-center justify-between ${config.className}`}>
+      <div className="flex items-center">
+        {config.icon}
+        {config.text}
+      </div>
+      
+      {status === 'disconnected' && onConfigure && (
+        <Button size="sm" variant="outline" onClick={onConfigure} className="ml-2">
+          Configure API Key
+        </Button>
+      )}
+      
+      {status === 'unavailable' && onRetryConnection && (
+        <Button size="sm" variant="outline" onClick={onRetryConnection} className="ml-2">
+          Retry Connection
+        </Button>
+      )}
     </div>
   );
 }
