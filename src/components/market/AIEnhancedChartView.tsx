@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Legend, ReferenceLine } from 'recharts';
 import { ChartData } from './types';
@@ -9,7 +8,7 @@ interface AIEnhancedChartViewProps {
   type?: 'overview' | 'volume' | 'price';
   isLoading?: boolean;
   enableAIProjections?: boolean;
-  symbol?: string; // Add the symbol prop
+  symbol?: string;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -71,28 +70,34 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// Custom legend renderer
-const renderCustomLegend = (props: any) => {
-  const { payload } = props;
-  
+const ChartLegend = () => {
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center mt-2 text-xs">
-      {payload.map((entry: any, index: number) => {
-        const isProjection = entry.value.includes('Projection') || entry.value.includes('Bound') || entry.value.includes('Band');
-        return (
-          <div key={`item-${index}`} className="flex items-center gap-1.5">
-            <div 
-              className={`w-3 h-2 ${isProjection ? 'border-t-[2px] border-dashed' : ''}`} 
-              style={{ 
-                backgroundColor: isProjection ? 'transparent' : entry.color,
-                borderColor: isProjection ? entry.color : 'transparent'
-              }}
-            />
-            <span style={{ color: entry.color }}>{entry.value}</span>
-          </div>
-        );
-      })}
-    </div>
+    <Legend
+      verticalAlign="top"
+      align="right"
+      content={({ payload }) => (
+        <div className="flex items-center justify-end text-xs space-x-4 mb-2">
+          {payload?.map((entry, index) => {
+            const item = {
+              value: entry.value,
+              color: entry.color,
+              type: entry.type === 'area' ? 'rect' : 'line'
+            };
+            
+            return (
+              <div key={`item-${index}`} className="flex items-center">
+                {item.type === 'line' ? (
+                  <div className="w-6 h-0.5" style={{ backgroundColor: item.color }}></div>
+                ) : (
+                  <div className="w-3 h-3" style={{ backgroundColor: item.color }}></div>
+                )}
+                <span className="ml-1">{item.value}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    />
   );
 };
 
@@ -105,17 +110,14 @@ export const AIEnhancedChartView = ({
 }: AIEnhancedChartViewProps) => {
   const [enhancedData, setEnhancedData] = useState<ChartData[]>([]);
 
-  // Set up common chart props
   const commonProps = {
     data: enhancedData,
     margin: { top: 20, right: 30, left: 20, bottom: 20 }
   };
 
-  // Find where projected data starts (if any)
   const projectionStartIndex = enhancedData.findIndex(item => item.projected);
   const hasProjections = projectionStartIndex !== -1 && enableAIProjections;
 
-  // Update enhanced data when the original data changes
   useEffect(() => {
     setEnhancedData(data);
   }, [data]);
@@ -176,10 +178,9 @@ export const AIEnhancedChartView = ({
                   { value: 'Confidence Band', color: '#f59e0b', type: 'line' }
                 ] : [])
               ]}
-              content={renderCustomLegend} 
+              content={ChartLegend} 
             />
             
-            {/* Current price line */}
             <Line 
               type="monotone" 
               dataKey="price" 
@@ -190,14 +191,11 @@ export const AIEnhancedChartView = ({
               activeDot={{ r: 4 }}
             />
             
-            {/* High and low lines */}
             <Line type="monotone" dataKey="high" stroke="#4ade80" name="High" strokeWidth={1.5} />
             <Line type="monotone" dataKey="low" stroke="#ef4444" name="Low" strokeWidth={1.5} />
             
-            {/* Projected price line (if available) */}
             {hasProjections && (
               <>
-                {/* Main projected price line */}
                 <Line
                   type="monotone"
                   dataKey="projectedPrice"
@@ -209,7 +207,6 @@ export const AIEnhancedChartView = ({
                   dot={{ r: 3, fill: "#f59e0b", strokeWidth: 1, stroke: "#fff" }}
                 />
                 
-                {/* Confidence band - upper bound */}
                 <Line
                   type="monotone"
                   dataKey="upperBand"
@@ -222,7 +219,6 @@ export const AIEnhancedChartView = ({
                   dot={false}
                 />
                 
-                {/* Confidence band - lower bound */}
                 <Line
                   type="monotone"
                   dataKey="lowerBand"
@@ -235,7 +231,6 @@ export const AIEnhancedChartView = ({
                   dot={false}
                 />
                 
-                {/* Confidence band area */}
                 <defs>
                   <linearGradient id="confidenceBandGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.15}/>
@@ -254,7 +249,6 @@ export const AIEnhancedChartView = ({
               </>
             )}
             
-            {/* Divider line between actual and projected data */}
             {hasProjections && (
               <ReferenceLine 
                 x={enhancedData[projectionStartIndex].name} 

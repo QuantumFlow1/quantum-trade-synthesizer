@@ -1,10 +1,9 @@
-
 import React from 'react';
 import * as THREE from 'three';
-import { useThemeDetection } from '@/hooks/use-theme-detection';
+import { useThemeString } from '@/hooks/useThemeString';
 
-export const PersonalOfficeEnvironment: React.FC = () => {
-  const theme = useThemeDetection();
+export function PersonalOfficeEnvironment() {
+  const theme = useThemeString();
   
   return (
     <group>

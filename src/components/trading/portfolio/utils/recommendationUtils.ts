@@ -13,13 +13,6 @@ export const generateAgentRecommendations = async (
 ): Promise<AgentRecommendation[]> => {
   const recommendations: AgentRecommendation[] = [];
   
-  // Initialize Groq agent if not already initialized
-  if (!groqAgentInstance) {
-    // This will need to be set by the component using this function
-    // since hooks can only be called in component context
-    console.log("Groq agent not initialized yet");
-  }
-  
   // Process each agent to generate recommendations
   for (const agent of agents) {
     // Handle special case for Groq agent

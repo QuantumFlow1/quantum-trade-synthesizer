@@ -1,15 +1,15 @@
-
 import React, { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useThemeDetection } from '@/hooks/use-theme-detection';
 import { useVideoTexture } from '@react-three/drei';
+import { useThemeString } from '@/hooks/useThemeString';
 
 interface FinancialGardenEnvironmentProps {
   videoSrc?: string;
 }
 
 export const FinancialGardenEnvironment: React.FC<FinancialGardenEnvironmentProps> = ({ videoSrc }) => {
-  const theme = useThemeDetection();
+  const theme = useThemeString();
   const videoTextureRef = useRef<THREE.VideoTexture | null>(null);
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   
