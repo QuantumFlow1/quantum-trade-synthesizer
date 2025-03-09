@@ -1,10 +1,10 @@
 
 import React from 'react';
-import { ArrowUp, ArrowDown, MinusIcon } from 'lucide-react';
+import { ArrowUp, ArrowDown, MinusIcon, TrendingDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface RecommendationActionProps {
-  action: "BUY" | "SELL" | "HOLD";
+  action: "BUY" | "SELL" | "HOLD" | "SHORT";
 }
 
 export const RecommendationAction: React.FC<RecommendationActionProps> = ({ action }) => {
@@ -28,6 +28,13 @@ export const RecommendationAction: React.FC<RecommendationActionProps> = ({ acti
         <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
           <MinusIcon className="h-3 w-3 mr-1" />
           Hold
+        </Badge>
+      );
+    case "SHORT":
+      return (
+        <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20">
+          <TrendingDown className="h-3 w-3 mr-1" />
+          Short
         </Badge>
       );
     default:

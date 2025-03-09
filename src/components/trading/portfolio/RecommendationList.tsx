@@ -20,10 +20,19 @@ export const RecommendationList: React.FC<RecommendationListProps> = ({
   agentPerformance = {},
   agentAccuracy = {}
 }) => {
-  // Sort recommendations by confidence (highest first)
-  const sortedRecommendations = [...recommendations].sort((a, b) => b.confidence - a.confidence);
+  // Validate recommendations before processing
+  const validRecommendations = recommendations?.filter(rec => 
+    rec && typeof rec.confidence === 'number' && 
+    ['BUY', 'SELL', 'HOLD', 'SHORT'].includes(rec.action as string)
+  ) || [];
   
-  if (!sortedRecommendations.length) return null;
+  // Sort recommendations by confidence (highest first)
+  const sortedRecommendations = [...validRecommendations].sort((a, b) => b.confidence - a.confidence);
+  
+  if (!sortedRecommendations.length) {
+    console.log('No valid recommendations to display');
+    return null;
+  }
   
   return (
     <TooltipProvider>

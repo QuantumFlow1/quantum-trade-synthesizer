@@ -11,9 +11,12 @@ export const ConfidenceIndicator: React.FC<ConfidenceIndicatorProps> = ({
   confidence,
   confidenceInterval
 }) => {
-  const color = confidence > 80 ? 'bg-green-500' : 
-                confidence > 65 ? 'bg-blue-500' : 
-                confidence > 50 ? 'bg-yellow-500' : 'bg-red-500';
+  // Ensure confidence is between 0 and 100
+  const safeConfidence = Math.max(0, Math.min(100, confidence));
+  
+  const color = safeConfidence > 80 ? 'bg-green-500' : 
+                safeConfidence > 65 ? 'bg-blue-500' : 
+                safeConfidence > 50 ? 'bg-yellow-500' : 'bg-red-500';
   
   return (
     <Tooltip>
@@ -22,15 +25,15 @@ export const ConfidenceIndicator: React.FC<ConfidenceIndicatorProps> = ({
           <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
             <div 
               className={`h-full ${color} rounded-full`} 
-              style={{ width: `${confidence}%` }}
+              style={{ width: `${safeConfidence}%` }}
             />
           </div>
-          <span className="text-xs font-medium">{confidence}%</span>
+          <span className="text-xs font-medium">{safeConfidence}%</span>
         </div>
       </TooltipTrigger>
       <TooltipContent>
         <div className="space-y-1 text-xs">
-          <p>Confidence score: {confidence}%</p>
+          <p>Confidence score: {safeConfidence}%</p>
           {confidenceInterval && (
             <p>Confidence interval: [{confidenceInterval[0].toFixed(0)}% - {confidenceInterval[1].toFixed(0)}%]</p>
           )}
