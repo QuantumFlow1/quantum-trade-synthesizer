@@ -1,10 +1,10 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { generateTradingData } from "@/utils/tradingData";
 import { checkApiKeysAvailability } from "./trading-chart/api-key-manager";
 import { fetchMarketData } from "./trading-chart/market-data-service";
 import { checkApiStatus, retryConnection } from "./trading-chart/api-status-manager";
 import { ApiStatus, TradingChartState } from "./trading-chart/types";
+import { toast } from "@/hooks/use-toast";
 
 export type { ApiStatus } from "./trading-chart/types";
 
@@ -45,6 +45,17 @@ export function useTradingChartData(forceSimulation: boolean) {
     updateState({ lastFetchTime: new Date() });
     
     try {
+      // Always use simulation data if forceSimulation is true
+      if (forceSimulation) {
+        console.log("Simulation mode active, using generated data");
+        const simulatedData = generateTradingData();
+        updateState({ 
+          data: simulatedData,
+          isLoading: false 
+        });
+        return simulatedData;
+      }
+      
       const result = await fetchMarketData(
         isLoading,
         lastFetchTime,
@@ -56,8 +67,26 @@ export function useTradingChartData(forceSimulation: boolean) {
         })
       );
       
-      updateState({ data: result });
-      return result;
+      if (result && result.length > 0) {
+        console.log("Successfully fetched market data:", result.length, "data points");
+        updateState({ data: result });
+        return result;
+      } else {
+        console.warn("Empty data returned from fetchMarketData, using generated data");
+        const fallbackData = generateTradingData();
+        updateState({ data: fallbackData });
+        return fallbackData;
+      }
+    } catch (error) {
+      console.error("Error in fetchMarketDataImpl:", error);
+      const fallbackData = generateTradingData();
+      updateState({ data: fallbackData });
+      toast({
+        title: "Data Loading Error",
+        description: "Failed to load market data. Using simulated data instead.",
+        variant: "destructive"
+      });
+      return fallbackData;
     } finally {
       updateState({ isLoading: false });
     }
@@ -110,6 +139,10 @@ export function useTradingChartData(forceSimulation: boolean) {
         updateState({ data: generateTradingData() });
       } else if (apiStatus === 'available' && !isLoading) {
         fetchMarketDataImpl();
+      } else if (apiStatus !== 'available') {
+        // If API is not available, use simulated data but keep updating
+        console.log("API not available, using generated data");
+        updateState({ data: generateTradingData() });
       }
     }, updateInterval);
 
@@ -134,4 +167,3 @@ export function useTradingChartData(forceSimulation: boolean) {
     refresh // Add refresh function to the return object
   };
 }
-

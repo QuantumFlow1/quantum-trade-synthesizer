@@ -21,7 +21,7 @@ export const MinimalTradingTab = () => {
   const [timeframe, setTimeframe] = useState<"1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w">("1h");
   const [isLoading, setIsLoading] = useState(true);
   const [currentData, setCurrentData] = useState<any>(null);
-  const [isSimulationMode, setIsSimulationMode] = useState<boolean>(true);
+  const [isSimulationMode, setIsSimulationMode] = useState<boolean>(false); // Default to false to attempt real data
   const [activeTab, setActiveTab] = useState<string>("chart");
   const [selectedPair, setSelectedPair] = useState<string>("BTC/USDT");
   const [showOrderBook, setShowOrderBook] = useState<boolean>(true);
@@ -48,6 +48,8 @@ export const MinimalTradingTab = () => {
           volume: latestDataPoint.volume
         });
       }
+      
+      console.log("Trading data refreshed:", newData.length, "data points");
     } catch (error) {
       console.error("Error refreshing data:", error);
       toast({
@@ -105,6 +107,10 @@ export const MinimalTradingTab = () => {
   // Handle simulation mode toggle
   const handleSimulationToggle = (enabled: boolean) => {
     setIsSimulationMode(enabled);
+    toast({
+      title: enabled ? "Simulation Mode Enabled" : "Live Trading Mode Enabled",
+      description: enabled ? "Using simulated market data" : "Using real market data",
+    });
   };
 
   // Handle tab change
@@ -126,10 +132,10 @@ export const MinimalTradingTab = () => {
   useEffect(() => {
     refreshData();
     
-    // Set up auto-refresh every 30 seconds
+    // Set up auto-refresh every 15 seconds instead of 30 for more responsive updates
     const intervalId = setInterval(() => {
       refreshData();
-    }, 30000);
+    }, 15000);
     
     return () => clearInterval(intervalId);
   }, []);
