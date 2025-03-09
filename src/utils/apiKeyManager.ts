@@ -47,7 +47,8 @@ export const saveApiKey = (provider: string, apiKey: string): boolean => {
  */
 export const getApiKey = (provider: string): string | null => {
   try {
-    return localStorage.getItem(`${provider}ApiKey`);
+    const key = localStorage.getItem(`${provider}ApiKey`);
+    return key;
   } catch (error) {
     console.error(`Error getting ${provider} API key:`, error);
     return null;
@@ -67,6 +68,8 @@ export const hasApiKey = (provider: string): boolean => {
  */
 export const broadcastApiKeyChange = (exists: boolean): void => {
   try {
+    console.log(`Broadcasting API key change. Key exists: ${exists}`);
+    
     // Dispatch custom events
     window.dispatchEvent(new Event(API_KEY_UPDATED_EVENT));
     window.dispatchEvent(new Event(LOCALSTORAGE_CHANGED_EVENT));
@@ -88,8 +91,9 @@ export const broadcastApiKeyChange = (exists: boolean): void => {
     }
     
     // Force a storage event by setting and removing a dummy key
-    localStorage.setItem('_dummy_key_', Date.now().toString());
-    localStorage.removeItem('_dummy_key_');
+    const dummyKey = `_dummy_key_${Date.now()}`;
+    localStorage.setItem(dummyKey, Date.now().toString());
+    localStorage.removeItem(dummyKey);
   } catch (error) {
     console.error('Error broadcasting API key change:', error);
   }

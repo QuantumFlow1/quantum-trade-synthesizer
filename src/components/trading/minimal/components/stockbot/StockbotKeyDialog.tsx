@@ -3,7 +3,7 @@ import React from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
 import { toast } from "@/hooks/use-toast";
-import { saveApiKey, hasApiKey } from "@/utils/apiKeyManager";
+import { saveApiKey, hasApiKey, broadcastApiKeyChange } from "@/utils/apiKeyManager";
 
 interface StockbotKeyDialogProps {
   isKeyDialogOpen: boolean;
@@ -22,6 +22,7 @@ export const StockbotKeyDialog = ({
     
     console.log("API key save completed. Key in storage:", {
       exists: keyExists,
+      keyLength: keyExists ? localStorage.getItem('groqApiKey')?.length : 0
     });
     
     if (!keyExists) {
@@ -38,6 +39,9 @@ export const StockbotKeyDialog = ({
       description: "The API key was successfully saved to storage.",
       variant: "default"
     });
+    
+    // Force a broadcast of the API key change event to all components
+    broadcastApiKeyChange(true);
     
     // Wait a short delay before closing to avoid state update conflicts
     setTimeout(() => {
