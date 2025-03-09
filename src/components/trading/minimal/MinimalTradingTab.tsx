@@ -8,7 +8,7 @@ import { PriceAlerts } from "./components/PriceAlerts";
 import { OrderBook } from "./components/OrderBook";
 import { NewsFeed } from "./components/NewsFeed";
 import { TechnicalIndicators } from "./components/TechnicalIndicators";
-import { StockbotChat } from "./StockbotChat";
+import { TradingAgents } from "./components/TradingAgents";
 import { generateTradingData, TradingDataPoint } from "@/utils/tradingData";
 
 export const MinimalTradingTab = () => {
@@ -36,6 +36,11 @@ export const MinimalTradingTab = () => {
     setTradingData(generateTradingData()); // Regenerate data for the new timeframe
   };
 
+  const handlePairChange = (pair: string) => {
+    setSelectedPair(pair);
+    setTradingData(generateTradingData()); // Regenerate data for the new pair
+  };
+
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
       <TabsList className="grid grid-cols-4 w-full md:w-auto">
@@ -54,6 +59,8 @@ export const MinimalTradingTab = () => {
               onRefresh={handleRefresh}
               onTimeframeChange={handleTimeframeChange}
               currentTimeframe={currentTimeframe}
+              selectedPair={selectedPair}
+              onPairChange={handlePairChange}
             />
           </TabsContent>
           
@@ -69,7 +76,7 @@ export const MinimalTradingTab = () => {
           
           <TabsContent value="agents" className="space-y-4">
             <MinimalMarketData />
-            <StockbotChat />
+            <TradingAgents />
           </TabsContent>
         </div>
         

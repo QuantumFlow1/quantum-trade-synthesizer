@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BrainCircuit, Bot, MessageSquare, Zap } from "lucide-react";
 import { GrokChat } from "@/components/llm-extensions/GrokChat";
 import { DeepSeekChat } from "@/components/llm-extensions/DeepSeekChat";
+import { OpenAIChat } from "@/components/llm-extensions/OpenAIChat";
+import { ClaudeChat } from "@/components/llm-extensions/ClaudeChat";
 import { useEffect, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StockbotAccess } from "@/components/trading/minimal/StockbotAccess";
@@ -33,10 +35,18 @@ export function AIToolsPage({ apiStatus, showApiAccess }: AIToolsPageProps) {
       <h1 className="text-2xl font-bold">AI Tools</h1>
       
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid grid-cols-3 mb-4">
+        <TabsList className="grid grid-cols-5 mb-4">
           <TabsTrigger value="stockbot" className="flex items-center">
             <Bot className="w-4 h-4 mr-2" />
             <span>Stockbot</span>
+          </TabsTrigger>
+          <TabsTrigger value="openai" className="flex items-center">
+            <MessageSquare className="w-4 h-4 mr-2" />
+            <span>OpenAI</span>
+          </TabsTrigger>
+          <TabsTrigger value="claude" className="flex items-center">
+            <MessageSquare className="w-4 h-4 mr-2" />
+            <span>Claude</span>
           </TabsTrigger>
           <TabsTrigger value="deepseek" className="flex items-center">
             <BrainCircuit className="w-4 h-4 mr-2" />
@@ -81,6 +91,14 @@ export function AIToolsPage({ apiStatus, showApiAccess }: AIToolsPageProps) {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="openai">
+          <OpenAIChat />
+        </TabsContent>
+
+        <TabsContent value="claude">
+          <ClaudeChat />
         </TabsContent>
 
         <TabsContent value="deepseek">

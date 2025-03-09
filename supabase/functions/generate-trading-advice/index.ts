@@ -5,7 +5,7 @@ import { corsHeaders } from "../_shared/cors.ts"
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY') || ''
 
 serve(async (req) => {
-  // This is needed if you're planning to invoke your function from a browser.
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -30,6 +30,7 @@ serve(async (req) => {
     
     if (!apiKey && clientProvidedKey) {
       apiKey = clientProvidedKey
+      console.log('Using client-provided Groq API key')
     }
     
     if (!apiKey) {
@@ -92,36 +93,65 @@ serve(async (req) => {
 
     console.log('Sending request to Groq API with messages')
     
-    // Call Groq API
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'llama3-70b-8192',
-        messages: messages,
-        max_tokens: 1000,
-        temperature: 0.7,
+    try {
+      // Call Groq API
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'llama3-70b-8192',
+          messages: messages,
+          max_tokens: 1000,
+          temperature: 0.7,
+        })
       })
-    })
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(`Groq API error: ${errorData.error?.message || response.statusText}`)
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Groq API error: Status ${response.status}, Response:`, errorText);
+        
+        let errorMessage = `Groq API error: ${response.statusText}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          if (errorData.error?.message) {
+            errorMessage = `Groq API error: ${errorData.error.message}`;
+          }
+        } catch (e) {
+          // If we can't parse the error as JSON, just use the status text
+          console.error("Failed to parse error response:", e);
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json()
+      const aiResponse = data.choices[0]?.message?.content || "I apologize, but I couldn't generate a response. Please try asking in a different way."
+      
+      console.log(`Generated response: ${aiResponse.substring(0, 100)}...`)
+
+      // Return the response
+      return new Response(
+        JSON.stringify({ response: aiResponse }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+      
+    } catch (apiError) {
+      console.error('Groq API call failed:', apiError);
+      
+      // If the API call fails, return a fallback response
+      const fallbackResponse = "I'm sorry, but I'm having trouble connecting to my analysis systems right now. Here's a general suggestion: Consider monitoring key support and resistance levels, set clear stop losses, and don't overcommit your capital to a single position. Would you like me to try analyzing your question again?";
+      
+      return new Response(
+        JSON.stringify({ response: fallbackResponse }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200 
+        }
+      )
     }
-
-    const data = await response.json()
-    const aiResponse = data.choices[0]?.message?.content || "I apologize, but I couldn't generate a response. Please try asking in a different way."
-    
-    console.log(`Generated response: ${aiResponse.substring(0, 100)}...`)
-
-    // Return the response
-    return new Response(
-      JSON.stringify({ response: aiResponse }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
 
   } catch (error) {
     console.error('Error generating trading advice:', error)

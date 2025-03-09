@@ -1,74 +1,57 @@
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RefreshCw, TrendingUp } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw } from "lucide-react";
+import { TradingPairSelector } from "./components/TradingPairSelector";
 
-export interface MinimalTradingControlsProps {
+interface MinimalTradingControlsProps {
   onRefresh: () => void;
   onTimeframeChange: (timeframe: string) => void;
   currentTimeframe: string;
+  selectedPair: string;
+  onPairChange: (pair: string) => void;
 }
 
-export const MinimalTradingControls = ({ 
-  onRefresh, 
+export const MinimalTradingControls = ({
+  onRefresh,
   onTimeframeChange,
-  currentTimeframe 
+  currentTimeframe,
+  selectedPair,
+  onPairChange
 }: MinimalTradingControlsProps) => {
-  const timeframes = ["5m", "15m", "30m", "1h", "4h", "1d", "1w"];
+  const timeframes = ["1m", "5m", "15m", "1h", "4h", "1d", "1w"];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-md flex items-center gap-2">
-          <TrendingUp className="h-5 w-5" />
-          Trading Controls
-        </CardTitle>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={onRefresh}
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Timeframe</label>
-            <Select 
-              value={currentTimeframe} 
-              onValueChange={onTimeframeChange}
+    <div className="flex flex-wrap justify-between items-center gap-2 p-3 bg-card border rounded-lg">
+      <div className="flex items-center gap-2">
+        <TradingPairSelector 
+          selectedPair={selectedPair} 
+          onPairChange={onPairChange} 
+        />
+        
+        <div className="flex border rounded-md overflow-hidden">
+          {timeframes.map((tf) => (
+            <Button
+              key={tf}
+              variant={currentTimeframe === tf ? "secondary" : "ghost"}
+              size="sm"
+              className="px-2 rounded-none h-8"
+              onClick={() => onTimeframeChange(tf)}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select timeframe" />
-              </SelectTrigger>
-              <SelectContent>
-                {timeframes.map((tf) => (
-                  <SelectItem key={tf} value={tf}>
-                    {tf}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">Strategy</label>
-            <Select defaultValue="default">
-              <SelectTrigger>
-                <SelectValue placeholder="Select strategy" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Default</SelectItem>
-                <SelectItem value="macd">MACD Crossover</SelectItem>
-                <SelectItem value="rsi">RSI Oversold/Overbought</SelectItem>
-                <SelectItem value="ma">Moving Average Cross</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              {tf}
+            </Button>
+          ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onRefresh}
+        className="flex items-center gap-1"
+      >
+        <RefreshCw className="h-4 w-4" />
+        Refresh
+      </Button>
+    </div>
   );
 };
