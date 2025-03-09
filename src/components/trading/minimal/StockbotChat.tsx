@@ -9,13 +9,17 @@ import { StockbotInput } from "./components/StockbotInput";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
 
-export const StockbotChat = () => {
+interface StockbotChatProps {
+  hasApiKey: boolean;
+  marketData?: any[];
+}
+
+export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) => {
   const { 
     messages, 
     inputMessage, 
     setInputMessage, 
     isLoading, 
-    hasApiKey, 
     isSimulationMode, 
     setIsSimulationMode, 
     handleSendMessage, 
@@ -23,7 +27,7 @@ export const StockbotChat = () => {
     showApiKeyDialog,
     isKeyDialogOpen,
     setIsKeyDialogOpen
-  } = useStockbotChat();
+  } = useStockbotChat(marketData);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
