@@ -1,11 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/json'
-};
+import { corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -14,85 +9,78 @@ serve(async (req) => {
   }
 
   try {
-    // Parse the request body or use an empty object if it's not valid JSON
-    let body = {};
-    try {
-      body = await req.json();
-    } catch (e) {
-      console.log("No valid JSON body provided");
-    }
+    console.log('Checking API keys availability');
     
-    const { service, checkSecret } = body;
+    // Extract parameters from request body
+    const requestData = await req.json();
+    const { service } = requestData || {};
+    const checkSecret = requestData?.checkSecret === true;
     
-    // Log incoming request
-    console.log(`Checking API keys for service: ${service}, checkSecret: ${checkSecret}`);
-    
-    // Check if a specific service key was requested
-    if (service) {
-      // Map service name to environment variable name following common naming conventions
-      const envVarMap: Record<string, string> = {
-        'openai': 'OPENAI_API_KEY',
-        'claude': 'CLAUDE_API_KEY',
-        'gemini': 'GEMINI_API_KEY',
-        'deepseek': 'DEEPSEEK_API_KEY',
-        'groq': 'GROQ_API_KEY',
-        'grok3': 'GROK3_API_KEY'
-      };
-      
-      const envVarName = envVarMap[service.toLowerCase()];
-      
-      if (!envVarName) {
-        return new Response(
-          JSON.stringify({ error: `Unknown service: ${service}` }),
-          { status: 400, headers: corsHeaders }
-        );
+    console.log(`Checking availability for service: ${service}, checkSecret: ${checkSecret}`);
+
+    // If we're checking a specific service, validate the corresponding secret
+    if (service && checkSecret) {
+      let secretKey = null;
+      switch (service.toLowerCase()) {
+        case 'openai':
+          secretKey = Deno.env.get('OPENAI_API_KEY');
+          break;
+        case 'claude':
+          secretKey = Deno.env.get('CLAUDE_API_KEY');
+          break;
+        case 'gemini':
+          secretKey = Deno.env.get('GEMINI_API_KEY');
+          break;
+        case 'grok3':
+          secretKey = Deno.env.get('GROK3_API_KEY');
+          break;
+        case 'groq':
+          secretKey = Deno.env.get('GROQ_API_KEY');
+          break;
+        default:
+          // If service not specified, check if any API key is available
+          secretKey = Deno.env.get('OPENAI_API_KEY') || 
+                      Deno.env.get('CLAUDE_API_KEY') || 
+                      Deno.env.get('GEMINI_API_KEY') ||
+                      Deno.env.get('GROK3_API_KEY') ||
+                      Deno.env.get('GROQ_API_KEY');
       }
       
-      // Check if the secret should be validated
-      if (checkSecret) {
-        const secretValue = Deno.env.get(envVarName);
-        const secretSet = !!secretValue && secretValue.trim().length > 0;
-        
-        console.log(`API key for ${service} (${envVarName}): ${secretSet ? 'SET' : 'NOT SET'}`);
-        
-        return new Response(
-          JSON.stringify({ secretSet }),
-          { headers: corsHeaders }
-        );
-      } else {
-        // Just check if the variable exists
-        const hasEnvVar = Deno.env.has(envVarName);
-        
-        console.log(`Environment variable ${envVarName} exists: ${hasEnvVar}`);
-        
-        return new Response(
-          JSON.stringify({ exists: hasEnvVar }),
-          { headers: corsHeaders }
-        );
-      }
+      const secretSet = !!secretKey;
+      console.log(`Service ${service} secret is ${secretSet ? 'set' : 'not set'}`);
+      
+      return new Response(
+        JSON.stringify({ 
+          status: 'success', 
+          secretSet, 
+          service
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
-    // If no specific service was requested, check all services
-    const services = ['openai', 'claude', 'gemini', 'deepseek', 'groq', 'grok3'];
-    const results: Record<string, boolean> = {};
-    
-    for (const service of services) {
-      const envVarName = `${service.toUpperCase()}_API_KEY`;
-      const hasKey = Deno.env.has(envVarName);
-      results[service] = hasKey;
-    }
-    
-    console.log('API key availability check results:', results);
-    
+    // Default response when no specific check was requested
     return new Response(
-      JSON.stringify({ keys: results }),
-      { headers: corsHeaders }
+      JSON.stringify({ 
+        status: 'success', 
+        message: 'API key check completed',
+        available: true
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error in check-api-keys function:', error);
+    
     return new Response(
-      JSON.stringify({ error: `Server error: ${error.message}` }),
-      { status: 500, headers: corsHeaders }
+      JSON.stringify({ 
+        status: 'error', 
+        message: `API key check failed: ${error.message}`,
+        error: error.message 
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
     );
   }
 });
