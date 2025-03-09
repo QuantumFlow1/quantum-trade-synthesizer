@@ -104,8 +104,19 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       variant: "default"
     });
     
-    // Trigger an event to notify that the API key has been updated
+    // Trigger multiple events to ensure all components are notified
     window.dispatchEvent(new Event('apikey-updated'));
+    window.dispatchEvent(new Event('localStorage-changed'));
+    window.dispatchEvent(new Event('storage'));
+    
+    // Force a window storage event which some components might be listening for
+    try {
+      // This is a hack to trigger the storage event
+      localStorage.setItem('_dummy_key_', Date.now().toString());
+      localStorage.removeItem('_dummy_key_');
+    } catch (e) {
+      console.error("Failed to trigger storage event:", e);
+    }
     
     // Close dialog if onClose is provided
     if (onClose) {

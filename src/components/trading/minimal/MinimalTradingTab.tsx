@@ -50,6 +50,10 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
     
     window.addEventListener('apikey-updated', handleApiKeyUpdate);
     window.addEventListener('localStorage-changed', handleApiKeyUpdate);
+    window.addEventListener('storage', handleApiKeyUpdate);
+    
+    // Set an interval to periodically check for API key updates
+    const intervalId = setInterval(checkApiKey, 2000);
     
     // Simulate API status check
     setTimeout(() => {
@@ -60,6 +64,8 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyUpdate);
       window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
+      window.removeEventListener('storage', handleApiKeyUpdate);
+      clearInterval(intervalId);
     };
   }, []);
   

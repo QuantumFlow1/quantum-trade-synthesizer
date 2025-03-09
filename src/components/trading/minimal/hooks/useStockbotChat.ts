@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
@@ -15,32 +15,14 @@ export const useStockbotChat = (marketData: any[] = []) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSimulationMode, setIsSimulationMode] = useState(true);
+  const [isSimulationMode, setIsSimulationMode] = useState(false);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   
   // Check for API key
   const [hasApiKey, setHasApiKey] = useState(false);
   
-  useEffect(() => {
-    // Check API key on mount
-    checkApiKey();
-    
-    // Listen for API key updates
-    const handleApiKeyUpdate = () => {
-      checkApiKey();
-    };
-    
-    window.addEventListener('apikey-updated', handleApiKeyUpdate);
-    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
-    
-    return () => {
-      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
-      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
-    };
-  }, []);
-
   // Function to check API key
-  const checkApiKey = () => {
+  const checkApiKey = useCallback(() => {
     const groqKey = localStorage.getItem('groqApiKey');
     const hasKey = !!groqKey;
     
@@ -59,7 +41,34 @@ export const useStockbotChat = (marketData: any[] = []) => {
         duration: 5000
       });
     }
-  };
+    
+    return hasKey;
+  }, [isSimulationMode]);
+  
+  useEffect(() => {
+    // Check API key on mount and set simulation mode based on key existence
+    const hasKey = checkApiKey();
+    setIsSimulationMode(!hasKey);
+    
+    // Listen for API key updates
+    const handleApiKeyUpdate = () => {
+      checkApiKey();
+    };
+    
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
+    window.addEventListener('storage', handleApiKeyUpdate);
+    
+    // Set an interval to periodically check for API key updates
+    const intervalId = setInterval(checkApiKey, 2000);
+    
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
+      window.removeEventListener('storage', handleApiKeyUpdate);
+      clearInterval(intervalId);
+    };
+  }, [checkApiKey]);
   
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;

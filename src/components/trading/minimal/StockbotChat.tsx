@@ -1,3 +1,4 @@
+
 import { useRef, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -7,6 +8,7 @@ import { StockbotMessages } from "./components/StockbotMessages";
 import { StockbotInput } from "./components/StockbotInput";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
+import { toast } from "@/hooks/use-toast";
 
 interface StockbotChatProps {
   hasApiKey: boolean;
@@ -57,6 +59,9 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
     window.addEventListener('apikey-updated', handleStorageChange);
     window.addEventListener('localStorage-changed', handleStorageChange);
 
+    // Set an interval to periodically check for API key updates
+    const intervalId = setInterval(checkApiKey, 1000);
+
     // Log the API key status for debugging
     console.log("API Key Status:", { 
       hasApiKeyProp: hasApiKey, 
@@ -68,15 +73,39 @@ export const StockbotChat = ({ hasApiKey, marketData = [] }: StockbotChatProps) 
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('apikey-updated', handleStorageChange);
       window.removeEventListener('localStorage-changed', handleStorageChange);
+      clearInterval(intervalId);
     };
   }, [hasApiKey]);
 
   // Handle API key dialog close - check if key was added
   const handleDialogClose = () => {
     setIsKeyDialogOpen(false);
-    // Trigger a check for the API key
-    const event = new CustomEvent('apikey-updated');
-    window.dispatchEvent(event);
+    
+    // Force a check for the API key
+    const actualApiKey = localStorage.getItem("groqApiKey");
+    const keyExists = !!actualApiKey;
+    
+    setApiKeyStatus({
+      exists: keyExists,
+      keyLength: actualApiKey ? actualApiKey.length : 0
+    });
+    
+    if (keyExists) {
+      toast({
+        title: "API Key Detected",
+        description: "Groq API key has been configured successfully",
+        duration: 3000
+      });
+      
+      // Turn off simulation mode if we have a key
+      if (isSimulationMode) {
+        setIsSimulationMode(false);
+      }
+    }
+    
+    // Trigger events to notify other components
+    window.dispatchEvent(new Event('apikey-updated'));
+    window.dispatchEvent(new Event('localStorage-changed'));
   };
 
   return (
