@@ -1,182 +1,208 @@
 
-import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { MarketData } from "./types";
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SendIcon, LineChart, BrainCircuit, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Brain, AlertTriangle, RefreshCw } from "lucide-react";
-import { Button } from "../ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { MarketData } from "./types";
+import { supabase } from "@/lib/supabase";
 
 interface AIMarketAnalysisProps {
   marketData?: MarketData;
-  analysisData?: any;
-  isLoading?: boolean;
-  onRefresh?: () => void;
   className?: string;
 }
 
-export const AIMarketAnalysis: React.FC<AIMarketAnalysisProps> = ({
-  marketData,
-  analysisData,
-  isLoading = false,
-  onRefresh,
-  className
-}) => {
-  // Helper to generate placeholder analysis data
-  const generatePlaceholderAnalysis = () => {
-    return {
-      sentiment: "neutral",
-      trend: "sideways",
-      riskLevel: "moderate",
-      recommendation: "hold",
-      signals: ["Price near resistance level", "Volume trending down"],
-      confidence: 68
-    };
-  };
+type Message = {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+};
 
-  const analysis = analysisData || generatePlaceholderAnalysis();
+export function AIMarketAnalysis({ marketData, className }: AIMarketAnalysisProps) {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: 'Hello! I can help you analyze market data. Ask me about trends, price movements, or trading strategies.'
+    }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-  // Render loading state
-  if (isLoading) {
-    return (
-      <Card className={`bg-secondary/20 backdrop-blur-md ${className}`}>
-        <CardContent className="p-4">
-          <div className="flex items-center mb-4">
-            <Brain className="w-5 h-5 mr-2 text-primary" />
-            <h3 className="text-lg font-medium">AI Market Analysis</h3>
-            <div className="ml-auto flex items-center text-primary">
-              <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
-              <span className="text-sm">Loading analysis...</span>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <Skeleton className="h-24 w-full" />
-            <div className="grid grid-cols-2 gap-4">
-              <Skeleton className="h-12 w-full" />
-              <Skeleton className="h-12 w-full" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // When no market data is provided
-  if (!marketData) {
-    return (
-      <Card className={`bg-secondary/20 backdrop-blur-md ${className}`}>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <Brain className="w-5 h-5 mr-2 text-muted-foreground" />
-              <h3 className="text-lg font-medium">AI Market Analysis</h3>
-            </div>
-            {onRefresh && (
-              <Button variant="outline" size="sm" onClick={onRefresh}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center justify-center p-6 text-center">
-            <div>
-              <AlertTriangle className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-muted-foreground">No market data available for analysis</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Determine colors based on sentiment
-  const getSentimentColor = (sentiment: string) => {
-    switch (sentiment.toLowerCase()) {
-      case 'bullish':
-      case 'positive':
-        return 'text-green-500';
-      case 'bearish':
-      case 'negative':
-        return 'text-red-500';
-      default:
-        return 'text-blue-500';
+  // Call the Supabase edge function to get an AI-generated response
+  const generateResponse = async (userMessage: string) => {
+    setIsLoading(true);
+    setAiError(null);
+    
+    try {
+      console.log("Calling market-analysis function with message:", userMessage);
+      
+      // Call the Supabase edge function
+      const { data, error } = await supabase.functions.invoke('market-analysis', {
+        body: { 
+          message: userMessage,
+          marketData: marketData 
+        }
+      });
+      
+      if (error) {
+        console.error('Error calling market-analysis function:', error);
+        throw new Error(error.message || "Failed to connect to AI service");
+      }
+      
+      if (!data || !data.response) {
+        console.error('Invalid response from market-analysis function:', data);
+        throw new Error("Received invalid response from AI service");
+      }
+      
+      console.log('Received AI response:', data.response.substring(0, 100) + '...');
+      
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: data.response
+      };
+      
+      setMessages(prev => [...prev, newMessage]);
+      
+    } catch (error) {
+      console.error('Error generating AI response:', error);
+      setAiError('Failed to generate market analysis. Please try again later.');
+      toast({
+        title: "AI Analysis Error",
+        description: error instanceof Error ? error.message : "Could not generate market analysis response",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const sentimentColor = getSentimentColor(analysis.sentiment);
+  const handleSendMessage = async () => {
+    if (!inputValue.trim()) return;
+    
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: inputValue
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    
+    await generateResponse(userMessage.content);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const resetChat = () => {
+    setMessages([{
+      id: '1',
+      role: 'assistant',
+      content: 'Hello! I can help you analyze market data. Ask me about trends, price movements, or trading strategies.'
+    }]);
+    toast({
+      title: "Chat Reset",
+      description: "The market analysis chat has been reset",
+    });
+  };
 
   return (
-    <Card className={`bg-secondary/20 backdrop-blur-md border-secondary/50 ${className}`}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <Brain className="w-5 h-5 mr-2 text-primary" />
-            <h3 className="text-lg font-medium">AI Market Analysis</h3>
-          </div>
-          {onRefresh && (
-            <Button variant="outline" size="sm" onClick={onRefresh}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          )}
-        </div>
-
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-muted-foreground">Market: {marketData.market}</span>
-            <span className="font-semibold">{marketData.name}</span>
-            <span className={`${marketData.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {marketData.change >= 0 ? '+' : ''}{(marketData.change * 100).toFixed(2)}%
-            </span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-xl font-bold">${Number(marketData.price).toLocaleString('en-US', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-            })}</span>
-            <div className="bg-secondary/40 rounded px-2 py-1 text-sm">
-              <span className={sentimentColor}>
-                {analysis.sentiment.charAt(0).toUpperCase() + analysis.sentiment.slice(1)} ({analysis.confidence}% confidence)
+    <Card className={`h-full bg-secondary/10 backdrop-blur-xl border border-white/10 shadow-lg ${className}`}>
+      <CardHeader className="p-4">
+        <CardTitle className="flex items-center text-lg font-medium">
+          <BrainCircuit className="w-5 h-5 mr-2 text-primary" />
+          Market Analysis AI
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4 flex flex-col h-[calc(100%-68px)]">
+        {marketData ? (
+          <div className="bg-secondary/20 p-2 rounded-md mb-3 text-xs">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">{marketData.symbol}</span>
+              <span className={marketData.change24h >= 0 ? "text-green-500" : "text-red-500"}>
+                ${marketData.price.toFixed(2)} ({marketData.change24h}%)
               </span>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-secondary/20 p-2 rounded-md mb-3 text-xs">
+            <span className="text-muted-foreground">No specific market selected</span>
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div className="bg-secondary/30 rounded p-3">
-            <h4 className="font-medium mb-2">Analysis</h4>
-            <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Trend:</span>
-                <span>{analysis.trend}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Risk Level:</span>
-                <span>{analysis.riskLevel}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Recommendation:</span>
-                <span className="font-medium">{analysis.recommendation}</span>
+        {aiError && (
+          <Alert variant="destructive" className="mb-3">
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{aiError}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex-grow overflow-y-auto mb-3 space-y-3">
+          {messages.map((message) => (
+            <div 
+              key={message.id} 
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div 
+                className={`max-w-[80%] p-3 rounded-lg ${
+                  message.role === 'user' 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted'
+                }`}
+              >
+                {message.content}
               </div>
             </div>
-          </div>
-
-          <div className="bg-secondary/30 rounded p-3">
-            <h4 className="font-medium mb-2">Signals</h4>
-            <ul className="space-y-1 text-sm">
-              {analysis.signals.map((signal: string, index: number) => (
-                <li key={index} className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>{signal}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          ))}
+          
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] p-3 rounded-lg bg-muted">
+                <Skeleton className="h-4 w-[200px] mb-2" />
+                <Skeleton className="h-4 w-[150px]" />
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="text-xs text-muted-foreground mt-2">
-          Last updated: {new Date().toLocaleTimeString()}
+        <div className="flex items-center space-x-2 mt-auto">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={resetChat}
+            className="flex-shrink-0"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </Button>
+          <Input
+            placeholder="Ask about market trends, analysis, or trading insights..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="flex-grow"
+            disabled={isLoading}
+          />
+          <Button 
+            onClick={handleSendMessage} 
+            disabled={!inputValue.trim() || isLoading}
+            className="flex-shrink-0"
+          >
+            <SendIcon className="h-4 w-4 mr-2" />
+            Send
+          </Button>
         </div>
       </CardContent>
     </Card>
   );
-};
+}

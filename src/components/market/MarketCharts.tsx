@@ -1,158 +1,87 @@
-import React from "react";
-import { MarketData } from "./types";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area, BarChart, Bar, Cell } from "recharts";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 
-interface MarketChartsProps {
-  data: MarketData[];
-  isLoading?: boolean;
-  type?: "price" | "volume" | "overview";
+import { useEffect, useState } from 'react';
+import { MarketChartView } from './MarketChartView';
+import { Dialog, DialogContent } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { ExternalLink, Maximize2, BarChart } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
+import { MarketData } from './types';
+
+interface ChartProps {
+  data: any[];
+  isLoading: boolean;
+  type: 'overview' | 'volume' | 'price';
 }
 
-export const MarketCharts: React.FC<MarketChartsProps> = ({ 
-  data, 
-  isLoading = false,
-  type = "price" 
-}) => {
+export const MarketCharts = ({ data, isLoading, type }: ChartProps) => {
+  const [showModal, setShowModal] = useState(false);
+  const [selectedMarket, setSelectedMarket] = useState<string | null>(null);
+
+  const handleShowDetails = (marketName: string) => {
+    setSelectedMarket(marketName);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
   if (isLoading) {
-    return <Skeleton className="w-full h-[300px] rounded-md" />;
+    return (
+      <div className="w-full h-[350px]">
+        <Skeleton className="w-full h-full" />
+      </div>
+    );
   }
 
   if (!data || data.length === 0) {
     return (
-      <Alert variant="destructive" className="mb-4">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>No data available</AlertTitle>
-      </Alert>
+      <div className="w-full h-[350px] flex items-center justify-center border border-dashed border-white/20 rounded-lg">
+        <div className="text-center text-muted-foreground">
+          <BarChart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p>Geen marktgegevens beschikbaar</p>
+        </div>
+      </div>
     );
   }
 
-  const formattedData = data.map(item => ({
-    name: item.symbol || item.name,
-    value: type === "volume" ? item.volume : item.price,
-    change: item.change24h || item.change || 0,
-    price: item.price || 0,
-    volume: item.volume || 0,
-    symbol: item.symbol || item.name,
-    market: item.market,
-    color: (item.change24h || item.change || 0) >= 0 ? "#4ade80" : "#f87171"
-  }));
-
-  if (type === "price") {
-    return (
-      <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={formattedData}>
-          <defs>
-            {formattedData.map((entry, index) => (
-              <linearGradient key={`gradient-${index}`} id={`colorGradient-${index}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={entry.color} stopOpacity={0.8}/>
-                <stop offset="95%" stopColor={entry.color} stopOpacity={0.1}/>
-              </linearGradient>
-            ))}
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip 
-            formatter={(value, name, props) => {
-              if (name === "value") return [`$${value.toLocaleString()}`, "Price"];
-              return [value, name];
-            }}
-            contentStyle={{
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              border: 'none',
-              borderRadius: '4px',
-              color: 'white'
-            }}
-          />
-          {formattedData.map((entry, index) => (
-            <Area 
-              key={`area-${index}`}
-              type="monotone" 
-              dataKey="value"
-              name="value"
-              strokeWidth={2}
-              stroke={entry.color}
-              fill={`url(#colorGradient-${index})`}
-              data={[entry]}
-            />
-          ))}
-        </AreaChart>
-      </ResponsiveContainer>
-    );
-  }
-
-  if (type === "volume") {
-    return (
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={formattedData}>
-          <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-          <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip 
-            formatter={(value) => [`${Number(value).toLocaleString()}`, "Volume"]}
-            contentStyle={{
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              border: 'none',
-              borderRadius: '4px',
-              color: 'white'
-            }}
-          />
-          <Bar dataKey="value" name="Volume">
-            {formattedData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    );
-  }
-
-  // Overview type - shows both volume and price
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <h3 className="text-sm font-medium mb-2">Price</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={formattedData}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip 
-              formatter={(value) => [`$${Number(value).toLocaleString()}`, "Price"]}
-              contentStyle={{
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                border: 'none',
-                borderRadius: '4px',
-                color: 'white'
-              }}
-            />
-            <Line type="monotone" dataKey="price" stroke="#8884d8" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+    <div className="relative">
+      <div className="absolute top-4 right-4 z-10">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="bg-background/50 backdrop-blur-md hover:bg-background/80"
+          onClick={() => handleShowDetails(data[0]?.name || "Unknown")}
+        >
+          <Maximize2 className="h-4 w-4 mr-2" />
+          Details
+        </Button>
       </div>
-      <div>
-        <h3 className="text-sm font-medium mb-2">Volume</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={formattedData}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip 
-              formatter={(value) => [`${Number(value).toLocaleString()}`, "Volume"]}
-              contentStyle={{
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                border: 'none',
-                borderRadius: '4px',
-                color: 'white'
-              }}
-            />
-            <Bar dataKey="volume" fill="#4ade80" />
-          </BarChart>
-        </ResponsiveContainer>
+
+      <div onClick={() => handleShowDetails(data[0]?.name || "Unknown")} className="cursor-pointer">
+        <MarketChartView data={data} type={type} />
       </div>
+
+      {showModal && selectedMarket && (
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent className="max-w-4xl">
+            <div className="p-4">
+              <h2 className="text-xl font-semibold mb-4">{selectedMarket} Details</h2>
+              <p className="text-muted-foreground">
+                Detailed information and charts for {selectedMarket} will appear here.
+              </p>
+              <Button 
+                className="mt-4" 
+                variant="outline" 
+                onClick={handleCloseModal}
+              >
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

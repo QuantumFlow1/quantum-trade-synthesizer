@@ -1,148 +1,171 @@
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MarketCharts } from "./market/MarketCharts";
 import { useMarketWebSocket } from "@/hooks/use-market-websocket";
-import { useEffect, useState, useCallback } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, Loader2, RefreshCcw, BrainCircuit } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
 import { AIMarketAnalysis } from "./market/AIMarketAnalysis";
-import { MarketLoading } from "./market/overview/MarketLoading";
-import { MarketError } from "./market/overview/MarketError";
-import { MarketEmpty } from "./market/overview/MarketEmpty";
-import { MarketHeader } from "./market/overview/MarketHeader";
-import { MarketTabs } from "./market/overview/MarketTabs";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import { validateMarketData, groupMarketDataByMarket } from "./market/overview/utils/marketDataUtils";
 
 const MarketOverview = () => {
   const { marketData, reconnect, connectionStatus } = useMarketWebSocket();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showAIInsights, setShowAIInsights] = useState(false);
-  const [agentData, setAgentData] = useState<any>(null);
-  const [isAgentLoading, setIsAgentLoading] = useState(false);
   const { toast } = useToast();
 
-  // Set a longer initial loading state to ensure data is properly fetched
   useEffect(() => {
+    // Set initial loading state
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
-    }, 3000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    // Data validation and error handling
-    if (marketData && marketData.length > 0) {
-      const { isValid, errorMessage } = validateMarketData(marketData);
-      
-      if (!isValid) {
-        setErrorMessage(errorMessage);
+    // Handle data validation
+    try {
+      if (!marketData) {
+        console.log('No market data received');
+        setErrorMessage("Geen marktdata ontvangen");
         setHasError(true);
-      } else {
-        setHasError(false);
-        setErrorMessage("");
+        return;
       }
+
+      if (!Array.isArray(marketData)) {
+        console.error('Market data is not an array:', marketData);
+        setErrorMessage("Ongeldig dataformaat ontvangen");
+        setHasError(true);
+        return;
+      }
+
+      if (marketData.length === 0) {
+        console.log('Empty market data array received');
+        setErrorMessage("Lege marktdata ontvangen");
+        setHasError(true);
+        return;
+      }
+
+      // Validation for data structure
+      const isValidData = marketData.every(item => 
+        item && 
+        typeof item.market === 'string' &&
+        typeof item.symbol === 'string' &&
+        typeof item.price === 'number'
+      );
+
+      if (!isValidData) {
+        console.error('Invalid data structure in market data');
+        setErrorMessage("Ongeldige datastructuur");
+        setHasError(true);
+        return;
+      }
+
+      setHasError(false);
+      setErrorMessage("");
+    } catch (error) {
+      console.error('Error processing market data:', error);
+      setErrorMessage(error instanceof Error ? error.message : "Onbekende fout");
+      setHasError(true);
     }
   }, [marketData]);
 
-  const fetchAgentAnalysis = useCallback(async () => {
-    if (!showAIInsights) return;
-    
-    try {
-      setIsAgentLoading(true);
-      const { data, error } = await supabase.functions.invoke('market-analysis', {
-        body: { 
-          marketData: marketData && marketData.length > 0 ? marketData[0] : null,
-          requestType: 'overview'
-        }
-      });
-      
-      if (error) {
-        console.error('Failed to fetch agent analysis:', error);
-        toast({
-          title: "AI Analysis Failed",
-          description: "Could not load AI market insights. Please try again later.",
-          variant: "destructive",
-        });
-      } else {
-        setAgentData(data);
-      }
-    } catch (error) {
-      console.error('Exception fetching agent analysis:', error);
-    } finally {
-      setIsAgentLoading(false);
-    }
-  }, [showAIInsights, marketData, toast]);
-
-  // Fetch agent data when AI insights are enabled or market data changes
-  useEffect(() => {
-    if (showAIInsights && marketData && marketData.length > 0) {
-      fetchAgentAnalysis();
-    }
-  }, [showAIInsights, marketData, fetchAgentAnalysis]);
-
-  const handleRetry = useCallback(() => {
+  const handleRetry = () => {
     setHasError(false);
     setIsInitialLoading(true);
-    setIsManualRefreshing(true);
     reconnect();
-    
     toast({
       title: "Herverbinden...",
       description: "Bezig met het herstellen van de marktdata verbinding",
     });
-    
-    // Also retry agent data if AI insights are enabled
-    if (showAIInsights) {
-      fetchAgentAnalysis();
-    }
-    
-    // Reset manual refreshing state after a timeout
-    setTimeout(() => {
-      setIsManualRefreshing(false);
-      setIsInitialLoading(false);
-    }, 3000);
-  }, [reconnect, toast, showAIInsights, fetchAgentAnalysis]);
+  };
 
-  const toggleAIInsights = useCallback(() => {
-    const newState = !showAIInsights;
-    setShowAIInsights(newState);
-    
+  const toggleAIInsights = () => {
+    setShowAIInsights(!showAIInsights);
     toast({
-      title: newState ? "AI Insights Enabled" : "AI Insights Disabled",
-      description: newState 
-        ? "AI-powered market analysis activated" 
-        : "Standard market view restored",
+      title: showAIInsights ? "AI Insights Disabled" : "AI Insights Enabled",
+      description: showAIInsights 
+        ? "Standard market view restored" 
+        : "AI-powered market analysis activated",
       duration: 3000,
     });
-    
-    if (newState && (!agentData || Object.keys(agentData).length === 0)) {
-      fetchAgentAnalysis();
-    }
-  }, [showAIInsights, agentData, fetchAgentAnalysis, toast]);
-
-  const isLoadingState = isInitialLoading || isManualRefreshing;
+  };
 
   // Early return for initial loading state
-  if (isLoadingState) {
-    return <MarketLoading />;
+  if (isInitialLoading) {
+    return (
+      <div className="w-full h-[200px] flex items-center justify-center bg-secondary/30 backdrop-blur-lg border border-secondary/50 rounded-lg">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Marktdata wordt geladen...</p>
+        </div>
+      </div>
+    );
   }
 
   // Error state with retry button
   if (hasError || connectionStatus === 'disconnected') {
-    return <MarketError errorMessage={errorMessage} onRetry={handleRetry} />;
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Er is een probleem opgetreden</AlertTitle>
+        <AlertDescription className="flex flex-col gap-2">
+          <p>De marktdata kon niet correct worden verwerkt: {errorMessage || "Verbinding verbroken"}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRetry}
+            className="w-fit"
+          >
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Opnieuw proberen
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   // If no data after initial loading, show message
-  if (!marketData || marketData.length === 0) {
-    return <MarketEmpty onRetry={handleRetry} />;
+  if (!marketData.length) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Geen marktdata beschikbaar</AlertTitle>
+        <AlertDescription className="flex flex-col gap-2">
+          <p>Er is momenteel geen marktdata beschikbaar. Dit kan komen door onderhoud of een tijdelijke storing.</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRetry}
+            className="w-fit"
+          >
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Vernieuwen
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
   }
 
-  // Group data by market for tabs
-  const groupedData = groupMarketDataByMarket(marketData);
+  const groupedData = marketData.reduce((acc, item) => {
+    if (!acc[item.market]) {
+      acc[item.market] = [];
+    }
+    acc[item.market].push({
+      name: item.symbol,
+      volume: item.volume,
+      price: item.price,
+      change: item.change24h,
+      high: item.high24h,
+      low: item.low24h
+    });
+    return acc;
+  }, {} as Record<string, any[]>);
+
   const marketOrder = ['NYSE', 'NASDAQ', 'AEX', 'DAX', 'CAC40', 'NIKKEI', 'HSI', 'SSE', 'Crypto'];
 
   // Get the first available market data for AI analysis
@@ -153,18 +176,19 @@ const MarketOverview = () => {
       <div className="p-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-primary/5 pointer-events-none" />
         
-        <div className="flex justify-between items-center mb-6">
-          <MarketHeader showAIInsights={showAIInsights} toggleAIInsights={toggleAIInsights} />
+        <div className="relative flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+            Wereldwijde Markten
+          </h2>
           
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={handleRetry} 
-            className="ml-auto"
-            disabled={isManualRefreshing}
+            className="flex items-center gap-1.5 hover:bg-primary/20"
+            onClick={toggleAIInsights}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isManualRefreshing ? 'animate-spin' : ''}`} />
-            Vernieuwen
+            <BrainCircuit className="h-4 w-4" />
+            {showAIInsights ? "Hide AI Insights" : "Show AI Insights"}
           </Button>
         </div>
         
@@ -172,20 +196,45 @@ const MarketOverview = () => {
           <div className="mb-6">
             <AIMarketAnalysis 
               marketData={firstMarketData || undefined} 
-              analysisData={agentData}
-              isLoading={isAgentLoading}
-              onRefresh={fetchAgentAnalysis}
               className="h-[300px]"
             />
           </div>
         )}
         
-        <MarketTabs 
-          groupedData={groupedData} 
-          marketOrder={marketOrder} 
-          isLoading={isManualRefreshing}
-          error={errorMessage}
-        />
+        <Tabs defaultValue={marketOrder.find(market => groupedData[market]?.length > 0) || marketOrder[0]} className="w-full">
+          <TabsList className="mb-6 bg-background/50 backdrop-blur-md relative flex flex-wrap gap-1">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
+            {marketOrder.map((market) => (
+              groupedData[market]?.length > 0 && (
+                <TabsTrigger 
+                  key={market}
+                  value={market} 
+                  className="relative data-[state=active]:bg-primary/20 data-[state=active]:backdrop-blur-lg transition-all duration-300 ease-out hover:bg-primary/10"
+                >
+                  {market}
+                </TabsTrigger>
+              )
+            ))}
+          </TabsList>
+
+          <div className="h-[500px] transition-transform will-change-transform duration-500 ease-out">
+            {marketOrder.map((market) => (
+              groupedData[market]?.length > 0 && (
+                <TabsContent 
+                  key={market}
+                  value={market} 
+                  className="mt-0 h-full animate-in fade-in-50 duration-500 ease-out"
+                >
+                  <MarketCharts 
+                    data={groupedData[market] || []} 
+                    isLoading={!marketData.length} 
+                    type="overview" 
+                  />
+                </TabsContent>
+              )
+            ))}
+          </div>
+        </Tabs>
       </div>
     </div>
   );

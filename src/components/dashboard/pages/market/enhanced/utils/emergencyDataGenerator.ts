@@ -1,66 +1,54 @@
 
-import { MarketData } from "@/components/market/types";
+import { MarketData } from '@/components/market/types';
 
 /**
- * Generates emergency market data when API calls fail
- * This ensures the UI always has something to display
+ * Generates emergency market data as a fallback when API calls fail
+ * to ensure the application can still function with meaningful data
  */
 export const generateEmergencyMarketData = (): MarketData[] => {
-  const markets = [
-    { market: 'NYSE', symbols: ['JPM', 'BAC', 'WMT', 'PG', 'JNJ'] },
-    { market: 'NASDAQ', symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META'] },
-    { market: 'Crypto', symbols: ['BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'XRP/USD'] },
-    { market: 'AEX', symbols: ['ASML', 'ADYEN', 'UNILEVER', 'ING', 'AKZO'] },
+  const markets = ['NYSE', 'NASDAQ', 'Crypto', 'AEX', 'DAX'];
+  const symbols = [
+    { market: 'NYSE', symbol: 'AAPL', name: 'Apple Inc.', basePrice: 180 },
+    { market: 'NYSE', symbol: 'MSFT', name: 'Microsoft Corp.', basePrice: 390 },
+    { market: 'NASDAQ', symbol: 'GOOGL', name: 'Alphabet Inc.', basePrice: 142 },
+    { market: 'NASDAQ', symbol: 'AMZN', name: 'Amazon.com Inc.', basePrice: 175 },
+    { market: 'Crypto', symbol: 'BTC/USD', name: 'Bitcoin', basePrice: 45000 },
+    { market: 'Crypto', symbol: 'ETH/USD', name: 'Ethereum', basePrice: 2500 },
+    { market: 'AEX', symbol: 'ASML', name: 'ASML Holding NV', basePrice: 850 },
+    { market: 'DAX', symbol: 'SAP', name: 'SAP SE', basePrice: 175 },
   ];
-
-  const result: MarketData[] = [];
   
-  // Current timestamp
-  const now = Date.now();
+  return symbols.map(({ market, symbol, name, basePrice }) => {
+    // Generate random price within a range
+    const randomFactor = 0.95 + Math.random() * 0.1;
+    const price = basePrice * randomFactor;
+    
+    const change24h = parseFloat(((randomFactor - 1) * 100).toFixed(2));
+    
+    // Calculate high/low for current price display
+    const highValue = parseFloat((price * (1 + Math.random() * 0.02)).toFixed(2));
+    const lowValue = parseFloat((price * (1 - Math.random() * 0.02)).toFixed(2));
+    
+    // Calculate high24h/low24h for 24-hour ranges
+    const high24h = parseFloat((price * (1 + Math.random() * 0.02)).toFixed(2));
+    const low24h = parseFloat((price * (1 - Math.random() * 0.02)).toFixed(2));
 
-  markets.forEach(marketGroup => {
-    marketGroup.symbols.forEach(symbol => {
-      // Generate realistic-looking price based on symbol
-      let basePrice = 0;
-      
-      if (symbol === 'BTC/USD') basePrice = 35000 + Math.random() * 2000;
-      else if (symbol === 'ETH/USD') basePrice = 1800 + Math.random() * 200;
-      else if (symbol.includes('USD')) basePrice = 1 + Math.random() * 10;
-      else if (symbol === 'AAPL') basePrice = 170 + Math.random() * 10;
-      else if (symbol === 'MSFT') basePrice = 330 + Math.random() * 20;
-      else if (symbol === 'GOOGL') basePrice = 130 + Math.random() * 10;
-      else if (symbol === 'AMZN') basePrice = 150 + Math.random() * 10;
-      else if (symbol === 'ASML') basePrice = 650 + Math.random() * 40;
-      else basePrice = 50 + Math.random() * 150;
-
-      // Random change percentage
-      const change24h = (Math.random() * 10) - 5; // -5% to +5%
-      
-      // High/low derived from price and change
-      const high24h = basePrice * (1 + Math.abs(change24h) / 100 * 1.5);
-      const low24h = basePrice * (1 - Math.abs(change24h) / 100 * 1.5);
-      
-      // Volume based on price
-      const volume = Math.floor(basePrice * 1000 * (0.5 + Math.random() * 2));
-
-      result.push({
-        market: marketGroup.market,
-        symbol,
-        name: symbol.replace('/', ' to '),
-        price: basePrice,
-        change24h,
-        high24h,
-        low24h,
-        volume,
-        timestamp: now,
-        marketCap: basePrice * 1000000 * (1 + Math.random()),
-        totalVolume24h: volume * basePrice,
-        high: high24h,
-        low: low24h
-      });
-    });
+    return {
+      market,
+      symbol,
+      name,
+      price: parseFloat(price.toFixed(2)),
+      volume: Math.floor(Math.random() * 10000000 + 1000000),
+      change24h,
+      high: highValue,
+      low: lowValue,
+      high24h,
+      low24h,
+      marketCap: parseFloat((price * (Math.random() * 1000000000 + 100000000)).toFixed(2)),
+      timestamp: Date.now(),
+      totalVolume24h: Math.floor(Math.random() * 10000000 + 1000000),
+      circulatingSupply: Math.floor(Math.random() * 1000000000 + 100000000),
+      lastUpdated: new Date().toISOString()
+    };
   });
-
-  console.log(`Generated ${result.length} emergency market data points`);
-  return result;
 };

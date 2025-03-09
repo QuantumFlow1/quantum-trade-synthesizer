@@ -1,139 +1,72 @@
-import { useState, useEffect, useCallback } from "react";
+
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { MarketData } from "@/components/market/types";
 import { useToast } from "@/hooks/use-toast";
-import { generateEmergencyMarketData } from "./enhanced/utils/emergencyDataGenerator";
 
 export const useMarketData = () => {
   const [marketData, setMarketData] = useState<MarketData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<string>("market");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedMarket, setSelectedMarket] = useState<string>("all");
   const [uniqueMarkets, setUniqueMarkets] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const fetchMarketData = useCallback(async () => {
+  const fetchMarketData = async () => {
     setIsLoading(true);
-    setError(null);
-    
     try {
-      console.log("Fetching market data...");
+      const { data, error } = await supabase.functions.invoke('fetch-market-data');
       
-      // First try the primary data source
-      const { data: primaryData, error: primaryError } = await supabase.functions.invoke('fetch-market-data');
+      if (error) {
+        throw error;
+      }
       
-      if (!primaryError && primaryData && Array.isArray(primaryData) && primaryData.length > 0) {
-        console.log("Successfully received market data from primary source:", primaryData.length, "items");
-        setMarketData(primaryData as MarketData[]);
+      if (data && Array.isArray(data)) {
+        console.log("Successfully received market data:", data.length, "items");
+        setMarketData(data as MarketData[]);
         
         // Extract unique markets
-        const markets = [...new Set(primaryData.map((item: any) => item.market))];
+        const markets = [...new Set(data.map((item: any) => item.market))];
         setUniqueMarkets(markets.filter(Boolean) as string[]);
         
         toast({
           title: "Market data updated",
-          description: `Successfully fetched data for ${primaryData.length} markets`,
+          description: `Successfully fetched data for ${data.length} markets`,
           duration: 3000,
         });
-        
-        setIsLoading(false);
-        return;
-      }
-      
-      if (primaryError) {
-        console.error("Error from primary source:", primaryError);
       } else {
-        console.log("Primary source returned invalid data, trying fallback");
+        console.error("Invalid market data format:", data);
+        setMarketData([]); // Set to empty array if data is invalid
+        setUniqueMarkets([]);
+        toast({
+          title: "Data Error",
+          description: "Market data format is invalid. Please try again later.",
+          variant: "destructive",
+        });
       }
-      
-      // Try the fallback source
-      const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('market-data-collector');
-      
-      if (fallbackError) {
-        console.error("Error from fallback source:", fallbackError);
-        throw new Error(`Fallback data fetch failed: ${fallbackError.message}`);
-      }
-      
-      let validData: MarketData[] = [];
-      
-      if (fallbackData) {
-        if (Array.isArray(fallbackData)) {
-          validData = fallbackData as MarketData[];
-          console.log("Successfully received direct array from fallback source:", validData.length, "items");
-        } else if (fallbackData.data && Array.isArray(fallbackData.data)) {
-          validData = fallbackData.data as MarketData[];
-          console.log("Successfully received data from fallback source data property:", validData.length, "items");
-        }
-        
-        if (validData.length > 0) {
-          setMarketData(validData);
-          
-          // Extract unique markets
-          const markets = [...new Set(validData.map(item => item.market))];
-          setUniqueMarkets(markets.filter(Boolean) as string[]);
-          
-          toast({
-            title: "Market data updated",
-            description: `Successfully fetched fallback data for ${validData.length} markets`,
-            duration: 3000,
-          });
-          
-          setIsLoading(false);
-          return;
-        }
-      }
-      
-      // If no valid data from either source, use emergency data
-      console.warn("No valid data from any source, using emergency generated data");
-      const emergencyData = generateEmergencyMarketData();
-      setMarketData(emergencyData);
-      
-      // Extract unique markets
-      const markets = [...new Set(emergencyData.map(item => item.market))];
-      setUniqueMarkets(markets.filter(Boolean) as string[]);
-      
-      toast({
-        title: "Using backup market data",
-        description: "Could not connect to market data services. Using backup data instead.",
-        variant: "warning",
-        duration: 5000,
-      });
-      
     } catch (error) {
       console.error("Error fetching market data:", error);
-      setError(error instanceof Error ? error.message : "Unknown error");
-      
-      // Use emergency data in case of error
-      const emergencyData = generateEmergencyMarketData();
-      setMarketData(emergencyData);
-      
-      // Extract unique markets from emergency data
-      const markets = [...new Set(emergencyData.map(item => item.market))];
-      setUniqueMarkets(markets.filter(Boolean) as string[]);
-      
+      setMarketData([]);
+      setUniqueMarkets([]);
       toast({
-        title: "Data Error",
-        description: error instanceof Error ? error.message : "Failed to fetch market data. Using backup data.",
+        title: "Error",
+        description: "Failed to fetch market data. Please try again later.",
         variant: "destructive",
-        duration: 5000,
       });
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  };
 
   useEffect(() => {
     fetchMarketData();
     
     // Set up polling for real-time updates (every 30 seconds)
-    const interval = setInterval(() => {
-      fetchMarketData();
-    }, 30000);
+    const interval = setInterval(fetchMarketData, 30000);
     
     return () => clearInterval(interval);
-  }, [fetchMarketData]);
+  }, []);
 
   const sortData = (data: MarketData[]) => {
     if (!Array.isArray(data) || data.length === 0) return [];
@@ -178,7 +111,6 @@ export const useMarketData = () => {
   return {
     marketData: sortedAndFilteredData,
     isLoading,
-    error,
     sortField,
     sortDirection,
     selectedMarket,

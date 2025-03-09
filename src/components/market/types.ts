@@ -1,4 +1,3 @@
-
 export interface TradeSignal {
   type: 'LONG' | 'SHORT';
   entry: number;
@@ -14,7 +13,6 @@ export interface MarketData {
   high: number;
   low: number;
   market?: string;
-  change?: number; // Added this property that was previously missing
   change24h?: number;
   high24h?: number;
   low24h?: number;

@@ -13,7 +13,7 @@ export interface Agent {
   performance?: {
     successRate: number;
     tasksCompleted: number;
-    winLossRatio?: number | string; // Updated to accept either number or string
+    winLossRatio?: number;
   };
 }
 

@@ -1,48 +1,55 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { lazy, Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./components/auth/AuthProvider";
+import { EnvironmentProvider } from "./contexts/EnvironmentContext";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import Overview from "./pages/admin/dashboard/Overview";
+import Users from "./pages/admin/dashboard/Users";
+import System from "./pages/admin/dashboard/System";
+import Finance from "./pages/admin/dashboard/Finance";
+import AdminPanel from "./components/AdminPanel";
+import ChatPage from "./pages/chat";
 
-// Import components lazily
-const Index = lazy(() => import("@/pages/Index"));
-const Market = lazy(() => import("@/pages/Market"));
-const Trading = lazy(() => import("@/pages/Trading"));
-const Settings = lazy(() => import("@/pages/Settings"));
-const Dashboard = lazy(() => import("@/pages/Dashboard"));
-const Wallet = lazy(() => import("@/pages/Wallet"));
-const StockBot = lazy(() => import("@/pages/StockBot"));
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false
+    }
+  }
+});
 
-// Loading component
-const LazyLoadingComponent = () => (
-  <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-  </div>
-);
-
-function App() {
-  return (
-    <Router>
-      <ThemeProvider attribute="class" defaultTheme="dark" storageKey="vite-ui-theme">
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <EnvironmentProvider>
         <AuthProvider>
-          <Suspense fallback={<LazyLoadingComponent />}>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/market" element={<Market />} />
-              <Route path="/trading" element={<Trading />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/wallet" element={<Wallet />} />
-              <Route path="/stockbot" element={<StockBot />} />
+              <Route path="/chat" element={<ChatPage />} />
+              <Route path="/admin" element={<AdminPanel />} />
+              <Route path="/admin/dashboard/overview" element={<Overview />} />
+              <Route path="/admin/dashboard/users" element={<Users />} />
+              <Route path="/admin/users" element={<Users />} /> {/* Added a direct route to Users */}
+              <Route path="/admin/dashboard/system" element={<System />} />
+              <Route path="/admin/dashboard/finance" element={<Finance />} />
+              {/* Redirect all auth callback URLs to the main page */}
+              <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
-          </Suspense>
-          <Toaster />
+          </BrowserRouter>
         </AuthProvider>
-      </ThemeProvider>
-    </Router>
-  );
-}
+      </EnvironmentProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

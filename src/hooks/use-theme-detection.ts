@@ -1,40 +1,29 @@
 
 import { useState, useEffect } from 'react';
 
-export type ColorTheme = 'dark' | 'light';
+export type ColorTheme = 'light' | 'dark';
 
-export function useThemeDetection(): ColorTheme {
+export function useThemeDetection() {
   const [theme, setTheme] = useState<ColorTheme>('dark');
 
   useEffect(() => {
-    // Check if document is defined (browser environment)
-    if (typeof document !== 'undefined') {
-      // Check if dark class is present on html element
-      const isDarkMode = document.documentElement.classList.contains('dark');
-      setTheme(isDarkMode ? 'dark' : 'light');
-
-      // Listen for theme changes
-      const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (
-            mutation.type === 'attributes' &&
-            mutation.attributeName === 'class'
-          ) {
-            const isDark = document.documentElement.classList.contains('dark');
-            setTheme(isDark ? 'dark' : 'light');
-          }
-        });
-      });
-
-      observer.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['class'],
-      });
-
-      return () => {
-        observer.disconnect();
-      };
-    }
+    // Check if user prefers dark mode
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    // Set initial theme
+    setTheme(darkModeMediaQuery.matches ? 'dark' : 'light');
+    
+    // Add listener for theme changes
+    const themeChangeHandler = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? 'dark' : 'light');
+    };
+    
+    darkModeMediaQuery.addEventListener('change', themeChangeHandler);
+    
+    // Clean up
+    return () => {
+      darkModeMediaQuery.removeEventListener('change', themeChangeHandler);
+    };
   }, []);
 
   return theme;

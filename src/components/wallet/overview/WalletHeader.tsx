@@ -3,7 +3,7 @@ import { Wallet, RefreshCw, LogOut, Copy, ExternalLink, CreditCard, Bitcoin } fr
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { WalletType } from "../types/walletTypes";
+import { WalletType } from "../WalletOverview";
 
 interface WalletHeaderProps {
   address: string;

@@ -32,13 +32,12 @@ serve(async (req) => {
     }
 
     // Check if marketData has a data property that is an array (usual format)
-    // Handle different possible formats
-    const dataToProcess = Array.isArray(marketData) ? marketData : 
-                         (marketData.data && Array.isArray(marketData.data)) ? marketData.data : 
+    const dataToProcess = Array.isArray(marketData.data) ? marketData.data : 
+                         Array.isArray(marketData) ? marketData : 
                          null;
     
     if (!dataToProcess) {
-      console.error("Invalid market data format received:", JSON.stringify(marketData).substring(0, 200) + "...");
+      console.error("Invalid market data format received:", marketData);
       return new Response(
         JSON.stringify({ 
           error: "Invalid market data format. Expected an array or object with data array.",
@@ -53,7 +52,6 @@ serve(async (req) => {
     const validatedData = dataToProcess.map((item) => {
       // Default values to ensure we have valid data
       const price = typeof item.price === 'number' ? item.price : 
-                   typeof item.price === 'string' ? parseFloat(item.price) :
                    typeof item.close === 'number' ? item.close : 1000;
                    
       // Explicitly determine trend as "up" or "down" to satisfy TypeScript

@@ -28,61 +28,45 @@ export const fetchMarketData = async (
   }
   
   try {
-    // If simulation is forced, return generated data immediately
     if (forceSimulation) {
-      console.log("Forced simulation - using generated data");
       const generatedData = generateTradingData();
       return generatedData;
     }
     
-    // Check if API is available, otherwise use generated data
     if (apiStatus !== 'available') {
       console.log("API not available, using generated data");
       return generateTradingData();
     }
     
-    // Try to fetch from fetch-market-data function first (primary source)
-    console.log("Attempting to fetch market data from primary source...");
-    const { data: primaryData, error: primaryError } = await supabase.functions.invoke('fetch-market-data');
+    const { data: marketData, error } = await supabase.functions.invoke('market-data-collector');
     
-    if (!primaryError && primaryData && Array.isArray(primaryData) && primaryData.length > 0) {
-      console.log("Successfully received data from primary source:", primaryData.length, "items");
-      setRawMarketData(primaryData);
-      setErrorCount(0); // Reset error count on success
-      return primaryData;
-    }
-    
-    if (primaryError) {
-      console.log("Primary source error:", primaryError.message);
-    } else {
-      console.log("Primary source returned invalid data, trying fallback");
-    }
-    
-    // If primary source fails, try market-data-collector as fallback
-    console.log("Attempting to fetch market data from fallback source...");
-    const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('market-data-collector');
-    
-    if (fallbackError) {
-      console.error("Fallback source error:", fallbackError);
+    if (error) {
+      console.error("Error fetching market data:", error);
       setErrorCount(prev => prev + 1);
       return generateTradingData();
     }
     
-    // Check if the fallback response has valid data
-    if (fallbackData && fallbackData.data && Array.isArray(fallbackData.data)) {
-      console.log("Successfully received data from fallback source:", fallbackData.data.length, "items");
-      setRawMarketData(fallbackData.data);
+    if (marketData) {
+      console.log("Raw market data received:", marketData);
+      setRawMarketData(marketData);
       setErrorCount(0); // Reset error count on success
-      return fallbackData.data;
-    } else if (fallbackData && Array.isArray(fallbackData)) {
-      console.log("Successfully received direct array from fallback source:", fallbackData.length, "items");
-      setRawMarketData(fallbackData);
-      setErrorCount(0); // Reset error count on success
-      return fallbackData;
+      
+      try {
+        const validationResult = await validateMarketData(marketData);
+        
+        if (validationResult.valid && validationResult.data) {
+          console.log("Using validated market data");
+          return validationResult.data;
+        } else {
+          console.warn("Validation service returned invalid data, falling back to local formatting");
+          return formatMarketData(marketData);
+        }
+      } catch (validationErr) {
+        console.error("Exception in market data validation:", validationErr);
+        return formatMarketData(marketData);
+      }
     }
     
-    console.log("No valid data from either source, using generated data");
-    setErrorCount(prev => prev + 1);
     return generateTradingData();
   } catch (error) {
     console.error("Error in fetchMarketData:", error);
