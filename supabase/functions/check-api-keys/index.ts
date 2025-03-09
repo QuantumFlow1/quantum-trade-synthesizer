@@ -21,7 +21,9 @@ serve(async (req) => {
     // If we're checking a specific service, validate the corresponding secret
     if (service && checkSecret) {
       let secretKey = null;
-      switch (service.toLowerCase()) {
+      let provider = service.toLowerCase();
+      
+      switch (provider) {
         case 'openai':
           secretKey = Deno.env.get('OPENAI_API_KEY');
           break;
@@ -41,7 +43,7 @@ serve(async (req) => {
           secretKey = Deno.env.get('DEEPSEEK_API_KEY');
           break;
         case 'any':
-          // If service not specified, check if any API key is available
+          // If service is 'any', check if any API key is available
           secretKey = Deno.env.get('OPENAI_API_KEY') || 
                       Deno.env.get('CLAUDE_API_KEY') || 
                       Deno.env.get('GEMINI_API_KEY') ||
@@ -50,7 +52,7 @@ serve(async (req) => {
                       Deno.env.get('DEEPSEEK_API_KEY');
           break;
         default:
-          // Check if any API key is available
+          // Default to checking all API keys
           secretKey = Deno.env.get('OPENAI_API_KEY') || 
                       Deno.env.get('CLAUDE_API_KEY') || 
                       Deno.env.get('GEMINI_API_KEY') ||
@@ -59,25 +61,51 @@ serve(async (req) => {
                       Deno.env.get('DEEPSEEK_API_KEY');
       }
       
+      // Additional debug log
       const secretSet = !!secretKey;
       console.log(`Service ${service} secret is ${secretSet ? 'set' : 'not set'}`);
+      
+      // Return comprehensive information about available keys
+      const allKeys = {
+        openai: !!Deno.env.get('OPENAI_API_KEY'),
+        claude: !!Deno.env.get('CLAUDE_API_KEY'),
+        gemini: !!Deno.env.get('GEMINI_API_KEY'),
+        grok3: !!Deno.env.get('GROK3_API_KEY'),
+        groq: !!Deno.env.get('GROQ_API_KEY'),
+        deepseek: !!Deno.env.get('DEEPSEEK_API_KEY')
+      };
       
       return new Response(
         JSON.stringify({ 
           status: 'success', 
-          secretSet, 
-          service
+          secretSet,
+          service,
+          allKeys,
+          requestedProvider: provider
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    // Default response when no specific check was requested
+    // If no specific check was requested, provide info on all available keys
+    const allKeys = {
+      openai: !!Deno.env.get('OPENAI_API_KEY'),
+      claude: !!Deno.env.get('CLAUDE_API_KEY'),
+      gemini: !!Deno.env.get('GEMINI_API_KEY'),
+      grok3: !!Deno.env.get('GROK3_API_KEY'),
+      groq: !!Deno.env.get('GROQ_API_KEY'),
+      deepseek: !!Deno.env.get('DEEPSEEK_API_KEY')
+    };
+    
+    // Check if any key is available
+    const anyKeyAvailable = Object.values(allKeys).some(value => value === true);
+    
     return new Response(
       JSON.stringify({ 
         status: 'success', 
         message: 'API key check completed',
-        available: true
+        available: anyKeyAvailable,
+        allKeys
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

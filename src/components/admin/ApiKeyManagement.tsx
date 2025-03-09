@@ -16,6 +16,8 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { checkPermission } from "@/utils/auth-utils";
+import { AlertCircle, Info, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type ApiKey = {
   id: string;
@@ -33,10 +35,20 @@ type ApiKeyFormData = {
   is_active: boolean;
 };
 
+type AdminApiKeyStatus = {
+  openai: boolean;
+  claude: boolean;
+  gemini: boolean;
+  grok3: boolean;
+  groq: boolean;
+  deepseek: boolean;
+};
+
 const API_KEY_TYPES = [
   { id: 'openai', name: 'OpenAI' },
   { id: 'claude', name: 'Claude' },
   { id: 'gemini', name: 'Gemini' },
+  { id: 'groq', name: 'Groq' },
   { id: 'deepseek', name: 'DeepSeek' }
 ];
 
@@ -44,6 +56,15 @@ const ApiKeyManagement = () => {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingKey, setEditingKey] = useState<ApiKey | null>(null);
+  const [adminApiKeyStatus, setAdminApiKeyStatus] = useState<AdminApiKeyStatus>({
+    openai: false,
+    claude: false,
+    gemini: false,
+    grok3: false,
+    groq: false,
+    deepseek: false
+  });
+  const [checkingAdminKeys, setCheckingAdminKeys] = useState(false);
   const { userProfile } = useAuth();
   
   const [formData, setFormData] = useState<ApiKeyFormData>({
@@ -58,6 +79,7 @@ const ApiKeyManagement = () => {
   useEffect(() => {
     if (isSuperAdmin) {
       fetchApiKeys();
+      checkAdminApiKeys();
     } else {
       setLoading(false);
     }
@@ -85,6 +107,30 @@ const ApiKeyManagement = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkAdminApiKeys = async () => {
+    try {
+      setCheckingAdminKeys(true);
+      
+      const { data, error } = await supabase.functions.invoke('check-api-keys', {
+        body: {}
+      });
+      
+      if (error) {
+        console.error('Error checking admin API keys:', error);
+        return;
+      }
+      
+      if (data?.allKeys) {
+        setAdminApiKeyStatus(data.allKeys);
+        console.log('Admin API key status:', data.allKeys);
+      }
+    } catch (error) {
+      console.error('Error checking admin API keys:', error);
+    } finally {
+      setCheckingAdminKeys(false);
     }
   };
 
@@ -124,6 +170,9 @@ const ApiKeyManagement = () => {
         title: "Success",
         description: `API key ${isActive ? 'activated' : 'deactivated'} successfully.`,
       });
+      
+      // Refresh the admin API key status
+      checkAdminApiKeys();
     } catch (error) {
       console.error('Error updating API key status:', error);
       toast({
@@ -201,6 +250,7 @@ const ApiKeyManagement = () => {
         is_active: true
       });
       fetchApiKeys();
+      checkAdminApiKeys(); // Also refresh the admin key status
     } catch (error) {
       console.error('Error saving API key:', error);
       toast({
@@ -236,6 +286,52 @@ const ApiKeyManagement = () => {
 
   return (
     <div className="space-y-6">
+      <Card className="w-full max-w-xl mx-auto">
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <span>Admin API Keys Status</span>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={checkAdminApiKeys}
+              disabled={checkingAdminKeys}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${checkingAdminKeys ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </CardTitle>
+          <CardDescription>
+            Current status of API keys available in Supabase environment.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {checkingAdminKeys ? (
+            <div className="text-center py-2">
+              <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">Checking API keys...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {Object.entries(adminApiKeyStatus).map(([key, value]) => (
+                <div key={key} className={`p-2 rounded-md border flex items-center ${value ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className={`w-3 h-3 rounded-full mr-2 ${value ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  <span className="text-sm font-medium capitalize">{key}</span>
+                  <span className="text-xs ml-auto text-muted-foreground">{value ? 'Active' : 'Not Set'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          <Alert className="mt-4 bg-blue-50 border-blue-200 text-blue-800">
+            <Info className="h-4 w-4" />
+            <AlertTitle>Information</AlertTitle>
+            <AlertDescription className="text-xs">
+              These keys are stored in Supabase Edge Function secrets. They're used when users don't have their own API keys.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
       <Card className="w-full max-w-xl mx-auto">
         <CardHeader>
           <CardTitle>API Key Management</CardTitle>
