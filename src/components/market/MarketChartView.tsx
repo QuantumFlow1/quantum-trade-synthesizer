@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LegendType } from 'recharts';
 
 const MarketChartView = ({ data }) => {
   return (
@@ -17,7 +18,7 @@ const MarketChartView = ({ data }) => {
               const item = {
                 value: entry.value,
                 color: entry.color,
-                type: entry.type === 'area' ? 'rect' : 'line'
+                type: entry.type as LegendType === 'rect' ? 'rect' : 'line'
               };
               
               return (

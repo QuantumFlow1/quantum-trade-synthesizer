@@ -1,17 +1,17 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { PortfolioManagerHookReturn } from './types/portfolioTypes';
+import { PortfolioManagerHookReturn, AgentRecommendation } from './types/portfolioTypes';
 import { tradingAgents } from './data/tradingAgents';
 import { generateCollaborationMessages } from './utils/collaborationUtils';
 import { generateBacktestResults, calculateAgentAccuracy } from './utils/backtestingUtils';
-import { generateAgentRecommendations } from './utils/recommendationUtils';
+import { generateAgentRecommendations, setGroqAgentInstance } from './utils/recommendationUtils';
 import { useAgentPerformance } from './hooks/useAgentPerformance';
 import { usePortfolioDecisions } from './hooks/usePortfolioDecisions';
 
 export const usePortfolioManager = (currentData: any): PortfolioManagerHookReturn => {
   const { toast } = useToast();
-  const [agentRecommendations, setAgentRecommendations] = useState([]);
+  const [agentRecommendations, setAgentRecommendations] = useState<AgentRecommendation[]>([]);
   const [loadingDecision, setLoadingDecision] = useState(false);
   const [collaborationMessages, setCollaborationMessages] = useState([]);
   const [collaborationScore, setCollaborationScore] = useState(0);
@@ -67,7 +67,7 @@ export const usePortfolioManager = (currentData: any): PortfolioManagerHookRetur
   }, [currentData]);
 
   // Make this a memoized function so it can be safely used in useEffect and as a callback
-  const generateRecommendationsWithCollaboration = useCallback(() => {
+  const generateRecommendationsWithCollaboration = useCallback(async () => {
     if (!currentData) {
       console.log("No current data available for portfolio analysis");
       return;
@@ -99,33 +99,44 @@ export const usePortfolioManager = (currentData: any): PortfolioManagerHookRetur
     const accuracyMetrics = calculateAgentAccuracy(backtests);
     setAgentAccuracy(accuracyMetrics);
     
-    // Generate agent recommendations
-    const newRecommendations = generateAgentRecommendations(
-      currentData, 
-      tradingAgents,
-      accuracyMetrics
-    );
-    
-    console.log(`Generated ${newRecommendations.length} trading agent recommendations`);
-    setAgentRecommendations(newRecommendations);
-    
-    setTimeout(() => {
-      // Generate portfolio decision
-      generatePortfolioDecision(
-        newRecommendations,
+    try {
+      // Generate agent recommendations - now properly awaiting the Promise
+      const newRecommendations = await generateAgentRecommendations(
+        currentData, 
         tradingAgents,
-        accuracyMetrics,
-        collaborationMsgs,
-        newCollaborationScore,
-        currentData
+        accuracyMetrics
       );
       
-      // Update agent performance metrics
-      updateAgentPerformance(tradingAgents, accuracyMetrics);
+      console.log(`Generated ${newRecommendations.length} trading agent recommendations`);
+      setAgentRecommendations(newRecommendations);
       
+      setTimeout(() => {
+        // Generate portfolio decision
+        generatePortfolioDecision(
+          newRecommendations,
+          tradingAgents,
+          accuracyMetrics,
+          collaborationMsgs,
+          newCollaborationScore,
+          currentData
+        );
+        
+        // Update agent performance metrics
+        updateAgentPerformance(tradingAgents, accuracyMetrics);
+        
+        setLoadingDecision(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Error generating recommendations:", error);
+      setAgentRecommendations([]);
       setLoadingDecision(false);
-    }, 1500);
-  }, [currentData, loadingDecision, generatePortfolioDecision, updateAgentPerformance]);
+      toast({
+        title: "Error generating recommendations",
+        description: "Failed to generate agent recommendations. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [currentData, loadingDecision, generatePortfolioDecision, updateAgentPerformance, toast]);
 
   const handleExecuteDecision = useCallback((isSimulationMode: boolean) => {
     if (!portfolioDecision) return;

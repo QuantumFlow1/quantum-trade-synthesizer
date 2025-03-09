@@ -35,7 +35,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
   return (
     <div className="space-y-4">
       {isSimulationMode && (
-        <SimulationAlert onToggleSimulation={onSimulationToggle} />
+        <SimulationAlert onToggleSimulation={onSimulationToggle!} />
       )}
       
       {children}

@@ -1,8 +1,8 @@
-import { useTheme } from '@/hooks/useTheme';
+import { useThemeDetection } from './use-theme-detection';
 
 // This hook extracts just the theme name as a string from the useTheme hook
 export const useThemeString = (): string => {
-  const { theme } = useTheme();
+  const { theme } = useThemeDetection();
   
   // If theme is an object (from the context), extract just the string value
   if (typeof theme === 'object' && theme !== null && 'theme' in theme) {
