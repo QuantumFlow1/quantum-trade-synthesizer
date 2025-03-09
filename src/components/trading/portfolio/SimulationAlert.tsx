@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
 export interface SimulationAlertProps {
-  onToggleSimulation: (enabled: boolean) => void;
+  onToggleSimulation?: (enabled: boolean) => void;
 }
 
 export const SimulationAlert: React.FC<SimulationAlertProps> = ({ onToggleSimulation }) => {
@@ -16,14 +16,16 @@ export const SimulationAlert: React.FC<SimulationAlertProps> = ({ onToggleSimula
         <span className="text-sm text-amber-600 dark:text-amber-400">
           You are in simulation mode. No real trades will be executed.
         </span>
-        <Button 
-          size="sm" 
-          variant="outline" 
-          className="ml-2 border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white" 
-          onClick={() => onToggleSimulation(false)}
-        >
-          Exit Simulation
-        </Button>
+        {onToggleSimulation && (
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="ml-2 border-amber-500 text-amber-500 hover:bg-amber-500 hover:text-white" 
+            onClick={() => onToggleSimulation(false)}
+          >
+            Exit Simulation
+          </Button>
+        )}
       </AlertDescription>
     </Alert>
   );

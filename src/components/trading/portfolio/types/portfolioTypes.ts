@@ -20,6 +20,10 @@ export interface PortfolioDecision {
   reasoning: string;
   contributors: string[];
   timestamp: string;
+  ticker?: string;
+  amount?: number;
+  price?: number;
+  riskScore?: number;
 }
 
 export interface TradingAgent {
@@ -41,4 +45,24 @@ export interface AgentPerformance {
   accuracy: number;
   recentTrades: boolean[];
   profitFactor: number;
+  successRate: number;
+  recentSuccess?: number[];
+  averageConfidence?: number;
+  totalCalls?: number;
+}
+
+export interface PortfolioManagerHookReturn {
+  agentRecommendations: AgentRecommendation[];
+  portfolioDecision: PortfolioDecision | null;
+  loadingDecision: boolean;
+  riskScore: number;
+  collaborationMessages: any[];
+  collaborationScore: number;
+  activeDiscussions: any[];
+  agentPerformance: Record<string, AgentPerformance>;
+  agentAccuracy: any;
+  backtestResults: any[];
+  tradingAgents: TradingAgent[];
+  handleExecuteDecision: (isSimulationMode: boolean) => void;
+  handleRefreshAnalysis: () => void;
 }

@@ -5,18 +5,26 @@ import { BarChart, LineChart, Brain } from 'lucide-react';
 import { PortfolioManager } from '@/components/trading/PortfolioManager';
 import { AIMarketAnalysis } from '@/components/market/AIMarketAnalysis';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MarketData } from '@/components/market/types';
 
 export const AnalyticsPage = () => {
   const [activeTab, setActiveTab] = useState('market');
   const [isSimulationMode, setIsSimulationMode] = useState(true);
   
   // Sample market data for demonstration
-  const marketData = {
+  const marketData: MarketData = {
     symbol: 'BTC',
     price: 62549.23,
     change24h: 2.34,
     marketCap: 1.21,
-    volume24h: 32.5
+    volume24h: 32.5,
+    // Required by MarketData type
+    timestamp: Date.now(),
+    volume: 5000000000,
+    high: 63100.50,
+    low: 61800.75,
+    high24h: 63100.50,
+    low24h: 61800.75
   };
   
   const handleSimulationToggle = (enabled: boolean) => {

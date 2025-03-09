@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { MarketData } from '../types';
-import { MarketChartView } from '../MarketChartView';
+import MarketChartView from '../MarketChartView';
 import { AIEnhancedChartView } from '../AIEnhancedChartView';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';

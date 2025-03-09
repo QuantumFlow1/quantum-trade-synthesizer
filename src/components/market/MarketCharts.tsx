@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { MarketChartView } from './MarketChartView';
+import MarketChartView from './MarketChartView';
 import { Dialog, DialogContent } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { ExternalLink, Maximize2, BarChart } from 'lucide-react';
