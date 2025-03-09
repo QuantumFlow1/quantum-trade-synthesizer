@@ -1,9 +1,11 @@
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Newspaper, ExternalLink, Calendar } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Newspaper, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface NewsFeedProps {
+export interface NewsFeedProps {
   selectedPair: string;
 }
 
@@ -11,9 +13,10 @@ interface NewsItem {
   id: string;
   title: string;
   source: string;
-  date: string;
+  timestamp: Date;
   url: string;
-  sentiment: "positive" | "negative" | "neutral";
+  sentiment: 'positive' | 'negative' | 'neutral';
+  relatedTo: string[];
 }
 
 export const NewsFeed = ({ selectedPair }: NewsFeedProps) => {
@@ -21,119 +24,147 @@ export const NewsFeed = ({ selectedPair }: NewsFeedProps) => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // In a real app, this would fetch news based on the selected pair
-    const fetchNews = () => {
+    const fetchNews = async () => {
       setIsLoading(true);
       
-      // Simulate API call delay
-      setTimeout(() => {
-        const asset = selectedPair.split('/')[0];
-        
-        // Generate mock news items
-        const mockNews: NewsItem[] = [
-          {
-            id: "1",
-            title: `${asset} Surges as Institutional Interest Grows`,
-            source: "CryptoNews",
-            date: "10 minutes ago",
-            url: "#",
-            sentiment: "positive"
-          },
-          {
-            id: "2",
-            title: `Regulatory Concerns Cause ${asset} Volatility`,
-            source: "Financial Times",
-            date: "2 hours ago",
-            url: "#",
-            sentiment: "negative"
-          },
-          {
-            id: "3",
-            title: `Technical Analysis: ${asset} Shows Strong Support Levels`,
-            source: "TradingView Blog",
-            date: "4 hours ago",
-            url: "#",
-            sentiment: "positive"
-          },
-          {
-            id: "4",
-            title: `Major Exchange Announces New ${asset} Trading Pairs`,
-            source: "CoinDesk",
-            date: "Yesterday",
-            url: "#",
-            sentiment: "positive"
-          },
-          {
-            id: "5",
-            title: `${asset} Foundation Releases Q2 Development Update`,
-            source: "BlockchainNews",
-            date: "2 days ago",
-            url: "#",
-            sentiment: "neutral"
-          }
-        ];
-        
-        setNews(mockNews);
-        setIsLoading(false);
-      }, 1000);
+      // In a real app, this would be an API call
+      // For now, we'll simulate a delay and generate mock data
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Generate mock news based on the selected pair
+      const baseCurrency = selectedPair ? selectedPair.split('/')[0] : 'BTC';
+      
+      const mockNews: NewsItem[] = [
+        {
+          id: '1',
+          title: `${baseCurrency} Price Surges Following Positive Regulatory News`,
+          source: 'CryptoNews',
+          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+          url: '#',
+          sentiment: 'positive',
+          relatedTo: [baseCurrency, 'Regulation']
+        },
+        {
+          id: '2',
+          title: `Major Exchange Adds New ${baseCurrency} Trading Pairs`,
+          source: 'BlockchainReport',
+          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000), // 5 hours ago
+          url: '#',
+          sentiment: 'positive',
+          relatedTo: [baseCurrency, 'Exchange']
+        },
+        {
+          id: '3',
+          title: `Analysts Predict ${baseCurrency} Volatility in Coming Weeks`,
+          source: 'CryptoAnalyst',
+          timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000), // 8 hours ago
+          url: '#',
+          sentiment: 'neutral',
+          relatedTo: [baseCurrency, 'Analysis']
+        },
+        {
+          id: '4',
+          title: 'Market-Wide Correction Affects All Major Cryptocurrencies',
+          source: 'CoinDesk',
+          timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000), // 12 hours ago
+          url: '#',
+          sentiment: 'negative',
+          relatedTo: ['Market', baseCurrency, 'ETH']
+        },
+        {
+          id: '5',
+          title: `New Development Partnership Announced for ${baseCurrency} Network`,
+          source: 'DailyBlock',
+          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+          url: '#',
+          sentiment: 'positive',
+          relatedTo: [baseCurrency, 'Development']
+        }
+      ];
+      
+      setNews(mockNews);
+      setIsLoading(false);
     };
     
     fetchNews();
   }, [selectedPair]);
+  
+  const getSentimentColor = (sentiment: string): string => {
+    switch (sentiment) {
+      case 'positive':
+        return 'bg-green-100 text-green-800';
+      case 'negative':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  const formatTimeDifference = (timestamp: Date): string => {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60));
+      return `${diffInMinutes}m ago`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h ago`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays}d ago`;
+    }
+  };
 
   return (
-    <Card className="mt-4">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2">
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-md flex items-center gap-2">
           <Newspaper className="h-5 w-5" />
-          Latest {selectedPair.split('/')[0]} News
+          Market News
         </CardTitle>
+        <Badge variant="outline">
+          {selectedPair || 'All Markets'}
+        </Badge>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-2">
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {news.map((item) => (
-              <div 
-                key={item.id}
-                className="p-3 rounded-md border hover:bg-muted/30 transition-colors"
-              >
-                <div className="flex items-start justify-between">
-                  <h3 className="font-medium">{item.title}</h3>
-                  <div className={`ml-2 px-2 py-0.5 rounded text-xs ${
-                    item.sentiment === 'positive' 
-                      ? 'bg-green-500/10 text-green-500' 
-                      : item.sentiment === 'negative'
-                        ? 'bg-red-500/10 text-red-500'
-                        : 'bg-gray-500/10 text-gray-500'
-                  }`}>
-                    {item.sentiment.charAt(0).toUpperCase() + item.sentiment.slice(1)}
-                  </div>
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="py-3 px-2 border-b last:border-0">
+              <div className="flex items-start justify-between">
+                <div className="w-4/5">
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-3 w-1/3" />
                 </div>
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <span>{item.source}</span>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>{item.date}</span>
-                    </div>
-                  </div>
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            </div>
+          ))
+        ) : (
+          news.map(item => (
+            <div key={item.id} className="py-3 px-2 border-b last:border-0 hover:bg-muted/20 transition-colors">
+              <div className="flex items-start justify-between">
+                <div>
                   <a 
                     href={item.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline flex items-center text-sm"
+                    className="font-medium text-sm hover:underline flex items-center gap-1"
                   >
-                    Read More
-                    <ExternalLink className="h-3 w-3 ml-1" />
+                    {item.title}
+                    <ExternalLink className="h-3 w-3 inline ml-1" />
                   </a>
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                    <span>{item.source}</span>
+                    <span>•</span>
+                    <span>{formatTimeDifference(item.timestamp)}</span>
+                  </div>
                 </div>
+                <Badge className={getSentimentColor(item.sentiment)}>
+                  {item.sentiment}
+                </Badge>
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         )}
       </CardContent>
     </Card>

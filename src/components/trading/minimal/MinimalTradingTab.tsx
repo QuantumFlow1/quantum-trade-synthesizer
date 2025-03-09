@@ -9,9 +9,13 @@ import { OrderBook } from "./components/OrderBook";
 import { NewsFeed } from "./components/NewsFeed";
 import { TechnicalIndicators } from "./components/TechnicalIndicators";
 import { StockbotChat } from "./StockbotChat";
+import { generateTradingData, TradingDataPoint } from "@/utils/tradingData";
 
 export const MinimalTradingTab = () => {
   const [activeTab, setActiveTab] = useState("chart");
+  const [tradingData, setTradingData] = useState<TradingDataPoint[]>(generateTradingData());
+  const [selectedPair, setSelectedPair] = useState("BTC/USDT");
+  const [currentTimeframe, setCurrentTimeframe] = useState("1h");
 
   // Check if we should open the trading agents tab based on localStorage flag
   useEffect(() => {
@@ -22,6 +26,15 @@ export const MinimalTradingTab = () => {
       localStorage.removeItem('openTradingAgentsTab');
     }
   }, []);
+
+  const handleRefresh = () => {
+    setTradingData(generateTradingData());
+  };
+
+  const handleTimeframeChange = (timeframe: string) => {
+    setCurrentTimeframe(timeframe);
+    setTradingData(generateTradingData()); // Regenerate data for the new timeframe
+  };
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -36,18 +49,22 @@ export const MinimalTradingTab = () => {
         <div className="md:col-span-2">
           <TabsContent value="chart" className="space-y-4">
             <MinimalMarketData />
-            <MinimalPriceChart />
-            <MinimalTradingControls />
+            <MinimalPriceChart data={tradingData} />
+            <MinimalTradingControls 
+              onRefresh={handleRefresh}
+              onTimeframeChange={handleTimeframeChange}
+              currentTimeframe={currentTimeframe}
+            />
           </TabsContent>
           
           <TabsContent value="orders" className="space-y-4">
             <MinimalMarketData />
-            <OrderBook />
+            <OrderBook selectedPair={selectedPair} />
           </TabsContent>
           
           <TabsContent value="alerts" className="space-y-4">
             <MinimalMarketData />
-            <PriceAlerts />
+            <PriceAlerts selectedPair={selectedPair} />
           </TabsContent>
           
           <TabsContent value="agents" className="space-y-4">
@@ -58,7 +75,7 @@ export const MinimalTradingTab = () => {
         
         <div className="space-y-4">
           <TechnicalIndicators />
-          <NewsFeed />
+          <NewsFeed selectedPair={selectedPair} />
         </div>
       </div>
     </Tabs>
