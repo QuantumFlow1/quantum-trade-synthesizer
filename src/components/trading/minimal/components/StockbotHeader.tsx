@@ -44,6 +44,7 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
         description: "You need to configure an API key to use real AI mode",
         variant: "warning"
       });
+      showApiKeyDialog(); // Show the API key dialog to let the user add their key
       return;
     }
     

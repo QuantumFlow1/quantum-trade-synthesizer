@@ -3,6 +3,7 @@ import React from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
 import { toast } from "@/hooks/use-toast";
+import { saveApiKey, hasApiKey } from "@/utils/apiKeyManager";
 
 interface StockbotKeyDialogProps {
   isKeyDialogOpen: boolean;
@@ -16,17 +17,14 @@ export const StockbotKeyDialog = ({
   onSuccessfulSave,
 }: StockbotKeyDialogProps) => {
   const onSaveComplete = () => {
-    // Verify the key actually got saved to localStorage
-    const savedGroqKey = localStorage.getItem("groqApiKey");
+    // Directly check if the API key was saved
+    const keyExists = hasApiKey('groq');
     
     console.log("API key save completed. Key in storage:", {
-      exists: !!savedGroqKey,
-      length: savedGroqKey ? savedGroqKey.length : 0,
-      firstChars: savedGroqKey ? savedGroqKey.substring(0, 4) : 'none',
-      lastChars: savedGroqKey ? savedGroqKey.substring(savedGroqKey.length - 4) : 'none'
+      exists: keyExists,
     });
     
-    if (!savedGroqKey) {
+    if (!keyExists) {
       toast({
         title: "Error Saving API Key",
         description: "The API key was not saved to storage. Please try again.",
@@ -35,10 +33,11 @@ export const StockbotKeyDialog = ({
       return;
     }
     
-    // Force dispatch events to ensure other components are notified
-    window.dispatchEvent(new Event('apikey-updated'));
-    window.dispatchEvent(new Event('localStorage-changed'));
-    window.dispatchEvent(new Event('storage'));
+    toast({
+      title: "API Key Saved",
+      description: "The API key was successfully saved to storage.",
+      variant: "default"
+    });
     
     // Wait a short delay before closing to avoid state update conflicts
     setTimeout(() => {

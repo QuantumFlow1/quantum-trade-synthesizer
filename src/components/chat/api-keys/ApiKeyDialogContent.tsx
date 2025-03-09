@@ -1,310 +1,235 @@
-import { useState, useEffect, useRef } from 'react';
+
+import React, { useState, useEffect } from 'react';
+import { TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Save, Check, Clipboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ApiKeySettings } from '../types/GrokSettings';
-import { validateApiKey } from './apiKeyUtils';
-import { toast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
+import { Key } from 'lucide-react';
+import { saveApiKey } from '@/utils/apiKeyManager';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabase } from '@/lib/supabase';
+
+type TabType = 'openai' | 'claude' | 'gemini' | 'deepseek' | 'groq';
 
 interface ApiKeyDialogContentProps {
-  apiKeys?: ApiKeySettings;
-  onSave?: (openaiKey: string, claudeKey: string, geminiKey: string, deepseekKey: string, groqKey: string) => void;
-  initialTab?: string;
+  initialTab?: TabType;
   onClose?: () => void;
 }
 
-export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose }: ApiKeyDialogContentProps) {
+export const ApiKeyDialogContent = ({
+  initialTab = 'openai',
+  onClose,
+}: ApiKeyDialogContentProps) => {
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [openaiKey, setOpenaiKey] = useState('');
   const [claudeKey, setClaudeKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [deepseekKey, setDeepseekKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
-  const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const groqInputRef = useRef<HTMLInputElement>(null);
-  const savingInProgress = useRef(false);
-  
-  useEffect(() => {
-    if (apiKeys) {
-      setOpenaiKey(apiKeys.openaiApiKey || '');
-      setClaudeKey(apiKeys.claudeApiKey || '');
-      setGeminiKey(apiKeys.geminiApiKey || '');
-      setDeepseekKey(apiKeys.deepseekApiKey || '');
-      setGroqKey(apiKeys.groqApiKey || '');
-    }
-  }, [apiKeys]);
-  
-  useEffect(() => {
-    const openKey = localStorage.getItem('openaiApiKey') || '';
-    const claudeKey = localStorage.getItem('claudeApiKey') || '';
-    const geminiKey = localStorage.getItem('geminiApiKey') || '';
-    const deepKey = localStorage.getItem('deepseekApiKey') || '';
-    const groqKey = localStorage.getItem('groqApiKey') || '';
-    
-    console.log('Loading API keys from localStorage in ApiKeyDialogContent:', {
-      openai: openKey ? `present (${openKey.length} chars)` : 'not found',
-      claude: claudeKey ? `present (${claudeKey.length} chars)` : 'not found',
-      gemini: geminiKey ? `present (${geminiKey.length} chars)` : 'not found',
-      deepseek: deepKey ? `present (${deepKey.length} chars)` : 'not found',
-      groq: groqKey ? `present (${groqKey.length} chars)` : 'not found'
-    });
-    
-    if (openKey) setOpenaiKey(openKey);
-    if (claudeKey) setClaudeKey(claudeKey);
-    if (geminiKey) setGeminiKey(geminiKey);
-    if (deepKey) setDeepseekKey(deepKey);
-    if (groqKey) setGroqKey(groqKey);
-    
-    if (initialTab === 'groq') {
-      setTimeout(() => {
-        if (groqInputRef.current) {
-          groqInputRef.current.focus();
-          groqInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 100);
-    }
-  }, [initialTab]);
 
-  const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<string>>) => {
+  // Load saved API keys on component mount
+  useEffect(() => {
+    loadKeysFromStorage();
+  }, []);
+
+  const loadKeysFromStorage = () => {
     try {
-      const text = e.clipboardData.getData('text/plain');
-      console.log('Paste detected, content length:', text.length);
-      setter(text);
-      e.preventDefault();
-    } catch (error) {
-      console.error('Error pasting text:', error);
-    }
-  };
-  
-  const handleSave = async () => {
-    if (savingInProgress.current) return;
-    
-    if (!validateApiKey(openaiKey, 'openai') ||
-        !validateApiKey(claudeKey, 'claude') ||
-        !validateApiKey(geminiKey, 'gemini') ||
-        !validateApiKey(groqKey, 'groq')) {
-      return;
-    }
-    
-    savingInProgress.current = true;
-    setIsSaving(true);
-    
-    console.log('Saving API keys...', {
-      openai: openaiKey ? 'present' : 'none',
-      claude: claudeKey ? 'present' : 'none',
-      gemini: geminiKey ? 'present' : 'none',
-      deepseek: deepseekKey ? 'present' : 'none',
-      groq: groqKey ? 'present' : 'none'
-    });
-    
-    try {
-      if (groqKey) {
-        localStorage.setItem('groqApiKey', groqKey.trim());
-        const savedKey = localStorage.getItem('groqApiKey');
-        console.log('Immediately after saving Groq key:', {
-          saved: !!savedKey,
-          length: savedKey ? savedKey.length : 0,
-          matches: savedKey === groqKey.trim()
-        });
-      } else {
-        localStorage.removeItem('groqApiKey');
-      }
+      const savedOpenAI = localStorage.getItem('openaiApiKey') || '';
+      const savedClaude = localStorage.getItem('claudeApiKey') || '';
+      const savedGemini = localStorage.getItem('geminiApiKey') || '';
+      const savedDeepseek = localStorage.getItem('deepseekApiKey') || '';
+      const savedGroq = localStorage.getItem('groqApiKey') || '';
       
-      if (openaiKey === '') localStorage.removeItem('openaiApiKey');
-      else localStorage.setItem('openaiApiKey', openaiKey.trim());
-      
-      if (claudeKey === '') localStorage.removeItem('claudeApiKey');
-      else localStorage.setItem('claudeApiKey', claudeKey.trim());
-      
-      if (geminiKey === '') localStorage.removeItem('geminiApiKey');
-      else localStorage.setItem('geminiApiKey', geminiKey.trim());
-      
-      if (deepseekKey === '') localStorage.removeItem('deepseekApiKey');
-      else localStorage.setItem('deepseekApiKey', deepseekKey.trim());
-      
-      if (groqKey) {
-        try {
-          const response = await fetch('/api/save-api-key', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              keyType: 'groq',
-              apiKey: groqKey.trim()
-            }),
-          });
-          
-          if (!response.ok) {
-            console.log('Non-critical: Failed to save to server, but local storage succeeded', 
-              response.status, 
-              await response.text());
-          }
-        } catch (serverError) {
-          console.log('Non-critical: Server save error, but local storage succeeded', serverError);
-        }
-      }
-      
-      if (onSave) {
-        onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
-      }
-      
-      setSaved(true);
-      
-      toast({
-        title: "API Keys Saved",
-        description: "Your API keys have been saved successfully",
-        variant: "default"
+      console.log('Loading API keys from localStorage:', {
+        openai: savedOpenAI ? 'present' : 'not found',
+        claude: savedClaude ? 'present' : 'not found',
+        gemini: savedGemini ? 'present' : 'not found',
+        deepseek: savedDeepseek ? 'present' : 'not found',
+        groq: savedGroq ? 'present' : 'not found'
       });
       
-      window.dispatchEvent(new Event('localStorage-changed'));
-      window.dispatchEvent(new Event('apikey-updated'));
-      window.dispatchEvent(new Event('storage'));
+      setOpenaiKey(savedOpenAI);
+      setClaudeKey(savedClaude);
+      setGeminiKey(savedGemini);
+      setDeepseekKey(savedDeepseek);
+      setGroqKey(savedGroq);
+    } catch (error) {
+      console.error('Error loading API keys:', error);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    let success = true;
+    
+    try {
+      console.log('Saving API keys...');
+      
+      // Save OpenAI API key
+      if (openaiKey.trim()) {
+        if (!saveApiKey('openai', openaiKey)) {
+          success = false;
+        }
+      }
+      
+      // Save Claude API key  
+      if (claudeKey.trim()) {
+        if (!saveApiKey('claude', claudeKey)) {
+          success = false;
+        }
+      }
+      
+      // Save Gemini API key
+      if (geminiKey.trim()) {
+        if (!saveApiKey('gemini', geminiKey)) {
+          success = false;
+        }
+      }
+      
+      // Save Deepseek API key
+      if (deepseekKey.trim()) {
+        if (!saveApiKey('deepseek', deepseekKey)) {
+          success = false;
+        }
+      }
+      
+      // Save Groq API key
+      if (groqKey.trim()) {
+        if (!saveApiKey('groq', groqKey)) {
+          success = false;
+        }
+        
+        // Also save to Supabase if available (for backend usage)
+        try {
+          await supabase.functions.invoke('save-api-key', {
+            body: { keyType: 'groq', apiKey: groqKey.trim() }
+          });
+        } catch (error) {
+          console.log('Could not save Groq key to Supabase:', error);
+          // Continue even if this fails - localStorage is the primary storage
+        }
+      }
+      
+      console.log('API keys saved successfully:', success);
       
       if (onClose) {
-        setTimeout(() => {
-          onClose();
-        }, 500);
+        onClose();
       }
     } catch (error) {
       console.error('Error saving API keys:', error);
-      toast({
-        title: "Error Saving Keys",
-        description: "There was a problem saving your API keys. Please try again.",
-        variant: "destructive"
-      });
+      success = false;
     } finally {
-      setTimeout(() => {
-        setSaved(false);
-        setIsSaving(false);
-        savingInProgress.current = false;
-      }, 2000);
+      setIsSaving(false);
     }
   };
-  
+
   return (
-    <>
+    <div className="space-y-4 py-2 pb-4">
       <DialogHeader>
-        <DialogTitle>API Sleutels Beheren</DialogTitle>
-        <DialogDescription>
-          Voer uw API sleutels in voor de verschillende AI-modellen. Deze worden veilig opgeslagen in uw browser.
-        </DialogDescription>
+        <DialogTitle>Configure API Keys</DialogTitle>
       </DialogHeader>
       
-      <div className="space-y-4 py-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">OpenAI API Sleutel</label>
-          <Input 
-            type="password" 
-            value={openaiKey} 
-            onChange={e => setOpenaiKey(e.target.value)}
-            onPaste={e => handlePaste(e, setOpenaiKey)}
-            placeholder="sk-..." 
-          />
-          <p className="text-xs text-gray-500">Vereist voor GPT-4o</p>
-        </div>
+      <Tabs defaultValue={activeTab} onValueChange={(value) => setActiveTab(value as TabType)}>
+        <TabsList className="grid grid-cols-5 mb-4">
+          <TabsTrigger value="openai">OpenAI</TabsTrigger>
+          <TabsTrigger value="claude">Claude</TabsTrigger>
+          <TabsTrigger value="gemini">Gemini</TabsTrigger>
+          <TabsTrigger value="deepseek">DeepSeek</TabsTrigger>
+          <TabsTrigger value="groq">Groq</TabsTrigger>
+        </TabsList>
         
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Claude API Sleutel</label>
-          <Input 
-            type="password" 
-            value={claudeKey} 
-            onChange={e => setClaudeKey(e.target.value)} 
-            onPaste={e => handlePaste(e, setClaudeKey)}
-            placeholder="sk-ant-..." 
-          />
-          <p className="text-xs text-gray-500">Vereist voor Claude 3</p>
-        </div>
-        
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Gemini API Sleutel</label>
-          <Input 
-            type="password" 
-            value={geminiKey} 
-            onChange={e => setGeminiKey(e.target.value)} 
-            onPaste={e => handlePaste(e, setGeminiKey)}
-            placeholder="AIza..." 
-          />
-          <p className="text-xs text-gray-500">Vereist voor Gemini Pro</p>
-        </div>
-        
-        <div className="space-y-2">
-          <label className="text-sm font-medium">DeepSeek API Sleutel</label>
-          <Input 
-            type="password" 
-            value={deepseekKey} 
-            onChange={e => setDeepseekKey(e.target.value)} 
-            onPaste={e => handlePaste(e, setDeepseekKey)}
-            placeholder="sk-..." 
-          />
-          <p className="text-xs text-gray-500">Vereist voor DeepSeek Coder</p>
-        </div>
-        
-        <div className="space-y-2" id="groq-key-field">
-          <label className="text-sm font-medium">Groq API Sleutel</label>
-          <div className="relative">
-            <Input 
-              ref={groqInputRef}
-              type="password" 
-              value={groqKey} 
-              onChange={e => setGroqKey(e.target.value)} 
-              onPaste={e => handlePaste(e, setGroqKey)}
-              placeholder="gsk_..." 
-              className="pr-10"
+        <TabsContent value="openai" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="openai-key">OpenAI API Key</Label>
+            <Input
+              id="openai-key"
+              type="password"
+              placeholder="sk-..."
+              value={openaiKey}
+              onChange={(e) => setOpenaiKey(e.target.value)}
             />
-            <Button 
-              type="button" 
-              variant="ghost" 
-              size="icon" 
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-              onClick={async () => {
-                try {
-                  const text = await navigator.clipboard.readText();
-                  setGroqKey(text);
-                  toast({
-                    title: "Geplakt",
-                    description: "Inhoud uit klembord geplakt",
-                    duration: 2000
-                  });
-                } catch (err) {
-                  console.error('Fout bij plakken uit klembord:', err);
-                  toast({
-                    title: "Plakken mislukt",
-                    description: "Kon niet plakken uit klembord",
-                    variant: "destructive",
-                    duration: 3000
-                  });
-                }
-              }}
-            >
-              <Clipboard className="h-4 w-4" />
-            </Button>
+            <p className="text-xs text-gray-500">Used for GPT-3.5 and GPT-4 models</p>
           </div>
-          <p className="text-xs text-gray-500">Vereist voor Stockbot Trading Assistant</p>
-        </div>
-      </div>
+        </TabsContent>
+        
+        <TabsContent value="claude" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="claude-key">Anthropic API Key</Label>
+            <Input
+              id="claude-key"
+              type="password"
+              placeholder="sk-ant-..."
+              value={claudeKey}
+              onChange={(e) => setClaudeKey(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">Used for Claude models</p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="gemini" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="gemini-key">Google Gemini API Key</Label>
+            <Input
+              id="gemini-key"
+              type="password"
+              placeholder="AIza..."
+              value={geminiKey}
+              onChange={(e) => setGeminiKey(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">Used for Google Gemini models</p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="deepseek" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="deepseek-key">DeepSeek API Key</Label>
+            <Input
+              id="deepseek-key"
+              type="password"
+              placeholder="sk-..."
+              value={deepseekKey}
+              onChange={(e) => setDeepseekKey(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">Used for DeepSeek models</p>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="groq" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="groq-key">Groq API Key</Label>
+            <Input
+              id="groq-key"
+              type="password"
+              placeholder="gsk_..."
+              value={groqKey}
+              onChange={(e) => setGroqKey(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">Used for Groq models including LLama-3, Mixtral</p>
+          </div>
+        </TabsContent>
+      </Tabs>
       
       <DialogFooter>
-        <Button onClick={handleSave} className="w-full" disabled={isSaving}>
+        <Button 
+          type="submit" 
+          onClick={handleSave} 
+          disabled={isSaving}
+          className="w-full mt-4"
+        >
           {isSaving ? (
             <>
-              <span className="animate-spin mr-2">⟳</span>
-              Opslaan...
-            </>
-          ) : saved ? (
-            <>
-              <Check className="h-4 w-4 mr-2" />
-              Opgeslagen!
+              <span className="mr-2">Saving...</span>
             </>
           ) : (
             <>
-              <Save className="h-4 w-4 mr-2" />
-              Sleutels Opslaan
+              <Key className="mr-2 h-4 w-4" />
+              Save API Key
             </>
           )}
         </Button>
       </DialogFooter>
-    </>
+    </div>
   );
-}
+};
