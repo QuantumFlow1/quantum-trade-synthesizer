@@ -1,4 +1,3 @@
-
 import { ApiKeySettings, ModelInfo } from '../types/GrokSettings';
 import { 
   showApiKeyInfoToast,
@@ -16,44 +15,31 @@ export const validateApiKey = (key: string, type: string): boolean => {
   
   // Check if key has proper format based on provider
   if (type === 'openai' && !key.startsWith('sk-')) {
-    toast({
-      title: "OpenAI API Key Invalid",
-      description: "OpenAI API keys should start with 'sk-'",
-      variant: "destructive"
-    });
-    return false;
+    console.warn("OpenAI API key validation warning: Key does not start with 'sk-'");
+    // More permissive validation - just warn but accept
+    return true;
   }
   
   if (type === 'claude' && !key.startsWith('sk-ant-')) {
-    toast({
-      title: "Claude API Key Invalid",
-      description: "Claude API keys should start with 'sk-ant-'",
-      variant: "destructive"
-    });
-    return false;
+    console.warn("Claude API key validation warning: Key does not start with 'sk-ant-'");
+    // More permissive validation - just warn but accept
+    return true;
   }
   
   if (type === 'gemini' && !key.startsWith('AIza')) {
+    console.warn("Gemini API key validation warning: Key does not start with 'AIza'");
+    // More permissive validation - just warn but accept
+    return true;
+  }
+  
+  // Lenient validation for Groq keys - just check length
+  if (type === 'groq' && key.trim().length < 10) {
     toast({
-      title: "Gemini API Key Invalid",
-      description: "Gemini API keys typically start with 'AIza'",
+      title: "Groq API Key Short",
+      description: "The Groq API key you entered seems short. Make sure it's correct.",
       variant: "destructive"
     });
     return false;
-  }
-  
-  // More lenient validation for Groq keys
-  if (type === 'groq') {
-    // Allow any reasonably long key for Groq (minimum 20 characters)
-    // This is more permissive as Groq API key formats may vary
-    if (key.trim().length < 20) {
-      toast({
-        title: "Groq API Key Invalid",
-        description: "The Groq API key you entered seems too short. It should be at least 20 characters.",
-        variant: "destructive"
-      });
-      return false;
-    }
   }
   
   return true;
@@ -77,6 +63,14 @@ export const saveApiKeys = (
     groqApiKey: groqKey.trim()
   };
   
+  console.log('Saving API keys:', {
+    openai: updatedKeys.openaiApiKey ? `present (${updatedKeys.openaiApiKey.length} chars)` : 'not set',
+    claude: updatedKeys.claudeApiKey ? `present (${updatedKeys.claudeApiKey.length} chars)` : 'not set',
+    gemini: updatedKeys.geminiApiKey ? `present (${updatedKeys.geminiApiKey.length} chars)` : 'not set',
+    deepseek: updatedKeys.deepseekApiKey ? `present (${updatedKeys.deepseekApiKey.length} chars)` : 'not set',
+    groq: updatedKeys.groqApiKey ? `present (${updatedKeys.groqApiKey.length} chars)` : 'not set'
+  });
+  
   // Save to localStorage with clear handling of empty strings
   if (updatedKeys.openaiApiKey) localStorage.setItem('openaiApiKey', updatedKeys.openaiApiKey);
   else localStorage.removeItem('openaiApiKey');
@@ -96,15 +90,6 @@ export const saveApiKeys = (
   }
   else localStorage.removeItem('groqApiKey');
   
-  console.log('Saved API keys to localStorage:', {
-    openai: updatedKeys.openaiApiKey ? 'present' : 'not set',
-    claude: updatedKeys.claudeApiKey ? 'present' : 'not set',
-    gemini: updatedKeys.geminiApiKey ? 'present' : 'not set',
-    deepseek: updatedKeys.deepseekApiKey ? 'present' : 'not set',
-    groq: updatedKeys.groqApiKey ? 'present' : 'not set',
-    groqKeyLength: updatedKeys.groqApiKey ? updatedKeys.groqApiKey.length : 0
-  });
-  
   // Trigger multiple events to ensure all components are notified
   try {
     // Dispatch events to notify other components about API key changes
@@ -118,19 +103,23 @@ export const saveApiKeys = (
     
     // Try broadcasting channel if available
     if (typeof BroadcastChannel !== 'undefined') {
-      const broadcastChannel = new BroadcastChannel('api-key-updates');
-      broadcastChannel.postMessage({ 
-        hasApiKeys: true, 
-        timestamp: Date.now(),
-        updatedKeys: {
-          openai: !!updatedKeys.openaiApiKey,
-          claude: !!updatedKeys.claudeApiKey,
-          gemini: !!updatedKeys.geminiApiKey,
-          deepseek: !!updatedKeys.deepseekApiKey,
-          groq: !!updatedKeys.groqApiKey
-        }
-      });
-      broadcastChannel.close();
+      try {
+        const broadcastChannel = new BroadcastChannel('api-key-updates');
+        broadcastChannel.postMessage({ 
+          hasApiKeys: true, 
+          timestamp: Date.now(),
+          updatedKeys: {
+            openai: !!updatedKeys.openaiApiKey,
+            claude: !!updatedKeys.claudeApiKey,
+            gemini: !!updatedKeys.geminiApiKey,
+            deepseek: !!updatedKeys.deepseekApiKey,
+            groq: !!updatedKeys.groqApiKey
+          }
+        });
+        broadcastChannel.close();
+      } catch (err) {
+        console.error("Failed to use BroadcastChannel:", err);
+      }
     }
   } catch (e) {
     console.error("Error while dispatching API key events:", e);

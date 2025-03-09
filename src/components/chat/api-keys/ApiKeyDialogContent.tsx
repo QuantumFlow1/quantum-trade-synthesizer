@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -22,6 +21,7 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
   const [deepseekKey, setDeepseekKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
   const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const groqInputRef = useRef<HTMLInputElement>(null);
   
@@ -43,12 +43,11 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     const groqKey = localStorage.getItem('groqApiKey') || '';
     
     console.log('Loading API keys from localStorage in ApiKeyDialogContent:', {
-      openai: openKey ? 'present' : 'not found',
-      claude: claudeKey ? 'present' : 'not found',
-      gemini: geminiKey ? 'present' : 'not found',
-      deepseek: deepKey ? 'present' : 'not found',
-      groq: groqKey ? 'present' : 'not found',
-      groqKeyLength: groqKey ? groqKey.length : 0
+      openai: openKey ? `present (${openKey.length} chars)` : 'not found',
+      claude: claudeKey ? `present (${claudeKey.length} chars)` : 'not found',
+      gemini: geminiKey ? `present (${geminiKey.length} chars)` : 'not found',
+      deepseek: deepKey ? `present (${deepKey.length} chars)` : 'not found',
+      groq: groqKey ? `present (${groqKey.length} chars)` : 'not found'
     });
     
     if (openKey) setOpenaiKey(openKey);
@@ -78,7 +77,7 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
     }
   };
   
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateApiKey(openaiKey, 'openai') ||
         !validateApiKey(claudeKey, 'claude') ||
         !validateApiKey(geminiKey, 'gemini') ||
@@ -86,71 +85,114 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       return;
     }
     
-    console.log('Saving Groq API key:', groqKey ? `${groqKey.substring(0, 4)}...${groqKey.substring(groqKey.length - 4)}` : 'none', 'Length:', groqKey.length);
-    
-    // Clear existing keys if empty string is provided
-    if (openaiKey === '') localStorage.removeItem('openaiApiKey');
-    else localStorage.setItem('openaiApiKey', openaiKey.trim());
-    
-    if (claudeKey === '') localStorage.removeItem('claudeApiKey');
-    else localStorage.setItem('claudeApiKey', claudeKey.trim());
-    
-    if (geminiKey === '') localStorage.removeItem('geminiApiKey');
-    else localStorage.setItem('geminiApiKey', geminiKey.trim());
-    
-    if (deepseekKey === '') localStorage.removeItem('deepseekApiKey');
-    else localStorage.setItem('deepseekApiKey', deepseekKey.trim());
-    
-    if (groqKey === '') localStorage.removeItem('groqApiKey');
-    else localStorage.setItem('groqApiKey', groqKey.trim());
-    
-    if (onSave) {
-      onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
-    }
-    
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    
-    toast({
-      title: "API Keys Saved",
-      description: "Your API keys have been saved successfully",
-      variant: "default"
+    setIsSaving(true);
+    console.log('Saving API keys...', {
+      openai: openaiKey ? 'present' : 'none',
+      claude: claudeKey ? 'present' : 'none',
+      gemini: geminiKey ? 'present' : 'none',
+      deepseek: deepseekKey ? 'present' : 'none',
+      groq: groqKey ? 'present' : 'none'
     });
     
+    // Store the keys directly in localStorage
     try {
-      // Broadcast the API key update to other tabs
-      const broadcastChannel = new BroadcastChannel('api-key-updates');
-      broadcastChannel.postMessage({ 
-        hasApiKeys: true, 
-        timestamp: Date.now(),
-        updatedKeys: {
-          openai: !!openaiKey.trim(),
-          claude: !!claudeKey.trim(),
-          gemini: !!geminiKey.trim(),
-          deepseek: !!deepseekKey.trim(),
-          groq: !!groqKey.trim()
+      // Clear existing keys if empty string is provided
+      if (openaiKey === '') localStorage.removeItem('openaiApiKey');
+      else localStorage.setItem('openaiApiKey', openaiKey.trim());
+      
+      if (claudeKey === '') localStorage.removeItem('claudeApiKey');
+      else localStorage.setItem('claudeApiKey', claudeKey.trim());
+      
+      if (geminiKey === '') localStorage.removeItem('geminiApiKey');
+      else localStorage.setItem('geminiApiKey', geminiKey.trim());
+      
+      if (deepseekKey === '') localStorage.removeItem('deepseekApiKey');
+      else localStorage.setItem('deepseekApiKey', deepseekKey.trim());
+      
+      if (groqKey === '') localStorage.removeItem('groqApiKey');
+      else localStorage.setItem('groqApiKey', groqKey.trim());
+      
+      // Also try to save to Supabase if we have a Groq key (for demonstration/compatibility)
+      if (groqKey) {
+        try {
+          const response = await fetch('/api/save-api-key', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              keyType: 'groq',
+              apiKey: groqKey.trim()
+            }),
+          });
+          
+          if (!response.ok) {
+            console.log('Non-critical: Failed to save to server, but local storage succeeded', 
+              response.status, 
+              await response.text());
+          }
+        } catch (serverError) {
+          console.log('Non-critical: Server save error, but local storage succeeded', serverError);
         }
+      }
+      
+      if (onSave) {
+        onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
+      }
+      
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      
+      toast({
+        title: "API Keys Saved",
+        description: "Your API keys have been saved successfully",
+        variant: "default"
       });
-      broadcastChannel.close();
-    } catch (e) {
-      console.error("Failed to broadcast API key update:", e);
-    }
-    
-    console.log("Dispatching events after saving API keys");
-    window.dispatchEvent(new Event('apikey-updated'));
-    window.dispatchEvent(new Event('localStorage-changed'));
-    window.dispatchEvent(new Event('storage'));
-    
-    try {
-      // Force a storage event by setting and removing a dummy key
-      localStorage.setItem('_dummy_key_', Date.now().toString());
-      localStorage.removeItem('_dummy_key_');
-    } catch (e) {
-      console.error("Failed to trigger storage event:", e);
-    }
-    
-    if (onClose) {
-      setTimeout(() => onClose(), 1000);
+      
+      try {
+        // Broadcast the API key update to other tabs
+        const broadcastChannel = new BroadcastChannel('api-key-updates');
+        broadcastChannel.postMessage({ 
+          hasApiKeys: true, 
+          timestamp: Date.now(),
+          updatedKeys: {
+            openai: !!openaiKey.trim(),
+            claude: !!claudeKey.trim(),
+            gemini: !!geminiKey.trim(),
+            deepseek: !!deepseekKey.trim(),
+            groq: !!groqKey.trim()
+          }
+        });
+        broadcastChannel.close();
+      } catch (e) {
+        console.error("Failed to broadcast API key update:", e);
+      }
+      
+      console.log("Dispatching events after saving API keys");
+      window.dispatchEvent(new Event('apikey-updated'));
+      window.dispatchEvent(new Event('localStorage-changed'));
+      window.dispatchEvent(new Event('storage'));
+      
+      try {
+        // Force a storage event by setting and removing a dummy key
+        localStorage.setItem('_dummy_key_', Date.now().toString());
+        localStorage.removeItem('_dummy_key_');
+      } catch (e) {
+        console.error("Failed to trigger storage event:", e);
+      }
+      
+      if (onClose) {
+        setTimeout(() => onClose(), 1000);
+      }
+    } catch (error) {
+      console.error('Error saving API keys:', error);
+      toast({
+        title: "Error Saving Keys",
+        description: "There was a problem saving your API keys. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
   
@@ -257,8 +299,13 @@ export function ApiKeyDialogContent({ apiKeys = {}, onSave, initialTab, onClose 
       </div>
       
       <DialogFooter>
-        <Button onClick={handleSave} className="w-full">
-          {saved ? (
+        <Button onClick={handleSave} className="w-full" disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <span className="animate-spin mr-2">⟳</span>
+              Opslaan...
+            </>
+          ) : saved ? (
             <>
               <Check className="h-4 w-4 mr-2" />
               Opgeslagen!

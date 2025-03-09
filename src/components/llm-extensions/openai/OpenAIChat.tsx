@@ -19,15 +19,19 @@ export function OpenAIChat() {
     
     window.addEventListener('apikey-updated', handleStorageChange);
     window.addEventListener('localStorage-changed', handleStorageChange);
+    window.addEventListener('storage', handleStorageChange);
     
     return () => {
       window.removeEventListener('apikey-updated', handleStorageChange);
       window.removeEventListener('localStorage-changed', handleStorageChange);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
   const checkApiKey = () => {
     const storedKey = localStorage.getItem('openaiApiKey');
+    console.log('Checking OpenAI API key:', storedKey ? `Key exists (${storedKey.length} chars)` : 'No key found');
+    
     setApiKey(storedKey);
     setIsConnected(!!storedKey && storedKey.length > 10);
     
@@ -50,8 +54,10 @@ export function OpenAIChat() {
     
     setIsChecking(true);
     try {
+      const keyLength = apiKey.length;
+      console.log(`Verifying OpenAI connection with API key length: ${keyLength}`);
+      
       // In a real implementation, we'd verify the API key with the OpenAI API
-      // Here we're just simulating a successful connection if the key exists
       setTimeout(() => {
         setIsConnected(true);
         toast({

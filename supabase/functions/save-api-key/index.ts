@@ -14,7 +14,22 @@ serve(async (req) => {
   }
 
   try {
-    const { keyType, apiKey } = await req.json();
+    // Parse the request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+    
+    const { keyType, apiKey } = body;
+    
+    // Log the received data (excluding the full API key for security)
+    console.log(`Request received for keyType: ${keyType}, API key length: ${apiKey ? apiKey.length : 0}`);
     
     if (!keyType || !apiKey) {
       return new Response(
@@ -24,7 +39,7 @@ serve(async (req) => {
     }
     
     // Validate key type
-    if (!['groq', 'openai', 'anthropic', 'claude', 'gemini', 'mistral', 'deepseek'].includes(keyType)) {
+    if (!['groq', 'openai', 'anthropic', 'claude', 'gemini', 'deepseek', 'mistral'].includes(keyType)) {
       return new Response(
         JSON.stringify({ error: `Invalid key type: ${keyType}` }),
         { status: 400, headers: corsHeaders }
@@ -44,19 +59,10 @@ serve(async (req) => {
     
     console.log(`Setting ${envVarName} in Supabase secrets (key length: ${apiKey.length})`);
     
-    // Store the key in Supabase secrets
-    try {
-      // In a production environment, we would use Supabase admin API to set the secret
-      // For now, we'll simulate success and return information about the key
-      console.log(`API key for ${keyType} saved successfully`);
-    } catch (error) {
-      console.error(`Error saving ${keyType} API key:`, error);
-      return new Response(
-        JSON.stringify({ error: `Failed to save API key: ${error.message}` }),
-        { status: 500, headers: corsHeaders }
-      );
-    }
+    // In a real production environment, this function would use Supabase admin API
+    // to set the secret. For now, we're just simulating a successful save.
     
+    // Return success response
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -69,8 +75,10 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error in save-api-key function:', error);
+    
+    // Ensure proper error response with CORS headers
     return new Response(
-      JSON.stringify({ error: `Server error: ${error.message}` }),
+      JSON.stringify({ error: `Server error: ${error.message || 'Unknown error'}` }),
       { status: 500, headers: corsHeaders }
     );
   }

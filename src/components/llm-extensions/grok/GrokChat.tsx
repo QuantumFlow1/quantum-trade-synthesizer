@@ -19,15 +19,18 @@ export function GrokChat() {
     
     window.addEventListener('apikey-updated', handleStorageChange);
     window.addEventListener('localStorage-changed', handleStorageChange);
+    window.addEventListener('storage', handleStorageChange);
     
     return () => {
       window.removeEventListener('apikey-updated', handleStorageChange);
       window.removeEventListener('localStorage-changed', handleStorageChange);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
   const checkApiKey = () => {
-    const storedKey = localStorage.getItem('groqApiKey'); // Grok uses Groq API behind the scenes
+    // For Grok, check if Groq API key exists
+    const storedKey = localStorage.getItem('groqApiKey');
     setApiKey(storedKey);
     setIsConnected(!!storedKey && storedKey.length > 10);
     
@@ -44,14 +47,14 @@ export function GrokChat() {
   };
 
   const verifyConnection = async () => {
-    if (!apiKey) {
-      return;
-    }
+    if (!apiKey) return;
     
     setIsChecking(true);
     try {
-      // In a real implementation, we'd verify the API key with the Grok/Groq API
-      // Here we're just simulating a successful connection if the key exists
+      const keyLength = apiKey.length;
+      console.log(`Verifying Grok connection with API key length: ${keyLength}`);
+      
+      // In a real implementation, we'd verify the API key with the actual API
       setTimeout(() => {
         setIsConnected(true);
         toast({
@@ -60,7 +63,6 @@ export function GrokChat() {
           duration: 3000
         });
         
-        // Broadcast status to parent components
         window.dispatchEvent(new CustomEvent('connection-status-changed', {
           detail: { provider: 'grok', status: 'connected' }
         }));
