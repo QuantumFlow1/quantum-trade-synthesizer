@@ -1,5 +1,5 @@
 
-import { Bot, XCircle, Check } from 'lucide-react';
+import { Bot, XCircle, Check, Sparkles, MessageSquare, Brain, Cpu, Bot as BotIcon } from 'lucide-react';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -35,6 +35,38 @@ export function LLMTabsList({ enabledLLMs, toggleLLM, connectionStatus }: LLMTab
     }
   };
 
+  // Get the icon for each LLM
+  const getLLMIcon = (llm: string, className: string = "h-5 w-5 mr-2") => {
+    switch (llm) {
+      case 'deepseek':
+        return <Cpu className={className} />;
+      case 'openai':
+        return <Sparkles className={className} />;
+      case 'grok':
+        return <Brain className={className} />;
+      case 'claude':
+        return <MessageSquare className={className} />;
+      default:
+        return <BotIcon className={className} />;
+    }
+  };
+
+  // Format LLM name for display
+  const formatLLMName = (llm: string) => {
+    switch (llm) {
+      case 'deepseek':
+        return 'DeepSeek';
+      case 'openai':
+        return 'OpenAI';
+      case 'grok':
+        return 'Grok';
+      case 'claude':
+        return 'Claude';
+      default:
+        return llm;
+    }
+  };
+
   return (
     <div className="mb-4 flex flex-col space-y-3">
       <div className="flex items-center justify-between">
@@ -58,57 +90,42 @@ export function LLMTabsList({ enabledLLMs, toggleLLM, connectionStatus }: LLMTab
       </div>
 
       <TabsList className="grid grid-cols-4 w-full">
-        <TabsTrigger value="deepseek" className="relative">
-          DeepSeek
-          {getStatusBadge(connectionStatus.deepseek)}
+        <TabsTrigger value="deepseek" className="relative flex flex-col items-center justify-center py-3">
+          {getLLMIcon('deepseek')}
+          <span>DeepSeek</span>
+          <div className="mt-1">{getStatusBadge(connectionStatus.deepseek)}</div>
         </TabsTrigger>
-        <TabsTrigger value="openai" className="relative">
-          OpenAI
-          {getStatusBadge(connectionStatus.openai)}
+        <TabsTrigger value="openai" className="relative flex flex-col items-center justify-center py-3">
+          {getLLMIcon('openai')}
+          <span>OpenAI</span>
+          <div className="mt-1">{getStatusBadge(connectionStatus.openai)}</div>
         </TabsTrigger>
-        <TabsTrigger value="grok" className="relative">
-          Grok
-          {getStatusBadge(connectionStatus.grok)}
+        <TabsTrigger value="grok" className="relative flex flex-col items-center justify-center py-3">
+          {getLLMIcon('grok')}
+          <span>Grok</span>
+          <div className="mt-1">{getStatusBadge(connectionStatus.grok)}</div>
         </TabsTrigger>
-        <TabsTrigger value="claude" className="relative">
-          Claude
-          {getStatusBadge(connectionStatus.claude)}
+        <TabsTrigger value="claude" className="relative flex flex-col items-center justify-center py-3">
+          {getLLMIcon('claude')}
+          <span>Claude</span>
+          <div className="mt-1">{getStatusBadge(connectionStatus.claude)}</div>
         </TabsTrigger>
       </TabsList>
       
       <div className="flex flex-wrap gap-4 justify-between pt-1">
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="deepseek-toggle" 
-            checked={enabledLLMs.deepseek}
-            onCheckedChange={(checked) => toggleLLM('deepseek', checked)}
-          />
-          <Label htmlFor="deepseek-toggle">DeepSeek</Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="openai-toggle" 
-            checked={enabledLLMs.openai}
-            onCheckedChange={(checked) => toggleLLM('openai', checked)}
-          />
-          <Label htmlFor="openai-toggle">OpenAI</Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="grok-toggle" 
-            checked={enabledLLMs.grok}
-            onCheckedChange={(checked) => toggleLLM('grok', checked)}
-          />
-          <Label htmlFor="grok-toggle">Grok</Label>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="claude-toggle" 
-            checked={enabledLLMs.claude}
-            onCheckedChange={(checked) => toggleLLM('claude', checked)}
-          />
-          <Label htmlFor="claude-toggle">Claude</Label>
-        </div>
+        {['deepseek', 'openai', 'grok', 'claude'].map((llm) => (
+          <div key={llm} className="flex items-center space-x-2">
+            <Switch 
+              id={`${llm}-toggle`} 
+              checked={enabledLLMs[llm]}
+              onCheckedChange={(checked) => toggleLLM(llm, checked)}
+            />
+            <Label htmlFor={`${llm}-toggle`} className="flex items-center">
+              {getLLMIcon(llm, "h-4 w-4 mr-1")}
+              {formatLLMName(llm)}
+            </Label>
+          </div>
+        ))}
       </div>
     </div>
   );

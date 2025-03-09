@@ -6,6 +6,7 @@ import { OpenAIChat } from '../OpenAIChat';
 import { GrokChat } from '../GrokChat';
 import { ClaudeChat } from '../ClaudeChat';
 import { ChatEmpty } from './ChatEmpty';
+import { Cpu, Sparkles, Brain, MessageSquare } from 'lucide-react';
 
 interface LLMTabContentProps {
   tabValue: string;
@@ -25,11 +26,13 @@ export function LLMTabContent({
     if (!isEnabled) {
       return (
         <div className="h-full flex flex-col items-center justify-center p-6">
+          {getLLMIcon(tabValue, "w-12 h-12 text-gray-400 mb-4")}
           <p className="text-gray-500 mb-4 text-center max-w-md">
             This LLM extension is currently disabled.
             Enable it to use {getLLMName(tabValue)} capabilities.
           </p>
-          <Button onClick={() => toggleLLM(tabValue, true)}>
+          <Button onClick={() => toggleLLM(tabValue, true)} className="flex items-center">
+            {getLLMIcon(tabValue, "w-4 h-4 mr-2")}
             Enable {getLLMName(tabValue)}
           </Button>
         </div>
@@ -63,6 +66,22 @@ export function LLMTabContent({
         return 'Claude';
       default:
         return value;
+    }
+  };
+
+  // Get the icon for the LLM
+  const getLLMIcon = (value: string, className: string = "w-5 h-5") => {
+    switch (value) {
+      case 'deepseek':
+        return <Cpu className={className} />;
+      case 'openai':
+        return <Sparkles className={className} />;
+      case 'grok':
+        return <Brain className={className} />;
+      case 'claude':
+        return <MessageSquare className={className} />;
+      default:
+        return null;
     }
   };
 
