@@ -1,17 +1,20 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { hasApiKey, API_KEY_UPDATED_EVENT, LOCALSTORAGE_CHANGED_EVENT } from "@/utils/apiKeyManager";
-import { showApiKeyDetectedToast, showApiKeyErrorToast } from "@/components/chat/api-keys/ApiKeyToastNotification";
+import { showApiKeyDetectedToast } from "@/components/chat/api-keys/ApiKeyToastNotification";
 import { toast } from "@/hooks/use-toast";
+import { useApiKeyValidator } from "./useApiKeyValidator";
+import { useApiKeyEvents } from "./useApiKeyEvents";
+import { broadcastApiKeyChange } from "@/utils/apiKeyManager";
 
 /**
  * Hook for monitoring API key status with improved reliability
  */
 export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode: (mode: boolean) => void) => {
   const [hasGroqKey, setHasGroqKey] = useState<boolean>(false);
-  const apiKeyCheckTimerId = useRef<number | null>(null);
   const lastKeyCheckTime = useRef(0);
   const manuallySetMode = useRef(false);
+  
+  const { validateGroqApiKey } = useApiKeyValidator();
   
   // Check if the Groq API key exists with improved caching
   const checkGroqApiKey = useCallback(() => {
@@ -22,21 +25,12 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     }
     
     lastKeyCheckTime.current = now;
-    const keyExists = hasApiKey('groq');
-    const groqKeyValue = localStorage.getItem('groqApiKey');
-    
-    console.log('useApiKeyMonitor - API key check:', {
-      exists: keyExists,
-      keyLength: groqKeyValue ? groqKeyValue.length : 0,
-      previousState: hasGroqKey,
-      timestamp: new Date().toISOString()
-    });
+    const keyExists = validateGroqApiKey();
     
     if (keyExists !== hasGroqKey) {
       console.log('useApiKeyMonitor - API key status change detected:', {
         exists: keyExists,
-        previousState: hasGroqKey,
-        keyLength: groqKeyValue ? groqKeyValue.length : 0
+        previousState: hasGroqKey
       });
       
       setHasGroqKey(keyExists);
@@ -60,7 +54,16 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     }
     
     return keyExists;
-  }, [hasGroqKey, isSimulationMode, setIsSimulationMode]);
+  }, [hasGroqKey, isSimulationMode, setIsSimulationMode, validateGroqApiKey]);
+  
+  // Setup API key event handling
+  useApiKeyEvents(checkGroqApiKey);
+  
+  // Run initial check immediately
+  useEffect(() => {
+    const initialKeyStatus = checkGroqApiKey();
+    console.log('Initial API key status:', { exists: initialKeyStatus });
+  }, [checkGroqApiKey]);
   
   // Force reload API keys
   const reloadApiKeys = useCallback(() => {
@@ -73,7 +76,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     console.log('Force reloaded API key status:', { exists: keyExists });
     
     // Broadcast the change to all components
-    window.dispatchEvent(new Event(API_KEY_UPDATED_EVENT));
+    broadcastApiKeyChange(keyExists);
     
     // Show toast notification
     if (keyExists) {
@@ -90,64 +93,6 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
         duration: 3000
       });
     }
-  }, [checkGroqApiKey]);
-  
-  // Setup event listeners for API key changes with improved reliability
-  useEffect(() => {
-    // Run initial check immediately
-    const initialKeyStatus = checkGroqApiKey();
-    console.log('Initial API key status:', { exists: initialKeyStatus });
-    
-    // Set up event listeners
-    const handleApiKeyUpdate = () => {
-      console.log("Key event listener triggered");
-      checkGroqApiKey();
-    };
-    
-    // Listen to multiple events to ensure we catch all changes
-    window.addEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
-    window.addEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
-    window.addEventListener('storage', handleApiKeyUpdate);
-    window.addEventListener('focus', handleApiKeyUpdate); // Check when window regains focus
-    
-    // Check frequently for API key changes
-    if (typeof window !== 'undefined') {
-      if (apiKeyCheckTimerId.current) {
-        clearInterval(apiKeyCheckTimerId.current);
-      }
-      
-      apiKeyCheckTimerId.current = window.setInterval(checkGroqApiKey, 2000);
-    }
-    
-    // Try to use BroadcastChannel if available for cross-tab communication
-    let broadcastChannel: BroadcastChannel | null = null;
-    try {
-      broadcastChannel = new BroadcastChannel('api-key-updates');
-      broadcastChannel.onmessage = (event) => {
-        console.log('Received broadcast channel message:', event.data);
-        if (event.data.type === 'api-key-update') {
-          checkGroqApiKey();
-        }
-      };
-    } catch (err) {
-      console.log('BroadcastChannel not supported:', err);
-    }
-    
-    return () => {
-      window.removeEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
-      window.removeEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
-      window.removeEventListener('storage', handleApiKeyUpdate);
-      window.removeEventListener('focus', handleApiKeyUpdate);
-      
-      if (apiKeyCheckTimerId.current) {
-        clearInterval(apiKeyCheckTimerId.current);
-        apiKeyCheckTimerId.current = null;
-      }
-      
-      if (broadcastChannel) {
-        broadcastChannel.close();
-      }
-    };
   }, [checkGroqApiKey]);
   
   return { 
