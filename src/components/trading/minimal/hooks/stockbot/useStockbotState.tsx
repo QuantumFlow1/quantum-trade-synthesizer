@@ -3,6 +3,10 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 import { ChatMessage } from "./types";
 import { loadStockbotChatHistory, saveStockbotChatHistory, clearStockbotChatHistory } from "./storage";
+import { Button } from "@/components/ui/button";
+
+// Make sure supabase is imported properly
+import { supabase } from "@/lib/supabase";
 
 export const useStockbotState = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => loadStockbotChatHistory());
@@ -81,12 +85,14 @@ export const useStockbotState = () => {
           title: "Live Mode Available",
           description: "API key detected. Switch to live mode for real data?",
           action: (
-            <button 
+            <Button 
               onClick={() => setIsSimulationMode(false)}
-              className="bg-green-500 text-white px-3 py-1 rounded text-xs"
+              variant="default"
+              size="sm"
+              className="bg-green-500 text-white hover:bg-green-600"
             >
               Switch Now
-            </button>
+            </Button>
           ),
           duration: 8000
         });
