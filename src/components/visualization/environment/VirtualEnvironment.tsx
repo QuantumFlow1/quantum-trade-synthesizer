@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Stars, Environment } from '@react-three/drei';
-import { useThemeDetection } from '@/hooks/use-theme-detection';
+import { useThemeString } from '@/hooks/use-theme-string';
 import { useEnvironment } from '@/contexts/EnvironmentContext';
 import { EnvironmentSelector } from './EnvironmentSelector';
 import { EnvironmentLearningPath } from './learning-path';
@@ -20,7 +20,7 @@ import { BookOpen, Globe } from 'lucide-react';
 import { WebGLContextManager } from '../3d/canvas/WebGLContextManager';
 
 export const VirtualEnvironment: React.FC<{ videoSrc?: string }> = ({ videoSrc }) => {
-  const theme = useThemeDetection();
+  const theme = useThemeString();
   const { selectedEnvironment } = useEnvironment();
   const [key, setKey] = React.useState(0);
   const [activeTab, setActiveTab] = useState<string>("explore");
