@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Brain, AlertCircle, CheckCircle } from 'lucide-react';
+import { Brain, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
@@ -31,6 +31,8 @@ export function GrokChat() {
   const checkApiKey = () => {
     // For Grok, check if Groq API key exists
     const storedKey = localStorage.getItem('groqApiKey');
+    console.log('Checking Groq API key:', storedKey ? `Key exists (${storedKey.length} chars)` : 'No key found');
+    
     setApiKey(storedKey);
     setIsConnected(!!storedKey && storedKey.length > 10);
     
@@ -54,21 +56,47 @@ export function GrokChat() {
       const keyLength = apiKey.length;
       console.log(`Verifying Grok connection with API key length: ${keyLength}`);
       
-      // In a real implementation, we'd verify the API key with the actual API
-      setTimeout(() => {
-        setIsConnected(true);
+      // Make an actual API call to verify the connection
+      try {
+        const response = await fetch('https://api.groq.com/openai/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          setIsConnected(true);
+          toast({
+            title: "Connection Successful",
+            description: "Successfully connected to Groq API",
+            duration: 3000
+          });
+          
+          window.dispatchEvent(new CustomEvent('connection-status-changed', {
+            detail: { provider: 'grok', status: 'connected' }
+          }));
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || `API error: ${response.status}`);
+        }
+      } catch (error) {
+        console.error("API verification error:", error);
+        setIsConnected(false);
         toast({
-          title: "Connection Successful",
-          description: "Successfully connected to Grok API",
-          duration: 3000
+          title: "Connection Failed",
+          description: error instanceof Error ? error.message : "Failed to connect to Groq API",
+          variant: "destructive",
+          duration: 5000
         });
         
         window.dispatchEvent(new CustomEvent('connection-status-changed', {
-          detail: { provider: 'grok', status: 'connected' }
+          detail: { provider: 'grok', status: 'disconnected' }
         }));
-        
-        setIsChecking(false);
-      }, 1000);
+      }
+      
+      setIsChecking(false);
     } catch (error) {
       console.error("Error connecting to Grok API:", error);
       setIsConnected(false);
@@ -129,14 +157,36 @@ export function GrokChat() {
           <p className="text-xs text-gray-400 mt-2">
             Use the API key settings to configure your connection.
           </p>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => window.location.href = '/dashboard/settings'}
-          >
-            Configure API Key
-          </Button>
+          {isChecking ? (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="mt-4"
+              disabled
+            >
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Checking connection...
+            </Button>
+          ) : (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => window.location.href = '/dashboard/settings'}
+            >
+              Configure API Key
+            </Button>
+          )}
+          {apiKey && apiKey.length > 0 && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="mt-2"
+              onClick={verifyConnection}
+            >
+              Verify Connection
+            </Button>
+          )}
         </>
       )}
     </div>

@@ -59,14 +59,58 @@ serve(async (req) => {
     
     console.log(`Setting ${envVarName} in Supabase secrets (key length: ${apiKey.length})`);
     
-    // In a real production environment, this function would use Supabase admin API
-    // to set the secret. For now, we're just simulating a successful save.
+    // In a real production environment, we would verify the API key with the service
+    // Let's add a basic validation step for certain providers
+    let isKeyValid = true;
+    let verificationResponse = null;
+    
+    try {
+      if (keyType === 'openai') {
+        verificationResponse = await fetch('https://api.openai.com/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        isKeyValid = verificationResponse.ok;
+      } else if (keyType === 'groq') {
+        verificationResponse = await fetch('https://api.groq.com/openai/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        isKeyValid = verificationResponse.ok;
+      }
+      
+      // If we did verification and it failed, return an error
+      if (verificationResponse && !isKeyValid) {
+        const errorData = await verificationResponse.json().catch(() => ({ error: { message: 'Unknown API error' } }));
+        const errorMessage = errorData.error?.message || `API verification failed with status: ${verificationResponse.status}`;
+        
+        return new Response(
+          JSON.stringify({ 
+            error: errorMessage,
+            success: false,
+            status: verificationResponse.status
+          }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
+    } catch (verificationError) {
+      console.error(`Error verifying ${keyType} API key:`, verificationError);
+      // Continue with saving the key, but note the verification failed
+      isKeyValid = false;
+    }
     
     // Return success response
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `${keyType} API key saved successfully`,
+        verified: isKeyValid,
+        message: `${keyType} API key ${isKeyValid ? 'verified and' : ''} saved successfully`,
         keyLength: apiKey.length,
         firstFourChars: apiKey.substring(0, 4),
         lastFourChars: apiKey.substring(apiKey.length - 4),

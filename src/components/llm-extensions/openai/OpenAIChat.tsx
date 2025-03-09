@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Sparkles, AlertCircle, CheckCircle } from 'lucide-react';
+import { Sparkles, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 
@@ -57,22 +57,47 @@ export function OpenAIChat() {
       const keyLength = apiKey.length;
       console.log(`Verifying OpenAI connection with API key length: ${keyLength}`);
       
-      // In a real implementation, we'd verify the API key with the OpenAI API
-      setTimeout(() => {
-        setIsConnected(true);
-        toast({
-          title: "Connection Successful",
-          description: "Successfully connected to OpenAI API",
-          duration: 3000
+      // Make an actual API call to verify the connection
+      try {
+        const response = await fetch('https://api.openai.com/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
         });
         
-        // Broadcast status to parent components
-        window.dispatchEvent(new CustomEvent('connection-status-changed', {
-          detail: { provider: 'openai', status: 'connected' }
-        }));
+        if (response.ok) {
+          setIsConnected(true);
+          toast({
+            title: "Connection Successful",
+            description: "Successfully connected to OpenAI API",
+            duration: 3000
+          });
+          
+          window.dispatchEvent(new CustomEvent('connection-status-changed', {
+            detail: { provider: 'openai', status: 'connected' }
+          }));
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || `API error: ${response.status}`);
+        }
+      } catch (error) {
+        console.error("API verification error:", error);
+        setIsConnected(false);
+        toast({
+          title: "Connection Failed",
+          description: error instanceof Error ? error.message : "Failed to connect to OpenAI API",
+          variant: "destructive",
+          duration: 5000
+        });
         
-        setIsChecking(false);
-      }, 1000);
+        window.dispatchEvent(new CustomEvent('connection-status-changed', {
+          detail: { provider: 'openai', status: 'disconnected' }
+        }));
+      }
+      
+      setIsChecking(false);
     } catch (error) {
       console.error("Error connecting to OpenAI API:", error);
       setIsConnected(false);
@@ -133,14 +158,36 @@ export function OpenAIChat() {
           <p className="text-xs text-gray-400 mt-2">
             Use the API key settings to configure your connection.
           </p>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => window.location.href = '/dashboard/settings'}
-          >
-            Configure API Key
-          </Button>
+          {isChecking ? (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="mt-4"
+              disabled
+            >
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Checking connection...
+            </Button>
+          ) : (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => window.location.href = '/dashboard/settings'}
+            >
+              Configure API Key
+            </Button>
+          )}
+          {apiKey && apiKey.length > 0 && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="mt-2"
+              onClick={verifyConnection}
+            >
+              Verify Connection
+            </Button>
+          )}
         </>
       )}
     </div>
