@@ -1,6 +1,6 @@
 
 import { useState, useEffect, Suspense } from "react";
-import { useThemeDetection } from "@/hooks/use-theme-detection";
+import { useThemeString } from "@/hooks/use-theme-string";
 import { useProcessedTradingData } from "@/hooks/use-processed-trading-data";
 import { usePriceVolumeRanges } from "@/hooks/use-price-volume-ranges";
 import { useMarketSentiment } from "@/hooks/use-market-sentiment";
@@ -38,7 +38,7 @@ export const SceneContainer = ({
 }: SceneContainerProps) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
-  const theme = useThemeDetection();
+  const theme = useThemeString();
   
   // Use custom hooks to manage data and calculations
   const processedData = useProcessedTradingData(data);

@@ -8,7 +8,7 @@ interface ThemeBasedLightingProps {
 }
 
 export const ThemeBasedLighting = ({ optimizationLevel = 'normal' }: ThemeBasedLightingProps) => {
-  const theme = useThemeDetection();
+  const { theme } = useThemeDetection();
   
   // Optimize lighting based on optimization level
   const ambientIntensity = optimizationLevel === 'aggressive' ? 0.6 : 0.8;
