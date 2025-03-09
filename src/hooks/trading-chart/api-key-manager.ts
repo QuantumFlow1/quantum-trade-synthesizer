@@ -1,217 +1,230 @@
 
-import { loadApiKeysFromStorage } from "@/components/chat/api-keys/apiKeyUtils";
 import { supabase } from "@/lib/supabase";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
-// Create a global BroadcastChannel for API key updates
-const apiKeyChannel = typeof window !== 'undefined' ? new BroadcastChannel('api-key-updates') : null;
-
-/**
- * Broadcasts API key status to all open tabs
- */
-const broadcastApiKeyStatus = (hasKeys: boolean) => {
-  if (apiKeyChannel) {
-    try {
-      apiKeyChannel.postMessage({ 
-        hasApiKeys: hasKeys, 
-        timestamp: Date.now() 
-      });
-      console.log("Broadcasted API key status to all tabs:", hasKeys);
-    } catch (err) {
-      console.error("Error broadcasting API key status:", err);
-    }
-  }
-};
+// Create a broadcast channel for cross-tab communication
+const apiKeyChannel = typeof window !== 'undefined' ? new BroadcastChannel('api-key-status') : null;
 
 /**
- * Checks if API keys are available either from user storage or admin settings
+ * Checks if any API keys are available, either in localStorage or Supabase
  */
-export const checkApiKeysAvailability = async (): Promise<boolean> => {
+export const checkApiKeysAvailability = async (serviceName = 'any', checkSecret = true) => {
   try {
+    console.log(`Checking API availability for ${serviceName}`);
+    
     // First check localStorage for user-provided keys
-    const userKeys = loadApiKeysFromStorage();
-    const hasUserKeys = !!(userKeys.openaiApiKey || userKeys.claudeApiKey || 
-                       userKeys.geminiApiKey || userKeys.deepseekApiKey || userKeys.groqApiKey);
+    const localGroqKey = localStorage.getItem('groqApiKey');
+    const localOpenAIKey = localStorage.getItem('openaiApiKey');
+    const localClaudeKey = localStorage.getItem('claudeApiKey');
     
-    console.log("User API keys availability check:", {
-      openai: !!userKeys.openaiApiKey,
-      claude: !!userKeys.claudeApiKey,
-      gemini: !!userKeys.geminiApiKey,
-      deepseek: !!userKeys.deepseekApiKey,
-      groq: !!userKeys.groqApiKey,
-      hasAnyKey: hasUserKeys
-    });
-    
-    if (hasUserKeys) {
-      // Broadcast the API key status to all tabs
-      broadcastApiKeyStatus(true);
-      return true; // If user has keys, we can use them
-    }
-    
-    // If no user keys, check admin keys in the backend
-    try {
-      const { data, error } = await supabase.functions.invoke('check-api-keys', {
-        body: { service: 'any', checkSecret: true }
-      });
-      
-      if (error) {
-        console.error("Error checking admin API keys:", error);
-        // Don't fail silently, show toast with error
-        toast({
-          title: "API Connection Error", 
-          description: "Could not verify API key availability. Using simulation mode.",
-          variant: "destructive",
-          duration: 5000
-        });
+    // If we have a local key for the requested service, return immediately
+    if (serviceName !== 'any') {
+      if (
+        (serviceName === 'groq' && localGroqKey) || 
+        (serviceName === 'openai' && localOpenAIKey) || 
+        (serviceName === 'claude' && localClaudeKey)
+      ) {
+        console.log(`Found local API key for ${serviceName}`);
         
-        // Broadcast the API key status to all tabs
-        broadcastApiKeyStatus(false);
-        return false;
-      }
-      
-      const hasAdminKeys = data?.secretSet === true;
-      console.log("Admin API keys availability:", hasAdminKeys);
-      
-      // Broadcast the API key status to all tabs
-      broadcastApiKeyStatus(hasAdminKeys);
-      
-      if (!hasAdminKeys) {
-        // Log that no admin keys are available
-        console.warn("No admin API keys available, please configure API keys");
-        // Only show toast if we're in a browser context
-        if (typeof window !== 'undefined') {
-          toast({
-            title: "API Keys Required",
-            description: "Please configure API keys to use advanced features.",
-            variant: "warning",
-            duration: 5000
+        // Broadcast the status to other tabs
+        if (apiKeyChannel) {
+          apiKeyChannel.postMessage({
+            type: 'api-key-found',
+            service: serviceName,
+            source: 'localStorage',
+            timestamp: Date.now()
           });
         }
+        
+        return { 
+          available: true, 
+          service: serviceName,
+          source: 'localStorage',
+          allKeys: {
+            openai: !!localOpenAIKey,
+            claude: !!localClaudeKey,
+            groq: !!localGroqKey,
+            gemini: false,
+            grok3: false,
+            deepseek: false
+          }
+        };
       }
+    } else if (localGroqKey || localOpenAIKey || localClaudeKey) {
+      // If checking 'any' service and we have any local key
+      console.log('Found local API key');
       
-      return hasAdminKeys;
-    } catch (err) {
-      console.error("Exception checking admin API keys:", err);
-      // Show visible error to user
-      if (typeof window !== 'undefined') {
-        toast({
-          title: "API Service Error",
-          description: "Error connecting to API service. Using simulation mode.",
-          variant: "destructive",
-          duration: 5000
+      // Broadcast the status to other tabs
+      if (apiKeyChannel) {
+        apiKeyChannel.postMessage({
+          type: 'api-key-found',
+          service: 'any',
+          source: 'localStorage',
+          timestamp: Date.now()
         });
       }
       
-      // Broadcast the API key status to all tabs
-      broadcastApiKeyStatus(false);
-      return false;
-    }
-  } catch (e) {
-    console.error("Error in checkApiKeysAvailability:", e);
-    
-    // Broadcast the API key status to all tabs
-    broadcastApiKeyStatus(false);
-    return false;
-  }
-};
-
-// Listen for API key updates from other tabs
-if (typeof window !== 'undefined' && apiKeyChannel) {
-  apiKeyChannel.onmessage = (event) => {
-    console.log("Received API key update from another tab:", event.data);
-    // You can update the local state or trigger a refresh based on this message
-    window.dispatchEvent(new CustomEvent('api-key-changed', { 
-      detail: event.data 
-    }));
-  };
-}
-
-/**
- * Gets the appropriate API key for a given service
- * Includes fallback logic and error handling
- */
-export const getApiKey = async (service: string): Promise<string | null> => {
-  try {
-    // First check localStorage for user-provided key
-    const userKeys = loadApiKeysFromStorage();
-    
-    let userKey = null;
-    switch (service.toLowerCase()) {
-      case 'openai':
-        userKey = userKeys.openaiApiKey;
-        break;
-      case 'claude':
-        userKey = userKeys.claudeApiKey;
-        break;
-      case 'gemini':
-        userKey = userKeys.geminiApiKey;
-        break;
-      case 'deepseek':
-        userKey = userKeys.deepseekApiKey;
-        break;
-      case 'groq':
-        userKey = userKeys.groqApiKey;
-        break;
+      return { 
+        available: true, 
+        service: 'any',
+        source: 'localStorage',
+        allKeys: {
+          openai: !!localOpenAIKey,
+          claude: !!localClaudeKey,
+          groq: !!localGroqKey,
+          gemini: false,
+          grok3: false,
+          deepseek: false
+        }
+      };
     }
     
-    if (userKey) {
-      console.log(`Using user-provided ${service} API key`);
-      return userKey;
-    }
-    
-    // If no user key, try to get admin key with fallback and error handling
+    // If no local key found, check Supabase Edge Function
     try {
-      const { data, error } = await supabase.functions.invoke('get-admin-key', {
-        body: { provider: service.toLowerCase() }
+      const { data, error } = await supabase.functions.invoke('check-api-keys', {
+        body: { 
+          service: serviceName,
+          checkSecret 
+        }
       });
       
       if (error) {
-        console.error(`Error getting admin ${service} API key:`, error);
-        throw new Error(`Failed to retrieve admin ${service} API key: ${error.message}`);
+        console.error('Error checking API keys:', error);
+        throw new Error(`Failed to check API keys: ${error.message}`);
       }
       
-      if (data?.key) {
-        console.log(`Using admin ${service} API key`);
-        return data.key;
-      }
+      // Extract and normalize the response
+      const isAvailable = serviceName === 'any' 
+        ? data?.available || false
+        : data?.secretSet || false;
       
-      console.log(`No ${service} API key available`);
-      return null;
-    } catch (adminKeyError) {
-      console.error(`Error retrieving admin ${service} API key:`, adminKeyError);
+      console.log(`API key check result for ${serviceName}:`, { 
+        available: isAvailable,
+        allKeys: data?.allKeys || {}
+      });
       
-      // If we couldn't get the admin key, try alternative services if they're available
-      if (service.toLowerCase() !== 'openai' && userKeys.openaiApiKey) {
-        console.log(`Falling back to OpenAI API key since ${service} key is unavailable`);
-        return userKeys.openaiApiKey;
-      } else if (service.toLowerCase() !== 'groq' && userKeys.groqApiKey) {
-        console.log(`Falling back to Groq API key since ${service} key is unavailable`);
-        return userKeys.groqApiKey;
-      }
-      
-      // Show error toast to user
-      if (typeof window !== 'undefined') {
-        toast({
-          title: "API Key Error",
-          description: `Could not access ${service} API key. Try configuring it in settings.`,
-          variant: "destructive",
-          duration: 5000
+      // Broadcast the status to other tabs
+      if (apiKeyChannel && isAvailable) {
+        apiKeyChannel.postMessage({
+          type: 'api-key-found',
+          service: serviceName,
+          source: 'supabase',
+          timestamp: Date.now(),
+          allKeys: data?.allKeys || {}
         });
       }
       
-      return null;
-    }
-  } catch (e) {
-    console.error(`Error getting ${service} API key:`, e);
-    // Show error toast to user
-    if (typeof window !== 'undefined') {
+      return {
+        available: isAvailable,
+        service: serviceName,
+        source: 'supabase',
+        allKeys: data?.allKeys || {},
+        data
+      };
+    } catch (error) {
+      console.error('Error in check-api-keys function:', error);
+      
+      // In case of error, fall back to checking localStorage again
+      if (serviceName === 'any' && (localGroqKey || localOpenAIKey || localClaudeKey)) {
+        return { 
+          available: true, 
+          service: 'any',
+          source: 'localStorage-fallback',
+          allKeys: {
+            openai: !!localOpenAIKey,
+            claude: !!localClaudeKey,
+            groq: !!localGroqKey,
+            gemini: false,
+            grok3: false,
+            deepseek: false
+          }
+        };
+      }
+      
+      // If specific service was requested, check localStorage as fallback
+      if (
+        (serviceName === 'groq' && localGroqKey) || 
+        (serviceName === 'openai' && localOpenAIKey) || 
+        (serviceName === 'claude' && localClaudeKey)
+      ) {
+        return { 
+          available: true, 
+          service: serviceName,
+          source: 'localStorage-fallback',
+          allKeys: {
+            openai: !!localOpenAIKey,
+            claude: !!localClaudeKey,
+            groq: !!localGroqKey,
+            gemini: false,
+            grok3: false,
+            deepseek: false
+          }
+        };
+      }
+      
+      // If all else fails, show error and return not available
       toast({
-        title: "API Configuration Error",
-        description: "There was a problem with your API configuration. Please check settings.",
-        variant: "destructive",
-        duration: 5000
+        title: "API Check Failed",
+        description: `Could not verify API key availability: ${error.message}`,
+        variant: "destructive"
       });
+      
+      return { available: false, error: error.message };
     }
-    return null;
+  } catch (error) {
+    console.error('Error checking API availability:', error);
+    
+    toast({
+      title: "API Check Failed",
+      description: `Could not verify API key availability: ${error.message}`,
+      variant: "destructive"
+    });
+    
+    return { available: false, error: error.message };
   }
 };
+
+/**
+ * Sets up a listener for API key changes from other tabs
+ */
+export const setupApiKeyListener = (callback) => {
+  if (!apiKeyChannel) return () => {};
+  
+  const handleMessage = (event) => {
+    console.log('Received API key broadcast:', event.data);
+    if (event.data.type === 'api-key-found' || 
+        event.data.type === 'api-key-updated' ||
+        event.data.type === 'api-key-removed') {
+      callback(event.data);
+    }
+  };
+  
+  apiKeyChannel.addEventListener('message', handleMessage);
+  
+  // Return cleanup function
+  return () => {
+    apiKeyChannel.removeEventListener('message', handleMessage);
+  };
+};
+
+/**
+ * Broadcasts API key changes to other tabs
+ */
+export const broadcastApiKeyChange = (type, service, source = 'localStorage') => {
+  if (!apiKeyChannel) return;
+  
+  apiKeyChannel.postMessage({
+    type,
+    service,
+    source,
+    timestamp: Date.now()
+  });
+  
+  // Also dispatch a regular event for components on the same page
+  window.dispatchEvent(new CustomEvent('api-key-changed', {
+    detail: { type, service, source }
+  }));
+};
+
+// Expose the channel for direct use
+export const getApiKeyChannel = () => apiKeyChannel;

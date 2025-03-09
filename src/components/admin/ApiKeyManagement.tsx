@@ -16,7 +16,7 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { checkPermission } from "@/utils/auth-utils";
-import { AlertCircle, Info, RefreshCw } from "lucide-react";
+import { AlertCircle, Info, RefreshCw, CheckCircle, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type ApiKey = {
@@ -120,6 +120,11 @@ const ApiKeyManagement = () => {
       
       if (error) {
         console.error('Error checking admin API keys:', error);
+        toast({
+          title: "Error",
+          description: "Failed to check API key status.",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -129,6 +134,11 @@ const ApiKeyManagement = () => {
       }
     } catch (error) {
       console.error('Error checking admin API keys:', error);
+      toast({
+        title: "Error",
+        description: `Failed to check API key status: ${error.message}`,
+        variant: "destructive"
+      });
     } finally {
       setCheckingAdminKeys(false);
     }
@@ -313,10 +323,16 @@ const ApiKeyManagement = () => {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {Object.entries(adminApiKeyStatus).map(([key, value]) => (
-                <div key={key} className={`p-2 rounded-md border flex items-center ${value ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-                  <div className={`w-3 h-3 rounded-full mr-2 ${value ? 'bg-green-500' : 'bg-gray-300'}`} />
+                <div key={key} className={`p-3 rounded-md border flex items-center ${value ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+                  {value ? (
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-gray-400 mr-2" />
+                  )}
                   <span className="text-sm font-medium capitalize">{key}</span>
-                  <span className="text-xs ml-auto text-muted-foreground">{value ? 'Active' : 'Not Set'}</span>
+                  <span className={`text-xs ml-auto ${value ? 'text-green-600' : 'text-gray-500'}`}>
+                    {value ? 'Active' : 'Not Set'}
+                  </span>
                 </div>
               ))}
             </div>
@@ -410,7 +426,7 @@ const ApiKeyManagement = () => {
                       checked={key.is_active} 
                       onCheckedChange={(checked) => handleEditSwitchChange(key.id, checked)}
                     />
-                    <span className="text-sm">
+                    <span className={`text-sm ${key.is_active ? 'text-green-600' : 'text-gray-500'}`}>
                       {key.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>

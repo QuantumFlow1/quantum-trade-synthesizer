@@ -4,7 +4,7 @@ import { toast } from "@/hooks/use-toast";
 import { ChatMessage } from "./types";
 import { loadStockbotChatHistory, saveStockbotChatHistory, clearStockbotChatHistory } from "./storage";
 import { Button } from "@/components/ui/button";
-import { checkApiKeysAvailability } from "@/hooks/trading-chart/api-key-manager";
+import { checkApiKeysAvailability, setupApiKeyListener, broadcastApiKeyChange } from "@/hooks/trading-chart/api-key-manager";
 
 export const useStockbotState = () => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => loadStockbotChatHistory());
@@ -13,6 +13,17 @@ export const useStockbotState = () => {
   const [isSimulationMode, setIsSimulationMode] = useState(true);
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [apiStatus, setApiStatus] = useState<{
+    checking: boolean;
+    lastChecked: number | null;
+    available: boolean;
+    source: string | null;
+  }>({
+    checking: true,
+    lastChecked: null,
+    available: false,
+    source: null
+  });
   const [realMarketData, setRealMarketData] = useState<any[]>([]);
   
   // Save messages to localStorage whenever they change
@@ -25,31 +36,72 @@ export const useStockbotState = () => {
   }, [messages]);
   
   // Function to check API key
-  const checkApiKey = useCallback(() => {
+  const checkApiKey = useCallback(async (silent = false) => {
     try {
+      if (!silent) {
+        setApiStatus(prev => ({ ...prev, checking: true }));
+      }
+      
+      // Check local storage first
       const groqKey = localStorage.getItem('groqApiKey');
-      const hasKey = !!groqKey && groqKey.trim().length > 0;
+      const localKeyExists = !!groqKey && groqKey.trim().length > 0;
       
       console.log("Checking Groq API key:", { 
-        exists: hasKey, 
+        exists: localKeyExists, 
         keyLength: groqKey ? groqKey.length : 0,
         key: groqKey ? `${groqKey.substring(0, 4)}...${groqKey.substring(groqKey.length - 4)}` : 'none'
       });
       
-      setHasApiKey(hasKey);
+      // Then check with Supabase for admin-provided keys
+      const result = await checkApiKeysAvailability('groq', true);
+      const hasKey = localKeyExists || result.available;
       
-      // If we have a key but are in simulation mode, notify the user
-      if (hasKey && isSimulationMode) {
+      setHasApiKey(hasKey);
+      setApiStatus({
+        checking: false,
+        lastChecked: Date.now(),
+        available: hasKey,
+        source: localKeyExists ? 'localStorage' : (result.available ? 'supabase' : null)
+      });
+      
+      // If we found a key but are in simulation mode, notify the user
+      if (hasKey && isSimulationMode && !silent) {
         toast({
           title: "API Key Detected",
           description: "You can now switch to real AI mode for more accurate responses.",
-          duration: 5000
+          duration: 5000,
+          action: (
+            <Button 
+              onClick={() => setIsSimulationMode(false)}
+              variant="default"
+              size="sm"
+              className="bg-green-500 text-white hover:bg-green-600"
+            >
+              Switch Now
+            </Button>
+          )
         });
       }
       
       return hasKey;
     } catch (error) {
       console.error("Error checking API key:", error);
+      
+      setApiStatus({
+        checking: false,
+        lastChecked: Date.now(),
+        available: false,
+        source: null
+      });
+      
+      if (!silent) {
+        toast({
+          title: "API Check Failed",
+          description: `Could not verify API key availability: ${error.message}`,
+          variant: "destructive"
+        });
+      }
+      
       return false;
     }
   }, [isSimulationMode]);
@@ -58,7 +110,7 @@ export const useStockbotState = () => {
   const fetchRealMarketData = useCallback(async () => {
     try {
       // Check if we have API key before fetching
-      const hasKey = checkApiKey();
+      const hasKey = await checkApiKey(true);
       if (!hasKey) return;
       
       console.log("Fetching real market data for backtesting...");
@@ -86,16 +138,28 @@ export const useStockbotState = () => {
   }, [checkApiKey]);
   
   useEffect(() => {
-    // Check API key on mount and set simulation mode based on key existence
-    try {
-      const hasKey = checkApiKey();
-      setIsSimulationMode(!hasKey);
+    // Initial API key check
+    checkApiKey();
+    
+    // Set simulation mode based on key existence (will be updated after the check completes)
+    setIsSimulationMode(true);
+    
+    // Set up listener for API key changes from other tabs
+    const unsubscribe = setupApiKeyListener((data) => {
+      console.log("Received API key update from another tab:", data);
       
-      // Listen for API key updates - both from this tab and from other tabs
-      const handleApiKeyUpdate = () => {
-        const keyExists = checkApiKey();
-        if (keyExists && isSimulationMode) {
-          // If key detected and in simulation mode, prompt to switch
+      if (data.service === 'groq' || data.service === 'any') {
+        // Update local state based on the broadcast
+        setHasApiKey(true);
+        setApiStatus({
+          checking: false,
+          lastChecked: data.timestamp,
+          available: true,
+          source: data.source
+        });
+        
+        // Notify user they can switch to live mode
+        if (isSimulationMode) {
           toast({
             title: "Live Mode Available",
             description: "API key detected. Switch to live mode for real data?",
@@ -111,38 +175,47 @@ export const useStockbotState = () => {
             ),
             duration: 8000
           });
-          
-          // Fetch real data when key is added
-          fetchRealMarketData();
         }
-      };
+      }
+    });
+    
+    // Listen for various events that might indicate API key changes
+    const handleStorageChange = () => {
+      const groqKey = localStorage.getItem('groqApiKey');
+      const hasKey = !!groqKey && groqKey.trim().length > 0;
       
-      // Listen for various events that might indicate API key changes
-      window.addEventListener('apikey-updated', handleApiKeyUpdate);
-      window.addEventListener('localStorage-changed', handleApiKeyUpdate);
-      window.addEventListener('storage', handleApiKeyUpdate);
-      window.addEventListener('api-key-changed', handleApiKeyUpdate);
-      
-      // Set up interval to periodically check for API key updates and fetch data
-      const intervalId = setInterval(() => {
+      // If the key status has changed, broadcast it
+      if (hasKey !== hasApiKey) {
         checkApiKey();
-        // Only fetch data if we have an API key and not in simulation mode
-        if (hasApiKey && !isSimulationMode) {
-          fetchRealMarketData();
+        
+        if (hasKey) {
+          broadcastApiKeyChange('api-key-updated', 'groq');
+        } else {
+          broadcastApiKeyChange('api-key-removed', 'groq');
         }
-      }, 5000); // Check every 5 seconds
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Regular check interval
+    const checkInterval = setInterval(() => {
+      checkApiKey(true);
       
-      return () => {
-        window.removeEventListener('apikey-updated', handleApiKeyUpdate);
-        window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
-        window.removeEventListener('storage', handleApiKeyUpdate);
-        window.removeEventListener('api-key-changed', handleApiKeyUpdate);
-        clearInterval(intervalId);
-      };
-    } catch (error) {
-      console.error("Error in useStockbotState useEffect:", error);
-      setIsSimulationMode(true); // Fallback to simulation mode on error
-    }
+      // Only fetch data if we have an API key and not in simulation mode
+      if (hasApiKey && !isSimulationMode) {
+        fetchRealMarketData();
+      }
+    }, 30000); // Check every 30 seconds
+    
+    // Initial fetch of market data
+    fetchRealMarketData();
+    
+    return () => {
+      clearInterval(checkInterval);
+      unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [checkApiKey, fetchRealMarketData, hasApiKey, isSimulationMode]);
 
   const clearChat = useCallback(() => {
@@ -164,6 +237,49 @@ export const useStockbotState = () => {
     // We don't need to explicitly call saveStockbotChatHistory here
     // because the useEffect above will handle it whenever messages change
   }, []);
+  
+  const handleSetApiKey = useCallback((apiKey: string) => {
+    try {
+      // Save to localStorage
+      localStorage.setItem('groqApiKey', apiKey);
+      
+      // Broadcast the change
+      broadcastApiKeyChange('api-key-updated', 'groq');
+      
+      // Update local state
+      setHasApiKey(true);
+      setApiStatus(prev => ({
+        ...prev,
+        available: true,
+        source: 'localStorage',
+        lastChecked: Date.now()
+      }));
+      
+      // Check API key and potentially fetch market data
+      checkApiKey();
+      
+      toast({
+        title: "API Key Saved",
+        description: "Your Groq API key has been saved successfully."
+      });
+      
+      // Close dialog and switch to live mode
+      setIsKeyDialogOpen(false);
+      setIsSimulationMode(false);
+      
+      return true;
+    } catch (error) {
+      console.error("Error saving API key:", error);
+      
+      toast({
+        title: "Error",
+        description: "Failed to save API key: " + error.message,
+        variant: "destructive"
+      });
+      
+      return false;
+    }
+  }, [checkApiKey]);
 
   // Generate sample market data if real data fetch fails
   const generateSampleMarketData = () => {
@@ -175,6 +291,11 @@ export const useStockbotState = () => {
       { symbol: "DOT", price: 6.2, change: -0.8 }
     ];
   };
+  
+  // Force check API key - called from UI
+  const forceCheckApiKey = useCallback(() => {
+    checkApiKey();
+  }, [checkApiKey]);
   
   return {
     messages,
@@ -190,6 +311,9 @@ export const useStockbotState = () => {
     setIsKeyDialogOpen,
     clearChat,
     showApiKeyDialog,
-    realMarketData
+    realMarketData,
+    apiStatus,
+    forceCheckApiKey,
+    setApiKey: handleSetApiKey
   };
 };
