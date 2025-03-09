@@ -238,4 +238,4 @@ export function useClaudeChat() {
     toggleSettings,
     setShowSettings
   };
-}
+}, []);

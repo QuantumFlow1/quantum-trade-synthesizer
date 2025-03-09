@@ -9,6 +9,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
+// Main function to handle requests
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -22,7 +23,13 @@ serve(async (req) => {
       body = await req.json();
     } catch (e) {
       console.error("Error parsing request body:", e);
-      throw new Error("Invalid request body: " + e.message);
+      return new Response(
+        JSON.stringify({ error: 'Invalid request body format' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
     
     // Extract parameters and validate
@@ -51,11 +58,11 @@ serve(async (req) => {
 
     console.log(`Claude API request for model: ${model || 'default'}`);
     if (messages) console.log(`Messages count: ${messages.length}`);
-    if (context) console.log(`Context messages: ${context.length}`);
+    if (context) console.log(`Context provided: ${context.length} characters`);
 
     // Format messages for Claude API
     const formattedMessages = messages || (context && Array.isArray(context) ? [...context] : []);
-
+    
     if (!formattedMessages || formattedMessages.length === 0) {
       return new Response(
         JSON.stringify({ error: 'No valid messages could be parsed' }),
