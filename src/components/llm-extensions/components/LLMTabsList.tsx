@@ -1,10 +1,11 @@
 
-import { Bot, XCircle, Check, Sparkles, MessageSquare, Brain, Cpu, Bot as BotIcon } from 'lucide-react';
+import { Bot, XCircle, Check, Sparkles, MessageSquare, Brain, Cpu, Settings, Loader2 } from 'lucide-react';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface ConnectionStatus {
   deepseek: 'connected' | 'disconnected' | 'unavailable' | 'checking';
@@ -17,9 +18,17 @@ interface LLMTabsListProps {
   enabledLLMs: Record<string, boolean>;
   toggleLLM: (llm: string, enabled: boolean) => void;
   connectionStatus: ConnectionStatus;
+  activeTab: string;
+  checkConnectionStatusForLLM: (llm: keyof ConnectionStatus) => void;
 }
 
-export function LLMTabsList({ enabledLLMs, toggleLLM, connectionStatus }: LLMTabsListProps) {
+export function LLMTabsList({ 
+  enabledLLMs, 
+  toggleLLM, 
+  connectionStatus, 
+  activeTab,
+  checkConnectionStatusForLLM 
+}: LLMTabsListProps) {
   const getStatusBadge = (status: 'connected' | 'disconnected' | 'unavailable' | 'checking') => {
     switch (status) {
       case 'connected':
@@ -29,7 +38,7 @@ export function LLMTabsList({ enabledLLMs, toggleLLM, connectionStatus }: LLMTab
       case 'unavailable':
         return <Badge variant="outline" className="ml-2 bg-red-50 text-red-700 border-red-200"><XCircle className="h-3 w-3 mr-1" /> Unavailable</Badge>;
       case 'checking':
-        return <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">Checking...</Badge>;
+        return <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200"><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Checking...</Badge>;
       default:
         return null;
     }
@@ -47,7 +56,7 @@ export function LLMTabsList({ enabledLLMs, toggleLLM, connectionStatus }: LLMTab
       case 'claude':
         return <MessageSquare className={className} />;
       default:
-        return <BotIcon className={className} />;
+        return <Bot className={className} />;
     }
   };
 
@@ -65,6 +74,11 @@ export function LLMTabsList({ enabledLLMs, toggleLLM, connectionStatus }: LLMTab
       default:
         return llm;
     }
+  };
+
+  // Handle retry connection button click
+  const handleRetryConnection = (llm: keyof ConnectionStatus) => {
+    checkConnectionStatusForLLM(llm);
   };
 
   return (
@@ -124,6 +138,29 @@ export function LLMTabsList({ enabledLLMs, toggleLLM, connectionStatus }: LLMTab
               {getLLMIcon(llm, "h-4 w-4 mr-1")}
               {formatLLMName(llm)}
             </Label>
+            
+            {/* Add API key configuration or retry button */}
+            {connectionStatus[llm as keyof ConnectionStatus] === 'disconnected' && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="ml-1 h-6 px-2"
+                onClick={() => window.location.href = '/dashboard/settings'}
+              >
+                <Settings className="h-3 w-3" />
+              </Button>
+            )}
+            
+            {connectionStatus[llm as keyof ConnectionStatus] === 'unavailable' && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="ml-1 h-6 px-2"
+                onClick={() => handleRetryConnection(llm as keyof ConnectionStatus)}
+              >
+                <Loader2 className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         ))}
       </div>

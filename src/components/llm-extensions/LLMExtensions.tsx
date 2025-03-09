@@ -12,7 +12,8 @@ export function LLMExtensions() {
     setActiveTab, 
     enabledLLMs, 
     connectionStatus,
-    toggleLLM 
+    toggleLLM,
+    checkConnectionStatusForLLM
   } = useLLMExtensions();
   
   return (
@@ -23,11 +24,13 @@ export function LLMExtensions() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue={activeTab} className="w-full" onValueChange={setActiveTab}>
+        <Tabs value={activeTab} className="w-full" onValueChange={setActiveTab}>
           <LLMTabsList 
             enabledLLMs={enabledLLMs} 
             toggleLLM={toggleLLM}
-            connectionStatus={connectionStatus} 
+            connectionStatus={connectionStatus}
+            activeTab={activeTab}
+            checkConnectionStatusForLLM={checkConnectionStatusForLLM}
           />
           
           <LLMTabContent 

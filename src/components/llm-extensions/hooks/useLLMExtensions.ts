@@ -1,5 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/ui/use-toast';
 
 interface ConnectionStatus {
   deepseek: 'connected' | 'disconnected' | 'unavailable' | 'checking';
@@ -55,10 +57,19 @@ export function useLLMExtensions() {
       }));
     };
     
+    // Listen for API key changes in localStorage
+    const handleApiKeyChange = () => {
+      checkConnectionStatus();
+    };
+    
     window.addEventListener('connection-status-changed', handleConnectionStatusChange as EventListener);
+    window.addEventListener('storage', handleApiKeyChange);
+    window.addEventListener('apikey-updated', handleApiKeyChange);
     
     return () => {
       window.removeEventListener('connection-status-changed', handleConnectionStatusChange as EventListener);
+      window.removeEventListener('storage', handleApiKeyChange);
+      window.removeEventListener('apikey-updated', handleApiKeyChange);
     };
   }, []);
 
@@ -84,7 +95,71 @@ export function useLLMExtensions() {
         setActiveTab(nextEnabledLLM);
       }
     }
-  }, [activeTab, enabledLLMs]);
+    
+    // If enabling an LLM and its status is still checking, verify its connection
+    if (enabled && connectionStatus[llm as keyof ConnectionStatus] === 'checking') {
+      checkConnectionStatusForLLM(llm as keyof ConnectionStatus);
+    }
+  }, [activeTab, enabledLLMs, connectionStatus]);
+
+  // Check connection status for a specific LLM
+  const checkConnectionStatusForLLM = useCallback(async (llm: keyof ConnectionStatus) => {
+    setConnectionStatus(prev => ({
+      ...prev,
+      [llm]: 'checking'
+    }));
+    
+    // First check if API key exists in localStorage
+    const apiKey = localStorage.getItem(`${llm}ApiKey`);
+    if (!apiKey) {
+      setConnectionStatus(prev => ({
+        ...prev,
+        [llm]: 'disconnected'
+      }));
+      return;
+    }
+    
+    try {
+      // Use the Supabase Edge Function to verify the connection
+      const { data, error } = await supabase.functions.invoke('check-api-keys', {
+        body: { service: llm, checkSecret: true }
+      });
+      
+      if (error) {
+        console.error(`Error checking ${llm} connection:`, error);
+        setConnectionStatus(prev => ({
+          ...prev,
+          [llm]: 'unavailable'
+        }));
+        return;
+      }
+      
+      // Check if the API key is valid
+      if (data?.secretSet) {
+        setConnectionStatus(prev => ({
+          ...prev,
+          [llm]: 'connected'
+        }));
+        
+        // Display a toast notification
+        toast({
+          title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} Connected`,
+          description: `Successfully connected to ${llm.charAt(0).toUpperCase() + llm.slice(1)} API.`
+        });
+      } else {
+        setConnectionStatus(prev => ({
+          ...prev,
+          [llm]: 'disconnected'
+        }));
+      }
+    } catch (error) {
+      console.error(`Error in ${llm} connection check:`, error);
+      setConnectionStatus(prev => ({
+        ...prev,
+        [llm]: 'unavailable'
+      }));
+    }
+  }, []);
 
   // Check connection status for all LLMs
   const checkConnectionStatus = useCallback(() => {
@@ -103,27 +178,43 @@ export function useLLMExtensions() {
       grok: prev.grok === 'checking' ? 'checking' : prev.grok
     }));
     
-    // For Grok, we'll check availability from a different source
-    // This would typically involve an API call to check service status
-    const checkGrokAvailability = async () => {
-      try {
-        // This is a placeholder - in a real app, you'd make an API call here
-        const isAvailable = true; // Mock response
-        
-        setConnectionStatus(prev => ({
-          ...prev,
-          grok: isAvailable ? 'connected' : 'unavailable'
-        }));
-      } catch (error) {
+    // For Grok, check availability from a different source
+    checkGrokAvailability();
+    
+    // For models with API keys, verify the connection works
+    if (deepseekKey) checkConnectionStatusForLLM('deepseek');
+    if (openaiKey) checkConnectionStatusForLLM('openai');
+    if (claudeKey) checkConnectionStatusForLLM('claude');
+  }, [checkConnectionStatusForLLM]);
+  
+  // Specifically check Grok availability
+  const checkGrokAvailability = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('grok3-ping', {
+        body: { isAvailabilityCheck: true }
+      });
+      
+      if (error) {
         console.error('Error checking Grok availability:', error);
         setConnectionStatus(prev => ({
           ...prev,
           grok: 'unavailable'
         }));
+        return;
       }
-    };
-    
-    checkGrokAvailability();
+      
+      const isAvailable = data?.status === 'available';
+      setConnectionStatus(prev => ({
+        ...prev,
+        grok: isAvailable ? 'connected' : 'unavailable'
+      }));
+    } catch (error) {
+      console.error('Exception checking Grok availability:', error);
+      setConnectionStatus(prev => ({
+        ...prev,
+        grok: 'unavailable'
+      }));
+    }
   }, []);
 
   return {
@@ -131,6 +222,8 @@ export function useLLMExtensions() {
     setActiveTab,
     enabledLLMs,
     connectionStatus,
-    toggleLLM
+    toggleLLM,
+    checkConnectionStatus,
+    checkConnectionStatusForLLM
   };
 }

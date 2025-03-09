@@ -6,7 +6,8 @@ import { OpenAIChat } from '../OpenAIChat';
 import { GrokChat } from '../GrokChat';
 import { ClaudeChat } from '../ClaudeChat';
 import { ChatEmpty } from './ChatEmpty';
-import { Cpu, Sparkles, Brain, MessageSquare } from 'lucide-react';
+import { Cpu, Sparkles, Brain, MessageSquare, Settings } from 'lucide-react';
+import { ConnectionStatus } from './ConnectionStatus';
 
 interface LLMTabContentProps {
   tabValue: string;
@@ -35,6 +36,47 @@ export function LLMTabContent({
             {getLLMIcon(tabValue, "w-4 h-4 mr-2")}
             Enable {getLLMName(tabValue)}
           </Button>
+        </div>
+      );
+    }
+
+    if (connectionStatus === 'disconnected') {
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-6">
+          {getLLMIcon(tabValue, "w-12 h-12 text-amber-400 mb-4")}
+          <p className="text-gray-500 mb-4 text-center max-w-md">
+            {getLLMName(tabValue)} is not connected. Please set up your API key.
+          </p>
+          <Button onClick={() => window.location.href = '/dashboard/settings'} className="flex items-center">
+            <Settings className="w-4 h-4 mr-2" />
+            Configure API Keys
+          </Button>
+        </div>
+      );
+    }
+
+    if (connectionStatus === 'unavailable') {
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-6">
+          {getLLMIcon(tabValue, "w-12 h-12 text-red-400 mb-4")}
+          <p className="text-gray-500 mb-4 text-center max-w-md">
+            {getLLMName(tabValue)} service is currently unavailable. Please try again later.
+          </p>
+          <Button onClick={() => window.location.reload()} className="flex items-center">
+            Retry Connection
+          </Button>
+        </div>
+      );
+    }
+
+    if (connectionStatus === 'checking') {
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-6">
+          {getLLMIcon(tabValue, "w-12 h-12 text-blue-400 mb-4 animate-pulse")}
+          <p className="text-gray-500 mb-4 text-center max-w-md">
+            Checking connection to {getLLMName(tabValue)}...
+          </p>
+          <div className="w-8 h-8 border-t-2 border-blue-500 rounded-full animate-spin"></div>
         </div>
       );
     }
@@ -87,7 +129,10 @@ export function LLMTabContent({
 
   return (
     <TabsContent value={tabValue} className="mt-0 h-[500px] border-none p-0">
-      {renderChatComponent()}
+      <div className="w-full h-full flex flex-col">
+        <ConnectionStatus status={connectionStatus} llm={tabValue} />
+        {renderChatComponent()}
+      </div>
     </TabsContent>
   );
 }
