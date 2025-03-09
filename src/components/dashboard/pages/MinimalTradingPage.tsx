@@ -3,7 +3,6 @@ import { MinimalTradingTab } from "@/components/trading/minimal/MinimalTradingTa
 import { TradingPairsList } from "@/components/trading/minimal/components/TradingPairsList";
 import { MarketSummary } from "@/components/trading/minimal/components/MarketSummary";
 import { PriceAlerts } from "@/components/trading/minimal/components/PriceAlerts";
-import { Grid } from "@/components/ui/grid";
 
 export const MinimalTradingPage = () => {
   return (
@@ -15,7 +14,7 @@ export const MinimalTradingPage = () => {
         </p>
       </div>
       
-      <Grid className="grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-1 space-y-4">
           <TradingPairsList />
           <MarketSummary />
@@ -25,7 +24,7 @@ export const MinimalTradingPage = () => {
         <div className="lg:col-span-3">
           <MinimalTradingTab />
         </div>
-      </Grid>
+      </div>
     </div>
   );
 };
