@@ -1,92 +1,16 @@
 
+import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, Legend } from 'recharts';
 import { ChartData } from './types';
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BrainCircuit, Eye, EyeOff } from 'lucide-react';
+import { CustomTooltip } from './chart/CustomTooltip';
+import { renderCustomLegend } from './chart/CustomLegend';
 
 interface AIEnhancedChartViewProps {
   data: ChartData[];
   symbol: string;
 }
-
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    const dataPoint = payload[0].payload;
-    const isProjected = dataPoint.projected;
-    
-    return (
-      <div className="bg-black/80 backdrop-blur-xl text-white p-2 rounded-lg border border-white/10 shadow-xl">
-        <p className="text-sm font-medium">{label}</p>
-        
-        {isProjected ? (
-          <>
-            <p className="text-xs text-white/80 flex items-center justify-between">
-              <span>Projected Price:</span>
-              <span className="font-bold text-amber-400">${dataPoint.projectedPrice?.toFixed(2) || 'N/A'}</span>
-            </p>
-            <p className="text-xs text-white/80 flex items-center justify-between">
-              <span>Confidence:</span>
-              <span>{dataPoint.confidence ? (dataPoint.confidence * 100).toFixed(0) : 'N/A'}%</span>
-            </p>
-            <p className="text-xs text-white/80 flex items-center justify-between">
-              <span>Range:</span>
-              <span>${dataPoint.lowerBand?.toFixed(2) || 'N/A'} - ${dataPoint.upperBand?.toFixed(2) || 'N/A'}</span>
-            </p>
-            <div className="mt-1 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs rounded text-center">
-              AI Projection
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="text-xs text-white/80 flex items-center justify-between">
-              <span>Price:</span>
-              <span className="font-bold">${payload[0].value?.toFixed(2) || 'N/A'}</span>
-            </p>
-            {payload[1] && (
-              <p className="text-xs text-white/80 flex items-center justify-between">
-                <span>High:</span>
-                <span>${payload[1].value?.toFixed(2) || 'N/A'}</span>
-              </p>
-            )}
-            {payload[2] && (
-              <p className="text-xs text-white/80 flex items-center justify-between">
-                <span>Low:</span>
-                <span>${payload[2].value?.toFixed(2) || 'N/A'}</span>
-              </p>
-            )}
-          </>
-        )}
-      </div>
-    );
-  }
-  return null;
-};
-
-// Custom legend renderer
-const renderCustomLegend = (props: any) => {
-  const { payload } = props;
-  
-  return (
-    <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center mt-2 text-xs">
-      {payload.map((entry: any, index: number) => {
-        const isProjection = entry.value.includes('Projection') || entry.value.includes('Bound') || entry.value.includes('Band');
-        return (
-          <div key={`item-${index}`} className="flex items-center gap-1.5">
-            <div 
-              className={`w-3 h-2 ${isProjection ? 'border-t-[2px] border-dashed' : ''}`} 
-              style={{ 
-                backgroundColor: isProjection ? 'transparent' : entry.color,
-                borderColor: isProjection ? entry.color : 'transparent'
-              }}
-            />
-            <span style={{ color: entry.color }}>{entry.value}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
 
 export const AIEnhancedChartView = ({ data, symbol }: AIEnhancedChartViewProps) => {
   const [showAIProjections, setShowAIProjections] = useState(true);
