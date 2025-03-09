@@ -11,6 +11,32 @@ export function generateStockbotResponse(userInput: string, marketData: any[] = 
   
   let responseText = '';
   
+  // First, check if the input is asking about API key status
+  if (input.includes('api key') || input.includes('apikey') || input.includes('key not working')) {
+    const groqApiKey = localStorage.getItem('groqApiKey');
+    console.log('Checking Groq API key status:', {
+      exists: !!groqApiKey,
+      length: groqApiKey ? groqApiKey.length : 0
+    });
+    
+    if (!groqApiKey) {
+      responseText = 'I don\'t see a Groq API key configured. Please make sure you\'ve set your API key in the settings. Click the settings icon in the top-right of the chat window to add your key.';
+    } else {
+      responseText = `I detected a Groq API key (${groqApiKey.length} characters long). If you're still seeing the simulation mode message, try clicking the "Switch to real AI mode" button. If that doesn't work, try refreshing the page or checking that your API key is valid.`;
+    }
+    
+    // Trigger a localStorage event to force components to re-check API key
+    window.dispatchEvent(new Event('apikey-updated'));
+    return {
+      id: uuidv4(),
+      sender: 'assistant',
+      role: 'assistant',
+      text: responseText,
+      content: responseText,
+      timestamp: new Date()
+    };
+  }
+  
   // Check for market data availability to provide more contextual responses
   const hasMarketData = Array.isArray(marketData) && marketData.length > 0;
   const currentMarket = hasMarketData ? marketData[marketData.length - 1] : null;
@@ -81,6 +107,27 @@ export function generateStockbotResponse(userInput: string, marketData: any[] = 
  * Generate an error response message
  */
 export function generateErrorResponse(errorMessage: string): ChatMessage {
+  console.error('Stockbot error:', errorMessage);
+  
+  // Check if the error is related to API key issues
+  if (errorMessage.toLowerCase().includes('api key') || 
+      errorMessage.toLowerCase().includes('authentication') ||
+      errorMessage.toLowerCase().includes('unauthorized')) {
+    
+    // Check if we actually have an API key
+    const groqApiKey = localStorage.getItem('groqApiKey');
+    console.log('API key error detected, checking status:', {
+      exists: !!groqApiKey,
+      length: groqApiKey ? groqApiKey.length : 0
+    });
+    
+    // Enhance error message with helpful information
+    errorMessage = `${errorMessage}\n\nPlease verify that your Groq API key is correct and has been properly saved. You can update your API key by clicking the settings icon in the chat header.`;
+    
+    // Force a refresh of API key status
+    window.dispatchEvent(new Event('apikey-updated'));
+  }
+  
   return {
     id: uuidv4(),
     sender: 'assistant',
