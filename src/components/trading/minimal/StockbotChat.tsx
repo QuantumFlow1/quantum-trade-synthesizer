@@ -109,6 +109,9 @@ export const StockbotChat = () => {
             message: inputMessage,
             previousMessages: messageHistory,
             userLevel: 'intermediate'
+          },
+          headers: {
+            'x-groq-api-key': groqApiKey || ''
           }
         });
         
