@@ -20,6 +20,39 @@ export interface PortfolioDecision {
   timestamp: string;
 }
 
+export interface PortfolioManagerProps {
+  isSimulationMode?: boolean;
+  onSimulationToggle?: (enabled: boolean) => void;
+  currentData?: any;
+  children?: React.ReactNode;
+}
+
+export interface TradingAgent {
+  id: string;
+  name: string;
+  description: string;
+  specialization: string;
+  confidence: number;
+  weight: number;
+  successRate?: number;
+  isActive?: boolean;
+  performance?: {
+    accuracy: number;
+    recentTrades: boolean[];
+    profitFactor: number;
+  };
+}
+
+export interface AgentPerformance {
+  accuracy: number;
+  recentTrades: boolean[];
+  profitFactor: number;
+  successRate: number;
+  recentSuccess: number[];
+  averageConfidence: number;
+  totalCalls: number;
+}
+
 export interface PortfolioManagerHookReturn {
   agentRecommendations: AgentRecommendation[];
   portfolioDecision: PortfolioDecision | null;
@@ -31,7 +64,7 @@ export interface PortfolioManagerHookReturn {
   agentPerformance: any;
   agentAccuracy: any;
   backtestResults: any[];
-  tradingAgents: any[];
+  tradingAgents: TradingAgent[];
   handleExecuteDecision: (isSimulationMode: boolean) => void;
   handleRefreshAnalysis: () => void;
   realMarketData?: any[];

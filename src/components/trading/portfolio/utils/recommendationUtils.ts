@@ -1,23 +1,21 @@
-
 import { AgentRecommendation } from '../types/portfolioTypes';
 import { supabase } from "@/lib/supabase";
 
 // Function to initialize Groq-powered trading agent
 // This is a placeholder for potential future implementation
-export const setGroqAgentInstance = async (agentId: string, apiKey: string) => {
+export const setGroqAgentInstance = async (groqAgent: any) => {
   try {
-    if (!apiKey) {
+    if (!groqAgent) {
       return null;
     }
     
-    console.log(`Initializing Groq-powered agent: ${agentId}`);
+    console.log(`Initializing Groq-powered agent`);
     return {
-      id: agentId,
       isActive: true,
       lastUpdated: new Date().toISOString()
     };
   } catch (error) {
-    console.error(`Error initializing Groq agent ${agentId}:`, error);
+    console.error(`Error initializing Groq agent:`, error);
     return null;
   }
 };

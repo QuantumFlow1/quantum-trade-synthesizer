@@ -29,7 +29,9 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
   
   // Set the Groq agent instance for use in recommendations
   useEffect(() => {
-    setGroqAgentInstance(groqAgent);
+    if (groqAgent) {
+      setGroqAgentInstance(groqAgent);
+    }
   }, [groqAgent]);
   
   return (

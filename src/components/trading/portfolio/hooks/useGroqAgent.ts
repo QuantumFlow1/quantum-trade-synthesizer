@@ -85,6 +85,7 @@ export const useGroqAgent = () => {
       const recommendation: AgentRecommendation = {
         agentId: agent.id,
         action: mapGroqActionToAgentAction(result.recommendation),
+        ticker: marketData.symbol || "BTC",  // Add ticker from marketData
         confidence: result.confidence,
         reasoning: result.reasoning,
         timestamp: new Date().toISOString()
@@ -123,6 +124,7 @@ export const useGroqAgent = () => {
     // Generate a pseudo-random but somewhat sensible recommendation
     const randomFactor = Math.random();
     const priceChange = marketData?.change24h || 0;
+    const ticker = marketData?.symbol || "BTC";
     
     let action: "BUY" | "SELL" | "HOLD";
     let confidence: number;
@@ -144,8 +146,9 @@ export const useGroqAgent = () => {
     return {
       agentId: agent.id,
       action,
+      ticker,
       confidence,
-      reasoning: `Based on analysis of market conditions for ${marketData.symbol}, the recommendation is to ${action.toLowerCase()}. This is a fallback recommendation due to API unavailability.`,
+      reasoning: `Based on analysis of market conditions for ${ticker}, the recommendation is to ${action.toLowerCase()}. This is a fallback recommendation due to API unavailability.`,
       timestamp: new Date().toISOString()
     };
   };

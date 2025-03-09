@@ -1,7 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { AgentRecommendation, TradingAgent } from '../types/portfolioTypes';
-import { AgentPerformance } from '../types/portfolioTypes';
+import { AgentRecommendation, TradingAgent, AgentPerformance } from '../types/portfolioTypes';
 
 export const useAgentPerformance = () => {
   const [performance, setPerformance] = useState<Record<string, AgentPerformance>>({});

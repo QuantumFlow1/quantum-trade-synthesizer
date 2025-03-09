@@ -1,7 +1,5 @@
-
 import React from 'react';
-import { AgentRecommendation } from "@/types/agent";
-import { AgentPerformance } from "./types/portfolioTypes";
+import { AgentRecommendation, AgentPerformance } from "./types/portfolioTypes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AgentRecommendationCard } from './components/AgentRecommendationCard';
 
