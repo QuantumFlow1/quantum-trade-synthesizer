@@ -66,6 +66,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   // Persist simulation mode setting whenever it changes
   useEffect(() => {
     saveStockbotSettings({ isSimulationMode });
+    console.log("Simulation mode changed to:", isSimulationMode);
   }, [isSimulationMode]);
   
   // Enhanced API key check with more thorough detection
@@ -87,20 +88,23 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
       // Update state based on key presence
       setHasApiKey(keyExists);
       
-      // If we have a key but we're still in simulation mode, turn it off
-      if (keyExists && isSimulationMode) {
-        console.log('API key exists but still in simulation mode - switching to AI mode');
-        setIsSimulationMode(false);
-        saveStockbotSettings({ isSimulationMode: false });
-        showApiKeyDetectedToast('Groq');
-      }
-      
-      // If we don't have a key but we're not in simulation mode, turn it on
-      if (!keyExists && !isSimulationMode) {
-        console.log('No API key found but not in simulation mode - switching to simulation mode');
-        setIsSimulationMode(true);
-        saveStockbotSettings({ isSimulationMode: true });
-        showApiKeyErrorToast('Groq', 'No API key found, switching to simulation mode');
+      // Only auto-switch modes if we haven't been manually set
+      if (!isInitialized.current) {
+        // If we have a key but we're still in simulation mode, turn it off
+        if (keyExists && isSimulationMode) {
+          console.log('API key exists but still in simulation mode - switching to AI mode');
+          setIsSimulationMode(false);
+          saveStockbotSettings({ isSimulationMode: false });
+          showApiKeyDetectedToast('Groq');
+        }
+        
+        // If we don't have a key but we're not in simulation mode, turn it on
+        if (!keyExists && !isSimulationMode) {
+          console.log('No API key found but not in simulation mode - switching to simulation mode');
+          setIsSimulationMode(true);
+          saveStockbotSettings({ isSimulationMode: true });
+          showApiKeyErrorToast('Groq', 'No API key found, switching to simulation mode');
+        }
       }
     };
     

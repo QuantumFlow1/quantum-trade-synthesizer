@@ -51,7 +51,7 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
       </div>
 
       <div className="flex items-center space-x-2">
-        {/* Move the simulation toggle outside the dropdown for direct access */}
+        {/* Simulation toggle outside the dropdown for direct access */}
         <div className="flex items-center mr-2 border rounded px-2 py-1 bg-gray-50">
           <span className="text-xs mr-2">Simulation</span>
           <Switch
