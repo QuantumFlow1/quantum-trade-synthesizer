@@ -1,8 +1,7 @@
-<lov-codelov-code>
+
 import React, { useEffect, useState } from 'react';
-import { useTradingChartData } from './hooks/use-trading-chart-data';
-import { convertToTradingDataPoints, ensureDateObjects } from './hooks/trading-chart/data-conversion-utils';
-import { TradingDataPoint } from './hooks/trading-chart/types';
+import { useTradingChartData } from '@/hooks/use-trading-chart-data';
+import { PriceDataPoint, TradingChartState } from '@/hooks/trading-chart/types';
 
 interface TradingChartProps {
   symbol?: string;
@@ -13,6 +12,26 @@ interface TradingChartProps {
   onSymbolChange?: (symbol: string) => void;
   onIntervalChange?: (interval: string) => void;
   simulationMode?: boolean;
+}
+
+// Define a consistent TradingDataPoint type for internal use
+interface ChartTradingDataPoint {
+  name: string;
+  date: Date;
+  price: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  sma?: number;
+  ema?: number;
+  rsi?: number;
+  macd?: number;
+  macdSignal?: number;
+  macdHistogram?: number;
+  bollingerUpper?: number;
+  bollingerLower?: number;
 }
 
 const TradingChart: React.FC<TradingChartProps> = ({ 
@@ -37,18 +56,38 @@ const TradingChart: React.FC<TradingChartProps> = ({
   } = useTradingChartData(simulationMode, symbol, interval);
   
   // State for the processed data ready for chart rendering
-  const [chartData, setChartData] = useState<TradingDataPoint[]>([]);
+  const [chartData, setChartData] = useState<ChartTradingDataPoint[]>([]);
   
   // Process the data when it changes
   useEffect(() => {
     if (data && data.length > 0) {
-      // Ensure Date objects are properly set
-      const dataWithDates = ensureDateObjects(data);
+      // Convert data to proper format with Date objects
+      const convertedData = data.map((item: PriceDataPoint, index: number) => {
+        // Ensure we have a proper Date object
+        const dateObj = new Date(item.timestamp);
+        
+        return {
+          name: `Day-${index}`,
+          date: dateObj,
+          price: item.close,
+          open: item.open,
+          high: item.high,
+          low: item.low,
+          close: item.close,
+          volume: item.volume,
+          // Add any additional indicators if available
+          sma: undefined,
+          ema: undefined,
+          rsi: undefined,
+          macd: undefined,
+          macdSignal: undefined,
+          macdHistogram: undefined,
+          bollingerUpper: undefined,
+          bollingerLower: undefined
+        };
+      });
       
-      // Convert to TradingDataPoint type with all required indicators
-      const tradingData = convertToTradingDataPoints(dataWithDates);
-      
-      setChartData(tradingData);
+      setChartData(convertedData);
     }
   }, [data]);
 
@@ -166,4 +205,3 @@ const TradingChart: React.FC<TradingChartProps> = ({
 };
 
 export default TradingChart;
-</lov-code>
