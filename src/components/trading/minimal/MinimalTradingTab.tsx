@@ -5,6 +5,8 @@ import { TradingView } from "./components/TradingView";
 import { TradingAgents } from "./components/TradingAgents";
 import { NewsFeed } from "./components/NewsFeed";
 import { StockbotChat } from "./StockbotChat";
+import { useLocalStorage } from "@/hooks/use-local-storage";
+import { ApiStatus } from "@/hooks/trading-chart/types";
 
 interface MinimalTradingTabProps {
   initialOpenAgentsTab?: boolean;
@@ -12,6 +14,31 @@ interface MinimalTradingTabProps {
 
 export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradingTabProps) => {
   const [activeTab, setActiveTab] = useState("chart");
+  const [selectedPair, setSelectedPair] = useState("BTC/USD");
+  const [apiStatus, setApiStatus] = useState<ApiStatus>("checking");
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
+  
+  // Mock chart data for demonstration
+  const mockChartData = Array.from({ length: 30 }, (_, i) => ({
+    timestamp: Date.now() - (29 - i) * 24 * 60 * 60 * 1000,
+    open: 60000 + Math.random() * 2000,
+    close: 60000 + Math.random() * 2000,
+    high: 60000 + Math.random() * 3000,
+    low: 60000 + Math.random() * 1000,
+    volume: 10000000 + Math.random() * 5000000
+  }));
+  
+  // Check if Groq API key exists in localStorage
+  useEffect(() => {
+    const storedGroqKey = localStorage.getItem("groq_api_key");
+    setHasApiKey(!!storedGroqKey);
+    
+    // Simulate API status check
+    setTimeout(() => {
+      setApiStatus(storedGroqKey ? "available" : "unavailable");
+    }, 1000);
+  }, []);
   
   // Handle initial tab based on prop or localStorage
   useEffect(() => {
@@ -31,6 +58,11 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
     localStorage.setItem("tradingActiveTab", activeTab);
   }, [activeTab]);
   
+  // Show API key dialog handler
+  const showApiKeyDialog = () => {
+    setIsApiKeyDialogOpen(true);
+  };
+  
   return (
     <Tabs 
       defaultValue="chart" 
@@ -46,19 +78,29 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
       </TabsList>
       
       <TabsContent value="chart" className="space-y-4">
-        <TradingView />
+        <TradingView 
+          chartData={mockChartData} 
+          apiStatus={apiStatus} 
+          useRealData={false} 
+        />
       </TabsContent>
       
       <TabsContent value="agents" className="space-y-4">
-        <TradingAgents />
+        <TradingAgents 
+          hasApiKey={hasApiKey} 
+          showApiKeyDialog={showApiKeyDialog} 
+        />
       </TabsContent>
       
       <TabsContent value="news" className="space-y-4">
-        <NewsFeed />
+        <NewsFeed selectedPair={selectedPair} />
       </TabsContent>
       
       <TabsContent value="chat" className="space-y-4">
-        <StockbotChat />
+        <StockbotChat 
+          hasApiKey={hasApiKey} 
+          marketData={mockChartData} 
+        />
       </TabsContent>
     </Tabs>
   );
