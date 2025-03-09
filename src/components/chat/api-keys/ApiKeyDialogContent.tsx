@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -6,20 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Key } from 'lucide-react';
 import { saveApiKey } from '@/utils/apiKeyManager';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/lib/supabase';
+import { ApiKeySettings } from '../types/GrokSettings';
 
 type TabType = 'openai' | 'claude' | 'gemini' | 'deepseek' | 'groq';
 
 interface ApiKeyDialogContentProps {
   initialTab?: TabType;
   onClose?: () => void;
+  apiKeys?: ApiKeySettings;
+  onSave?: (openaiKey: string, claudeKey: string, geminiKey: string, deepseekKey: string, groqKey: string) => void;
 }
 
 export const ApiKeyDialogContent = ({
   initialTab = 'openai',
   onClose,
+  apiKeys,
+  onSave
 }: ApiKeyDialogContentProps) => {
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [openaiKey, setOpenaiKey] = useState('');
@@ -31,8 +35,18 @@ export const ApiKeyDialogContent = ({
 
   // Load saved API keys on component mount
   useEffect(() => {
-    loadKeysFromStorage();
-  }, []);
+    if (apiKeys) {
+      // If apiKeys are provided as props, use them
+      setOpenaiKey(apiKeys.openaiApiKey || '');
+      setClaudeKey(apiKeys.claudeApiKey || '');
+      setGeminiKey(apiKeys.geminiApiKey || '');
+      setDeepseekKey(apiKeys.deepseekApiKey || '');
+      setGroqKey(apiKeys.groqApiKey || '');
+    } else {
+      // Otherwise load from localStorage
+      loadKeysFromStorage();
+    }
+  }, [apiKeys]);
 
   const loadKeysFromStorage = () => {
     try {
@@ -67,48 +81,54 @@ export const ApiKeyDialogContent = ({
     try {
       console.log('Saving API keys...');
       
-      // Save OpenAI API key
-      if (openaiKey.trim()) {
-        if (!saveApiKey('openai', openaiKey)) {
-          success = false;
-        }
-      }
-      
-      // Save Claude API key  
-      if (claudeKey.trim()) {
-        if (!saveApiKey('claude', claudeKey)) {
-          success = false;
-        }
-      }
-      
-      // Save Gemini API key
-      if (geminiKey.trim()) {
-        if (!saveApiKey('gemini', geminiKey)) {
-          success = false;
-        }
-      }
-      
-      // Save Deepseek API key
-      if (deepseekKey.trim()) {
-        if (!saveApiKey('deepseek', deepseekKey)) {
-          success = false;
-        }
-      }
-      
-      // Save Groq API key
-      if (groqKey.trim()) {
-        if (!saveApiKey('groq', groqKey)) {
-          success = false;
+      // If onSave prop is provided, use it first
+      if (onSave) {
+        onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
+      } else {
+        // Otherwise use the default save behavior
+        // Save OpenAI API key
+        if (openaiKey.trim()) {
+          if (!saveApiKey('openai', openaiKey)) {
+            success = false;
+          }
         }
         
-        // Also save to Supabase if available (for backend usage)
-        try {
-          await supabase.functions.invoke('save-api-key', {
-            body: { keyType: 'groq', apiKey: groqKey.trim() }
-          });
-        } catch (error) {
-          console.log('Could not save Groq key to Supabase:', error);
-          // Continue even if this fails - localStorage is the primary storage
+        // Save Claude API key  
+        if (claudeKey.trim()) {
+          if (!saveApiKey('claude', claudeKey)) {
+            success = false;
+          }
+        }
+        
+        // Save Gemini API key
+        if (geminiKey.trim()) {
+          if (!saveApiKey('gemini', geminiKey)) {
+            success = false;
+          }
+        }
+        
+        // Save Deepseek API key
+        if (deepseekKey.trim()) {
+          if (!saveApiKey('deepseek', deepseekKey)) {
+            success = false;
+          }
+        }
+        
+        // Save Groq API key
+        if (groqKey.trim()) {
+          if (!saveApiKey('groq', groqKey)) {
+            success = false;
+          }
+          
+          // Also save to Supabase if available (for backend usage)
+          try {
+            await supabase.functions.invoke('save-api-key', {
+              body: { keyType: 'groq', apiKey: groqKey.trim() }
+            });
+          } catch (error) {
+            console.log('Could not save Groq key to Supabase:', error);
+            // Continue even if this fails - localStorage is the primary storage
+          }
         }
       }
       
@@ -127,10 +147,6 @@ export const ApiKeyDialogContent = ({
 
   return (
     <div className="space-y-4 py-2 pb-4">
-      <DialogHeader>
-        <DialogTitle>Configure API Keys</DialogTitle>
-      </DialogHeader>
-      
       <Tabs defaultValue={activeTab} onValueChange={(value) => setActiveTab(value as TabType)}>
         <TabsList className="grid grid-cols-5 mb-4">
           <TabsTrigger value="openai">OpenAI</TabsTrigger>
