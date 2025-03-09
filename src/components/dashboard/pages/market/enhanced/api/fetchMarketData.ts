@@ -2,6 +2,7 @@
 import { MarketData } from '@/components/market/types';
 import { supabase } from '@/lib/supabase';
 import { generateEmergencyMarketData } from '../utils/emergencyDataGenerator';
+import { validateMarketData, normalizeMarketData } from '@/components/market/overview/utils/marketDataUtils';
 import { toast } from '@/hooks/use-toast';
 
 export type FetchMarketDataResult = {
@@ -26,24 +27,30 @@ export const fetchMarketData = async (): Promise<FetchMarketDataResult> => {
       throw new Error(`Failed to fetch market data: ${fetchError.message}`);
     }
     
-    if (fetchData && Array.isArray(fetchData) && fetchData.length > 0) {
-      console.log('Successfully fetched data from fetch-market-data:', fetchData.length, 'items');
+    // Validate the response from fetch-market-data
+    const fetchValidation = validateMarketData(fetchData);
+    
+    if (fetchValidation.isValid) {
+      console.log('Successfully fetched data from fetch-market-data');
+      
+      // Normalize the data to ensure consistent structure
+      const normalizedData = normalizeMarketData(fetchData);
       
       toast({
         title: 'Market data updated',
-        description: `Successfully fetched data for ${fetchData.length} markets`,
+        description: `Successfully fetched data for ${normalizedData.length} markets`,
         duration: 3000,
       });
       
       return {
-        data: fetchData as MarketData[],
+        data: normalizedData,
         error: null,
         source: 'primary'
       };
     }
     
     // If that fails, try the market-data-collector as fallback
-    console.log('No data from fetch-market-data, trying market-data-collector...');
+    console.log('No valid data from fetch-market-data, trying market-data-collector...');
     const { data: collectorData, error: collectorError } = await supabase.functions.invoke('market-data-collector');
     
     if (collectorError) {
@@ -51,31 +58,25 @@ export const fetchMarketData = async (): Promise<FetchMarketDataResult> => {
       throw new Error(`Fallback data fetch failed: ${collectorError.message}`);
     }
     
-    // Check the response format - it could be either directly an array or have a data property
-    if (collectorData) {
-      let validData: MarketData[] = [];
+    // Check and validate the collector data
+    const collectorValidation = validateMarketData(collectorData);
+    
+    if (collectorValidation.isValid) {
+      // Normalize the data to ensure consistent structure
+      const normalizedData = normalizeMarketData(collectorData);
+      console.log('Successfully fetched data from market-data-collector:', normalizedData.length, 'items');
       
-      if (Array.isArray(collectorData)) {
-        validData = collectorData as MarketData[];
-        console.log('Successfully fetched direct array from market-data-collector:', validData.length, 'items');
-      } else if (collectorData.data && Array.isArray(collectorData.data)) {
-        validData = collectorData.data as MarketData[];
-        console.log('Successfully fetched data from market-data-collector data property:', validData.length, 'items');
-      }
+      toast({
+        title: 'Market data updated',
+        description: `Successfully fetched fallback data for ${normalizedData.length} markets`,
+        duration: 3000,
+      });
       
-      if (validData.length > 0) {
-        toast({
-          title: 'Market data updated',
-          description: `Successfully fetched fallback data for ${validData.length} markets`,
-          duration: 3000,
-        });
-        
-        return {
-          data: validData,
-          error: null,
-          source: 'fallback'
-        };
-      }
+      return {
+        data: normalizedData,
+        error: null,
+        source: 'fallback'
+      };
     }
     
     // Create some emergency backup market data if nothing else works

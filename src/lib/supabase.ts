@@ -36,7 +36,14 @@ export const checkSupabaseConnection = async () => {
       console.error('Market data collector error:', marketError);
     } else {
       console.log('Market data collector response:', marketData);
-      results.marketData = true;
+      
+      // Validate the market data response
+      const isValidData = marketData && (
+        (Array.isArray(marketData) && marketData.length > 0) ||
+        (marketData.data && Array.isArray(marketData.data) && marketData.data.length > 0)
+      );
+      
+      results.marketData = isValidData;
     }
 
     // Test database connection

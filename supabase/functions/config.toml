@@ -22,6 +22,10 @@ name = "market-data-validator"
 verify_jwt = false
 
 [[functions]]
+name = "fetch-market-data"
+verify_jwt = false
+
+[[functions]]
 name = "grok3-response"
 verify_jwt = false
 
@@ -37,3 +41,6 @@ verify_jwt = false
 name = "process-video-texture"
 verify_jwt = false
 
+[[functions]]
+name = "market-analysis"
+verify_jwt = false

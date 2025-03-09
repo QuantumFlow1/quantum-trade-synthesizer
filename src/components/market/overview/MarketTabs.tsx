@@ -3,17 +3,21 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarketCharts } from "../MarketCharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 interface MarketTabsProps {
   groupedData: Record<string, any[]>;
   marketOrder: string[];
   isLoading?: boolean;
+  error?: string | null;
 }
 
 export const MarketTabs: React.FC<MarketTabsProps> = ({ 
   groupedData, 
   marketOrder,
-  isLoading = false
+  isLoading = false,
+  error = null
 }) => {
   // Get the first market that has data as default tab
   const defaultMarket = marketOrder.find(market => 
@@ -30,6 +34,16 @@ export const MarketTabs: React.FC<MarketTabsProps> = ({
         </div>
         <Skeleton className="h-[500px] w-full" />
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="mb-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error loading market data</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     );
   }
 
