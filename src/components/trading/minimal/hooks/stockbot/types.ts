@@ -1,5 +1,12 @@
 
-import { ChatMessage } from ".";
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  role: 'user' | 'assistant';
+  text: string;
+  content: string;
+  timestamp: Date;
+}
 
 export interface StockbotChatHook {
   messages: ChatMessage[];

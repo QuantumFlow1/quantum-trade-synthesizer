@@ -6,8 +6,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 // CORS headers to allow cross-origin requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' https://cdn.anthropic.com; connect-src 'self' https://api.anthropic.com *;"
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
 serve(async (req) => {
@@ -18,24 +17,33 @@ serve(async (req) => {
 
   try {
     // Parse request body
-    const { message, context, model, maxTokens, temperature, apiKey } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      console.error("Error parsing request body:", e);
+      throw new Error("Invalid request body: " + e.message);
+    }
+    
+    const { message, context, model, temperature, max_tokens, apiKey } = body;
 
-    console.log(`Claude API request for model: ${model}`);
-    console.log(`Message content length: ${message.length}`);
-    console.log(`Context messages: ${context.length}`);
+    if (!message && (!context || context.length === 0)) {
+      throw new Error('Either message or context must be provided');
+    }
 
     if (!apiKey) {
       throw new Error('API key is required');
     }
 
+    console.log(`Claude API request for model: ${model || 'default'}`);
+    if (message) console.log(`Message content length: ${message.length}`);
+    if (context) console.log(`Context messages: ${context.length}`);
+
     // Format messages for Claude API
-    const messages = context.map(msg => ({
-      role: msg.role,
-      content: msg.content
-    }));
+    const messages = context && Array.isArray(context) ? [...context] : [];
 
     // Add the latest user message if not already included in context
-    if (!messages.some(msg => msg.content === message && msg.role === 'user')) {
+    if (message && !messages.some(msg => msg.content === message && msg.role === 'user')) {
       messages.push({
         role: 'user',
         content: message
@@ -64,14 +72,20 @@ serve(async (req) => {
       body: JSON.stringify({
         model: claudeModel,
         messages: messages,
-        max_tokens: maxTokens || 1024,
+        max_tokens: max_tokens || 1024,
         temperature: temperature || 0.7
       })
     });
 
     // Check if the response is successful
     if (!response.ok) {
-      const errorData = await response.json();
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { error: errorText };
+      }
       console.error('Claude API error:', errorData);
       throw new Error(`Claude API returned error: ${response.status} ${response.statusText}`);
     }

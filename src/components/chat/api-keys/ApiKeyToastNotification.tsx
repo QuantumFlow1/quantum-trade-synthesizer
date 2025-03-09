@@ -2,6 +2,7 @@
 import React from "react";
 import { useToast } from "@/hooks/use-toast";
 import { AlertCircle, CheckCircle, Info, Key } from "lucide-react";
+import { ToastAction } from "@/components/ui/toast";
 
 interface ApiKeyToastProps {
   /**
@@ -51,7 +52,7 @@ export const apiKeyToast = ({
 }: ApiKeyToastProps) => {
   const { toast } = useToast();
   
-  // Return icon as ReactNode without wrapping in JSX to avoid type error
+  // Return icon based on type
   const getIcon = () => {
     switch (type) {
       case "success": return <CheckCircle className="h-5 w-5 text-green-500" />;
@@ -72,21 +73,19 @@ export const apiKeyToast = ({
   };
 
   return toast({
-    // Use a div wrapper for the title to avoid the string & ReactNode type error
-    title: <div className="flex items-center gap-2">
-      {getIcon()}
-      <span>{provider} API Key - {message}</span>
-    </div>,
+    title: (
+      <div className="flex items-center gap-2">
+        {getIcon()}
+        <span>{provider} API Key - {message}</span>
+      </div>
+    ),
     description: description,
     variant: getVariant(),
     duration: duration,
     action: action ? (
-      <div 
-        className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded text-xs font-medium cursor-pointer" 
-        onClick={action.onClick}
-      >
+      <ToastAction altText={action.label} onClick={action.onClick}>
         {action.label}
-      </div>
+      </ToastAction>
     ) : undefined,
   });
 };
@@ -183,4 +182,3 @@ export const showApiKeyReloadToast = (keysStatus: { [key: string]: boolean }) =>
     });
   }
 };
-

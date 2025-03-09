@@ -5,8 +5,6 @@ import { ChatMessage, StockbotChatHook } from "./stockbot/types";
 import { generateStockbotResponse, generateErrorResponse } from "./stockbot/responseSimulator";
 import { forceApiKeyReload } from "@/components/chat/api-keys/apiKeyUtils";
 
-export type { ChatMessage } from "./stockbot/types";
-
 export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
