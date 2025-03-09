@@ -96,7 +96,7 @@ const AdminPanel = () => {
   return (
     <div className="space-y-6">
       {showNavigationHint && (
-        <Alert variant="info" className="mb-4">
+        <Alert variant="default" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Navigation Tip</AlertTitle>
           <AlertDescription>

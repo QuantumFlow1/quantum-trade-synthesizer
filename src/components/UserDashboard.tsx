@@ -1,198 +1,56 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useAuth } from "./auth/AuthProvider";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { useDashboard } from "@/contexts/DashboardContext";
 import { DashboardLayout } from "./dashboard/DashboardLayout";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
-import { useDashboard } from "@/contexts/DashboardContext";
 import { DashboardNavigation } from "./dashboard/DashboardNavigation";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-
-// Import all page components
-import { OverviewPage } from "./dashboard/pages/OverviewPage";
-import { MarketPage } from "./dashboard/pages/MarketPage";
-import { MinimalTradingPage } from "./dashboard/pages/MinimalTradingPage";
-import { AnalyticsPage } from "./dashboard/pages/AnalyticsPage";
-import { WalletPage } from "./dashboard/pages/WalletPage";
-import { RiskPage } from "./dashboard/pages/RiskPage";
-import { AIToolsPage } from "./dashboard/pages/AIToolsPage";
-import { SettingsPage } from "./dashboard/pages/SettingsPage";
-import { GamificationPage } from "./dashboard/pages/GamificationPage";
-import { VisualizationPage } from "./dashboard/pages/VisualizationPage";
-import { VirtualEnvironmentDemo } from "./visualization/VirtualEnvironmentDemo";
+import { useDashboardNavigation } from "@/hooks/use-dashboard-navigation";
+import { BackToAdminButton } from "./dashboard/BackToAdminButton";
+import { ApiChecker } from "./dashboard/ApiChecker";
+import { DashboardPageContent } from "./dashboard/DashboardPageContent";
 
 const UserDashboard = () => {
   const { userProfile, isLovTrader } = useAuth();
-  const { toast } = useToast();
-  const { visibleWidgets, setVisibleWidgets, apiStatus, setApiStatus } = useDashboard();
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Extract active page from URL path
-  const getActivePageFromPath = () => {
-    const path = location.pathname.split('/').filter(Boolean)[1] || "overview";
-    return path;
-  };
-  
-  const [activePage, setActivePage] = useState<string>(getActivePageFromPath());
+  const { visibleWidgets, apiStatus } = useDashboard();
   const [showVirtualEnvironment, setShowVirtualEnvironment] = useState<boolean>(false);
-  const [openAgentsTab, setOpenAgentsTab] = useState<boolean>(false);
-  const [showBackButton, setShowBackButton] = useState<boolean>(false);
-
-  // Check if we came from admin page
-  useEffect(() => {
-    // Always check for fromAdminPage flag to ensure proper back button visibility
-    const fromAdmin = localStorage.getItem('fromAdminPage');
-    setShowBackButton(!!fromAdmin);
-    console.log("Back button visibility check:", !!fromAdmin);
-  }, [location.pathname]); // Re-check when pathname changes
-
-  // Synchronize with localStorage for persistent tab selection
-  useEffect(() => {
-    const storedOpenAgentsTab = localStorage.getItem('openTradingAgentsTab');
-    if (storedOpenAgentsTab === 'true') {
-      setOpenAgentsTab(true);
-      // Clear the flag after reading it
-      localStorage.removeItem('openTradingAgentsTab');
-    }
-  }, []);
-
-  useEffect(() => {
-    // Update active page when location changes
-    setActivePage(getActivePageFromPath());
-  }, [location.pathname]);
-
-  useEffect(() => {
-    // Check if API is available
-    const checkApiStatus = async () => {
-      try {
-        setApiStatus('checking');
-        const { data, error } = await supabase.functions.invoke('grok3-response', {
-          body: {
-            message: "Give me a simple test response",
-            context: []
-          }
-        });
-        
-        if (error) {
-          console.error("API status check failed:", error);
-          setApiStatus('unavailable');
-        } else {
-          console.log("API status check successful:", data);
-          setApiStatus('available');
-        }
-      } catch (error) {
-        console.error("Error checking API status:", error);
-        setApiStatus('unavailable');
-      }
-    };
-    
-    // Only check API status if user is a lov_trader
-    if (isLovTrader) {
-      checkApiStatus();
-      setVisibleWidgets(prev => ({ ...prev, apiAccess: true }));
-      
-      // Show virtual environment for lov_traders by default
-      setShowVirtualEnvironment(true);
-    }
-  }, [isLovTrader, setApiStatus, setVisibleWidgets]);
-
-  // Handle page navigation
-  const handlePageChange = (page: string) => {
-    setActivePage(page);
-    navigate(`/dashboard/${page === "overview" ? "" : page}`);
-  };
-
-  // Handle back to admin
-  const handleBackToAdmin = () => {
-    console.log("Navigating back to admin");
-    localStorage.removeItem('fromAdminPage');
-    navigate('/admin');
-  };
-
-  // Helper function to check if a path is active
-  const isActivePath = (path: string) => {
-    return activePage === path;
-  };
-
-  // Open trading agents tab from different parts of the UI
-  const openTradingAgentsTab = () => {
-    // First navigate to trading page if not already there
-    if (!isActivePath('trading')) {
-      setActivePage('trading');
-      navigate('/dashboard/trading');
-    }
-    
-    // Set localStorage flag to open the Trading Agents tab
-    localStorage.setItem('openTradingAgentsTab', 'true');
-    setOpenAgentsTab(true);
-  };
+  
+  const {
+    activePage,
+    openAgentsTab,
+    showBackButton,
+    setOpenAgentsTab,
+    handlePageChange,
+    handleBackToAdmin,
+    openTradingAgentsTab
+  } = useDashboardNavigation();
 
   // Clear the openAgentsTab state after it's been used
   useEffect(() => {
     if (openAgentsTab && activePage === 'trading') {
       setOpenAgentsTab(false);
     }
-  }, [activePage, openAgentsTab]);
+  }, [activePage, openAgentsTab, setOpenAgentsTab]);
 
-  // Render the correct page based on activePage state
-  const renderActivePage = () => {
-    switch (activePage) {
-      case "overview":
-        return (
-          <>
-            {showVirtualEnvironment && <VirtualEnvironmentDemo />}
-            <OverviewPage apiStatus={apiStatus} />
-          </>
-        );
-      case "market":
-        return <MarketPage />;
-      case "trading":
-        return <MinimalTradingPage initialOpenAgentsTab={openAgentsTab} />;
-      case "analytics":
-        return <AnalyticsPage />;
-      case "wallet":
-        return <WalletPage />;
-      case "risk":
-        return <RiskPage />;
-      case "ai":
-        return <AIToolsPage 
-          apiStatus={apiStatus} 
-          showApiAccess={visibleWidgets.apiAccess} 
-          openTradingAgents={openTradingAgentsTab}
-        />;
-      case "gamification":
-        return <GamificationPage />;
-      case "visualization":
-        return <VisualizationPage />;
-      case "settings":
-        return <SettingsPage />;
-      default:
-        return (
-          <>
-            {showVirtualEnvironment && <VirtualEnvironmentDemo />}
-            <OverviewPage apiStatus={apiStatus} />
-          </>
-        );
+  // Setup virtual environment for lov_traders
+  useEffect(() => {
+    if (isLovTrader) {
+      setShowVirtualEnvironment(true);
     }
-  };
+  }, [isLovTrader]);
+
+  // Force disable any chat functionality
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.sessionStorage.setItem('disable-chat-services', 'true');
+    }
+  }, []);
 
   return (
     <DashboardLayout>
       {showBackButton && (
         <div className="px-4 py-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleBackToAdmin}
-            className="mb-2"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Admin
-          </Button>
+          <BackToAdminButton onClick={handleBackToAdmin} />
         </div>
       )}
       
@@ -206,7 +64,16 @@ const UserDashboard = () => {
         onChangePage={handlePageChange}
       />
       
-      {renderActivePage()}
+      <ApiChecker isLovTrader={isLovTrader} />
+      
+      <DashboardPageContent 
+        activePage={activePage}
+        apiStatus={apiStatus}
+        showVirtualEnvironment={showVirtualEnvironment}
+        visibleWidgets={visibleWidgets}
+        openAgentsTab={openAgentsTab}
+        openTradingAgentsTab={openTradingAgentsTab}
+      />
     </DashboardLayout>
   );
 };

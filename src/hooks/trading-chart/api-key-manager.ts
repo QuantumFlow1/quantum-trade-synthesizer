@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { ApiKeyAvailability } from "./api-key-types";
 
@@ -101,6 +102,7 @@ export const broadcastApiKeyUpdate = (keyType: string, isAvailable: boolean) => 
 
 /**
  * Listen for API key status changes from other tabs
+ * @alias setupApiKeyListener
  */
 export const subscribeToApiKeyUpdates = (callback: (keyType: string, isAvailable: boolean) => void) => {
   if (keyCheckChannel) {
@@ -117,3 +119,7 @@ export const subscribeToApiKeyUpdates = (callback: (keyType: string, isAvailable
   
   return () => {}; // Empty cleanup function if no channel
 };
+
+// Alias for backward compatibility
+export const setupApiKeyListener = subscribeToApiKeyUpdates;
+export { broadcastApiKeyUpdate as broadcastApiKeyChange };

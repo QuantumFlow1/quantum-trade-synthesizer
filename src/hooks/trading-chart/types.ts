@@ -59,3 +59,23 @@ export interface Position {
   profit?: number;
   profitPercentage?: number;
 }
+
+/**
+ * Market data validation result
+ */
+export interface MarketDataValidationResult {
+  valid: boolean;
+  message?: string;
+  data?: PriceDataPoint[];
+}
+
+/**
+ * Trading chart state
+ */
+export interface TradingChartState {
+  symbol: string;
+  interval: string;
+  data: PriceDataPoint[];
+  loading: boolean;
+  error: string | null;
+}
