@@ -31,7 +31,7 @@ export const StockbotAccess = () => {
     // Store that the user wants to access Stockbot
     localStorage.setItem('openTradingAgentsTab', 'true');
     
-    // Navigate to trading page
+    // Navigate to trading page - use correct path that matches our routes
     setTimeout(() => {
       navigate('/dashboard/minimal-trading');
       setIsChecking(false);

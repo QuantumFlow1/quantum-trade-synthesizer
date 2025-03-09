@@ -109,9 +109,7 @@ export const hasCurrentModelKey = (
     case 'deepseek':
     case 'deepseek-chat':
       return !!apiKeys.deepseekApiKey;
-    case 'groq':
-    case 'groq-llm':
-      return !!apiKeys.groqApiKey;
+    // Removed the Groq cases since they're not in ModelId type
     default:
       return true;
   }
