@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Message } from '../deepseek/types';
@@ -28,10 +29,15 @@ export function useClaudeChat() {
         if (savedMessages) {
           try {
             const parsed = JSON.parse(savedMessages);
-            setMessages(parsed.map((msg: any) => ({
-              ...msg,
-              timestamp: new Date(msg.timestamp)
-            })));
+            if (Array.isArray(parsed)) {
+              setMessages(parsed.map((msg: any) => ({
+                ...msg,
+                timestamp: new Date(msg.timestamp)
+              })));
+            } else {
+              console.error('Saved Claude messages is not an array:', parsed);
+              localStorage.removeItem('claudeChatMessages');
+            }
           } catch (e) {
             console.error('Error parsing saved Claude messages:', e);
             // If parsing fails, clear the corrupted messages
@@ -85,8 +91,30 @@ export function useClaudeChat() {
   // Save API key
   const saveApiKey = useCallback((newApiKey: string) => {
     try {
-      setApiKey(newApiKey);
-      localStorage.setItem('claudeApiKey', newApiKey);
+      if (!newApiKey || newApiKey.trim() === '') {
+        toast({
+          title: "API key cannot be empty",
+          description: "Please enter a valid Claude API key.",
+          variant: "destructive",
+          duration: 3000,
+        });
+        return;
+      }
+      
+      // Basic validation - Claude API keys should start with a certain format
+      if (!newApiKey.startsWith('sk-ant-')) {
+        toast({
+          title: "Invalid API key format",
+          description: "Claude API keys typically start with 'sk-ant-'",
+          variant: "warning",
+          duration: 5000,
+        });
+        // Continue anyway as this is just a warning
+      }
+      
+      const trimmedKey = newApiKey.trim();
+      setApiKey(trimmedKey);
+      localStorage.setItem('claudeApiKey', trimmedKey);
       
       toast({
         title: "API key saved",
@@ -99,7 +127,15 @@ export function useClaudeChat() {
       window.dispatchEvent(new Event('localStorage-changed'));
       window.dispatchEvent(new Event('storage'));
       
+      // Update connection status
+      window.dispatchEvent(new CustomEvent('connection-status-changed', {
+        detail: { provider: 'claude', status: 'connected' }
+      }));
+      
       console.log('Claude API key saved successfully');
+      
+      // Close settings automatically after saving
+      setShowSettings(false);
     } catch (e) {
       console.error('Error saving Claude API key:', e);
       toast({
@@ -144,7 +180,7 @@ export function useClaudeChat() {
         content: msg.content
       }));
       
-      console.log('Sending messages to Claude API:', apiMessages);
+      console.log('Sending messages to Claude API:', apiMessages.length);
       
       // Call the Claude edge function with error handling
       const { data, error } = await supabase.functions.invoke('claude-response', {
@@ -157,7 +193,7 @@ export function useClaudeChat() {
         }
       });
       
-      console.log('Claude API response:', data, 'Error:', error);
+      console.log('Claude API response received:', data ? 'Data present' : 'No data', 'Error:', error);
       
       if (error) {
         throw new Error(error.message || 'Error calling Claude API');

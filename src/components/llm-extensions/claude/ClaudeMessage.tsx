@@ -20,6 +20,15 @@ export function ClaudeMessage({ message }: MessageProps) {
     }
     
     try {
+      // Handle error messages differently
+      if (typeof message.content === 'string' && message.content.startsWith('Error:')) {
+        return (
+          <div className="text-red-500 break-words whitespace-pre-wrap">
+            {message.content}
+          </div>
+        );
+      }
+      
       // Split by newlines and create paragraphs for each line
       return message.content.split('\n').map((line, i) => {
         if (!line.trim()) return <br key={i} />;

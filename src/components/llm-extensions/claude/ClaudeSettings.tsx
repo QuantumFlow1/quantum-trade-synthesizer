@@ -1,11 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Check } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { validateApiKey } from '@/components/chat/api-keys/apiKeyUtils';
+import { ExternalLink, Save, X, AlertTriangle, Info } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ClaudeSettingsProps {
   apiKey: string;
@@ -14,88 +13,69 @@ interface ClaudeSettingsProps {
 }
 
 export function ClaudeSettings({ apiKey, setApiKey, onClose }: ClaudeSettingsProps) {
-  const [key, setKey] = useState(apiKey);
-  const [saved, setSaved] = useState(false);
-  
-  // Load saved API key on component mount if not provided in props
-  useEffect(() => {
-    if (!apiKey) {
-      const savedKey = localStorage.getItem('claudeApiKey');
-      if (savedKey) {
-        setKey(savedKey);
-        setApiKey(savedKey); // Update parent component with saved key
-      }
-    } else {
-      setKey(apiKey);
-    }
-  }, [apiKey, setApiKey]);
-  
+  const [inputApiKey, setInputApiKey] = useState(apiKey || '');
+
   const handleSave = () => {
-    // Validate the API key
-    if (!validateApiKey(key, 'claude')) {
-      return;
-    }
-    
-    // Save API key to localStorage
-    localStorage.setItem('claudeApiKey', key);
-    
-    // Update parent component
-    setApiKey(key);
-    
-    // Show saved animation
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    
-    toast({
-      title: "API key saved",
-      description: "Your Claude API key has been saved.",
-      duration: 3000,
-    });
-    
-    // Trigger custom event for other components
-    window.dispatchEvent(new Event('apikey-updated'));
+    setApiKey(inputApiKey);
   };
-  
+
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium">Claude Settings</h3>
-      
+    <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium">Claude Settings</h3>
+        <Button variant="ghost" size="icon" onClick={onClose}>
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </Button>
+      </div>
+
+      <Alert variant="outline" className="bg-blue-50">
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          To use Claude, you need an API key from Anthropic.
+          <a 
+            href="https://console.anthropic.com/keys" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center text-blue-600 hover:underline mt-1"
+          >
+            Get API key <ExternalLink className="h-3 w-3 ml-1" />
+          </a>
+        </AlertDescription>
+      </Alert>
+
+      {!inputApiKey && (
+        <Alert variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Claude API key is required to use this chat.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="claude-api-key">Claude API Key</Label>
         <Input
           id="claude-api-key"
           type="password"
-          value={key}
-          onChange={(e) => setKey(e.target.value)}
-          placeholder="Enter your Claude API key"
+          placeholder="sk-ant-xxxxxxxxxxxxxxxx"
+          value={inputApiKey}
+          onChange={(e) => setInputApiKey(e.target.value)}
+          className="font-mono"
         />
-        <p className="text-xs text-muted-foreground">
-          Your API key is stored securely in your browser's local storage.
+        <p className="text-xs text-gray-500">
+          Your API key is stored locally in your browser and is never sent to our servers.
         </p>
       </div>
-      
-      <div className="flex space-x-2">
-        <Button onClick={handleSave} className="flex-1">
-          {saved ? (
-            <>
-              <Check className="mr-2 h-4 w-4" />
-              Saved!
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 h-4 w-4" />
-              Save Key
-            </>
-          )}
-        </Button>
+
+      <div className="flex justify-end space-x-2">
         <Button variant="outline" onClick={onClose}>
-          Close
+          Cancel
         </Button>
-      </div>
-      
-      <div className="text-sm text-muted-foreground">
-        <p>Claude is an AI assistant created by Anthropic.</p>
-        <p>You can get an API key from the <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Anthropic Console</a>.</p>
+        <Button onClick={handleSave} disabled={!inputApiKey.trim()}>
+          <Save className="h-4 w-4 mr-2" />
+          Save API Key
+        </Button>
       </div>
     </div>
   );
