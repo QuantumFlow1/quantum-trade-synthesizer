@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { Message } from '../deepseek/types';
@@ -238,4 +237,4 @@ export function useClaudeChat() {
     toggleSettings,
     setShowSettings
   };
-}, []);
+}
