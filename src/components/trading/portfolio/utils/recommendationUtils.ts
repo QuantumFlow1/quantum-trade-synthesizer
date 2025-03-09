@@ -1,132 +1,96 @@
 
 import { AgentRecommendation, TradingAgent } from "../types/portfolioTypes";
+import { GroqAgent } from "../types/groqAgentTypes";
+import { useGroqAgent } from "../hooks/useGroqAgent";
 
-// Generate simulated agent recommendations
-export const generateAgentRecommendations = (
+// Add Groq agent instance - will be initialized when used
+let groqAgentInstance: ReturnType<typeof useGroqAgent> | null = null;
+
+export const generateAgentRecommendations = async (
   currentData: any,
-  tradingAgents: TradingAgent[],
-  accuracyMetrics: Record<string, any> = {}
-): AgentRecommendation[] => {
-  if (!currentData) return [];
-  
+  agents: TradingAgent[],
+  accuracyMetrics: Record<string, any>
+): Promise<AgentRecommendation[]> => {
   const recommendations: AgentRecommendation[] = [];
-  const ticker = currentData?.symbol || "BTC";
-  const currentPrice = currentData?.price || 45000;
   
-  for (const agent of tradingAgents) {
-    // Use agent's accuracy metrics if available, otherwise use defaults
-    const agentAccuracy = accuracyMetrics[agent.id] || { 
-      overall: 60,
-      recent: 55,
-      confidence: [40, 80]
-    };
-    
-    // Bias the random seed based on:
-    // 1. Current market data (trend)
-    // 2. Agent's specialization
-    // 3. Small random factor
-    const marketTrend = currentData?.trend || 0; // -1 to 1 range
-    const specialBias = getSpecializationBias(agent.specialization, currentData);
-    const randomFactor = Math.random() * 0.3 - 0.15; // Small random adjustment (-0.15 to 0.15)
-    
-    // Combine all factors, weighted appropriately
-    const biasedSeed = 0.5 + (marketTrend * 0.2) + (specialBias * 0.3) + randomFactor;
-    
-    // Make decisions based on biased seed
-    let action: "BUY" | "SELL" | "HOLD";
-    let confidence: number;
-    let reasoning: string;
-    
-    // Decision logic based on agent specialization
-    switch(agent.specialization) {
-      case "fundamental":
-        // Value investors generally prefer buying undervalued assets
-        action = biasedSeed > 0.6 ? "BUY" : (biasedSeed > 0.4 ? "HOLD" : "SELL");
-        confidence = Math.round(70 + (biasedSeed * 20));
-        reasoning = `Based on fundamental analysis, the current ${ticker} price at $${currentPrice} ${biasedSeed > 0.55 ? "represents a good value" : "appears slightly overvalued"}.`;
-        break;
-        
-      case "technical":
-        // Technical analysts look for patterns and momentum
-        action = biasedSeed > 0.65 ? "BUY" : (biasedSeed > 0.35 ? "HOLD" : "SELL");
-        confidence = Math.round(65 + (biasedSeed * 25));
-        
-        if (biasedSeed > 0.65) {
-          reasoning = `Technical indicators show a bullish pattern with strong support at $${Math.floor(currentPrice * 0.95)}.`;
-        } else if (biasedSeed < 0.35) {
-          reasoning = `Technical indicators show a bearish pattern with resistance at $${Math.floor(currentPrice * 1.05)}.`;
-        } else {
-          reasoning = `${ticker} is consolidating between support at $${Math.floor(currentPrice * 0.95)} and resistance at $${Math.floor(currentPrice * 1.05)}.`;
+  // Initialize Groq agent if not already initialized
+  if (!groqAgentInstance) {
+    // This will need to be set by the component using this function
+    // since hooks can only be called in component context
+    console.log("Groq agent not initialized yet");
+  }
+  
+  // Process each agent to generate recommendations
+  for (const agent of agents) {
+    // Handle special case for Groq agent
+    if ('type' in agent && agent.type === 'groq') {
+      if (groqAgentInstance) {
+        try {
+          console.log("Generating recommendation from Groq agent");
+          const groqRecommendation = await groqAgentInstance.generateGroqRecommendation(
+            currentData,
+            agent as GroqAgent
+          );
+          
+          if (groqRecommendation) {
+            recommendations.push(groqRecommendation);
+          }
+        } catch (error) {
+          console.error("Error generating Groq recommendation:", error);
         }
-        break;
-        
-      case "sentiment":
-        // Sentiment analysts are more influenced by market sentiment and volatility
-        action = biasedSeed > 0.7 ? "BUY" : (biasedSeed > 0.3 ? "HOLD" : "SELL");
-        confidence = Math.round(60 + (biasedSeed * 30));
-        
-        if (biasedSeed > 0.7) {
-          reasoning = `Market sentiment for ${ticker} is bullish with increasing social media mentions.`;
-        } else if (biasedSeed < 0.3) {
-          reasoning = `Market sentiment for ${ticker} is bearish with negative social media trends.`;
-        } else {
-          reasoning = `Market sentiment for ${ticker} is mixed with neutral engagement metrics.`;
-        }
-        break;
-        
-      case "risk":
-        // Risk managers are more conservative
-        action = biasedSeed > 0.75 ? "BUY" : (biasedSeed > 0.4 ? "HOLD" : "SELL");
-        confidence = Math.round(75 + (biasedSeed * 15)); // Generally higher confidence
-        
-        if (biasedSeed > 0.75) {
-          reasoning = `Risk assessment indicates favorable conditions for ${ticker} with manageable downside.`;
-        } else if (biasedSeed < 0.4) {
-          reasoning = `Risk assessment shows elevated risk levels for ${ticker}; recommend reducing exposure.`;
-        } else {
-          reasoning = `Risk levels for ${ticker} are within acceptable parameters; maintain current position.`;
-        }
-        break;
-        
-      case "volatility":
-        // Volatility experts focus on market fluctuations
-        action = biasedSeed > 0.6 ? "BUY" : (biasedSeed > 0.45 ? "HOLD" : "SELL");
-        confidence = Math.round(65 + (biasedSeed * 25));
-        
-        if (biasedSeed > 0.6) {
-          reasoning = `Volatility patterns suggest a potential upward movement for ${ticker} in the near term.`;
-        } else if (biasedSeed < 0.45) {
-          reasoning = `Volatility metrics indicate increased downside risk for ${ticker} at current levels.`;
-        } else {
-          reasoning = `Volatility for ${ticker} is expected to remain stable in the short term.`;
-        }
-        break;
-        
-      case "macro":
-        // Macro economists look at broader economic indicators
-        action = biasedSeed > 0.55 ? "BUY" : (biasedSeed > 0.45 ? "HOLD" : "SELL");
-        confidence = Math.round(70 + (biasedSeed * 20));
-        
-        if (biasedSeed > 0.55) {
-          reasoning = `Macroeconomic conditions favor ${ticker} with positive market correlations.`;
-        } else if (biasedSeed < 0.45) {
-          reasoning = `Macroeconomic indicators suggest caution for ${ticker} due to market headwinds.`;
-        } else {
-          reasoning = `Macroeconomic environment is neutral for ${ticker} with mixed signals.`;
-        }
-        break;
-        
-      default:
-        action = biasedSeed > 0.5 ? "BUY" : "SELL";
-        confidence = Math.round(60 + (biasedSeed * 30));
-        reasoning = `Analysis of ${ticker} at $${currentPrice} suggests a ${action} recommendation.`;
+      } else {
+        console.log("Skipping Groq agent because it's not initialized");
+      }
+      continue;
     }
     
-    // Factor in the agent's historical accuracy
-    if (agentAccuracy.overall < 50 && Math.random() > 0.7) {
-      // For agents with poor track records, occasionally flip their recommendation
-      action = action === "BUY" ? "SELL" : (action === "SELL" ? "BUY" : "HOLD");
-      reasoning += " However, my recent predictions have been inconsistent.";
+    // Generate standard agent recommendations
+    const accuracy = accuracyMetrics[agent.id] ? accuracyMetrics[agent.id].overall / 100 : 0.5;
+    const confidenceAdjustment = Math.random() * 0.2 - 0.1; // -10% to +10%
+    const confidence = Math.min(Math.max(Math.round(agent.confidence * (accuracy + confidenceAdjustment)), 30), 95);
+    
+    // Determine action based on price movement and agent specialty
+    let action: "BUY" | "SELL" | "HOLD";
+    const priceChange = currentData?.change24h || 0;
+    const random = Math.random();
+    
+    if (agent.specialization === "fundamental") {
+      // Value investors tend to buy on dips if fundamentals are strong
+      action = random > 0.6 ? "BUY" : 
+               random > 0.2 ? "HOLD" : "SELL";
+    } else if (agent.specialization === "technical") {
+      // Technical analysts follow trends
+      action = priceChange > 1.5 ? "BUY" : 
+               priceChange < -1.5 ? "SELL" : "HOLD";
+    } else if (agent.specialization === "sentiment") {
+      // Sentiment analysis is more volatile
+      action = random > 0.7 ? "BUY" : 
+               random > 0.4 ? "HOLD" : "SELL";
+    } else if (agent.specialization === "risk") {
+      // Risk managers tend to be conservative
+      action = random > 0.8 ? "BUY" : 
+               random > 0.4 ? "HOLD" : "SELL";
+    } else if (agent.specialization === "volatility") {
+      // Volatility experts look for big moves
+      action = Math.abs(priceChange) > 3 ? (priceChange > 0 ? "BUY" : "SELL") : "HOLD";
+    } else if (agent.specialization === "macro") {
+      // Macro economists take a broader view
+      action = random > 0.6 ? "HOLD" : 
+               random > 0.3 ? "BUY" : "SELL";
+    } else {
+      // Default behavior
+      action = random > 0.6 ? "BUY" : 
+               random > 0.3 ? "SELL" : "HOLD";
+    }
+    
+    // Generate reasoning based on agent type and action
+    let reasoning = "";
+    if (action === "BUY") {
+      reasoning = `Based on ${agent.specialization} analysis, market conditions favor accumulation at current price levels.`;
+    } else if (action === "SELL") {
+      reasoning = `${agent.specialization} indicators suggest downside pressure, recommending reducing exposure.`;
+    } else {
+      reasoning = `Current market conditions indicate a neutral stance from a ${agent.specialization} perspective.`;
     }
     
     recommendations.push({
@@ -141,43 +105,7 @@ export const generateAgentRecommendations = (
   return recommendations;
 };
 
-// Helper function to determine specialization bias based on market data
-function getSpecializationBias(
-  specialization: "fundamental" | "technical" | "sentiment" | "risk" | "volatility" | "macro", 
-  marketData: any
-): number {
-  if (!marketData) return 0;
-  
-  const trend = marketData.trend || 0;
-  const volatility = marketData.volatility || 0.5;
-  const volume = marketData.volume || 0.5;
-  
-  switch (specialization) {
-    case "fundamental":
-      // Value investors may see opportunity in downtrends if the asset is undervalued
-      return trend < 0 ? 0.1 : (trend > 0 ? 0.2 : 0);
-      
-    case "technical":
-      // Technical analysts follow momentum
-      return trend * 0.3;
-      
-    case "sentiment":
-      // Sentiment analysts are more sensitive to trend changes
-      return trend * 0.4;
-      
-    case "risk":
-      // Risk managers prefer stability and are cautious in volatile markets
-      return -volatility * 0.4;
-      
-    case "volatility":
-      // Volatility experts may see opportunity in volatility
-      return (volatility - 0.5) * 0.3;
-      
-    case "macro":
-      // Macro economists consider broader trends and volume
-      return (trend * 0.2) + ((volume - 0.5) * 0.2);
-      
-    default:
-      return 0;
-  }
-}
+// Make the groqAgentInstance setter available for components to use
+export const setGroqAgentInstance = (instance: ReturnType<typeof useGroqAgent>) => {
+  groqAgentInstance = instance;
+};

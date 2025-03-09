@@ -1,5 +1,6 @@
 
 import { TradingAgent } from "../types/portfolioTypes";
+import { groqAgent } from "./groqAgent";
 
 // Trading agent definitions
 export const tradingAgents: TradingAgent[] = [
@@ -62,5 +63,10 @@ export const tradingAgents: TradingAgent[] = [
     weight: 0.78,
     confidence: 78,
     successRate: 0.68
-  }
+  },
+  // Add the Groq agent to the list
+  groqAgent
 ];
+
+// Export all agents including the Groq agent
+export { groqAgent };

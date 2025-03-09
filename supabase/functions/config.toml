@@ -1,39 +1,11 @@
 
 project_id = "tfmlretexydslgowlkid"
 
-[global.env]
-# These are environment variables shared across all functions
-GROK3_API_KEY = "CHANGEME"
-
-[[functions]]
-name = "agent-network-coordinator"
+[functions.groq-analysis]
 verify_jwt = false
 
-[[functions]]
-name = "log-api-call"
+[functions.save-api-key]
 verify_jwt = false
 
-[[functions]]
-name = "market-data-collector"
+[functions.check-api-keys]
 verify_jwt = false
-
-[[functions]]
-name = "market-data-validator"
-verify_jwt = false
-
-[[functions]]
-name = "grok3-response"
-verify_jwt = false
-
-[[functions]]
-name = "grok3-ping"
-verify_jwt = false
-
-[[functions]]
-name = "generate-trading-advice"
-verify_jwt = false
-
-[[functions]]
-name = "process-video-texture"
-verify_jwt = false
-
