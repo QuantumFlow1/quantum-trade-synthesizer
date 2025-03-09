@@ -6,11 +6,7 @@ export interface ChatMessage {
   text: string;
   content: string;
   timestamp: Date;
-}
-
-export interface StockbotApiResponse {
-  response: string;
-  error?: string;
+  isLoading?: boolean;
 }
 
 export interface StockbotChatHook {
@@ -20,11 +16,17 @@ export interface StockbotChatHook {
   isLoading: boolean;
   hasApiKey: boolean;
   isSimulationMode: boolean;
-  setIsSimulationMode: (isSimulationMode: boolean) => void;
-  handleSendMessage: () => void;
+  setIsSimulationMode: (mode: boolean) => void;
+  handleSendMessage: () => Promise<void>;
   clearChat: () => void;
   showApiKeyDialog: () => void;
   isKeyDialogOpen: boolean;
-  setIsKeyDialogOpen: (isOpen: boolean) => void;
+  setIsKeyDialogOpen: (open: boolean) => void;
   reloadApiKeys: () => void;
+}
+
+export interface StockbotApiResponse {
+  success: boolean;
+  response?: string;
+  error?: string;
 }

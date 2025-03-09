@@ -12,17 +12,22 @@ export function ClaudeMessage({ message }: MessageProps) {
     ? format(message.timestamp, 'HH:mm') 
     : 'Unknown time';
   
-  // Helper function to handle message content rendering
+  // Helper function to handle message content rendering safely
   const renderMessageContent = () => {
     // Make sure we have content to display
     if (!message.content) {
       return <p className="text-red-500">Empty message</p>;
     }
     
-    // Split content by newlines and create paragraphs
-    return message.content.split('\n').map((line, i) => (
-      line.trim() ? <p key={i} className="mb-2">{line}</p> : <br key={i} />
-    ));
+    try {
+      // Split content by newlines and create paragraphs
+      return message.content.split('\n').map((line, i) => (
+        line.trim() ? <p key={i} className="mb-2">{line}</p> : <br key={i} />
+      ));
+    } catch (error) {
+      console.error('Error rendering message content:', error);
+      return <p className="text-red-500">Error displaying message</p>;
+    }
   };
 
   return (
@@ -35,7 +40,7 @@ export function ClaudeMessage({ message }: MessageProps) {
       
       <div className={`flex flex-col max-w-[80%] ${message.role === 'assistant' ? 'items-start' : 'items-end'}`}>
         <div
-          className={`px-4 py-3 rounded-lg whitespace-pre-wrap ${
+          className={`px-4 py-3 rounded-lg ${
             message.role === 'assistant'
               ? 'bg-green-50 border border-green-100 text-gray-800'
               : 'bg-indigo-100 text-indigo-900'

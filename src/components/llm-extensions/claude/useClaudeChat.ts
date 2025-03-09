@@ -13,53 +13,68 @@ export function useClaudeChat() {
   
   // Load saved API key and messages from localStorage
   useEffect(() => {
-    const savedApiKey = localStorage.getItem('claudeApiKey');
-    if (savedApiKey) {
-      console.log('Found saved Claude API key in localStorage');
-      setApiKey(savedApiKey);
-    } else {
-      // Show settings if no API key is found
-      console.log('No Claude API key found in localStorage');
-      setShowSettings(true);
-    }
-    
-    const savedMessages = localStorage.getItem('claudeChatMessages');
-    if (savedMessages) {
+    const loadSavedData = () => {
       try {
-        const parsed = JSON.parse(savedMessages);
-        setMessages(parsed.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        })));
+        const savedApiKey = localStorage.getItem('claudeApiKey');
+        if (savedApiKey) {
+          console.log('Found saved Claude API key in localStorage');
+          setApiKey(savedApiKey);
+        } else {
+          // Show settings if no API key is found
+          console.log('No Claude API key found in localStorage');
+          setShowSettings(true);
+        }
+        
+        const savedMessages = localStorage.getItem('claudeChatMessages');
+        if (savedMessages) {
+          try {
+            const parsed = JSON.parse(savedMessages);
+            setMessages(parsed.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            })));
+          } catch (e) {
+            console.error('Error parsing saved Claude messages:', e);
+            // If parsing fails, clear the corrupted messages
+            localStorage.removeItem('claudeChatMessages');
+          }
+        }
       } catch (e) {
-        console.error('Error parsing saved Claude messages:', e);
-        // If parsing fails, clear the corrupted messages
-        localStorage.removeItem('claudeChatMessages');
+        console.error('Error loading saved Claude data:', e);
       }
-    }
+    };
+    
+    // Load data with a slight delay to ensure stability
+    setTimeout(loadSavedData, 300);
     
     // Listen for API key changes from other components
     const handleApiKeyUpdate = () => {
       const updatedKey = localStorage.getItem('claudeApiKey');
-      if (updatedKey && updatedKey !== apiKey) {
-        console.log('API key updated from another component');
-        setApiKey(updatedKey);
+      if (updatedKey !== apiKey) {
+        console.log('Claude API key updated from another component');
+        setApiKey(updatedKey || '');
       }
     };
     
     window.addEventListener('apikey-updated', handleApiKeyUpdate);
     window.addEventListener('localStorage-changed', handleApiKeyUpdate);
+    window.addEventListener('storage', handleApiKeyUpdate);
     
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyUpdate);
       window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
+      window.removeEventListener('storage', handleApiKeyUpdate);
     };
-  }, []);
+  }, [apiKey]);
 
   // Save messages to localStorage when they change
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem('claudeChatMessages', JSON.stringify(messages));
+      try {
+        localStorage.setItem('claudeChatMessages', JSON.stringify(messages));
+      } catch (e) {
+        console.error('Error saving Claude messages:', e);
+      }
     }
   }, [messages]);
 
@@ -70,17 +85,31 @@ export function useClaudeChat() {
   
   // Save API key
   const saveApiKey = useCallback((newApiKey: string) => {
-    setApiKey(newApiKey);
-    localStorage.setItem('claudeApiKey', newApiKey);
-    
-    toast({
-      title: "API key saved",
-      description: "Your Claude API key has been saved.",
-      duration: 3000,
-    });
-    
-    // Trigger custom event for other components
-    window.dispatchEvent(new Event('apikey-updated'));
+    try {
+      setApiKey(newApiKey);
+      localStorage.setItem('claudeApiKey', newApiKey);
+      
+      toast({
+        title: "API key saved",
+        description: "Your Claude API key has been saved.",
+        duration: 3000,
+      });
+      
+      // Trigger custom event for other components
+      window.dispatchEvent(new Event('apikey-updated'));
+      window.dispatchEvent(new Event('localStorage-changed'));
+      window.dispatchEvent(new Event('storage'));
+      
+      console.log('Claude API key saved successfully');
+    } catch (e) {
+      console.error('Error saving Claude API key:', e);
+      toast({
+        title: "Error saving API key",
+        description: "Failed to save your Claude API key.",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   }, []);
 
   const sendMessage = useCallback(async () => {

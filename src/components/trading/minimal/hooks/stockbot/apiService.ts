@@ -1,85 +1,90 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '@/lib/supabase';
 import { ChatMessage, StockbotApiResponse } from './types';
 
 /**
- * Makes a request to the Groq API via edge function
+ * Call the Stockbot API with the user message
+ * @param message User's message
+ * @param apiKey Groq API key
+ * @returns Promise with the API response
  */
-export const fetchGroqApiResponse = async (
-  prompt: string, 
-  apiKey?: string
+export const callStockbotAPI = async (
+  message: string, 
+  apiKey: string
 ): Promise<StockbotApiResponse> => {
-  console.log('Making request to Groq API via edge function');
-  
   try {
-    // Call the Groq Edge Function
-    const { data, error } = await supabase.functions.invoke('groq-chat', {
-      body: { 
-        prompt,
-        apiKey
-      }
-    });
+    console.log('Calling Stockbot API with message:', message);
     
-    if (error) {
-      console.error('Error calling Groq API:', error);
-      return {
-        response: "",
-        error: error.message || 'Failed to get response from Groq'
-      };
-    }
+    // For now, simulate the API call
+    // TODO: Replace with actual API call when ready
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
-    if (!data || !data.response) {
-      console.error('Invalid response from Groq API:', data);
-      
-      if (data?.error) {
-        return {
-          response: "",
-          error: `Groq API error: ${data.error}`
-        };
-      }
-      
-      return {
-        response: "",
-        error: 'Invalid response from Groq API'
-      };
-    }
+    const responseText = generateSimulatedResponse(message);
     
-    return { response: data.response };
-  } catch (error) {
-    console.error('Exception calling Groq API:', error);
     return {
-      response: "",
-      error: error instanceof Error ? error.message : 'An error occurred'
+      success: true,
+      response: responseText
+    };
+  } catch (error) {
+    console.error('Error calling Stockbot API:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'An unknown error occurred'
     };
   }
 };
 
 /**
- * Simulates an API response for testing purposes
+ * Create an assistant message from the API response
+ * @param text The response text from the API
+ * @returns A formatted ChatMessage
  */
-export const simulateApiResponse = async (prompt: string): Promise<StockbotApiResponse> => {
-  console.log('Simulating Stockbot API response');
-  
-  // Add a delay to simulate network latency
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  
-  // Generate a simple response based on the prompt
-  const response = `This is a simulated response to your query: "${prompt}"\n\nIn simulation mode, no real API calls are made. This allows testing without using API credits or requiring an API key.`;
-  
-  return { response };
-};
-
-/**
- * Convert API response to a ChatMessage
- */
-export const createResponseMessage = (response: string): ChatMessage => {
+export const createAssistantMessage = (text: string): ChatMessage => {
   return {
     id: uuidv4(),
     sender: 'assistant',
     role: 'assistant',
-    text: response,
-    content: response,
+    content: text,
+    text: text,
     timestamp: new Date()
   };
 };
+
+/**
+ * Create an error message as an assistant message
+ * @param errorText The error text to display
+ * @returns A formatted ChatMessage
+ */
+export const createErrorMessage = (errorText: string): ChatMessage => {
+  return {
+    id: uuidv4(),
+    sender: 'assistant',
+    role: 'assistant',
+    content: `Error: ${errorText}`,
+    text: `Error: ${errorText}`,
+    timestamp: new Date()
+  };
+};
+
+/**
+ * Generate a simulated response for testing purposes
+ * @param message The user's message
+ * @returns A simulated response
+ */
+function generateSimulatedResponse(message: string): string {
+  const lowercaseMessage = message.toLowerCase();
+  
+  // Simple pattern matching for different types of questions
+  if (lowercaseMessage.includes('stock') && lowercaseMessage.includes('recommend')) {
+    return "Based on current market analysis, I recommend considering some stable dividend stocks in the technology and healthcare sectors. However, please remember that all investments carry risk and you should do your own research.";
+  } else if (lowercaseMessage.includes('market') && (lowercaseMessage.includes('outlook') || lowercaseMessage.includes('forecast'))) {
+    return "The market outlook appears cautiously optimistic with major indices showing stability. The Fed's recent comments suggest a potential rate adjustment in the coming quarter, which might impact market dynamics.";
+  } else if (lowercaseMessage.includes('portfolio') && lowercaseMessage.includes('diversif')) {
+    return "Diversification is key to managing risk. I suggest allocating your investments across different sectors such as technology, healthcare, consumer staples, and possibly some international exposure depending on your risk tolerance.";
+  } else if (lowercaseMessage.includes('trading') && lowercaseMessage.includes('strateg')) {
+    return "Effective trading strategies often combine technical analysis with fundamental research. Consider setting clear entry and exit points, managing position sizes based on your risk tolerance, and avoiding emotional decision-making.";
+  }
+  
+  // Default response for other questions
+  return "I'm your Stockbot assistant. I can help with market analysis, trading strategies, and investment recommendations. What specific information are you looking for today?";
+}

@@ -39,8 +39,10 @@ export function useDeepSeekChat() {
       }
     }
     
-    // Initialize connection check
-    checkDeepSeekApiStatus();
+    // Initialize connection check with a slight delay to ensure API key is loaded
+    setTimeout(() => {
+      checkDeepSeekApiStatus();
+    }, 300);
   }, [checkDeepSeekApiStatus]);
 
   // Save messages to localStorage when they change
@@ -62,26 +64,6 @@ export function useDeepSeekChat() {
   const sendMessage = useCallback(async (userMessage: string) => {
     if (!userMessage.trim()) return;
     
-    // Add user message to the chat
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: userMessage,
-      timestamp: new Date()
-    };
-    
-    // Add temporary assistant message with loading state
-    const assistantMsg: LoadingMessage = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      isLoading: true
-    };
-    
-    setMessages(prev => [...prev, userMsg, assistantMsg]);
-    setIsProcessing(true);
-    
     try {
       // Get the API key from localStorage
       const deepseekApiKey = localStorage.getItem('deepseekApiKey');
@@ -92,17 +74,42 @@ export function useDeepSeekChat() {
           description: 'Please set your DeepSeek API key in the settings first.',
           variant: 'destructive'
         });
-        // Update the message to show the error
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === assistantMsg.id 
-              ? { ...msg, content: 'Error: DeepSeek API key is missing. Please set it in the settings.', isLoading: false } 
-              : msg
-          )
-        );
-        setIsProcessing(false);
         return;
       }
+      
+      // Persist the key again to ensure it's saved properly
+      localStorage.setItem('deepseekApiKey', deepseekApiKey);
+      
+      // Dispatch events to notify other components about the API key
+      try {
+        window.dispatchEvent(new Event('apikey-updated'));
+        window.dispatchEvent(new Event('localStorage-changed'));
+        window.dispatchEvent(new Event('storage'));
+        
+        console.log('DeepSeek API key events dispatched, key length:', deepseekApiKey.length);
+      } catch (e) {
+        console.error('Failed to dispatch API key events:', e);
+      }
+      
+      // Add user message to the chat
+      const userMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'user',
+        content: userMessage,
+        timestamp: new Date()
+      };
+      
+      // Add temporary assistant message with loading state
+      const assistantMsg: LoadingMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        isLoading: true
+      };
+      
+      setMessages(prev => [...prev, userMsg, assistantMsg]);
+      setIsProcessing(true);
       
       // Prepare the conversation history for the API
       const messageHistory = messages
@@ -119,6 +126,13 @@ export function useDeepSeekChat() {
       });
       
       try {
+        // First, check if the API connection is working
+        const statusCheck = await checkDeepSeekApiStatus();
+        
+        if (!statusCheck) {
+          throw new Error('DeepSeek API is currently unavailable. Please check your API key and try again.');
+        }
+        
         // Send the message to the DeepSeek API
         const response = await sendMessageToDeepSeek(messageHistory, deepseekApiKey);
         
@@ -155,19 +169,6 @@ export function useDeepSeekChat() {
     } catch (error) {
       console.error('Error sending message to DeepSeek:', error);
       
-      // Update the message to show the error
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === assistantMsg.id 
-            ? { 
-                ...msg, 
-                content: `Error: ${error instanceof Error ? error.message : 'Failed to process your request.'}`, 
-                isLoading: false 
-              } 
-            : msg
-        )
-      );
-      
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to process your request.',
@@ -176,7 +177,7 @@ export function useDeepSeekChat() {
     } finally {
       setIsProcessing(false);
     }
-  }, [messages, sendMessageToDeepSeek, toast]);
+  }, [messages, sendMessageToDeepSeek, toast, checkDeepSeekApiStatus]);
   
   const checkApiStatus = useCallback(async () => {
     return await checkDeepSeekApiStatus();
