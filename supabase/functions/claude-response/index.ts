@@ -25,29 +25,64 @@ serve(async (req) => {
       throw new Error("Invalid request body: " + e.message);
     }
     
-    const { message, context, model, temperature, max_tokens, apiKey } = body;
+    // Extract parameters and validate
+    const { messages, context, model, temperature, max_tokens, apiKey } = body;
 
-    if (!message && (!context || context.length === 0)) {
-      throw new Error('Either message or context must be provided');
+    // Validate required parameters
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'API key is required' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    if (!apiKey) {
-      throw new Error('API key is required');
+    if ((!messages || !Array.isArray(messages) || messages.length === 0) && !context) {
+      return new Response(
+        JSON.stringify({ error: 'Either messages or context must be provided' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     console.log(`Claude API request for model: ${model || 'default'}`);
-    if (message) console.log(`Message content length: ${message.length}`);
+    if (messages) console.log(`Messages count: ${messages.length}`);
     if (context) console.log(`Context messages: ${context.length}`);
 
     // Format messages for Claude API
-    const messages = context && Array.isArray(context) ? [...context] : [];
+    const formattedMessages = messages || (context && Array.isArray(context) ? [...context] : []);
 
-    // Add the latest user message if not already included in context
-    if (message && !messages.some(msg => msg.content === message && msg.role === 'user')) {
-      messages.push({
-        role: 'user',
-        content: message
-      });
+    if (!formattedMessages || formattedMessages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'No valid messages could be parsed' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Ensure all messages have the required role and content properties
+    const validMessages = formattedMessages.filter(msg => 
+      msg && typeof msg === 'object' && 
+      'role' in msg && 
+      'content' in msg && 
+      typeof msg.content === 'string' &&
+      ['user', 'assistant'].includes(msg.role)
+    );
+
+    if (validMessages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'No valid messages with proper format were provided' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     // Determine which Claude API model to use
@@ -60,6 +95,7 @@ serve(async (req) => {
           : 'claude-3-haiku-20240307';
 
     console.log(`Using Claude model: ${claudeModel}`);
+    console.log(`Messages being sent to Claude API: ${JSON.stringify(validMessages)}`);
 
     // Make API request to Claude API
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -71,7 +107,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: claudeModel,
-        messages: messages,
+        messages: validMessages,
         max_tokens: max_tokens || 1024,
         temperature: temperature || 0.7
       })
@@ -87,7 +123,17 @@ serve(async (req) => {
         errorData = { error: errorText };
       }
       console.error('Claude API error:', errorData);
-      throw new Error(`Claude API returned error: ${response.status} ${response.statusText}`);
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `Claude API returned error: ${response.status} ${response.statusText}`,
+          details: errorData
+        }),
+        { 
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     // Parse the response data

@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { Message } from '../deepseek/types';
 import { supabase } from '@/lib/supabase';
 
@@ -139,81 +139,71 @@ export function useClaudeChat() {
     setIsLoading(true);
 
     try {
-      // Format conversation history for Claude API
-      const history = newMessages.slice(0, -1).map(msg => ({
-        role: msg.role === 'user' ? 'user' : 'assistant',
+      // Prepare messages for Claude API
+      const apiMessages = newMessages.map(msg => ({
+        role: msg.role,
         content: msg.content
       }));
       
-      // Call the Claude edge function with error handling
-      try {
-        const { data, error } = await supabase.functions.invoke('claude-response', {
-          body: {
-            messages: [...history, { role: 'user', content: inputMessage }],
-            model: 'claude-3-haiku-20240307',
-            temperature: 0.7,
-            max_tokens: 1000,
-            apiKey
-          }
-        });
-        
-        if (error) {
-          throw new Error(error.message || 'Error calling Claude API');
-        }
-        
-        if (!data || !data.response) {
-          throw new Error(data?.error || 'Invalid response from Claude API');
-        }
-        
-        // Add assistant response
-        const assistantMessage: Message = {
-          id: generateId(),
-          role: 'assistant',
-          content: data.response,
-          timestamp: new Date(),
-        };
-
-        setMessages([...newMessages, assistantMessage]);
-      } catch (apiError) {
-        // Handle API errors
-        console.error('Claude API error:', apiError);
-        
-        // Add error message to chat
-        const errorMessage: Message = {
-          id: generateId(),
-          role: 'assistant',
-          content: apiError instanceof Error 
-            ? `Error: ${apiError.message}` 
-            : 'An unknown error occurred with the Claude API.',
-          timestamp: new Date(),
-        };
-        
-        setMessages([...newMessages, errorMessage]);
-        
-        toast({
-          title: "Claude API Error",
-          description: apiError instanceof Error ? apiError.message : "Failed to get Claude response",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error in chat process:', error);
+      console.log('Sending messages to Claude API:', apiMessages);
       
-      // Add general error message
+      // Call the Claude edge function with error handling
+      const { data, error } = await supabase.functions.invoke('claude-response', {
+        body: {
+          messages: apiMessages,
+          model: 'claude-3-haiku-20240307',
+          temperature: 0.7,
+          max_tokens: 1000,
+          apiKey
+        }
+      });
+      
+      console.log('Claude API response:', data, 'Error:', error);
+      
+      if (error) {
+        throw new Error(error.message || 'Error calling Claude API');
+      }
+      
+      if (!data) {
+        throw new Error('Empty response from Claude API');
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (!data.response) {
+        throw new Error('No response content from Claude API');
+      }
+      
+      // Add assistant response
+      const assistantMessage: Message = {
+        id: generateId(),
+        role: 'assistant',
+        content: data.response,
+        timestamp: new Date(),
+      };
+
+      setMessages([...newMessages, assistantMessage]);
+    } catch (error) {
+      // Handle API errors
+      console.error('Claude API error:', error);
+      
+      // Add error message to chat
       const errorMessage: Message = {
         id: generateId(),
         role: 'assistant',
         content: error instanceof Error 
           ? `Error: ${error.message}` 
-          : 'An unexpected error occurred. Please try again.',
+          : 'An unknown error occurred with the Claude API.',
         timestamp: new Date(),
       };
       
       setMessages([...newMessages, errorMessage]);
       
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        title: "Claude API Error",
+        description: error instanceof Error ? error.message : "Failed to get Claude response",
         variant: "destructive",
       });
     } finally {

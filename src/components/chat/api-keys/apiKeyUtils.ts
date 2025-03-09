@@ -1,3 +1,4 @@
+
 import { ApiKeySettings, ModelInfo } from '../types/GrokSettings';
 import { 
   showApiKeyInfoToast,
@@ -137,7 +138,7 @@ export const saveApiKeys = (
   
   // Show toast notification for Groq specifically
   if (updatedKeys.groqApiKey) {
-    showApiKeySavedToast('Groq', updatedKeys.groqApiKey.length);
+    showApiKeySavedToast('Groq');
   }
   
   return updatedKeys;

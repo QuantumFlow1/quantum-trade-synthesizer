@@ -20,10 +20,11 @@ export function ClaudeMessage({ message }: MessageProps) {
     }
     
     try {
-      // Split content by newlines and create paragraphs
-      return message.content.split('\n').map((line, i) => (
-        line.trim() ? <p key={i} className="mb-2">{line}</p> : <br key={i} />
-      ));
+      // Split by newlines and create paragraphs for each line
+      return message.content.split('\n').map((line, i) => {
+        if (!line.trim()) return <br key={i} />;
+        return <p key={i} className="mb-2 break-words whitespace-pre-wrap">{line}</p>;
+      });
     } catch (error) {
       console.error('Error rendering message content:', error);
       return <p className="text-red-500">Error displaying message</p>;
