@@ -18,11 +18,35 @@ serve(async (req) => {
   }
 
   try {
-    const { message, marketData } = await req.json();
+    console.log("Received request to market-analysis function");
     
-    console.log("Received market analysis request with message:", message);
-    console.log("Market data context:", marketData ? JSON.stringify(marketData) : "none");
+    // Parse request body
+    let requestData = {};
+    try {
+      requestData = await req.json();
+      console.log("Request data:", JSON.stringify(requestData));
+    } catch (e) {
+      console.error("Error parsing request JSON:", e);
+      requestData = {}; // Default to empty if parsing fails
+    }
+    
+    const { message, marketData } = requestData;
+    
+    // Validate inputs
+    if (!message || typeof message !== 'string') {
+      console.error("Invalid or missing message in request");
+      return new Response(
+        JSON.stringify({ 
+          error: "Missing or invalid message parameter" 
+        }),
+        { 
+          status: 400, 
+          headers: corsHeaders 
+        }
+      );
+    }
 
+    // Check for API key
     if (!openAIApiKey) {
       console.error("OpenAI API key is not configured");
       return new Response(
@@ -39,17 +63,20 @@ serve(async (req) => {
     // Create a prompt that includes market context
     const marketContext = marketData 
       ? `Current market data:
-        Market: ${marketData.market}
-        Symbol: ${marketData.symbol}
-        Current Price: $${marketData.price}
-        24h Change: ${marketData.change24h}%
-        24h High: $${marketData.high24h}
-        24h Low: $${marketData.low24h}
-        Volume: ${marketData.volume}
-        Market Cap: ${marketData.marketCap}
+        Market: ${marketData.market || 'unknown'}
+        Symbol: ${marketData.symbol || 'unknown'}
+        Current Price: $${marketData.price || 0}
+        24h Change: ${marketData.change24h || 0}%
+        24h High: $${marketData.high24h || 0}
+        24h Low: $${marketData.low24h || 0}
+        Volume: ${marketData.volume || 0}
+        Market Cap: ${marketData.marketCap || 0}
         You are a market analysis AI assistant specializing in financial analysis. Provide accurate, insightful analysis based on this data.`
       : 'You are a market analysis AI assistant. No specific market data is available, so provide general trading advice.';
 
+    console.log("Sending request to OpenAI with market context");
+    
+    // Call OpenAI API
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -70,23 +97,38 @@ serve(async (req) => {
     if (!response.ok) {
       const error = await response.json();
       console.error("OpenAI API error:", error);
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      return new Response(
+        JSON.stringify({
+          error: `OpenAI API error: ${response.status} ${response.statusText}`,
+          details: error
+        }),
+        { 
+          headers: corsHeaders,
+          status: response.status
+        }
+      );
     }
 
     const data = await response.json();
     const aiResponse = data.choices[0]?.message?.content || "Sorry, I couldn't generate a response.";
     
-    console.log("Generated AI response:", aiResponse.substring(0, 100) + "...");
+    console.log("Successfully generated AI response");
 
     return new Response(
-      JSON.stringify({ response: aiResponse }),
+      JSON.stringify({ 
+        response: aiResponse,
+        timestamp: new Date().toISOString()
+      }),
       { headers: corsHeaders }
     );
     
   } catch (error) {
-    console.error("Error in market-analysis function:", error);
+    console.error("Uncaught error in market-analysis function:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "An error occurred during analysis" }),
+      JSON.stringify({ 
+        error: error.message || "An error occurred during analysis",
+        timestamp: new Date().toISOString()
+      }),
       { 
         status: 500, 
         headers: corsHeaders 
