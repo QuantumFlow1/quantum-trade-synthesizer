@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { StockbotAlerts } from "./components/stockbot/StockbotAlerts";
 import { StockbotKeyDialog } from "./components/stockbot/StockbotKeyDialog";
 import { hasApiKey } from "@/utils/apiKeyManager";
+import { Button } from "@/components/ui/button";
 
 interface StockbotChatProps {
   hasApiKey?: boolean;
@@ -137,10 +138,15 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
           title: "API Key Configured",
           description: "Switch to AI mode to use your Groq API key",
           duration: 5000,
-          action: {
-            label: "Switch Now",
-            onClick: () => setIsSimulationMode(false)
-          }
+          action: (
+            <Button 
+              onClick={() => setIsSimulationMode(false)}
+              variant="default"
+              size="sm"
+            >
+              Switch Now
+            </Button>
+          )
         });
       }
     }, 500);
