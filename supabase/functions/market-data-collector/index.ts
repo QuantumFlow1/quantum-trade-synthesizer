@@ -1,177 +1,117 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
+
+function generateMockData() {
+  const markets = [
+    { market: 'NYSE', symbols: ['JPM', 'BAC', 'WMT', 'PG', 'JNJ'] },
+    { market: 'NASDAQ', symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META'] },
+    { market: 'Crypto', symbols: ['BTC/USD', 'ETH/USD', 'SOL/USD', 'ADA/USD', 'XRP/USD'] },
+    { market: 'AEX', symbols: ['ASML', 'ADYEN', 'UNILEVER', 'ING', 'AKZO'] },
+  ];
+
+  const result = [];
+  
+  // Current timestamp
+  const now = Date.now();
+
+  markets.forEach(marketGroup => {
+    marketGroup.symbols.forEach(symbol => {
+      // Generate realistic-looking price based on symbol
+      let basePrice = 0;
+      
+      if (symbol === 'BTC/USD') basePrice = 35000 + Math.random() * 2000;
+      else if (symbol === 'ETH/USD') basePrice = 1800 + Math.random() * 200;
+      else if (symbol.includes('USD')) basePrice = 1 + Math.random() * 10;
+      else if (symbol === 'AAPL') basePrice = 170 + Math.random() * 10;
+      else if (symbol === 'MSFT') basePrice = 330 + Math.random() * 20;
+      else if (symbol === 'GOOGL') basePrice = 130 + Math.random() * 10;
+      else if (symbol === 'AMZN') basePrice = 150 + Math.random() * 10;
+      else if (symbol === 'ASML') basePrice = 650 + Math.random() * 40;
+      else basePrice = 50 + Math.random() * 150;
+
+      // Random change percentage
+      const change24h = (Math.random() * 10) - 5; // -5% to +5%
+      
+      // High/low derived from price and change
+      const high24h = basePrice * (1 + Math.abs(change24h) / 100 * 1.5);
+      const low24h = basePrice * (1 - Math.abs(change24h) / 100 * 1.5);
+      
+      // Volume based on price
+      const volume = Math.floor(basePrice * 1000 * (0.5 + Math.random() * 2));
+
+      result.push({
+        market: marketGroup.market,
+        symbol,
+        name: symbol.replace('/', ' to '),
+        price: basePrice,
+        change24h,
+        high24h,
+        low24h,
+        volume,
+        timestamp: now,
+        high: high24h,
+        low: low24h
+      });
+    });
+  });
+
+  return result;
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    });
   }
 
   try {
-    // Parse the request body if present
-    let requestBody = {};
-    try {
-      requestBody = await req.json();
-      console.log("Received request with body:", requestBody);
-    } catch (e) {
-      requestBody = {}; // Set empty object if no body or invalid JSON
-      console.log("No request body or invalid JSON");
-    }
-
-    const action = requestBody.action || 'default';
-
-    // Simple status check - always respond with success for availability checks
-    if (action === 'status_check') {
-      console.log("Processing status check request");
-      return new Response(
-        JSON.stringify({ 
-          status: 'available',
-          timestamp: new Date().toISOString(),
-          message: 'Market data collection service is operational'
-        }),
-        { 
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-    }
-
-    // Fetch real cryptocurrency data from CoinGecko
-    console.log("Fetching cryptocurrency market data from API");
+    console.log('Generating market data...');
+    const mockData = generateMockData();
     
-    try {
-      const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=10&page=1&sparkline=false&locale=en');
-      
-      if (!response.ok) {
-        throw new Error(`CoinGecko API responded with status: ${response.status}`);
-      }
-      
-      const coinData = await response.json();
-      console.log(`Successfully retrieved data for ${coinData.length} cryptocurrencies`);
-      
-      // Transform the data to match our expected format
-      const marketData = coinData.map(coin => ({
-        symbol: coin.symbol.toUpperCase(),
-        name: coin.name,
-        price: coin.current_price,
-        change24h: coin.price_change_percentage_24h || 0,
-        volume24h: coin.total_volume || 0,
-        marketCap: coin.market_cap || 0,
-        high24h: coin.high_24h || coin.current_price * 1.01, // Fallback if not available
-        low24h: coin.low_24h || coin.current_price * 0.99,   // Fallback if not available
-        lastUpdated: coin.last_updated || new Date().toISOString(),
-        market: 'crypto',
-        // Additional data
-        image: coin.image,
-        totalSupply: coin.total_supply,
-        circulatingSupply: coin.circulating_supply,
-        maxSupply: coin.max_supply,
-        rank: coin.market_cap_rank
-      }));
-      
-      return new Response(
-        JSON.stringify({ 
-          status: 'success',
-          data: marketData,
-          source: 'coingecko',
-          timestamp: new Date().toISOString()
-        }),
-        { 
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-    } catch (apiError) {
-      console.error('Error fetching from CoinGecko API:', apiError);
-      
-      // Fallback to generated data if API call fails
-      console.log('Falling back to generated market data');
-      const marketData = generateMarketData();
-      
-      return new Response(
-        JSON.stringify({ 
-          status: 'success',
-          data: marketData,
-          source: 'fallback',
-          timestamp: new Date().toISOString()
-        }),
-        { 
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          } 
-        }
-      );
-    }
+    // Return data in expected format
+    const response = {
+      status: "success",
+      data: mockData,
+      timestamp: Date.now()
+    };
+    
+    console.log(`Generated ${mockData.length} market data points`);
+
+    return new Response(
+      JSON.stringify(response),
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+        },
+        status: 200 
+      },
+    )
   } catch (error) {
     console.error('Error in market-data-collector:', error);
     
+    // Return error in expected format
     return new Response(
       JSON.stringify({ 
-        status: 'error',
-        message: error.message,
-        timestamp: new Date().toISOString()
+        status: "error", 
+        error: error.message,
+        timestamp: Date.now()
       }),
       { 
-        status: 500,
         headers: { 
           ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+          'Content-Type': 'application/json',
+        },
+        status: 500 
+      },
+    )
   }
-});
-
-// Function to generate simulated market data (fallback only)
-function generateMarketData() {
-  // Generate random data for sample cryptocurrencies
-  const currencies = ['BTC', 'ETH', 'BNB', 'SOL', 'DOGE'];
-  
-  return currencies.map(symbol => {
-    // Generate realistic-looking prices
-    const basePrice = symbol === 'BTC' ? 50000 : 
-                     symbol === 'ETH' ? 3000 : 
-                     symbol === 'BNB' ? 500 : 
-                     symbol === 'SOL' ? 120 : 20;
-    
-    // Add some randomness
-    const fluctuation = (Math.random() * 0.05) - 0.025; // +/- 2.5%
-    const price = basePrice * (1 + fluctuation);
-    
-    return {
-      symbol,
-      name: getFullName(symbol),
-      price: parseFloat(price.toFixed(2)),
-      change24h: parseFloat((fluctuation * 100).toFixed(2)),
-      volume24h: parseFloat((Math.random() * 10000000 + 5000000).toFixed(2)),
-      marketCap: parseFloat((price * (Math.random() * 50000000 + 10000000)).toFixed(2)),
-      high24h: price * (1 + Math.random() * 0.02),
-      low24h: price * (1 - Math.random() * 0.02),
-      lastUpdated: new Date().toISOString(),
-      market: 'crypto'
-    };
-  });
-}
-
-// Helper to get full names for crypto symbols
-function getFullName(symbol: string): string {
-  const names: {[key: string]: string} = {
-    'BTC': 'Bitcoin',
-    'ETH': 'Ethereum',
-    'BNB': 'Binance Coin',
-    'SOL': 'Solana',
-    'DOGE': 'Dogecoin'
-  };
-  
-  return names[symbol] || symbol;
-}
+})

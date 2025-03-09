@@ -51,21 +51,32 @@ export const fetchMarketData = async (): Promise<FetchMarketDataResult> => {
       throw new Error(`Fallback data fetch failed: ${collectorError.message}`);
     }
     
-    if (collectorData && Array.isArray(collectorData?.data)) {
-      console.log('Successfully fetched data from market-data-collector:', collectorData.data.length, 'items');
+    // Check the response format - it could be either directly an array or have a data property
+    if (collectorData) {
+      let validData: MarketData[] = [];
       
-      toast({
-        title: 'Market data updated',
-        description: `Successfully fetched fallback data for ${collectorData.data.length} markets`,
-        duration: 3000,
-      });
+      if (Array.isArray(collectorData)) {
+        validData = collectorData as MarketData[];
+        console.log('Successfully fetched direct array from market-data-collector:', validData.length, 'items');
+      } else if (collectorData.data && Array.isArray(collectorData.data)) {
+        validData = collectorData.data as MarketData[];
+        console.log('Successfully fetched data from market-data-collector data property:', validData.length, 'items');
+      }
       
-      return {
-        data: collectorData.data as MarketData[],
-        error: null,
-        source: 'fallback'
-      };
-    } 
+      if (validData.length > 0) {
+        toast({
+          title: 'Market data updated',
+          description: `Successfully fetched fallback data for ${validData.length} markets`,
+          duration: 3000,
+        });
+        
+        return {
+          data: validData,
+          error: null,
+          source: 'fallback'
+        };
+      }
+    }
     
     // Create some emergency backup market data if nothing else works
     const emergencyData = generateEmergencyMarketData();
@@ -88,6 +99,13 @@ export const fetchMarketData = async (): Promise<FetchMarketDataResult> => {
     
     // Generate emergency data for error case
     const emergencyData = generateEmergencyMarketData();
+    
+    toast({
+      title: 'Data loading error',
+      description: error instanceof Error ? error.message : 'Unknown error fetching market data',
+      variant: 'destructive',
+      duration: 5000,
+    });
     
     return {
       data: emergencyData,

@@ -41,10 +41,20 @@ export const validateMarketData = (marketData: any): {
 };
 
 export const groupMarketDataByMarket = (marketData: MarketData[]): Record<string, any[]> => {
+  if (!Array.isArray(marketData)) {
+    console.error('Cannot group non-array marketData:', marketData);
+    return {};
+  }
+  
   return marketData.reduce((acc, item) => {
+    if (!item.market) {
+      return acc;
+    }
+    
     if (!acc[item.market]) {
       acc[item.market] = [];
     }
+    
     acc[item.market].push({
       name: item.symbol,
       volume: item.volume,
@@ -53,6 +63,7 @@ export const groupMarketDataByMarket = (marketData: MarketData[]): Record<string
       high: item.high24h,
       low: item.low24h
     });
+    
     return acc;
   }, {} as Record<string, any[]>);
 };

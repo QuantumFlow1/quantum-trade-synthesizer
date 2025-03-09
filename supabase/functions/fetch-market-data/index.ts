@@ -137,7 +137,9 @@ function generateMockMarketData() {
       lastUpdated: new Date().toISOString(),
       priceChange7d,
       priceChange30d,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      high: high24h,
+      low: low24h
     };
   });
 
