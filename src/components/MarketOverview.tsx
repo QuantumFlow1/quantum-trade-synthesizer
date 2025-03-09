@@ -3,16 +3,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MarketCharts } from "./market/MarketCharts";
 import { useMarketWebSocket } from "@/hooks/use-market-websocket";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2, RefreshCcw } from "lucide-react";
+import { AlertCircle, Loader2, RefreshCcw, BrainCircuit } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { AIMarketAnalysis } from "./market/AIMarketAnalysis";
 
 const MarketOverview = () => {
   const { marketData, reconnect, connectionStatus } = useMarketWebSocket();
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
+  const [showAIInsights, setShowAIInsights] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -79,6 +81,17 @@ const MarketOverview = () => {
     toast({
       title: "Herverbinden...",
       description: "Bezig met het herstellen van de marktdata verbinding",
+    });
+  };
+
+  const toggleAIInsights = () => {
+    setShowAIInsights(!showAIInsights);
+    toast({
+      title: showAIInsights ? "AI Insights Disabled" : "AI Insights Enabled",
+      description: showAIInsights 
+        ? "Standard market view restored" 
+        : "AI-powered market analysis activated",
+      duration: 3000,
     });
   };
 
@@ -155,14 +168,38 @@ const MarketOverview = () => {
 
   const marketOrder = ['NYSE', 'NASDAQ', 'AEX', 'DAX', 'CAC40', 'NIKKEI', 'HSI', 'SSE', 'Crypto'];
 
+  // Get the first available market data for AI analysis
+  const firstMarketData = marketData.length > 0 ? marketData[0] : null;
+
   return (
     <div className="w-full bg-secondary/30 backdrop-blur-lg border border-secondary/50 rounded-lg shadow-lg will-change-transform hover:shadow-xl transition-all duration-300 ease-out">
       <div className="p-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-secondary/10 via-transparent to-primary/5 pointer-events-none" />
         
-        <h2 className="relative text-2xl font-semibold mb-6 bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
-          Wereldwijde Markten
-        </h2>
+        <div className="relative flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-semibold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+            Wereldwijde Markten
+          </h2>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1.5 hover:bg-primary/20"
+            onClick={toggleAIInsights}
+          >
+            <BrainCircuit className="h-4 w-4" />
+            {showAIInsights ? "Hide AI Insights" : "Show AI Insights"}
+          </Button>
+        </div>
+        
+        {showAIInsights && (
+          <div className="mb-6">
+            <AIMarketAnalysis 
+              marketData={firstMarketData || undefined} 
+              className="h-[300px]"
+            />
+          </div>
+        )}
         
         <Tabs defaultValue={marketOrder.find(market => groupedData[market]?.length > 0) || marketOrder[0]} className="w-full">
           <TabsList className="mb-6 bg-background/50 backdrop-blur-md relative flex flex-wrap gap-1">

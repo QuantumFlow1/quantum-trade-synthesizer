@@ -7,10 +7,11 @@ import { MarketPriceOverview } from './detail/MarketPriceOverview';
 import { MarketPriceChart } from './detail/MarketPriceChart';
 import { MarketStatistics } from './detail/MarketStatistics';
 import { MarketActions } from './detail/MarketActions';
+import { AIMarketAnalysis } from './AIMarketAnalysis';
 import { MarketData } from './types';
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, BrainCircuit } from "lucide-react";
 
 interface EnhancedMarketDetailProps {
   marketData: MarketData;
@@ -59,9 +60,13 @@ export const EnhancedMarketDetail = ({ marketData, onClose }: EnhancedMarketDeta
         
         {/* Main Content Tabs */}
         <Tabs defaultValue="chart" className="mt-4">
-          <TabsList className={`mb-4 ${isMobile ? 'w-full grid grid-cols-3' : ''}`}>
+          <TabsList className={`mb-4 ${isMobile ? 'w-full grid grid-cols-4' : ''}`}>
             <TabsTrigger value="chart">Price Chart</TabsTrigger>
             <TabsTrigger value="statistics">Statistics</TabsTrigger>
+            <TabsTrigger value="ai-analysis">
+              <BrainCircuit className="h-4 w-4 mr-1.5" />
+              AI Analysis
+            </TabsTrigger>
             <TabsTrigger value="actions">Trade</TabsTrigger>
           </TabsList>
           
@@ -94,6 +99,14 @@ export const EnhancedMarketDetail = ({ marketData, onClose }: EnhancedMarketDeta
             <Card className="bg-card/50">
               <CardContent className={`${isMobile ? 'p-2' : 'p-4'}`}>
                 <MarketStatistics marketData={marketData} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="ai-analysis" className="mt-2">
+            <Card className="bg-card/50">
+              <CardContent className={`${isMobile ? 'p-2' : 'p-4'} h-[400px]`}>
+                <AIMarketAnalysis marketData={marketData} />
               </CardContent>
             </Card>
           </TabsContent>
