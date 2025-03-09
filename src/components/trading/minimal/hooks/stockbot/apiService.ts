@@ -13,6 +13,11 @@ export const fetchTradingAdvice = async (
 ): Promise<string> => {
   console.log("Making real API call to Groq via Supabase edge function");
   
+  if (!groqKey) {
+    console.error("No Groq API key provided");
+    throw new Error("Groq API key is missing. Please configure your API key.");
+  }
+  
   // Call the Supabase edge function
   const { data, error } = await supabase.functions.invoke('generate-trading-advice', {
     body: {
@@ -27,12 +32,15 @@ export const fetchTradingAdvice = async (
   
   if (error) {
     console.error("Error calling generate-trading-advice function:", error);
-    throw new Error(`API call failed: ${error.message}`);
+    // More detailed error message to help with troubleshooting
+    const errorDetails = error.message || "Unknown error";
+    throw new Error(`API call failed: ${errorDetails}. Status: ${error.status || "unknown"}`);
   }
   
   if (data && data.response) {
     return data.response;
   } else {
+    console.warn("No valid response data received from Groq API");
     return "I didn't receive a valid response from the AI. Please try again.";
   }
 };
@@ -71,9 +79,21 @@ export const enhanceResponseWithMarketData = (
  * Shows an error toast
  */
 export const showApiErrorToast = (error: Error): void => {
+  // Customize error message based on error type
+  let errorMessage = error.message || "Failed to get response";
+  let title = "Error";
+  
+  if (errorMessage.includes("API key")) {
+    title = "API Key Error";
+  } else if (errorMessage.includes("network") || errorMessage.includes("connection")) {
+    title = "Network Error";
+  } else if (errorMessage.includes("timeout")) {
+    title = "Request Timeout";
+  }
+  
   toast({
-    title: "Error",
-    description: error.message || "Failed to get response",
+    title: title,
+    description: errorMessage,
     variant: "destructive"
   });
 };
