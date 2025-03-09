@@ -10,5 +10,5 @@ export const useThemeString = (): string => {
   }
   
   // Otherwise return the theme as is
-  return theme as string;
+  return theme ? theme.toString() : 'light'; // Default to light if theme is null
 };

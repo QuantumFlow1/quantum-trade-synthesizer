@@ -18,7 +18,7 @@ const MarketChartView = ({ data }) => {
               const item = {
                 value: entry.value,
                 color: entry.color,
-                type: entry.type as LegendType === 'rect' ? 'rect' : 'line'
+                type: entry.type as LegendType
               };
               
               return (

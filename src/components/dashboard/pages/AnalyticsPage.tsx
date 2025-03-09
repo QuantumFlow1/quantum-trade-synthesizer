@@ -1,75 +1,105 @@
 
-import PerformanceMetrics from "@/components/PerformanceMetrics";
-import TransactionList from "@/components/TransactionList";
-import { Card } from "@/components/ui/card";
-import { PieChart, Activity, Brain, Sparkles } from "lucide-react";
-import { useState, useEffect } from "react";
-import { generateTradingData } from "@/utils/tradingData";
-import { AIAnalysisPanel } from "@/components/trading/order-form/ai-analysis";
-import { useApiStatus } from "@/components/trading/hooks/api-status";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart, LineChart, Brain } from 'lucide-react';
+import { PortfolioManager } from '@/components/trading/PortfolioManager';
+import { AIMarketAnalysis } from '@/components/market/AIMarketAnalysis';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export const AnalyticsPage = () => {
-  const [marketData, setMarketData] = useState<any>(null);
-  const { apiStatus } = useApiStatus();
+  const [activeTab, setActiveTab] = useState('market');
+  const [isSimulationMode, setIsSimulationMode] = useState(true);
   
-  // Generate some market data for the insights panel
-  useEffect(() => {
-    try {
-      const data = generateTradingData("1h");
-      if (data && data.length > 0) {
-        const lastPoint = data[data.length - 1];
-        setMarketData({
-          symbol: "BTC/USD",
-          price: lastPoint.close,
-          change24h: (lastPoint.close - data[0].close) / data[0].close * 100,
-          volume: lastPoint.volume * lastPoint.close
-        });
-      }
-    } catch (error) {
-      console.error("Error generating trading data:", error);
-    }
-  }, []);
-
-  // Create mock advanced signal for AI analysis
-  const mockAdvancedSignal = {
-    direction: "Buy",
-    confidence: 78,
-    reasoning: "Strong upward trend with increasing volume indicates bullish momentum",
-    entry_price: marketData?.price || 45000,
-    stop_loss: (marketData?.price || 45000) * 0.95,
-    take_profit: (marketData?.price || 45000) * 1.1
+  // Sample market data for demonstration
+  const marketData = {
+    symbol: 'BTC',
+    price: 62549.23,
+    change24h: 2.34,
+    marketCap: 1.21,
+    volume24h: 32.5
   };
-
-  // Create AI analysis data from the mock signal
-  const aiAnalysis = {
-    confidence: mockAdvancedSignal.confidence,
-    riskLevel: mockAdvancedSignal.confidence > 70 ? "Laag" : "Gemiddeld",
-    recommendation: `${mockAdvancedSignal.direction} op huidige prijs`,
-    expectedProfit: `${Math.round((Math.abs(mockAdvancedSignal.take_profit - mockAdvancedSignal.entry_price) / mockAdvancedSignal.entry_price) * 1000) / 10}%`,
-    stopLossRecommendation: mockAdvancedSignal.stop_loss,
-    takeProfitRecommendation: mockAdvancedSignal.take_profit,
-    collaboratingAgents: ["Grok3 AI", "TrendAnalyzer", "SignalGenerator"]
+  
+  const handleSimulationToggle = (enabled: boolean) => {
+    setIsSimulationMode(enabled);
   };
-
+  
   return (
-    <div className="space-y-6">
-      <Card className="col-span-full backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-        <h2 className="text-xl font-bold mb-4 flex items-center"><Sparkles className="w-5 h-5 mr-2" /> AI Trading Analysis</h2>
-        <AIAnalysisPanel 
-          aiAnalysis={aiAnalysis} 
-          isOnline={apiStatus === 'available'} 
-        />
-      </Card>
+    <div className="container mx-auto p-4 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Analytics Center</h1>
+      </div>
       
-      <Card className="col-span-full backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-        <h2 className="text-xl font-bold mb-4 flex items-center"><PieChart className="w-5 h-5 mr-2" /> Performance Analytics</h2>
-        <PerformanceMetrics />
-      </Card>
-      
-      <Card className="col-span-full backdrop-blur-xl bg-secondary/10 border border-white/10 p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3)]">
-        <h2 className="text-xl font-bold mb-4 flex items-center"><Activity className="w-5 h-5 mr-2" /> Recent Transactions</h2>
-        <TransactionList />
-      </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-3 mb-6">
+          <TabsTrigger value="market" className="flex items-center gap-2">
+            <LineChart className="h-4 w-4" />
+            <span>Market Analysis</span>
+          </TabsTrigger>
+          <TabsTrigger value="agents" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            <span>AI Agents</span>
+          </TabsTrigger>
+          <TabsTrigger value="performance" className="flex items-center gap-2">
+            <BarChart className="h-4 w-4" />
+            <span>Performance</span>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="market" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Market Analysis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <AIMarketAnalysis marketData={marketData} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="agents" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Trading Agents</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PortfolioManager 
+                isSimulationMode={isSimulationMode}
+                onSimulationToggle={handleSimulationToggle}
+                currentData={marketData}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="performance" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Performance Metrics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-base">Agent Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <p className="text-sm text-muted-foreground">Accuracy and success rates of AI trading agents</p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-base">Trading History</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <p className="text-sm text-muted-foreground">Historical trading decisions and outcomes</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

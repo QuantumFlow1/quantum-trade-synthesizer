@@ -5,11 +5,10 @@ import { GroqAgent } from "../types/groqAgentTypes";
 export const groqAgent: GroqAgent = {
   id: "groq-analyst",
   name: "Groq LLM Analyst",
-  icon: "brain-circuit",
   specialization: "fundamental",
   description: "Advanced market analysis powered by Groq's LLM API",
   weight: 0.85, // High weight due to comprehensive analysis
-  confidence: 85,
+  confidence: 0.85,
   successRate: 0.8,
   type: "groq",
   config: {
