@@ -1,3 +1,4 @@
+
 // Update this file to use the correct types and fix the errors
 import { useState, useEffect, useCallback } from 'react';
 import { TradingChartState, PriceDataPoint, ApiStatus, MarketDataParams } from './trading-chart/types';

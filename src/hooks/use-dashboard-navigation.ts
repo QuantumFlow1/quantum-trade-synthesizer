@@ -70,6 +70,12 @@ export const useDashboardNavigation = () => {
     setOpenAgentsTab(true);
   };
 
+  // Function to navigate to specific LLM tools
+  const navigateToLLM = () => {
+    setActivePage('llm');
+    navigate('/dashboard/llm');
+  };
+
   return {
     activePage,
     openAgentsTab,
@@ -78,6 +84,7 @@ export const useDashboardNavigation = () => {
     handlePageChange,
     handleBackToAdmin,
     isActivePath,
-    openTradingAgentsTab
+    openTradingAgentsTab,
+    navigateToLLM
   };
 };

@@ -1,41 +1,71 @@
 
 import { ChatMessage } from './types';
 
-const STORAGE_KEY = 'stockbot-chat-history';
+/**
+ * Save stockbot chat messages to localStorage
+ */
+export const saveStockbotChatHistory = (messages: ChatMessage[]) => {
+  try {
+    localStorage.setItem('stockbot-chat-history', JSON.stringify(messages));
+    return true;
+  } catch (error) {
+    console.error('Error saving stockbot chat history:', error);
+    return false;
+  }
+};
 
 /**
- * Loads chat history from localStorage
+ * Load stockbot chat messages from localStorage
  */
-export function loadChatHistory(): ChatMessage[] {
+export const loadStockbotChatHistory = (): ChatMessage[] => {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      
-      // Convert timestamp strings back to Date objects
-      return parsed.map((msg: any) => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp)
-      }));
+    const savedMessages = localStorage.getItem('stockbot-chat-history');
+    if (savedMessages) {
+      return JSON.parse(savedMessages);
     }
   } catch (error) {
     console.error('Error loading stockbot chat history:', error);
   }
-  
   return [];
-}
+};
 
-/**
- * Saves chat history to localStorage
- */
-export function saveChatHistory(messages: ChatMessage[]): void {
+// Load API key from storage
+export const loadApiKey = (provider: string = 'groq'): string | null => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    return localStorage.getItem(`${provider}ApiKey`);
   } catch (error) {
-    console.error('Error saving stockbot chat history:', error);
+    console.error(`Error loading ${provider} API key:`, error);
+    return null;
   }
-}
+};
 
-// Aliases for backward compatibility
-export const loadStockbotChatHistory = loadChatHistory;
-export const saveStockbotChatHistory = saveChatHistory;
+// Save API key to storage
+export const saveApiKey = (key: string, provider: string = 'groq'): boolean => {
+  try {
+    localStorage.setItem(`${provider}ApiKey`, key);
+    
+    // Dispatch events to notify other components
+    window.dispatchEvent(new Event('apikey-updated'));
+    window.dispatchEvent(new Event('localStorage-changed'));
+    
+    return true;
+  } catch (error) {
+    console.error(`Error saving ${provider} API key:`, error);
+    return false;
+  }
+};
+
+// Check if any API key exists
+export const hasAnyApiKey = (): boolean => {
+  const providers = ['groq', 'openai', 'anthropic', 'deepseek'];
+  return providers.some(provider => !!loadApiKey(provider));
+};
+
+// Get API key status for all providers
+export const getApiKeyStatus = (): Record<string, boolean> => {
+  const providers = ['groq', 'openai', 'anthropic', 'deepseek'];
+  return providers.reduce((status, provider) => {
+    status[provider] = !!loadApiKey(provider);
+    return status;
+  }, {} as Record<string, boolean>);
+};

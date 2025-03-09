@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { AIAdvicePanel } from "@/components/dashboard/AIAdvicePanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, ArrowRight, Bot, Brain, Sparkles } from "lucide-react";
+import { AlertCircle, ArrowRight, Bot, Brain, Code, Key, LineChart, MessageSquare, Sparkles, TrendingUp } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useNavigate } from "react-router-dom";
+import { useDashboardNavigation } from "@/hooks/use-dashboard-navigation";
 
 interface AIToolsPageProps {
   apiStatus?: 'checking' | 'available' | 'unavailable';
@@ -17,6 +19,21 @@ export const AIToolsPage = ({
   showApiAccess = false,
   openTradingAgents
 }: AIToolsPageProps) => {
+  const navigate = useNavigate();
+  const { openTradingAgentsTab } = useDashboardNavigation();
+  
+  // Function to navigate to different AI tools
+  const handleNavigate = (destination: string, action?: () => void) => {
+    if (action) {
+      action();
+      return;
+    }
+    
+    if (destination.startsWith('/')) {
+      navigate(destination);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2">
@@ -26,7 +43,8 @@ export const AIToolsPage = ({
         </p>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* AI Trading Advice */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -47,13 +65,14 @@ export const AIToolsPage = ({
           </CardContent>
         </Card>
         
+        {/* Trading Agents */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
               <Bot className="h-5 w-5 mr-2 text-blue-500" />
               Trading Agents
               <Badge className="ml-2 bg-blue-100 text-blue-800" variant="outline">
-                Beta
+                Active
               </Badge>
             </CardTitle>
             <CardDescription>
@@ -71,7 +90,7 @@ export const AIToolsPage = ({
                   Our AI trading agents can analyze market conditions, identify opportunities, 
                   and help you make better trading decisions.
                 </p>
-                <Button onClick={openTradingAgents} className="mt-2">
+                <Button onClick={() => handleNavigate('', openTradingAgentsTab)} className="mt-2">
                   Launch Trading Agents
                 </Button>
               </div>
@@ -91,11 +110,74 @@ export const AIToolsPage = ({
           </CardContent>
         </Card>
         
+        {/* Stockbot Chat */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Brain className="h-5 w-5 mr-2 text-emerald-500" />
-              Market Analysis
+              <MessageSquare className="h-5 w-5 mr-2 text-teal-500" />
+              Stockbot Chat
+              <Badge className="ml-2 bg-teal-100 text-teal-800" variant="outline">
+                Active
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Chat with an AI assistant specialized in stock trading and market analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="min-h-[200px] flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto bg-teal-50 rounded-full flex items-center justify-center">
+                <MessageSquare className="h-8 w-8 text-teal-500" />
+              </div>
+              <h3 className="text-xl font-medium">Stockbot Chat</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Get market insights, trading advice, and answer your questions about financial markets.
+              </p>
+              <Button onClick={() => handleNavigate('/dashboard/trading')} className="mt-2">
+                Chat with Stockbot
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* LLM Extensions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Brain className="h-5 w-5 mr-2 text-indigo-500" />
+              Advanced LLM Models
+              <Badge className="ml-2 bg-indigo-100 text-indigo-800" variant="outline">
+                Available
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Access powerful language models like Claude, OpenAI, and DeepSeek for advanced analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="min-h-[200px] flex items-center justify-center">
+            <div className="text-center space-y-4">
+              <div className="w-16 h-16 mx-auto bg-indigo-50 rounded-full flex items-center justify-center">
+                <Brain className="h-8 w-8 text-indigo-500" />
+              </div>
+              <h3 className="text-xl font-medium">LLM Extensions</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Access specialized AI models for financial analysis, research, and content generation.
+              </p>
+              <div className="flex flex-wrap gap-2 justify-center mt-2">
+                <Button onClick={() => handleNavigate('/dashboard/llm')} variant="outline" className="mt-2">
+                  Open LLM Extensions
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Market Analysis */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <LineChart className="h-5 w-5 mr-2 text-emerald-500" />
+              AI Market Analysis
               <Badge className="ml-2 bg-slate-100 text-slate-800" variant="outline">
                 Coming Soon
               </Badge>
@@ -107,7 +189,7 @@ export const AIToolsPage = ({
           <CardContent className="min-h-[200px] flex items-center justify-center text-center">
             <div className="space-y-2">
               <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
-                <Brain className="h-8 w-8 text-slate-400" />
+                <LineChart className="h-8 w-8 text-slate-400" />
               </div>
               <h3 className="text-xl font-medium text-slate-700">Coming Soon</h3>
               <p className="text-sm text-slate-500 max-w-md">
@@ -115,7 +197,40 @@ export const AIToolsPage = ({
               </p>
             </div>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="border-t pt-4">
+            <Button variant="outline" disabled className="w-full opacity-70">
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Coming Soon
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        {/* Trading Advisor */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <TrendingUp className="h-5 w-5 mr-2 text-amber-500" />
+              AI Trading Advisor
+              <Badge className="ml-2 bg-slate-100 text-slate-800" variant="outline">
+                Coming Soon
+              </Badge>
+            </CardTitle>
+            <CardDescription>
+              Personalized trading strategy recommendations based on your portfolio
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="min-h-[200px] flex items-center justify-center text-center">
+            <div className="space-y-2">
+              <div className="w-16 h-16 mx-auto bg-slate-100 rounded-full flex items-center justify-center">
+                <TrendingUp className="h-8 w-8 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-medium text-slate-700">Coming Soon</h3>
+              <p className="text-sm text-slate-500 max-w-md">
+                Our AI Trading Advisor will provide personalized trade recommendations based on your risk profile.
+              </p>
+            </div>
+          </CardContent>
+          <CardFooter className="border-t pt-4">
             <Button variant="outline" disabled className="w-full opacity-70">
               <ArrowRight className="w-4 h-4 mr-2" />
               Coming Soon
@@ -123,6 +238,25 @@ export const AIToolsPage = ({
           </CardFooter>
         </Card>
       </div>
+      
+      {apiStatus === 'unavailable' && (
+        <Alert variant="destructive" className="mt-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>API Connection Required</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>Some AI tools require API keys to function properly. Please configure your API keys in settings.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2 w-fit"
+              onClick={() => navigate('/dashboard/settings')}
+            >
+              <Key className="h-4 w-4 mr-2" />
+              Configure API Keys
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 };
