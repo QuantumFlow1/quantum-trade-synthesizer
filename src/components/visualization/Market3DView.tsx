@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { TradingDataPoint } from "@/utils/tradingData";
 import { useMarket3DData } from "@/hooks/use-market-3d-data";
 import { VisualizationControls } from "./3d/VisualizationControls";
-import { useThemeDetection } from "@/hooks/use-theme-detection";
+import { useThemeString } from "@/hooks/use-theme-string";
 import { useWebGLState } from "@/hooks/use-webgl-state";
 import { WebGLErrorState } from "./3d/errors/WebGLErrorState";
 import { LoadingState } from "./3d/LoadingState";
@@ -27,7 +27,7 @@ export const Market3DView = ({
   onLoaded
 }: Market3DViewProps) => {
   const { visualizationData, stats } = useMarket3DData(data);
-  const theme = useThemeDetection();
+  const theme = useThemeString();
   const [renderingStarted, setRenderingStarted] = useState(false);
   const [dataReady, setDataReady] = useState(false);
   const [renderKey, setRenderKey] = useState(0); // Used to force re-render

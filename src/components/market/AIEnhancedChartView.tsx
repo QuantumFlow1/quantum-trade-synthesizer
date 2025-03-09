@@ -6,9 +6,10 @@ import { Skeleton } from '../ui/skeleton';
 
 interface AIEnhancedChartViewProps {
   data: ChartData[];
-  type: 'overview' | 'volume' | 'price';
+  type?: 'overview' | 'volume' | 'price';
   isLoading?: boolean;
   enableAIProjections?: boolean;
+  symbol?: string; // Add the symbol prop
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -97,9 +98,10 @@ const renderCustomLegend = (props: any) => {
 
 export const AIEnhancedChartView = ({ 
   data, 
-  type, 
+  type = 'price', 
   isLoading = false,
-  enableAIProjections = true 
+  enableAIProjections = true,
+  symbol 
 }: AIEnhancedChartViewProps) => {
   const [enhancedData, setEnhancedData] = useState<ChartData[]>([]);
 
@@ -166,12 +168,12 @@ export const AIEnhancedChartView = ({
             <Tooltip content={<CustomTooltip />} />
             <Legend 
               payload={[
-                { value: 'Price', color: '#8b5cf6', type: 'line' as const },
-                { value: 'High', color: '#4ade80', type: 'line' as const },
-                { value: 'Low', color: '#ef4444', type: 'line' as const },
+                { value: 'Price', color: '#8b5cf6', type: 'line' },
+                { value: 'High', color: '#4ade80', type: 'line' },
+                { value: 'Low', color: '#ef4444', type: 'line' },
                 ...(hasProjections ? [
-                  { value: 'AI Projection', color: '#f59e0b', type: 'line' as const },
-                  { value: 'Confidence Band', color: '#f59e0b', type: 'area' as const }
+                  { value: 'AI Projection', color: '#f59e0b', type: 'line' },
+                  { value: 'Confidence Band', color: '#f59e0b', type: 'line' }
                 ] : [])
               ]}
               content={renderCustomLegend} 

@@ -65,7 +65,11 @@ export const MarketPriceChart = ({ marketData }: MarketPriceChartProps) => {
         {chartType === 'standard' ? (
           <MarketChartView data={chartData} type="price" />
         ) : (
-          <AIEnhancedChartView data={chartData} symbol={marketData.symbol} />
+          <AIEnhancedChartView 
+            data={chartData} 
+            type="price" 
+            symbol={marketData.symbol}
+          />
         )}
       </div>
     </div>

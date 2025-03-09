@@ -1,10 +1,10 @@
 
 import React from 'react';
 import * as THREE from 'three';
-import { useThemeDetection } from '@/hooks/use-theme-detection';
+import { useThemeString } from '@/hooks/use-theme-string';
 
 export const CommandCenterEnvironment: React.FC = () => {
-  const theme = useThemeDetection();
+  const theme = useThemeString();
   
   return (
     <group>
