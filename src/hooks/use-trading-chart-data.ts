@@ -1,9 +1,9 @@
 
 // Update this file to use the correct types and fix the errors
 import { useState, useEffect, useCallback } from 'react';
-import { TradingChartState, PriceDataPoint, ApiStatus } from './trading-chart/types';
+import { TradingChartState, PriceDataPoint, ApiStatus, MarketDataParams } from './trading-chart/types';
 import { fetchMarketData, validateMarketData } from './trading-chart/market-data-service';
-import { checkAPIKeyStatus } from './trading-chart/api-key-manager';
+import { getSimpleApiAvailability } from './trading-chart/api-key-manager';
 
 // Initial state
 const initialState: TradingChartState = {
@@ -22,6 +22,7 @@ const initialState: TradingChartState = {
 };
 
 export const useTradingChartData = (
+  simulationMode: boolean = false,
   symbol: string = 'BTC',
   interval: string = '1h',
   limit: number = 100
@@ -98,12 +99,12 @@ export const useTradingChartData = (
     }));
     
     try {
-      const result = await checkAPIKeyStatus();
-      const { available, status } = result;
+      const available = await getSimpleApiAvailability();
+      const status: ApiStatus = available ? 'available' : 'unavailable';
       
       setState(prev => ({
         ...prev,
-        apiStatus: status as ApiStatus,
+        apiStatus: status,
         lastAPICheckTime: Date.now(),
         apiKeysAvailable: available
       }));
@@ -127,6 +128,15 @@ export const useTradingChartData = (
   const refreshData = useCallback(() => {
     fetchData(state.symbol, state.interval, limit);
   }, [fetchData, state.symbol, state.interval, limit]);
+  
+  // Handle retry connection
+  const handleRetryConnection = useCallback(() => {
+    checkAPIStatus().then(({ available }) => {
+      if (available) {
+        refreshData();
+      }
+    });
+  }, [checkAPIStatus, refreshData]);
   
   // Generate fallback data
   const generateFallbackData = (
@@ -173,6 +183,7 @@ export const useTradingChartData = (
     ...state,
     refreshData,
     checkAPIStatus,
-    fetchData
+    fetchData,
+    handleRetryConnection
   };
 };

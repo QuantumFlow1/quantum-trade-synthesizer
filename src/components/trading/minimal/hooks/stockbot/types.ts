@@ -1,10 +1,12 @@
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
-  content: string;
+  sender: 'user' | 'assistant';
+  text: string;
   timestamp: Date;
 }
+
+export type StockbotStatus = 'idle' | 'thinking' | 'checking' | 'error';
 
 export interface StockbotChatHook {
   messages: ChatMessage[];

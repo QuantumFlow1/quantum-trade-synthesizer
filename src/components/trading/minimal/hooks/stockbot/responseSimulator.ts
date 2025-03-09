@@ -1,4 +1,21 @@
 
+import { ChatMessage } from './types';
+import { v4 as uuidv4 } from 'uuid';
+
+/**
+ * Generate a simulated response for Stockbot
+ */
+export const generateStockbotResponse = (message: string, marketData: any[] = []): ChatMessage => {
+  const responseText = getSimulatedResponse(message, marketData);
+  
+  return {
+    id: uuidv4(),
+    sender: 'assistant',
+    text: responseText,
+    timestamp: new Date()
+  };
+};
+
 /**
  * Function to generate simulated responses
  */

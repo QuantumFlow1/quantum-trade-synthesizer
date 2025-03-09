@@ -1,4 +1,5 @@
-import { MarketDataParams, MarketDataValidationResult } from './trading-chart/types';
+
+import { MarketDataParams, MarketDataValidationResult, PriceDataPoint } from './types';
 
 export const fetchMarketData = async (params: MarketDataParams): Promise<any> => {
   const { symbol, interval, limit = 100 } = params;
@@ -166,17 +167,21 @@ export const calculateRSI = (data: any[], period: number = 14): number[] => {
   return rsiValues;
 };
 
-export const calculateMACD = (data: any[]): any[] => {
+export const calculateMACD = (data: any[]): any => {
   const ema12 = calculateEMA(data, 12);
   const ema26 = calculateEMA(data, 26);
-  const macdValues: any[] = [];
+  const macdValues: number[] = [];
   
   for (let i = 25; i < data.length; i++) {
     const macd = ema12[i] - ema26[i];
     macdValues[i] = macd;
   }
   
-  const signalLine = calculateEMA(macdValues, 9);
+  const signalLine = calculateEMA(
+    data.map((d, i) => ({ ...d, close: macdValues[i] || 0 })), 
+    9
+  );
+  
   const histogram: number[] = [];
   
   for (let i = 33; i < data.length; i++) {

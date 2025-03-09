@@ -84,6 +84,14 @@ export const getSimpleApiAvailability = async (
 };
 
 /**
+ * For backward compatibility
+ */
+export const checkAPIKeyStatus = async () => {
+  const result = await getSimpleApiAvailability();
+  return { available: result, status: result ? 'available' : 'unavailable' };
+};
+
+/**
  * Broadcast API key status changes to other tabs
  */
 export const broadcastApiKeyUpdate = (keyType: string, isAvailable: boolean) => {

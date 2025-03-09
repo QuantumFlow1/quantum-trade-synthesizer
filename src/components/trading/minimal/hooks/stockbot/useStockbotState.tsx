@@ -14,7 +14,7 @@ export interface StockbotStateProps {
 export const useStockbotState = ({ 
   initialMessages = [], 
   marketData 
-}: StockbotStateProps) => {
+}: StockbotStateProps = {}) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     const savedMessages = loadStockbotChatHistory();
     return savedMessages.length > 0 ? savedMessages : initialMessages;
@@ -65,8 +65,8 @@ export const useStockbotState = ({
     // Create user message
     const userMessage: ChatMessage = {
       id: uuidv4(),
-      text,
       sender: 'user',
+      text,
       timestamp: new Date(),
     };
     
@@ -84,15 +84,7 @@ export const useStockbotState = ({
         response = await sendMessageToStockbot(text, marketData);
         
         if (typeof response === 'object' && response !== null) {
-          // Check if the response has a timestamp property to determine if it's a valid message object
-          if ('timestamp' in response) {
-            addMessage(response);
-          } else if ('source' in response) {
-            // Handle case where response is not a message but an error object
-            setError(`Error from API: ${response.message || 'Unknown error'}`);
-          } else {
-            setError('Invalid response format from API');
-          }
+          addMessage(response);
         } else {
           setError('Invalid response from API');
         }

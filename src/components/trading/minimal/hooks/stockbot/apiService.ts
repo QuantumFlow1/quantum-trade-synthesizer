@@ -1,8 +1,69 @@
 
+import { ChatMessage } from './types';
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
-import { ChatMessage } from "./types";
 import { getSimpleApiAvailability } from "@/hooks/trading-chart/api-key-manager";
+
+/**
+ * Send a message to the Stockbot service
+ */
+export const sendMessageToStockbot = async (
+  message: string, 
+  marketData: any[] = []
+): Promise<ChatMessage> => {
+  console.log("Sending message to Stockbot:", message);
+  
+  // Get the stored API key
+  const groqKey = localStorage.getItem("groqApiKey");
+  
+  try {
+    // Check if we have a valid key
+    if (!groqKey || groqKey.trim().length === 0) {
+      const serverKeyAvailable = await getSimpleApiAvailability('groq', true);
+      
+      if (!serverKeyAvailable) {
+        throw new Error("No API key available");
+      }
+    }
+    
+    // Call the trading advice function
+    const responseText = await fetchTradingAdvice(
+      message, 
+      [], // Empty context for now
+      groqKey || ''
+    );
+    
+    // Enhance the response with market data
+    const enhancedResponse = enhanceResponseWithMarketData(
+      message, 
+      responseText, 
+      marketData
+    );
+    
+    // Return formatted message
+    return {
+      id: uuidv4(),
+      sender: 'assistant',
+      text: enhancedResponse,
+      timestamp: new Date()
+    };
+  } catch (error) {
+    console.error("Error in sendMessageToStockbot:", error);
+    
+    if (error instanceof Error) {
+      showApiErrorToast(error);
+    }
+    
+    // Return an error message
+    return {
+      id: uuidv4(),
+      sender: 'assistant',
+      text: `I'm sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again or check your API key configuration.`,
+      timestamp: new Date()
+    };
+  }
+};
 
 /**
  * Makes an API call to generate trading advice via the Supabase edge function
