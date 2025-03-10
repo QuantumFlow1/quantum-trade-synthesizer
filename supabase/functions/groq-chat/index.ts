@@ -63,7 +63,7 @@ serve(async (req) => {
     const requestData = await req.json();
     const { 
       messages, 
-      model = "llama-3.3-70b-versatile", 
+      model = "llama-3.1-70b-versatile", 
       temperature = 0.7, 
       max_tokens = 1024,
       response_format,
@@ -162,6 +162,8 @@ serve(async (req) => {
     let data;
     try {
       const responseText = await response.text();
+      console.log("Raw API response:", responseText.substring(0, 200) + (responseText.length > 200 ? "..." : ""));
+      
       try {
         data = JSON.parse(responseText);
       } catch (e) {
@@ -173,30 +175,39 @@ serve(async (req) => {
       throw new Error(`Failed to parse response from ${apiType.toUpperCase()} API: ${parseError.message}`);
     }
     
-    console.log(`Successfully received ${apiType.toUpperCase()} API response`);
+    console.log(`Successfully received ${apiType.toUpperCase()} API response:`, {
+      id: data.id,
+      model: data.model,
+      choicesLength: data.choices?.length || 0
+    });
     
     // Validate response structure
     if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-      console.error('Invalid response structure:', data);
+      console.error('Invalid response structure:', JSON.stringify(data).substring(0, 500));
       throw new Error(`Received invalid response structure from ${apiType.toUpperCase()} API`);
     }
     
     const firstChoice = data.choices[0];
-    if (!firstChoice || !firstChoice.message) {
+    if (!firstChoice || typeof firstChoice !== 'object') {
       console.error('Invalid choice structure:', firstChoice);
       throw new Error(`Received invalid choice structure from ${apiType.toUpperCase()} API`);
     }
     
-    // Check for empty or invalid response content
-    if (typeof firstChoice.message.content !== 'string' && !firstChoice.message.tool_calls) {
-      console.error('Invalid message content:', firstChoice.message);
-      throw new Error(`Received invalid message content from ${apiType.toUpperCase()} API`);
+    if (!firstChoice.message || typeof firstChoice.message !== 'object') {
+      console.error('Invalid message in choice:', firstChoice);
+      throw new Error(`Received invalid message from ${apiType.toUpperCase()} API`);
     }
     
-    const hasToolCalls = firstChoice.message.tool_calls?.length > 0;
+    // Check for empty or invalid response content
+    const hasToolCalls = Array.isArray(firstChoice.message.tool_calls) && firstChoice.message.tool_calls.length > 0;
     
     // Ensure message content is always a string (even if empty when using tool calls)
-    const messageContent = firstChoice.message.content || "";
+    const messageContent = typeof firstChoice.message.content === 'string' ? firstChoice.message.content : "";
+    
+    if (!messageContent && !hasToolCalls) {
+      console.error('Empty message content and no tool calls:', firstChoice.message);
+      throw new Error(`Received empty content from ${apiType.toUpperCase()} API`);
+    }
     
     return new Response(
       JSON.stringify({

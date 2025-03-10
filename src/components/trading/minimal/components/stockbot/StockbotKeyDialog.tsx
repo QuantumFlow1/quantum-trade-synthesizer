@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { saveApiKey, hasApiKey } from '@/utils/apiKeyManager';
+import { saveApiKey, hasApiKey, broadcastApiKeyChange } from '@/utils/apiKeyManager';
 import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface StockbotKeyDialogProps {
@@ -83,7 +83,7 @@ export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
     localStorage.removeItem('groqApiKey');
     setApiKey('');
     setSaveSuccess(false);
-    broadcastApiKeyChange();
+    broadcastApiKeyChange('groq', 'remove');
     
     toast({
       title: "API Key Removed",
@@ -168,6 +168,3 @@ export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
     </Dialog>
   );
 };
-
-// Add the missing import
-import { broadcastApiKeyChange } from '@/utils/apiKeyManager';
