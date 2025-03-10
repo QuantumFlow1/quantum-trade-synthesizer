@@ -2,7 +2,7 @@ import React, { forwardRef, useMemo } from "react";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StockbotMessage } from "../hooks/stockbot/types";
-import { TradingViewChart, MarketHeatmap, StockNews } from "./stockbot/TradingViewWidgets";
+import { TradingViewChart, MarketHeatmap, StockNews } from "./stockbot/widgets";
 
 interface StockbotMessagesProps {
   messages: StockbotMessage[];
