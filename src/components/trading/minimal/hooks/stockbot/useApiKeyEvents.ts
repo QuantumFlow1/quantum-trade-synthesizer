@@ -6,7 +6,7 @@ import { API_KEY_UPDATED_EVENT, LOCALSTORAGE_CHANGED_EVENT } from "@/utils/apiKe
  * Hook for API key event handling
  */
 export const useApiKeyEvents = (
-  onApiKeyChange: () => void
+  onApiKeyChange: () => Promise<boolean>
 ) => {
   const apiKeyCheckTimerId = useRef<number | null>(null);
   const lastCheckTime = useRef<number>(0);
@@ -27,12 +27,12 @@ export const useApiKeyEvents = (
         processingEvent.current = true;
         
         console.log("API key event listener triggered");
-        onApiKeyChange();
-        
-        // Reset processing flag after a short delay
-        setTimeout(() => {
-          processingEvent.current = false;
-        }, 1000); // Increased from 500ms
+        onApiKeyChange().finally(() => {
+          // Reset processing flag after API key check is complete
+          setTimeout(() => {
+            processingEvent.current = false;
+          }, 1000); // Increased from 500ms
+        });
       } catch (err) {
         console.error("Error in API key event handler:", err);
         processingEvent.current = false;

@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { StockbotChatHook } from "./stockbot/types";
 import { useStockbotSettings } from "./stockbot/useStockbotSettings";
@@ -23,7 +24,10 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     isLoading,
     handleSendMessage,
     clearChat
-  } = useStockbotMessages(marketData, hasGroqKey, isSimulationMode, checkGroqApiKey);
+  } = useStockbotMessages(marketData, hasGroqKey, isSimulationMode, async () => {
+    const result = await checkGroqApiKey();
+    return result;
+  });
   
   const {
     isKeyDialogOpen,

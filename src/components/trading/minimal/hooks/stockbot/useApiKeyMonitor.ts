@@ -19,7 +19,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
   const { validateGroqApiKey } = useApiKeyValidator();
   
   // Check if the Groq API key exists with improved caching and debouncing
-  const checkGroqApiKey = useCallback(() => {
+  const checkGroqApiKey = useCallback(async () => {
     // Prevent reentrant checks
     if (checkLock.current) {
       console.log("API key check already in progress, skipping duplicate check");
@@ -36,7 +36,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     lastKeyCheckTime.current = now;
     
     try {
-      const keyExists = validateGroqApiKey();
+      const keyExists = await validateGroqApiKey();
       
       if (keyExists !== hasGroqKey || !checkedThisSession.current) {
         checkedThisSession.current = true;
@@ -89,12 +89,15 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
   
   // Run initial check on component mount
   useEffect(() => {
-    const initialKeyStatus = checkGroqApiKey();
-    console.log('Initial API key status:', { exists: initialKeyStatus });
+    const runInitialCheck = async () => {
+      const initialKeyStatus = await checkGroqApiKey();
+      console.log('Initial API key status:', { exists: initialKeyStatus });
+    };
+    runInitialCheck();
   }, [checkGroqApiKey]);
   
   // Force reload API keys
-  const reloadApiKeys = useCallback(() => {
+  const reloadApiKeys = useCallback(async () => {
     console.log('Forced reload of API keys requested');
     
     // Skip if a check is already in progress
@@ -110,7 +113,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     
     try {
       // Force immediate check
-      const keyExists = checkGroqApiKey();
+      const keyExists = await checkGroqApiKey();
       console.log('Force reloaded API key status:', { 
         exists: keyExists,
         timestamp: new Date().toISOString()
