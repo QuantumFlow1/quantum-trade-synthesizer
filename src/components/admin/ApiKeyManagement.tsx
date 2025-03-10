@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,7 +70,6 @@ const ApiKeyManagement = () => {
     is_active: true
   });
 
-  // Check if user has super_admin permission
   const isSuperAdmin = checkPermission(userProfile, 'super_admin');
 
   useEffect(() => {
@@ -152,14 +150,12 @@ const ApiKeyManagement = () => {
   };
 
   const handleEditSwitchChange = (id: string, checked: boolean) => {
-    // Update the local state first for immediate UI feedback
     setApiKeys(prev => 
       prev.map(key => 
         key.id === id ? { ...key, is_active: checked } : key
       )
     );
 
-    // Then update in the database
     updateApiKeyStatus(id, checked);
   };
 
@@ -179,7 +175,6 @@ const ApiKeyManagement = () => {
         description: `API key ${isActive ? 'activated' : 'deactivated'} successfully.`,
       });
       
-      // Refresh the admin API key status
       checkAdminApiKeys();
     } catch (error) {
       console.error('Error updating API key status:', error);
@@ -188,7 +183,6 @@ const ApiKeyManagement = () => {
         description: "Failed to update API key status.",
         variant: "destructive"
       });
-      // Revert the local state change if the database update failed
       fetchApiKeys();
     }
   };
@@ -206,7 +200,6 @@ const ApiKeyManagement = () => {
     }
 
     try {
-      // Ensure we have the user's ID for ownership tracking
       if (!userProfile?.id) {
         toast({
           title: "Auth Error",
@@ -216,12 +209,10 @@ const ApiKeyManagement = () => {
         return;
       }
 
-      // Check if we already have a key of this type
       const existingKey = apiKeys.find(key => key.key_type === formData.key_type);
       
       let response;
       if (existingKey) {
-        // Update existing key
         response = await supabase
           .from('admin_api_keys')
           .update({ 
@@ -231,7 +222,6 @@ const ApiKeyManagement = () => {
           })
           .eq('id', existingKey.id);
       } else {
-        // Insert new key
         response = await supabase
           .from('admin_api_keys')
           .insert({ 
@@ -251,14 +241,13 @@ const ApiKeyManagement = () => {
         description: `${existingKey ? 'Updated' : 'Added'} ${getKeyTypeName(formData.key_type)} API key successfully.`,
       });
 
-      // Reset form and refresh the list
       setFormData({
         key_type: 'openai',
         api_key: '',
         is_active: true
       });
       fetchApiKeys();
-      checkAdminApiKeys(); // Also refresh the admin key status
+      checkAdminApiKeys();
     } catch (error) {
       console.error('Error saving API key:', error);
       toast({
@@ -296,7 +285,7 @@ const ApiKeyManagement = () => {
     <div className="space-y-6">
       <Card className="w-full max-w-xl mx-auto">
         <CardHeader>
-          <CardTitle className="flex justify-between items-center">
+          <CardTitle className="flex justify-between items-center text-gray-900 dark:text-white">
             <span>Admin API Keys Status</span>
             <Button 
               variant="outline" 
@@ -308,7 +297,7 @@ const ApiKeyManagement = () => {
               Refresh
             </Button>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-700 dark:text-gray-300">
             Current status of API keys available in Supabase environment.
           </CardDescription>
         </CardHeader>
@@ -316,7 +305,7 @@ const ApiKeyManagement = () => {
           {checkingAdminKeys ? (
             <div className="text-center py-2">
               <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Checking API keys...</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300">Checking API keys...</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
@@ -327,8 +316,8 @@ const ApiKeyManagement = () => {
                   ) : (
                     <XCircle className="w-4 h-4 text-gray-400 mr-2" />
                   )}
-                  <span className="text-sm font-medium capitalize">{key}</span>
-                  <span className={`text-xs ml-auto ${value ? 'text-green-600' : 'text-gray-500'}`}>
+                  <span className="text-sm font-medium capitalize text-gray-900 dark:text-white">{key}</span>
+                  <span className={`text-xs ml-auto ${value ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}`}>
                     {value ? 'Active' : 'Not Set'}
                   </span>
                 </div>
@@ -348,21 +337,21 @@ const ApiKeyManagement = () => {
 
       <Card className="w-full max-w-xl mx-auto">
         <CardHeader>
-          <CardTitle>API Key Management</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-gray-900 dark:text-white">API Key Management</CardTitle>
+          <CardDescription className="text-gray-700 dark:text-gray-300">
             Manage global API keys that will be used when users don't have their own keys.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="key_type">API Type</Label>
+              <Label htmlFor="key_type" className="text-gray-900 dark:text-white">API Type</Label>
               <select 
                 id="key_type"
                 name="key_type"
                 value={formData.key_type}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border rounded-md text-gray-900 bg-white dark:text-white dark:bg-gray-800"
               >
                 {API_KEY_TYPES.map(type => (
                   <option key={type.id} value={type.id}>
@@ -373,7 +362,7 @@ const ApiKeyManagement = () => {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="api_key">API Key</Label>
+              <Label htmlFor="api_key" className="text-gray-900 dark:text-white">API Key</Label>
               <Input 
                 id="api_key"
                 name="api_key"
@@ -381,6 +370,7 @@ const ApiKeyManagement = () => {
                 placeholder="Enter API key"
                 value={formData.api_key}
                 onChange={handleInputChange}
+                className="text-gray-900 dark:text-white"
               />
             </div>
             
@@ -390,7 +380,7 @@ const ApiKeyManagement = () => {
                 checked={formData.is_active}
                 onCheckedChange={handleSwitchChange}
               />
-              <Label htmlFor="is_active">Active</Label>
+              <Label htmlFor="is_active" className="text-gray-900 dark:text-white">Active</Label>
             </div>
             
             <Button type="submit" className="w-full">
@@ -402,20 +392,20 @@ const ApiKeyManagement = () => {
 
       <Card className="w-full max-w-xl mx-auto">
         <CardHeader>
-          <CardTitle>Existing API Keys</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-white">Existing API Keys</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-4">Loading API keys...</div>
+            <div className="text-center py-4 text-gray-700 dark:text-gray-300">Loading API keys...</div>
           ) : apiKeys.length === 0 ? (
-            <div className="text-center py-4 text-muted-foreground">No API keys found.</div>
+            <div className="text-center py-4 text-gray-600 dark:text-gray-400">No API keys found.</div>
           ) : (
             <div className="space-y-4">
               {apiKeys.map(key => (
                 <div key={key.id} className="p-4 border rounded-md flex justify-between items-center">
                   <div>
-                    <h3 className="font-medium">{getKeyTypeName(key.key_type)}</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="font-medium text-gray-900 dark:text-white">{getKeyTypeName(key.key_type)}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       {renderApiKeyMasked(key.api_key)}
                     </p>
                   </div>
@@ -424,7 +414,7 @@ const ApiKeyManagement = () => {
                       checked={key.is_active} 
                       onCheckedChange={(checked) => handleEditSwitchChange(key.id, checked)}
                     />
-                    <span className={`text-sm ${key.is_active ? 'text-green-600' : 'text-gray-500'}`}>
+                    <span className={`text-sm ${key.is_active ? 'text-green-600' : 'text-gray-500 dark:text-gray-400'}`}>
                       {key.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>

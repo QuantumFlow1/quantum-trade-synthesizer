@@ -76,6 +76,23 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         float: "float 3s ease-in-out infinite",
       },
+      typography: {
+        DEFAULT: {
+          css: {
+            color: '#333',
+            a: {
+              color: '#3182ce',
+              '&:hover': {
+                color: '#2c5282',
+              },
+            },
+            strong: {
+              color: '#000',
+              fontWeight: '600',
+            },
+          },
+        },
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

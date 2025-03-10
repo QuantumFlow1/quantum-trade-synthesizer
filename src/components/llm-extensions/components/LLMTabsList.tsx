@@ -84,7 +84,7 @@ export function LLMTabsList({
   return (
     <div className="mb-4 flex flex-col space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium flex items-center">
+        <h3 className="text-sm font-medium flex items-center text-gray-900 dark:text-white">
           <Bot className="h-4 w-4 mr-2" />
           Available LLM Extensions
         </h3>
@@ -93,8 +93,8 @@ export function LLMTabsList({
             About these extensions
           </PopoverTrigger>
           <PopoverContent className="text-sm p-4 max-w-xs">
-            <p>These LLM extensions allow you to integrate with various AI models. Each has its own capabilities and API requirements.</p>
-            <ul className="list-disc pl-4 mt-2 space-y-1">
+            <p className="text-gray-900 dark:text-white">These LLM extensions allow you to integrate with various AI models. Each has its own capabilities and API requirements.</p>
+            <ul className="list-disc pl-4 mt-2 space-y-1 text-gray-700 dark:text-gray-300">
               <li>Toggle any extension ON to use it</li>
               <li>Each may require an API key to be set in settings</li>
               <li>Click on a tab to view and interact with that model</li>
@@ -106,22 +106,22 @@ export function LLMTabsList({
       <TabsList className="grid grid-cols-4 w-full">
         <TabsTrigger value="deepseek" className="relative flex flex-col items-center justify-center py-3">
           {getLLMIcon('deepseek')}
-          <span>DeepSeek</span>
+          <span className="text-gray-900 dark:text-white font-medium">DeepSeek</span>
           <div className="mt-1">{getStatusBadge(connectionStatus.deepseek)}</div>
         </TabsTrigger>
         <TabsTrigger value="openai" className="relative flex flex-col items-center justify-center py-3">
           {getLLMIcon('openai')}
-          <span>OpenAI</span>
+          <span className="text-gray-900 dark:text-white font-medium">OpenAI</span>
           <div className="mt-1">{getStatusBadge(connectionStatus.openai)}</div>
         </TabsTrigger>
         <TabsTrigger value="grok" className="relative flex flex-col items-center justify-center py-3">
           {getLLMIcon('grok')}
-          <span>Grok</span>
+          <span className="text-gray-900 dark:text-white font-medium">Grok</span>
           <div className="mt-1">{getStatusBadge(connectionStatus.grok)}</div>
         </TabsTrigger>
         <TabsTrigger value="claude" className="relative flex flex-col items-center justify-center py-3">
           {getLLMIcon('claude')}
-          <span>Claude</span>
+          <span className="text-gray-900 dark:text-white font-medium">Claude</span>
           <div className="mt-1">{getStatusBadge(connectionStatus.claude)}</div>
         </TabsTrigger>
       </TabsList>
@@ -134,7 +134,7 @@ export function LLMTabsList({
               checked={enabledLLMs[llm]}
               onCheckedChange={(checked) => toggleLLM(llm, checked)}
             />
-            <Label htmlFor={`${llm}-toggle`} className="flex items-center">
+            <Label htmlFor={`${llm}-toggle`} className="flex items-center text-gray-900 dark:text-white">
               {getLLMIcon(llm, "h-4 w-4 mr-1")}
               {formatLLMName(llm)}
             </Label>
