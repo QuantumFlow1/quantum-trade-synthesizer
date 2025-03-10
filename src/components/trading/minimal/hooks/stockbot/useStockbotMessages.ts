@@ -71,10 +71,10 @@ export const useStockbotMessages = (
         throw new Error(data?.error || 'Invalid response from AI service');
       }
       
-      const message = {
+      const message: ChatMessage = {
         id: crypto.randomUUID(),
-        sender: 'assistant',
-        role: 'assistant',
+        sender: 'assistant' as 'assistant', // Explicitly cast to ensure correct type
+        role: 'assistant' as StockbotMessageRole,
         content: data.response,
         text: data.response,
         timestamp: new Date()
@@ -122,8 +122,8 @@ export const useStockbotMessages = (
         // Add a message for the tool response
         const toolMessage: ChatMessage = {
           id: crypto.randomUUID(),
-          sender: 'system',
-          role: 'assistant',
+          sender: 'system' as 'system', // Explicitly cast to ensure correct type
+          role: 'assistant' as StockbotMessageRole,
           content: responseContent,
           text: responseContent,
           timestamp: new Date(),
@@ -135,8 +135,8 @@ export const useStockbotMessages = (
         // Add error message for failed tool call
         const errorMessage: ChatMessage = {
           id: crypto.randomUUID(),
-          sender: 'system',
-          role: 'assistant',
+          sender: 'system' as 'system', // Explicitly cast to ensure correct type
+          role: 'assistant' as StockbotMessageRole,
           content: `Failed to process tool call ${toolCall.function.name}: ${error.message}`,
           text: `Failed to process tool call ${toolCall.function.name}: ${error.message}`,
           timestamp: new Date(),
@@ -154,8 +154,8 @@ export const useStockbotMessages = (
     setIsLoading(true);
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
-      sender: 'user',
-      role: 'user',
+      sender: 'user' as 'user', // Explicitly cast to ensure correct type
+      role: 'user' as StockbotMessageRole,
       content: inputMessage,
       text: inputMessage,
       timestamp: new Date()
@@ -214,8 +214,8 @@ export const useStockbotMessages = (
       // Add error message to the chat
       const errorMessage: ChatMessage = {
         id: crypto.randomUUID(),
-        sender: 'system',
-        role: 'assistant',
+        sender: 'system' as 'system', // Explicitly cast to ensure correct type
+        role: 'assistant' as StockbotMessageRole,
         content: `I'm sorry, I encountered an error processing your request. Please try again later.`,
         text: `I'm sorry, I encountered an error processing your request. Please try again later.`,
         timestamp: new Date()
