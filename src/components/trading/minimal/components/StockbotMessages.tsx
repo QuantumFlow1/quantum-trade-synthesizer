@@ -21,15 +21,21 @@ export const StockbotMessages = forwardRef<HTMLDivElement, StockbotMessagesProps
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    return (
-      <div className="flex-grow overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && !isLoading && (
+    // Render an empty state when there are no messages
+    if (messages.length === 0 && !isLoading) {
+      return (
+        <div className="flex-grow overflow-y-auto p-4">
           <EmptyState 
             hasApiKey={hasApiKey} 
             onConfigureApiKey={onConfigureApiKey} 
           />
-        )}
+          <div ref={messagesEndRef}></div>
+        </div>
+      );
+    }
 
+    return (
+      <div className="flex-grow overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <MessageItem
             key={message.id}
