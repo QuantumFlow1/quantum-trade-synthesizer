@@ -1,4 +1,3 @@
-
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
@@ -30,3 +29,5 @@ export interface StockbotApiResponse {
   response?: string;
   error?: string;
 }
+
+export type CheckApiKeyFunction = () => Promise<boolean>;

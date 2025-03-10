@@ -1,86 +1,80 @@
-
 import { useState, useCallback } from "react";
-import { v4 as uuidv4 } from 'uuid';
-import { ChatMessage } from "../stockbot/types";
-import { generateStockbotResponse, generateErrorResponse } from "../stockbot/responseSimulator";
+import { 
+  StockbotMessage, 
+  StockbotMessageRole,
+  CheckApiKeyFunction 
+} from "./types";
+import { generateSimulatedResponse } from "./responseSimulator";
+import { sendMessageToAPI } from "./apiService";
+import { getStoredMessages, storeMessages } from "./storage";
+import { toast } from "@/hooks/use-toast";
 
-// Initial welcome message
-const WELCOME_MESSAGE: ChatMessage = {
-  id: uuidv4(),
-  sender: 'assistant',
-  role: 'assistant',
-  text: 'Welcome to Stockbot! I can help you with market analysis and trading insights. How can I assist you today?',
-  content: 'Welcome to Stockbot! I can help you with market analysis and trading insights. How can I assist you today?',
-  timestamp: new Date()
-};
-
-/**
- * Hook for managing stockbot messages and interactions
- */
+// Update the function signature to accept a promise-returning function
 export const useStockbotMessages = (
   marketData: any[] = [],
   hasGroqKey: boolean,
   isSimulationMode: boolean,
-  checkGroqApiKey: () => boolean
+  checkApiKey: CheckApiKeyFunction
 ) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [messages, setMessages] = useState<StockbotMessage[]>(getStoredMessages());
+  const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Reset chat to initial state
-  const clearChat = useCallback(() => {
-    setMessages([WELCOME_MESSAGE]);
-  }, []);
-  
-  // Handle sending a message
+
   const handleSendMessage = useCallback(async () => {
     if (!inputMessage.trim()) return;
-    
-    // Add user message
-    const userMessage: ChatMessage = {
-      id: uuidv4(),
-      sender: 'user',
-      role: 'user',
-      text: inputMessage,
-      content: inputMessage,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
+
     setIsLoading(true);
-    
+    const userMessage: StockbotMessage = {
+      role: StockbotMessageRole.User,
+      content: inputMessage,
+    };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    storeMessages(updatedMessages);
+    setInputMessage("");
+
     try {
-      // Double-check API key status before responding
-      const hasKey = checkGroqApiKey();
-      
-      // Log the current API key status for debugging
-      console.log('Sending message with current API status:', {
-        hasGroqKey,
-        hasKey,
-        isSimulationMode
+      let responseContent: string;
+      if (isSimulationMode) {
+        responseContent = generateSimulatedResponse(marketData, inputMessage);
+      } else {
+        const apiKeyValid = await checkApiKey();
+        if (!apiKeyValid) {
+          toast({
+            title: "API Key Required",
+            description: "Please configure your Groq API key to use the AI features.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+        responseContent = await sendMessageToAPI(updatedMessages, marketData);
+      }
+
+      const botMessage: StockbotMessage = {
+        role: StockbotMessageRole.Bot,
+        content: responseContent,
+      };
+      const finalMessages = [...updatedMessages, botMessage];
+      setMessages(finalMessages);
+      storeMessages(finalMessages);
+    } catch (error: any) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message.",
+        variant: "destructive",
       });
-      
-      // Simulate response delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Generate response based on message content
-      const assistantMessage = generateStockbotResponse(inputMessage, marketData);
-      
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error("Error handling message:", error);
-      
-      // Add error message to chat
-      const errorMessage = generateErrorResponse(
-        error instanceof Error ? error.message : "An unknown error occurred while processing your message."
-      );
-      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
-      setInputMessage('');
     }
-  }, [inputMessage, marketData, checkGroqApiKey, hasGroqKey, isSimulationMode]);
-  
+  }, [inputMessage, messages, marketData, isSimulationMode, checkApiKey]);
+
+  const clearChat = useCallback(() => {
+    setMessages([]);
+    storeMessages([]);
+  }, []);
+
   return {
     messages,
     inputMessage,
