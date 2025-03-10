@@ -1,4 +1,3 @@
-
 import React, { forwardRef, useMemo } from "react";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,140 +21,82 @@ export const StockbotMessages = forwardRef<HTMLDivElement, StockbotMessagesProps
 
     const renderMessageContent = (content: string) => {
       try {
-        // Check for function call formats with or without closing tag
-        // Example 1: <function=showStockChart{"symbol":"BTC","timeframe":"1D"}>
-        // Example 2: <function=showStockChart{"symbol":"BTC","timeframe":"1D"}></function>
-        const functionMatch = content.match(/<function=(\w+)(.*?)>(?:<\/function>)?/);
+        // Handle function format: <function=name{"param":"value"}>
+        const functionRegex = /<function=(\w+)(\{.*?\})>(?:<\/function>)?/;
+        const functionMatch = content.match(functionRegex);
         
         if (functionMatch) {
           const functionName = functionMatch[1];
+          const paramsString = functionMatch[2];
           let params = {};
           
           try {
-            // Clean up the parameters string and parse it
-            const paramsString = functionMatch[2].trim();
-            if (paramsString) {
-              // Remove any non-JSON characters and parse
-              const cleanParams = paramsString.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
-              params = JSON.parse(cleanParams);
-            }
+            params = JSON.parse(paramsString);
           } catch (e) {
             console.error("Failed to parse function parameters:", e, "Original content:", content);
           }
           
-          if (functionName === "getStockNews") {
-            const symbol = (params as any).symbol || "market";
-            const count = (params as any).count || 5;
-            return (
-              <>
-                <div className="mb-2">Here's the latest news for {symbol}:</div>
-                <StockNews symbol={symbol} count={count} />
-              </>
-            );
-          } else if (functionName === "showStockChart") {
-            const symbol = (params as any).symbol || "SPY";
-            const timeframe = (params as any).timeframe || "1M";
-            return (
-              <>
-                <div className="mb-2">Here's the chart for {symbol}:</div>
-                <TradingViewChart symbol={symbol} timeframe={timeframe} />
-              </>
-            );
-          } else if (functionName === "showMarketHeatmap") {
-            const sector = (params as any).sector || "all";
-            return (
-              <>
-                <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
-                <MarketHeatmap sector={sector} />
-              </>
-            );
-          }
+          return renderFunctionWidget(functionName, params);
         }
         
-        // Check for alternative format like: <function=showStockChart{"symbol":"BTC","timeframe":"1D"}></function>
-        const altFunctionMatch = content.match(/<function=(\w+)\{(.*?)\}><\/function>/);
-        if (altFunctionMatch) {
-          const functionName = altFunctionMatch[1];
-          let params = {};
+        // Check for alternative function format without quotes: <function=name{param:value}>
+        const altFunctionRegex = /<function=(\w+)\{([^}]+)\}>/;
+        const altMatch = content.match(altFunctionRegex);
+        
+        if (altMatch) {
+          const functionName = altMatch[1];
+          // Convert to proper JSON format
+          const paramsText = altMatch[2].replace(/(\w+):/g, '"$1":');
+          const paramsString = `{${paramsText}}`;
           
           try {
-            const paramsStr = `{${altFunctionMatch[2]}}`;
-            params = JSON.parse(paramsStr);
+            const params = JSON.parse(paramsString);
+            return renderFunctionWidget(functionName, params);
           } catch (e) {
-            console.error("Failed to parse alternative function parameters:", e);
+            console.error("Failed to parse alternative function parameters:", e, "Original content:", content);
           }
+        }
+        
+        // Check for function format without tags, directly in content
+        if (content.startsWith('<function=') && content.includes('>')) {
+          const rawFunction = content.split('>')[0] + '>';
+          const funcMatch = rawFunction.match(/<function=(\w+)(\{.*?\})>/);
           
-          if (functionName === "getStockNews") {
-            const symbol = (params as any).symbol || "market";
-            const count = (params as any).count || 5;
-            return (
-              <>
-                <div className="mb-2">Here's the latest news for {symbol}:</div>
-                <StockNews symbol={symbol} count={count} />
-              </>
-            );
-          } else if (functionName === "showStockChart") {
-            const symbol = (params as any).symbol || "SPY";
-            const timeframe = (params as any).timeframe || "1M";
-            return (
-              <>
-                <div className="mb-2">Here's the chart for {symbol}:</div>
-                <TradingViewChart symbol={symbol} timeframe={timeframe} />
-              </>
-            );
-          } else if (functionName === "showMarketHeatmap") {
-            const sector = (params as any).sector || "all";
-            return (
-              <>
-                <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
-                <MarketHeatmap sector={sector} />
-              </>
-            );
+          if (funcMatch) {
+            const functionName = funcMatch[1];
+            let params = {};
+            
+            try {
+              params = JSON.parse(funcMatch[2]);
+              return renderFunctionWidget(functionName, params);
+            } catch (e) {
+              console.error("Failed to parse raw function:", e, "Original content:", content);
+            }
           }
         }
         
-        // Check for traditional trading view widgets format
-        if (content.includes('[TradingView Chart Widget for')) {
-          const match = content.match(/\[TradingView Chart Widget for (\w+) with timeframe (\w+)\]/);
-          if (match && match[1] && match[2]) {
-            const symbol = match[1];
-            const timeframe = match[2];
-            return (
-              <>
-                <div className="mb-2">Here's the chart for {symbol}:</div>
-                <TradingViewChart symbol={symbol} timeframe={timeframe} />
-              </>
-            );
-          }
+        // Check for traditional bracket format
+        const tradViewMatch = content.match(/\[TradingView Chart Widget for (\w+) with timeframe (\w+)\]/);
+        if (tradViewMatch) {
+          return renderFunctionWidget("showStockChart", {
+            symbol: tradViewMatch[1],
+            timeframe: tradViewMatch[2]
+          });
         }
         
-        // Check for market heatmap widgets
-        if (content.includes('[Market Heatmap for')) {
-          const match = content.match(/\[Market Heatmap for (\w+) sectors\]/);
-          if (match && match[1]) {
-            const sector = match[1];
-            return (
-              <>
-                <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
-                <MarketHeatmap sector={sector} />
-              </>
-            );
-          }
+        const heatmapMatch = content.match(/\[Market Heatmap for (\w+) sectors\]/);
+        if (heatmapMatch) {
+          return renderFunctionWidget("showMarketHeatmap", {
+            sector: heatmapMatch[1]
+          });
         }
         
-        // Check for stock news widgets
-        if (content.includes('[Latest news for')) {
-          const match = content.match(/\[Latest news for (\w+) \((\d+) items\)\]/);
-          if (match && match[1] && match[2]) {
-            const symbol = match[1];
-            const count = parseInt(match[2], 10);
-            return (
-              <>
-                <div className="mb-2">Here's the latest news for {symbol}:</div>
-                <StockNews symbol={symbol} count={count} />
-              </>
-            );
-          }
+        const newsMatch = content.match(/\[Latest news for (\w+) \((\d+) items\)\]/);
+        if (newsMatch) {
+          return renderFunctionWidget("getStockNews", {
+            symbol: newsMatch[1],
+            count: parseInt(newsMatch[2], 10)
+          });
         }
         
         // Default case: just render the text
@@ -164,6 +105,40 @@ export const StockbotMessages = forwardRef<HTMLDivElement, StockbotMessagesProps
         console.error("Error rendering message content:", error, "Original content:", content);
         return <div className="whitespace-pre-wrap">{content}</div>;
       }
+    };
+    
+    // Helper function to render the appropriate widget based on function name
+    const renderFunctionWidget = (functionName: string, params: any) => {
+      if (functionName === "getStockNews") {
+        const symbol = params.symbol || "market";
+        const count = params.count || 5;
+        return (
+          <>
+            <div className="mb-2">Here's the latest news for {symbol}:</div>
+            <StockNews symbol={symbol} count={count} />
+          </>
+        );
+      } else if (functionName === "showStockChart") {
+        const symbol = params.symbol || "SPY";
+        const timeframe = params.timeframe || "1M";
+        return (
+          <>
+            <div className="mb-2">Here's the chart for {symbol}:</div>
+            <TradingViewChart symbol={symbol} timeframe={timeframe} />
+          </>
+        );
+      } else if (functionName === "showMarketHeatmap") {
+        const sector = params.sector || "all";
+        return (
+          <>
+            <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
+            <MarketHeatmap sector={sector} />
+          </>
+        );
+      }
+      
+      // If no match, return the original content
+      return <div className="whitespace-pre-wrap">Unsupported function: {functionName}</div>;
     };
 
     return (
