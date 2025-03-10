@@ -6,6 +6,7 @@ import { Bot, Send, ArrowDown } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { getApiKey } from '@/utils/apiKeyManager';
 import { Agent } from '@/types/agent';
+import { supabase } from '@/lib/supabase';
 
 interface Message {
   id: string;
@@ -57,24 +58,73 @@ export function AgentChatInterface({ agent, onClose }: AgentChatInterfaceProps) 
     
     try {
       // Check for API key
-      const openaiKey = getApiKey('openai');
-      if (!openaiKey) {
-        throw new Error('OpenAI API key is required for agent communication');
+      const groqKey = getApiKey('groq') || getApiKey('openai');
+      if (!groqKey) {
+        throw new Error('Groq or OpenAI API key is required for agent communication');
       }
       
-      // Simulate agent response (in a real app, you'd call your AI API here)
-      setTimeout(() => {
-        const agentResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'agent',
-          content: generateAgentResponse(agent, inputMessage),
-          agentId: agent.id,
-          timestamp: new Date()
-        };
+      // Create a system message that describes the agent's role and personality
+      const systemMessage = {
+        role: 'system',
+        content: `You are ${agent.name}, a ${agent.type} trading agent. 
+        ${agent.description}
+        ${agent.tradingStyle ? `Your trading style is ${agent.tradingStyle}.` : ''}
+        ${agent.performance ? `Your success rate is ${agent.performance.successRate}%.` : ''}
         
-        setMessages(prev => [...prev, agentResponse]);
-        setIsLoading(false);
-      }, 1500);
+        When responding to the user:
+        1. Stay in character as a trading agent
+        2. Provide specific trading insights based on your type (${agent.type})
+        3. If asked about market conditions, stocks, or trading strategies, provide detailed responses
+        4. Include specific numbers and percentages when discussing performance or market analysis
+        
+        The current date is ${new Date().toLocaleDateString()}.`
+      };
+      
+      // Prepare conversation history for the API
+      const conversationHistory = messages
+        .filter(msg => msg.role !== 'system')
+        .map(msg => ({
+          role: msg.role === 'agent' ? 'assistant' : 'user',
+          content: msg.content
+        }));
+      
+      // Add the latest user message
+      conversationHistory.push({
+        role: 'user',
+        content: userMessage.content
+      });
+      
+      // Call the Groq edge function
+      const { data, error } = await supabase.functions.invoke('groq-chat', {
+        body: {
+          messages: [systemMessage, ...conversationHistory],
+          model: "llama-3.3-70b-versatile",
+          temperature: 0.8,
+          max_tokens: 750
+        },
+        headers: groqKey ? { 'x-groq-api-key': groqKey } : undefined
+      });
+      
+      if (error) {
+        console.error('Error calling groq-chat function:', error);
+        throw new Error(error.message || 'Failed to get agent response');
+      }
+      
+      if (!data || data.status === 'error' || !data.response) {
+        throw new Error(data?.error || 'Invalid response from agent');
+      }
+      
+      // Create agent response
+      const agentResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'agent',
+        content: data.response,
+        agentId: agent.id,
+        timestamp: new Date()
+      };
+      
+      // Add agent response to messages
+      setMessages(prev => [...prev, agentResponse]);
       
     } catch (error) {
       console.error('Error in agent communication:', error);
@@ -88,13 +138,14 @@ export function AgentChatInterface({ agent, onClose }: AgentChatInterfaceProps) 
       };
       
       setMessages(prev => [...prev, errorMessage]);
-      setIsLoading(false);
       
       toast({
         title: "Communication Error",
         description: "Failed to connect with the trading agent. Please check your API keys.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -181,45 +232,4 @@ export function AgentChatInterface({ agent, onClose }: AgentChatInterfaceProps) 
       </div>
     </div>
   );
-}
-
-// Helper function to generate simulated agent responses based on agent type
-function generateAgentResponse(agent: Agent, userMessage: string): string {
-  const lowercaseMessage = userMessage.toLowerCase();
-  
-  // Common response patterns based on agent type
-  switch (agent.type) {
-    case 'trader':
-      if (lowercaseMessage.includes('market')) {
-        return `Based on my analysis, the current market conditions are showing ${Math.random() > 0.5 ? 'bullish' : 'bearish'} patterns. Volume is ${Math.random() > 0.5 ? 'increasing' : 'decreasing'} and volatility is ${Math.random() > 0.5 ? 'high' : 'moderate'}.`;
-      } else if (lowercaseMessage.includes('buy') || lowercaseMessage.includes('sell')) {
-        return `I've analyzed recent price action and indicators. My recommendation would be to ${Math.random() > 0.6 ? 'accumulate on dips' : 'take partial profits'} with a stop loss at key support levels.`;
-      }
-      break;
-      
-    case 'analyst':
-      if (lowercaseMessage.includes('analysis')) {
-        return `My technical analysis shows a ${Math.random() > 0.5 ? 'potential breakout forming' : 'consolidation pattern'} on the daily chart. Key indicators like RSI and MACD are ${Math.random() > 0.5 ? 'bullish' : 'showing mixed signals'}.`;
-      } else if (lowercaseMessage.includes('news')) {
-        return `Recent market news includes ${Math.random() > 0.5 ? 'positive regulatory developments' : 'concerns about macroeconomic factors'}. This could impact market sentiment in the short term.`;
-      }
-      break;
-      
-    case 'portfolio_manager':
-      if (lowercaseMessage.includes('portfolio') || lowercaseMessage.includes('allocation')) {
-        return `For optimal portfolio management, I recommend a ${Math.random() > 0.5 ? '60/40' : '70/30'} split between high and medium risk assets. Current market conditions suggest ${Math.random() > 0.5 ? 'increasing exposure to blue-chip assets' : 'taking a more defensive position'}.`;
-      } else if (lowercaseMessage.includes('risk')) {
-        return `Your current portfolio risk assessment shows a ${Math.random() > 0.5 ? 'moderate' : 'slightly elevated'} risk profile. I recommend ${Math.random() > 0.5 ? 'implementing tighter stop-losses' : 'diversifying across more asset classes'} to better manage downside protection.`;
-      }
-      break;
-
-    default:
-      // Fallback responses for any agent type
-      if (lowercaseMessage.includes('strategy')) {
-        return `My recommended strategy for current market conditions would be to ${Math.random() > 0.5 ? 'focus on quality assets with strong fundamentals' : 'look for value opportunities in oversold markets'}. Always maintain proper position sizing and risk management.`;
-      }
-  }
-  
-  // Generic fallback response
-  return `Thanks for your question about "${userMessage.substring(0, 30)}...". As a ${agent.type} agent, I can tell you that ${agent.description}. What specific trading information would you like to know?`;
 }

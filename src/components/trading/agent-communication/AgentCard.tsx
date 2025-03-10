@@ -13,7 +13,7 @@ interface AgentCardProps {
 }
 
 export function AgentCard({ agent, onChatWithAgent, onConfigureApiKey }: AgentCardProps) {
-  const hasRequiredApiKey = hasApiKey('openai');
+  const hasRequiredApiKey = hasApiKey('openai') || hasApiKey('groq');
   
   // Helper function to get agent type icon
   const getAgentIcon = () => {
