@@ -77,7 +77,7 @@ export function LLMTabsList({
   };
 
   // Handle retry connection button click
-  const handleRetryConnection = (llm: keyof ConnectionStatus) => {
+  const handleRetryConnection = (llm: string) => {
     checkConnectionStatusForLLM(llm);
   };
 
@@ -139,8 +139,8 @@ export function LLMTabsList({
               {formatLLMName(llm)}
             </Label>
             
-            {/* Add API key configuration or retry button */}
-            {connectionStatus[llm as keyof ConnectionStatus] === 'disconnected' && (
+            {/* Fix here: Cast the key to string when accessing connectionStatus */}
+            {connectionStatus[llm as keyof typeof connectionStatus] === 'disconnected' && (
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -151,12 +151,13 @@ export function LLMTabsList({
               </Button>
             )}
             
-            {connectionStatus[llm as keyof ConnectionStatus] === 'unavailable' && (
+            {/* Fix here: Cast the key to string when accessing connectionStatus */}
+            {connectionStatus[llm as keyof typeof connectionStatus] === 'unavailable' && (
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="ml-1 h-6 px-2"
-                onClick={() => handleRetryConnection(llm as keyof ConnectionStatus)}
+                onClick={() => handleRetryConnection(llm)}
               >
                 <Loader2 className="h-3 w-3" />
               </Button>
