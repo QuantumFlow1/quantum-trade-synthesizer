@@ -4,7 +4,7 @@ import { showApiKeyDetectedToast } from "@/components/chat/api-keys/ApiKeyToastN
 import { toast } from "@/hooks/use-toast";
 import { useApiKeyValidator } from "./useApiKeyValidator";
 import { useApiKeyEvents } from "./useApiKeyEvents";
-import { broadcastApiKeyChange } from "@/utils/apiKeyManager";
+import { broadcastApiKeyChange, hasApiKey } from "@/utils/apiKeyManager";
 
 /**
  * Hook for monitoring API key status with improved reliability
@@ -16,6 +16,22 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
   const checkedThisSession = useRef(false);
   const checkLock = useRef(false);
   
+  // Immediately check if key exists in localStorage on mount
+  useEffect(() => {
+    const localKeyExists = hasApiKey('groq');
+    const groqKey = localStorage.getItem('groqApiKey');
+    
+    console.log('Initial API key check on mount:', {
+      exists: localKeyExists,
+      keyLength: groqKey ? groqKey.length : 0,
+      firstCheck: true
+    });
+    
+    if (localKeyExists && groqKey && groqKey.trim().length > 0) {
+      setHasGroqKey(true);
+    }
+  }, []);
+  
   const { validateGroqApiKey } = useApiKeyValidator();
   
   // Check if the Groq API key exists with improved caching and debouncing
@@ -24,6 +40,22 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     if (checkLock.current) {
       console.log("API key check already in progress, skipping duplicate check");
       return hasGroqKey;
+    }
+    
+    // Check for key first in localStorage directly for faster response
+    const directKeyCheck = hasApiKey('groq');
+    const groqKey = localStorage.getItem('groqApiKey');
+    
+    console.log('Direct localStorage check before async validation:', {
+      exists: directKeyCheck,
+      keyLength: groqKey ? groqKey.length : 0,
+      hasGroqKeyState: hasGroqKey
+    });
+    
+    // If we have key in localStorage but state doesn't match, update immediately
+    if (directKeyCheck && !hasGroqKey) {
+      console.log('Updating hasGroqKey state based on direct localStorage check');
+      setHasGroqKey(true);
     }
     
     // Debounce checks (no more than once every 1000ms)
@@ -91,7 +123,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
   useEffect(() => {
     const runInitialCheck = async () => {
       const initialKeyStatus = await checkGroqApiKey();
-      console.log('Initial API key status:', { exists: initialKeyStatus });
+      console.log('Initial API key status check completed:', { exists: initialKeyStatus });
     };
     runInitialCheck();
   }, [checkGroqApiKey]);
@@ -112,7 +144,37 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     checkedThisSession.current = false;
     
     try {
-      // Force immediate check
+      // First check directly in localStorage for immediate feedback
+      const directKeyCheck = hasApiKey('groq');
+      const groqKey = localStorage.getItem('groqApiKey');
+      
+      console.log('Direct localStorage check during reloadApiKeys:', {
+        exists: directKeyCheck,
+        keyLength: groqKey ? groqKey.length : 0
+      });
+      
+      if (directKeyCheck && groqKey && groqKey.trim().length > 0) {
+        console.log('Valid API key found in localStorage during reload');
+        setHasGroqKey(true);
+        
+        toast({
+          title: "API Key Detected",
+          description: "Groq API key has been detected and is ready to use",
+          duration: 3000
+        });
+        
+        // Broadcast the change
+        broadcastApiKeyChange(true);
+        
+        if (isSimulationMode && !manuallySetMode.current) {
+          console.log('Switching from simulation mode to AI mode after finding key');
+          setIsSimulationMode(false);
+        }
+        
+        return;
+      }
+      
+      // If direct check failed, do a full validation
       const keyExists = await checkGroqApiKey();
       console.log('Force reloaded API key status:', { 
         exists: keyExists,
@@ -141,7 +203,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
       console.error("Error forcing API key reload:", err);
       checkLock.current = false;
     }
-  }, [checkGroqApiKey]);
+  }, [checkGroqApiKey, isSimulationMode, setIsSimulationMode]);
   
   return { 
     hasGroqKey, 

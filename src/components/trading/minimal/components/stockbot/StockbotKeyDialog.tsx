@@ -25,6 +25,24 @@ export const StockbotKeyDialog = ({
     }
   }, [isKeyDialogOpen]);
 
+  // Verify that we have a valid API key on mount
+  useEffect(() => {
+    if (isKeyDialogOpen) {
+      const checkExistingKey = () => {
+        const keyExists = hasApiKey('groq');
+        const groqKey = localStorage.getItem('groqApiKey');
+        
+        console.log('StockbotKeyDialog - Existing API key check:', {
+          exists: keyExists,
+          keyLength: groqKey ? groqKey.length : 0,
+          timestamp: new Date().toISOString()
+        });
+      };
+      
+      checkExistingKey();
+    }
+  }, [isKeyDialogOpen]);
+
   const onSaveComplete = () => {
     // Prevent multiple simultaneous save attempts
     if (isSaving) {
@@ -37,13 +55,16 @@ export const StockbotKeyDialog = ({
     try {
       // Directly check if the API key was saved
       const keyExists = hasApiKey('groq');
+      const groqKey = localStorage.getItem('groqApiKey');
       
       console.log("API key save completed. Key in storage:", {
         exists: keyExists,
-        keyLength: keyExists ? localStorage.getItem('groqApiKey')?.length : 0
+        keyLength: groqKey ? groqKey.length : 0,
+        keyValue: groqKey ? `${groqKey.substring(0, 3)}...${groqKey.substring(groqKey.length - 3)}` : 'none',
+        timestamp: new Date().toISOString()
       });
       
-      if (!keyExists) {
+      if (!keyExists || !groqKey || groqKey.trim().length === 0) {
         toast({
           title: "Error Saving API Key",
           description: "The API key was not saved to storage. Please try again.",

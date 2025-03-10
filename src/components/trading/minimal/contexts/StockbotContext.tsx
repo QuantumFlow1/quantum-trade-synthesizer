@@ -56,6 +56,22 @@ export const StockbotProvider = ({ children, marketData = [] }: { children: Reac
     }
   }, [messages]);
 
+  // Immediately check if key exists in localStorage on mount
+  useEffect(() => {
+    const localKeyExists = hasApiKey('groq');
+    const groqKey = localStorage.getItem('groqApiKey');
+    
+    console.log('StockbotContext - Initial API key check on mount:', {
+      exists: localKeyExists,
+      keyLength: groqKey ? groqKey.length : 0,
+      firstCheck: true
+    });
+    
+    if (localKeyExists && groqKey && groqKey.trim().length > 0) {
+      setApiKeyStatus({ exists: true });
+    }
+  }, []);
+
   // Update API key status when any relevant state changes
   useEffect(() => {
     const checkKey = () => {
@@ -116,10 +132,12 @@ export const StockbotProvider = ({ children, marketData = [] }: { children: Reac
     
     window.addEventListener('apikey-updated', handleApiKeyChange);
     window.addEventListener('localStorage-changed', handleApiKeyChange);
+    window.addEventListener('storage', handleApiKeyChange);
     
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyChange);
       window.removeEventListener('localStorage-changed', handleApiKeyChange);
+      window.removeEventListener('storage', handleApiKeyChange);
     };
   }, [apiKeyStatus.exists, hookHasApiKey]);
 
@@ -146,6 +164,7 @@ export const StockbotProvider = ({ children, marketData = [] }: { children: Reac
         console.log('Dialog closed, API key status:', {
           exists: keyExists,
           keyLength: groqKeyValue ? groqKeyValue.length : 0,
+          keyValue: groqKeyValue ? `${groqKeyValue.substring(0, 3)}...${groqKeyValue.substring(groqKeyValue.length - 3)}` : null,
           timestamp: new Date().toISOString()
         });
         
@@ -185,6 +204,7 @@ export const StockbotProvider = ({ children, marketData = [] }: { children: Reac
         console.log('API key success callback, status:', {
           exists: keyExists,
           keyLength: groqKeyValue ? groqKeyValue.length : 0,
+          keyValue: groqKeyValue ? `${groqKeyValue.substring(0, 3)}...${groqKeyValue.substring(groqKeyValue.length - 3)}` : null,
           timestamp: new Date().toISOString()
         });
         

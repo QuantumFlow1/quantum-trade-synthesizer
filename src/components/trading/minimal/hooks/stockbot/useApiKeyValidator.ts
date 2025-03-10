@@ -12,15 +12,20 @@ export const useApiKeyValidator = () => {
    */
   const validateGroqApiKey = async (checkAdminKeys: boolean = true): Promise<boolean> => {
     try {
-      // First check locally stored key
+      // First check locally stored key with more debugging
       const keyExists = hasApiKey('groq');
+      const groqKey = localStorage.getItem('groqApiKey');
+      
+      console.log('useApiKeyValidator - Local API key check:', {
+        exists: keyExists,
+        keyLength: groqKey ? groqKey.length : 0,
+        keyValue: groqKey ? `${groqKey.substring(0, 3)}...${groqKey.substring(groqKey.length - 3)}` : 'none',
+        timestamp: new Date().toISOString()
+      });
       
       // If we have a local key, return immediately
-      if (keyExists) {
-        console.log('useApiKeyValidator - Local API key found:', {
-          exists: true,
-          timestamp: new Date().toISOString()
-        });
+      if (keyExists && groqKey && groqKey.trim().length > 0) {
+        console.log('useApiKeyValidator - Valid local API key found');
         return true;
       }
       

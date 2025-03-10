@@ -23,12 +23,22 @@ export const saveApiKey = (provider: string, apiKey: string): boolean => {
       return false;
     }
     
-    // Save to localStorage
+    // Save to localStorage with explicit trimming
     const trimmedKey = apiKey.trim();
     localStorage.setItem(`${provider}ApiKey`, trimmedKey);
     
     // Double-check the key was saved correctly
     const savedKey = localStorage.getItem(`${provider}ApiKey`);
+    
+    // Log the key info for debugging (safely)
+    if (savedKey) {
+      const firstChars = savedKey.substring(0, 3);
+      const lastChars = savedKey.length > 3 ? savedKey.substring(savedKey.length - 3) : '';
+      console.log(`${provider} API key saved: ${firstChars}...${lastChars}, length: ${savedKey.length}`);
+    } else {
+      console.error(`Failed to save ${provider} API key to localStorage`);
+    }
+    
     if (!savedKey || savedKey !== trimmedKey) {
       console.error(`Failed to save ${provider} API key to localStorage: ` + 
                    `Expected '${trimmedKey.substring(0, 3)}...' but got '${savedKey?.substring(0, 3) || "null"}...'`);
@@ -52,7 +62,15 @@ export const saveApiKey = (provider: string, apiKey: string): boolean => {
 export const getApiKey = (provider: string): string | null => {
   try {
     const key = localStorage.getItem(`${provider}ApiKey`);
-    return key;
+    if (key && key.trim().length > 0) {
+      // Log key information for debugging (safely)
+      const firstChars = key.substring(0, 3);
+      const lastChars = key.length > 3 ? key.substring(key.length - 3) : '';
+      console.log(`Retrieved ${provider} API key: ${firstChars}...${lastChars}, length: ${key.length}`);
+      return key;
+    }
+    console.log(`No valid ${provider} API key found in localStorage`);
+    return null;
   } catch (error) {
     console.error(`Error getting ${provider} API key:`, error);
     return null;
@@ -63,8 +81,15 @@ export const getApiKey = (provider: string): string | null => {
  * Check if an API key exists in localStorage
  */
 export const hasApiKey = (provider: string): boolean => {
-  const key = getApiKey(provider);
-  return !!key && key.trim().length > 0;
+  try {
+    const key = getApiKey(provider);
+    const hasKey = !!key && key.trim().length > 0;
+    console.log(`Checking for ${provider} API key: ${hasKey ? 'Found' : 'Not found'}, length: ${key ? key.length : 0}`);
+    return hasKey;
+  } catch (error) {
+    console.error(`Error checking for ${provider} API key:`, error);
+    return false;
+  }
 };
 
 /**
@@ -75,8 +100,8 @@ export const broadcastApiKeyChange = (exists: boolean): void => {
     console.log(`Broadcasting API key change. Key exists: ${exists}`);
     
     // Dispatch custom events
-    window.dispatchEvent(new Event(API_KEY_UPDATED_EVENT));
-    window.dispatchEvent(new Event(LOCALSTORAGE_CHANGED_EVENT));
+    window.dispatchEvent(new CustomEvent(API_KEY_UPDATED_EVENT, { detail: { exists } }));
+    window.dispatchEvent(new CustomEvent(LOCALSTORAGE_CHANGED_EVENT, { detail: { exists } }));
     window.dispatchEvent(new Event('storage'));
     
     // Use BroadcastChannel if available for cross-tab communication
