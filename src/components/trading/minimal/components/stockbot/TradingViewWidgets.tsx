@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from "lucide-react";
@@ -19,6 +18,9 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
     setError(null);
     
     try {
+      // Clean up symbol for safety
+      const cleanSymbol = symbol.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
+      
       // Create script element to load TradingView widget script
       const script = document.createElement('script');
       script.src = 'https://s3.tradingview.com/tv.js';
@@ -33,7 +35,7 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
             // Create a new TradingView widget
             widgetRef.current = new window.TradingView.widget({
               autosize: true,
-              symbol: symbol,
+              symbol: cleanSymbol,
               interval: getIntervalFromTimeframe(timeframe),
               timezone: "exchange",
               theme: "light",
@@ -72,6 +74,7 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
     }
   }, [symbol, timeframe]);
 
+  // Create a unique ID for each widget to avoid conflicts
   const containerId = `tradingview-widget-${symbol}-${timeframe}`.replace(/[^a-zA-Z0-9-]/g, '');
 
   // Helper function to convert timeframe to TradingView interval

@@ -125,7 +125,7 @@ export const useStockbotMessages = (
         
         if (name === "showStockChart") {
           const { symbol, timeframe = "1M" } = parsedArgs as any;
-          responseContent = `<function=showStockChart{"symbol":"${symbol}","timeframe":"${timeframe}"}>`; 
+          responseContent = `<function=showStockChart{"symbol":"${symbol}","timeframe":"${timeframe}"}>`;
         } 
         else if (name === "showMarketHeatmap") {
           const { sector = "all" } = parsedArgs as any;

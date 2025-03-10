@@ -22,15 +22,67 @@ export const StockbotMessages = forwardRef<HTMLDivElement, StockbotMessagesProps
 
     const renderMessageContent = (content: string) => {
       try {
-        // Check for function call format: <function=name{params}>
-        const functionMatch = content.match(/<function=(\w+)(\{.*\})>/);
+        // Check for function call formats with or without closing tag
+        // Example 1: <function=showStockChart{"symbol":"BTC","timeframe":"1D"}>
+        // Example 2: <function=showStockChart{"symbol":"BTC","timeframe":"1D"}></function>
+        const functionMatch = content.match(/<function=(\w+)(.*?)>(?:<\/function>)?/);
+        
         if (functionMatch) {
           const functionName = functionMatch[1];
           let params = {};
+          
           try {
-            params = JSON.parse(functionMatch[2]);
+            // Clean up the parameters string and parse it
+            const paramsString = functionMatch[2].trim();
+            if (paramsString) {
+              // Remove any non-JSON characters and parse
+              const cleanParams = paramsString.replace(/^[^{]*/, '').replace(/[^}]*$/, '');
+              params = JSON.parse(cleanParams);
+            }
           } catch (e) {
-            console.error("Failed to parse function parameters:", e);
+            console.error("Failed to parse function parameters:", e, "Original content:", content);
+          }
+          
+          if (functionName === "getStockNews") {
+            const symbol = (params as any).symbol || "market";
+            const count = (params as any).count || 5;
+            return (
+              <>
+                <div className="mb-2">Here's the latest news for {symbol}:</div>
+                <StockNews symbol={symbol} count={count} />
+              </>
+            );
+          } else if (functionName === "showStockChart") {
+            const symbol = (params as any).symbol || "SPY";
+            const timeframe = (params as any).timeframe || "1M";
+            return (
+              <>
+                <div className="mb-2">Here's the chart for {symbol}:</div>
+                <TradingViewChart symbol={symbol} timeframe={timeframe} />
+              </>
+            );
+          } else if (functionName === "showMarketHeatmap") {
+            const sector = (params as any).sector || "all";
+            return (
+              <>
+                <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
+                <MarketHeatmap sector={sector} />
+              </>
+            );
+          }
+        }
+        
+        // Check for alternative format like: <function=showStockChart{"symbol":"BTC","timeframe":"1D"}></function>
+        const altFunctionMatch = content.match(/<function=(\w+)\{(.*?)\}><\/function>/);
+        if (altFunctionMatch) {
+          const functionName = altFunctionMatch[1];
+          let params = {};
+          
+          try {
+            const paramsStr = `{${altFunctionMatch[2]}}`;
+            params = JSON.parse(paramsStr);
+          } catch (e) {
+            console.error("Failed to parse alternative function parameters:", e);
           }
           
           if (functionName === "getStockNews") {
@@ -109,7 +161,7 @@ export const StockbotMessages = forwardRef<HTMLDivElement, StockbotMessagesProps
         // Default case: just render the text
         return <div className="whitespace-pre-wrap">{content}</div>;
       } catch (error) {
-        console.error("Error rendering message content:", error);
+        console.error("Error rendering message content:", error, "Original content:", content);
         return <div className="whitespace-pre-wrap">{content}</div>;
       }
     };
