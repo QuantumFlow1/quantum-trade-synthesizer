@@ -37,6 +37,7 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   const [apiKeyStatus, setApiKeyStatus] = useState({ exists: initialHasApiKey || hookHasApiKey });
   const dialogCloseTimeoutRef = useRef<number | null>(null);
   const keyCheckInProgress = useRef(false);
+  const lastKeyUpdateTime = useRef(0);
   
   // Auto-scroll when new messages are added
   useEffect(() => {
@@ -48,26 +49,42 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   // Update API key status when any relevant state changes
   useEffect(() => {
     const checkKey = () => {
-      // Prevent multiple simultaneous checks
-      if (keyCheckInProgress.current) return;
-      
-      keyCheckInProgress.current = true;
-      const keyExists = hasApiKey('groq');
-      const groqKeyValue = localStorage.getItem('groqApiKey');
-      
-      console.log('StockbotChat - API key check:', {
-        exists: keyExists,
-        keyLength: groqKeyValue ? groqKeyValue.length : 0,
-        previous: apiKeyStatus.exists
-      });
-      
-      if (keyExists !== apiKeyStatus.exists) {
-        console.log('StockbotChat - API key status changed:', { exists: keyExists, previous: apiKeyStatus.exists });
-        setApiKeyStatus({ exists: keyExists });
+      // Prevent multiple simultaneous checks and throttle checks
+      const now = Date.now();
+      if (keyCheckInProgress.current || now - lastKeyUpdateTime.current < 1000) {
+        return false;
       }
       
-      keyCheckInProgress.current = false;
-      return keyExists;
+      keyCheckInProgress.current = true;
+      lastKeyUpdateTime.current = now;
+      
+      try {
+        const keyExists = hasApiKey('groq');
+        const groqKeyValue = localStorage.getItem('groqApiKey');
+        
+        console.log('StockbotChat - API key check:', {
+          exists: keyExists,
+          keyLength: groqKeyValue ? groqKeyValue.length : 0,
+          previous: apiKeyStatus.exists,
+          timestamp: new Date().toISOString()
+        });
+        
+        if (keyExists !== apiKeyStatus.exists) {
+          console.log('StockbotChat - API key status changed:', { 
+            exists: keyExists, 
+            previous: apiKeyStatus.exists,
+            timestamp: new Date().toISOString()
+          });
+          setApiKeyStatus({ exists: keyExists });
+        }
+        
+        keyCheckInProgress.current = false;
+        return keyExists;
+      } catch (err) {
+        console.error("Error checking API key:", err);
+        keyCheckInProgress.current = false;
+        return false;
+      }
     };
     
     // Immediate check
@@ -77,14 +94,14 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
     let lastEventTime = 0;
     const handleApiKeyChange = () => {
       const now = Date.now();
-      if (now - lastEventTime < 500) return; // Debounce events that fire too rapidly
+      if (now - lastEventTime < 1000) return; // Debounce events that fire too rapidly
       
       lastEventTime = now;
       setTimeout(() => {
         if (!keyCheckInProgress.current) {
           checkKey();
         }
-      }, 100);
+      }, 300);
     };
     
     window.addEventListener('apikey-updated', handleApiKeyChange);
@@ -104,67 +121,86 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
       clearTimeout(dialogCloseTimeoutRef.current);
     }
     
+    // Set dialog closed first to prevent UI freeze
     setIsKeyDialogOpen(false);
     
     // Force a direct check with a slight delay to ensure storage is updated
     dialogCloseTimeoutRef.current = window.setTimeout(() => {
-      const keyExists = hasApiKey('groq');
-      const groqKeyValue = localStorage.getItem('groqApiKey');
+      // Clear timeout reference
+      dialogCloseTimeoutRef.current = null;
       
-      console.log('Dialog closed, API key status:', {
-        exists: keyExists,
-        keyLength: groqKeyValue ? groqKeyValue.length : 0
-      });
-      
-      setApiKeyStatus({ exists: keyExists });
-      
-      if (keyExists) {
-        toast({
-          title: "API Key Detected",
-          description: "Groq API key has been configured successfully",
-          duration: 3000
+      try {
+        const keyExists = hasApiKey('groq');
+        const groqKeyValue = localStorage.getItem('groqApiKey');
+        
+        console.log('Dialog closed, API key status:', {
+          exists: keyExists,
+          keyLength: groqKeyValue ? groqKeyValue.length : 0,
+          timestamp: new Date().toISOString()
         });
+        
+        setApiKeyStatus({ exists: keyExists });
+        
+        if (keyExists) {
+          toast({
+            title: "API Key Detected",
+            description: "Groq API key has been configured successfully",
+            duration: 3000
+          });
+        }
+        
+        // Additional delay before reloading API keys
+        setTimeout(reloadApiKeys, 300);
+      } catch (err) {
+        console.error("Error handling dialog close:", err);
       }
-      
-      // Additional delay before reloading API keys
-      setTimeout(reloadApiKeys, 300);
-    }, 200);
+    }, 500);
   };
 
   const handleApiKeySuccess = () => {
     // Execute additional logic after a successful API key save
     console.log("API key saved successfully, refreshing state");
     
-    // Check for API key with a slight delay to ensure storage is updated
-    setTimeout(() => {
-      const keyExists = hasApiKey('groq');
-      const groqKeyValue = localStorage.getItem('groqApiKey');
-      
-      console.log('API key success callback, status:', {
-        exists: keyExists,
-        keyLength: groqKeyValue ? groqKeyValue.length : 0
-      });
-      
-      setApiKeyStatus({ exists: keyExists });
-      
-      // If we have a key and are in simulation mode, offer to switch
-      if (keyExists && isSimulationMode) {
-        toast({
-          title: "API Key Configured",
-          description: "Switch to AI mode to use your Groq API key",
-          duration: 5000,
-          action: (
-            <Button 
-              onClick={() => setIsSimulationMode(false)}
-              variant="default"
-              size="sm"
-            >
-              Switch Now
-            </Button>
-          )
+    try {
+      // Check for API key with a slight delay to ensure storage is updated
+      setTimeout(() => {
+        if (dialogCloseTimeoutRef.current) {
+          clearTimeout(dialogCloseTimeoutRef.current);
+          dialogCloseTimeoutRef.current = null;
+        }
+        
+        const keyExists = hasApiKey('groq');
+        const groqKeyValue = localStorage.getItem('groqApiKey');
+        
+        console.log('API key success callback, status:', {
+          exists: keyExists,
+          keyLength: groqKeyValue ? groqKeyValue.length : 0,
+          timestamp: new Date().toISOString()
         });
-      }
-    }, 500);
+        
+        setApiKeyStatus({ exists: keyExists });
+        
+        // If we have a key and are in simulation mode, offer to switch
+        if (keyExists && isSimulationMode) {
+          toast({
+            title: "API Key Configured",
+            description: "Switch to AI mode to use your Groq API key",
+            duration: 5000,
+            action: (
+              <Button 
+                onClick={() => setIsSimulationMode(false)}
+                variant="default"
+                size="sm"
+              >
+                Switch Now
+              </Button>
+            )
+          });
+        }
+      }, 800);
+    } catch (err) {
+      console.error("Error in API key success handler:", err);
+    }
   };
 
   return (
