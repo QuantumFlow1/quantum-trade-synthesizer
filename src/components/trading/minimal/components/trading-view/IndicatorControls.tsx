@@ -50,13 +50,13 @@ export const IndicatorControls = ({
         </PopoverTrigger>
         <PopoverContent className="w-48">
           <div className="space-y-1">
-            <p className="text-xs font-medium pb-1 text-gray-900 dark:text-white">Indicators</p>
+            <p className="text-xs font-medium pb-1">Indicators</p>
             {Object.entries(visibleIndicators).map(([key, isVisible]) => (
               <Button
                 key={key}
                 variant="ghost"
                 size="sm"
-                className="w-full justify-start h-8 text-xs capitalize text-gray-800 dark:text-gray-200"
+                className="w-full justify-start h-8 text-xs capitalize font-medium"
                 onClick={() => toggleIndicator(key)}
               >
                 <span className="w-4 h-4 mr-2 flex items-center justify-center">

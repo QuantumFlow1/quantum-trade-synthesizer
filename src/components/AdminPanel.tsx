@@ -97,7 +97,7 @@ const AdminPanel = () => {
           className="mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          <span className="text-gray-900 dark:text-white font-medium">Back to Admin</span>
+          <span className="font-medium">Back to Admin</span>
         </Button>
         <UserDashboard />
       </div>
@@ -113,7 +113,7 @@ const AdminPanel = () => {
           className="mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          <span className="text-gray-900 dark:text-white font-medium">Back to Admin</span>
+          <span className="font-medium">Back to Admin</span>
         </Button>
         <ApiKeyManagement />
       </div>
@@ -125,8 +125,8 @@ const AdminPanel = () => {
       {showNavigationHint && (
         <Alert variant="default" className="mb-4">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle className="text-gray-900 dark:text-white">Navigation Tip</AlertTitle>
-          <AlertDescription className="text-gray-700 dark:text-gray-300">
+          <AlertTitle className="font-medium">Navigation Tip</AlertTitle>
+          <AlertDescription>
             Use the "Back to Admin" button to navigate between Dashboard and Admin panel.
           </AlertDescription>
         </Alert>
@@ -139,7 +139,7 @@ const AdminPanel = () => {
           className="mb-4"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          <span className="text-gray-900 dark:text-white font-medium">Back to Admin</span>
+          <span className="font-medium">Back to Admin</span>
         </Button>
       )}
       
@@ -169,7 +169,7 @@ const AdminPanel = () => {
           variant="secondary"
           className="w-full"
         >
-          <span className="text-gray-900 dark:text-white font-medium">Open Dashboard in New View</span>
+          <span className="font-medium">Open Dashboard in New View</span>
         </Button>
       </div>
     </div>
