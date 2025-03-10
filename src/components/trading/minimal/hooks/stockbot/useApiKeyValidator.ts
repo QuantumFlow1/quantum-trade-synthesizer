@@ -1,5 +1,5 @@
 
-import { hasApiKey } from "@/utils/apiKeyManager";
+import { hasApiKey, getApiKey } from "@/utils/apiKeyManager";
 import { supabase } from "@/lib/supabase";
 
 /**
@@ -14,11 +14,13 @@ export const useApiKeyValidator = () => {
     try {
       // First check locally stored key
       const keyExists = hasApiKey('groq');
+      const localKey = getApiKey('groq');
       
       // If we have a local key, return immediately
-      if (keyExists) {
+      if (keyExists && localKey) {
         console.log('useApiKeyValidator - Local API key found:', {
           exists: true,
+          keyLength: localKey.length,
           timestamp: new Date().toISOString()
         });
         return true;

@@ -1,4 +1,10 @@
+
 import { ChatMessage } from './types';
+import { 
+  saveApiKey as saveApiKeyToManager, 
+  hasApiKey, 
+  broadcastApiKeyChange 
+} from '@/utils/apiKeyManager';
 
 /**
  * Save stockbot chat messages to localStorage
@@ -32,24 +38,33 @@ export const loadStockbotChatHistory = (): ChatMessage[] => {
 export const saveMessages = saveStockbotChatHistory;
 export const loadMessages = loadStockbotChatHistory;
 
-// Load API key from storage
+// Load API key from storage with health check
 export const loadApiKey = (provider: string = 'groq'): string | null => {
   try {
-    return localStorage.getItem(`${provider}ApiKey`);
+    const key = localStorage.getItem(`${provider}ApiKey`);
+    console.log(`Loading ${provider} API key from localStorage: ${key ? 'found' : 'not found'}`);
+    return key;
   } catch (error) {
     console.error(`Error loading ${provider} API key:`, error);
     return null;
   }
 };
 
-// Save API key to storage
+// Save API key to storage with health indicators
 export const saveApiKey = (key: string, provider: string = 'groq'): boolean => {
   try {
-    localStorage.setItem(`${provider}ApiKey`, key);
+    // Use the centralized API key manager
+    const success = saveApiKeyToManager(provider, key);
+    console.log(`Saved ${provider} API key to storage via manager: ${success}`);
     
-    // Dispatch events to notify other components
-    window.dispatchEvent(new Event('apikey-updated'));
-    window.dispatchEvent(new Event('localStorage-changed'));
+    if (!success) {
+      console.error(`Failed to save ${provider} API key via manager`);
+      // Fallback direct save as a precaution
+      localStorage.setItem(`${provider}ApiKey`, key);
+      
+      // Dispatch events as fallback
+      broadcastApiKeyChange(!!key);
+    }
     
     return true;
   } catch (error) {
@@ -58,17 +73,23 @@ export const saveApiKey = (key: string, provider: string = 'groq'): boolean => {
   }
 };
 
-// Check if any API key exists
+// Check if any API key exists with health indicators
 export const hasAnyApiKey = (): boolean => {
   const providers = ['groq', 'openai', 'anthropic', 'deepseek'];
-  return providers.some(provider => !!loadApiKey(provider));
+  const result = providers.some(provider => hasApiKey(provider));
+  console.log('Checking for any API keys:', { exists: result });
+  return result;
 };
 
-// Get API key status for all providers
+// Get API key status for all providers with detailed health information
 export const getApiKeyStatus = (): Record<string, boolean> => {
   const providers = ['groq', 'openai', 'anthropic', 'deepseek'];
-  return providers.reduce((status, provider) => {
-    status[provider] = !!loadApiKey(provider);
+  const status = providers.reduce((status, provider) => {
+    const exists = hasApiKey(provider);
+    status[provider] = exists;
     return status;
   }, {} as Record<string, boolean>);
+  
+  console.log('API key status health check:', status);
+  return status;
 };
