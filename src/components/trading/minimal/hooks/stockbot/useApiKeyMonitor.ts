@@ -13,12 +13,13 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
   const [hasGroqKey, setHasGroqKey] = useState<boolean>(false);
   const lastKeyCheckTime = useRef(0);
   const manuallySetMode = useRef(false);
+  const checkedThisSession = useRef(false);
   
   const { validateGroqApiKey } = useApiKeyValidator();
   
-  // Check if the Groq API key exists with improved caching
+  // Check if the Groq API key exists with improved caching and debouncing
   const checkGroqApiKey = useCallback(() => {
-    // Skip frequent checks (no more than once every 500ms)
+    // Debounce checks (no more than once every 500ms)
     const now = Date.now();
     if (now - lastKeyCheckTime.current < 500) {
       return hasGroqKey;
@@ -27,7 +28,8 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     lastKeyCheckTime.current = now;
     const keyExists = validateGroqApiKey();
     
-    if (keyExists !== hasGroqKey) {
+    if (keyExists !== hasGroqKey || !checkedThisSession.current) {
+      checkedThisSession.current = true;
       console.log('useApiKeyMonitor - API key status change detected:', {
         exists: keyExists,
         previousState: hasGroqKey
@@ -36,19 +38,28 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
       setHasGroqKey(keyExists);
       
       // Only auto-switch modes if we haven't been manually set
+      // AND this isn't just the initial check (to prevent unwanted toasts on load)
       if (!manuallySetMode.current) {
         if (keyExists && isSimulationMode) {
           console.log('API key exists but still in simulation mode - switching to AI mode');
           setIsSimulationMode(false);
-          showApiKeyDetectedToast('Groq');
+          
+          // Only show toast if this isn't the initial page load
+          if (hasGroqKey !== keyExists) {
+            showApiKeyDetectedToast('Groq');
+          }
         } else if (!keyExists && !isSimulationMode) {
           console.log('No API key found but not in simulation mode - switching to simulation mode');
           setIsSimulationMode(true);
-          toast({
-            title: "Simulation Mode Activated",
-            description: "No API key found, switching to simulation mode",
-            variant: "warning"
-          });
+          
+          // Only show toast if this isn't the initial page load
+          if (hasGroqKey !== keyExists) {
+            toast({
+              title: "Simulation Mode Activated",
+              description: "No API key found, switching to simulation mode",
+              variant: "warning"
+            });
+          }
         }
       }
     }
@@ -56,10 +67,10 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     return keyExists;
   }, [hasGroqKey, isSimulationMode, setIsSimulationMode, validateGroqApiKey]);
   
-  // Setup API key event handling
+  // Setup API key event handling with reduced frequency
   useApiKeyEvents(checkGroqApiKey);
   
-  // Run initial check immediately
+  // Run initial check on component mount
   useEffect(() => {
     const initialKeyStatus = checkGroqApiKey();
     console.log('Initial API key status:', { exists: initialKeyStatus });
@@ -68,8 +79,9 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
   // Force reload API keys
   const reloadApiKeys = useCallback(() => {
     console.log('Forced reload of API keys requested');
-    // Clear any cached state that might be preventing updates
-    localStorage.removeItem('_dummy_key_');
+    // Reset cached state to force a fresh check
+    lastKeyCheckTime.current = 0;
+    checkedThisSession.current = false;
     
     // Force immediate check
     const keyExists = checkGroqApiKey();

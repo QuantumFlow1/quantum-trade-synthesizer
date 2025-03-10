@@ -41,19 +41,27 @@ export const StockbotKeyDialog = ({
     });
     
     // Force a broadcast of the API key change event to all components
-    broadcastApiKeyChange(true);
-    
-    // Wait a short delay before closing to avoid state update conflicts
+    // with a small delay to avoid race conditions
     setTimeout(() => {
-      handleDialogClose();
-      if (onSuccessfulSave) {
-        onSuccessfulSave();
-      }
-    }, 300);
+      broadcastApiKeyChange(true);
+      
+      // Wait a short delay before closing to avoid state update conflicts
+      setTimeout(() => {
+        handleDialogClose();
+        if (onSuccessfulSave) {
+          onSuccessfulSave();
+        }
+      }, 300);
+    }, 100);
   };
 
   return (
-    <Dialog open={isKeyDialogOpen} onOpenChange={handleDialogClose}>
+    <Dialog open={isKeyDialogOpen} onOpenChange={(open) => {
+      if (!open) {
+        // Give the dialog time to close visually before firing close handler
+        setTimeout(handleDialogClose, 100);
+      }
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <ApiKeyDialogContent 
           initialTab="groq"

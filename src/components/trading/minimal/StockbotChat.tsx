@@ -36,6 +36,7 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [apiKeyStatus, setApiKeyStatus] = useState({ exists: initialHasApiKey || hookHasApiKey });
   const dialogCloseTimeoutRef = useRef<number | null>(null);
+  const keyCheckInProgress = useRef(false);
   
   // Auto-scroll when new messages are added
   useEffect(() => {
@@ -47,6 +48,10 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   // Update API key status when any relevant state changes
   useEffect(() => {
     const checkKey = () => {
+      // Prevent multiple simultaneous checks
+      if (keyCheckInProgress.current) return;
+      
+      keyCheckInProgress.current = true;
       const keyExists = hasApiKey('groq');
       const groqKeyValue = localStorage.getItem('groqApiKey');
       
@@ -61,25 +66,33 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
         setApiKeyStatus({ exists: keyExists });
       }
       
+      keyCheckInProgress.current = false;
       return keyExists;
     };
     
     // Immediate check
     checkKey();
     
-    // Set up event listeners for API key changes
+    // Set up event listeners for API key changes with throttling
+    let lastEventTime = 0;
     const handleApiKeyChange = () => {
-      checkKey();
+      const now = Date.now();
+      if (now - lastEventTime < 500) return; // Debounce events that fire too rapidly
+      
+      lastEventTime = now;
+      setTimeout(() => {
+        if (!keyCheckInProgress.current) {
+          checkKey();
+        }
+      }, 100);
     };
     
     window.addEventListener('apikey-updated', handleApiKeyChange);
     window.addEventListener('localStorage-changed', handleApiKeyChange);
-    window.addEventListener('storage', handleApiKeyChange);
     
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyChange);
       window.removeEventListener('localStorage-changed', handleApiKeyChange);
-      window.removeEventListener('storage', handleApiKeyChange);
     };
   }, [apiKeyStatus.exists, hookHasApiKey]);
 
@@ -93,27 +106,29 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
     
     setIsKeyDialogOpen(false);
     
-    // Force a direct check
-    const keyExists = hasApiKey('groq');
-    const groqKeyValue = localStorage.getItem('groqApiKey');
-    
-    console.log('Dialog closed, API key status:', {
-      exists: keyExists,
-      keyLength: groqKeyValue ? groqKeyValue.length : 0
-    });
-    
-    setApiKeyStatus({ exists: keyExists });
-    
-    if (keyExists) {
-      toast({
-        title: "API Key Detected",
-        description: "Groq API key has been configured successfully",
-        duration: 3000
+    // Force a direct check with a slight delay to ensure storage is updated
+    dialogCloseTimeoutRef.current = window.setTimeout(() => {
+      const keyExists = hasApiKey('groq');
+      const groqKeyValue = localStorage.getItem('groqApiKey');
+      
+      console.log('Dialog closed, API key status:', {
+        exists: keyExists,
+        keyLength: groqKeyValue ? groqKeyValue.length : 0
       });
-    }
-    
-    // Force a reload of all API keys with a slight delay
-    dialogCloseTimeoutRef.current = window.setTimeout(reloadApiKeys, 500);
+      
+      setApiKeyStatus({ exists: keyExists });
+      
+      if (keyExists) {
+        toast({
+          title: "API Key Detected",
+          description: "Groq API key has been configured successfully",
+          duration: 3000
+        });
+      }
+      
+      // Additional delay before reloading API keys
+      setTimeout(reloadApiKeys, 300);
+    }, 200);
   };
 
   const handleApiKeySuccess = () => {

@@ -9,28 +9,47 @@ export const useApiKeyEvents = (
   onApiKeyChange: () => void
 ) => {
   const apiKeyCheckTimerId = useRef<number | null>(null);
+  const lastCheckTime = useRef<number>(0);
+  const processingEvent = useRef<boolean>(false);
 
   // Setup event listeners for API key changes with improved reliability
   useEffect(() => {
-    // Set up event listeners
+    // Throttled handler to prevent multiple rapid executions
     const handleApiKeyUpdate = () => {
+      // Prevent re-entrancy and throttle executions
+      if (processingEvent.current) return;
+      
+      const now = Date.now();
+      if (now - lastCheckTime.current < 500) return; // Minimum 500ms between checks
+      
+      lastCheckTime.current = now;
+      processingEvent.current = true;
+      
       console.log("API key event listener triggered");
       onApiKeyChange();
+      
+      // Reset processing flag after a short delay
+      setTimeout(() => {
+        processingEvent.current = false;
+      }, 100);
     };
     
     // Listen to multiple events to ensure we catch all changes
     window.addEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
     window.addEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
     window.addEventListener('storage', handleApiKeyUpdate);
-    window.addEventListener('focus', handleApiKeyUpdate); // Check when window regains focus
     
-    // Check frequently for API key changes
+    // Use a less frequent interval (10 seconds instead of 2) to reduce CPU usage
     if (typeof window !== 'undefined') {
       if (apiKeyCheckTimerId.current) {
         clearInterval(apiKeyCheckTimerId.current);
       }
       
-      apiKeyCheckTimerId.current = window.setInterval(onApiKeyChange, 2000);
+      apiKeyCheckTimerId.current = window.setInterval(() => {
+        if (!processingEvent.current) {
+          onApiKeyChange();
+        }
+      }, 10000); // Check every 10 seconds instead of 2 seconds
     }
     
     // Try to use BroadcastChannel if available for cross-tab communication
@@ -38,9 +57,8 @@ export const useApiKeyEvents = (
     try {
       broadcastChannel = new BroadcastChannel('api-key-updates');
       broadcastChannel.onmessage = (event) => {
-        console.log('Received broadcast channel message:', event.data);
-        if (event.data.type === 'api-key-update') {
-          onApiKeyChange();
+        if (event.data.type === 'api-key-update' && !processingEvent.current) {
+          handleApiKeyUpdate();
         }
       };
     } catch (err) {
@@ -51,7 +69,6 @@ export const useApiKeyEvents = (
       window.removeEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
       window.removeEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
       window.removeEventListener('storage', handleApiKeyUpdate);
-      window.removeEventListener('focus', handleApiKeyUpdate);
       
       if (apiKeyCheckTimerId.current) {
         clearInterval(apiKeyCheckTimerId.current);
