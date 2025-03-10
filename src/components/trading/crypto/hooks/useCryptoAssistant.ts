@@ -126,7 +126,7 @@ export function useCryptoAssistant() {
       // Add error message to conversation
       const errorMessage: CryptoMessage = {
         id: uuidv4(),
-        role: 'error',
+        role: 'system',
         content: `Sorry, I encountered an error: ${error.message || 'Unknown error'}. Please try again or check your API key settings.`,
         timestamp: new Date()
       };
