@@ -4,7 +4,8 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-toast';
 import { fetchAdminApiKey } from '@/components/chat/services/utils/apiHelpers';
 
-type ConnectionStatus = 'connected' | 'disconnected' | 'unavailable' | 'checking';
+// Define the ConnectionStatus type properly
+export type ConnectionStatus = 'connected' | 'disconnected' | 'unavailable' | 'checking';
 
 export function useLLMExtensions() {
   const [activeTab, setActiveTab] = useState('deepseek');
@@ -15,7 +16,13 @@ export function useLLMExtensions() {
     claude: true
   });
   
-  const [connectionStatus, setConnectionStatus] = useState<Record<string, ConnectionStatus>>({
+  // Correctly type the connectionStatus object
+  const [connectionStatus, setConnectionStatus] = useState<{
+    deepseek: ConnectionStatus;
+    openai: ConnectionStatus;
+    grok: ConnectionStatus;
+    claude: ConnectionStatus;
+  }>({
     deepseek: 'checking',
     openai: 'checking',
     grok: 'checking',

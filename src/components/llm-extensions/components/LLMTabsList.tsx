@@ -6,20 +6,20 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ConnectionStatus } from '../hooks/useLLMExtensions';
 
-interface ConnectionStatus {
-  deepseek: 'connected' | 'disconnected' | 'unavailable' | 'checking';
-  openai: 'connected' | 'disconnected' | 'unavailable' | 'checking';
-  grok: 'connected' | 'disconnected' | 'unavailable' | 'checking';
-  claude: 'connected' | 'disconnected' | 'unavailable' | 'checking';
-}
-
+// Update the interface to use the exported ConnectionStatus type
 interface LLMTabsListProps {
   enabledLLMs: Record<string, boolean>;
   toggleLLM: (llm: string, enabled: boolean) => void;
-  connectionStatus: ConnectionStatus;
+  connectionStatus: {
+    deepseek: ConnectionStatus;
+    openai: ConnectionStatus;
+    grok: ConnectionStatus;
+    claude: ConnectionStatus;
+  };
   activeTab: string;
-  checkConnectionStatusForLLM: (llm: keyof ConnectionStatus) => void;
+  checkConnectionStatusForLLM: (llm: string) => void;
 }
 
 export function LLMTabsList({ 
