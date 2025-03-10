@@ -25,8 +25,10 @@ export const useStockbotState = () => {
     const userMessage: StockbotMessage = {
       id: crypto.randomUUID(),
       role: 'user',
+      sender: 'user',
       content: inputMessage,
-      timestamp: Date.now()
+      text: inputMessage,
+      timestamp: new Date() // Using Date object instead of number
     };
 
     // Add the user message to the list
@@ -49,8 +51,10 @@ export const useStockbotState = () => {
       const responseMessage: StockbotMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
+        sender: 'assistant',
         content: response.content || 'Error: No content received',
-        timestamp: Date.now()
+        text: response.content || 'Error: No content received',
+        timestamp: new Date() // Using Date object instead of number
       };
 
       // Add the response to the list
@@ -66,8 +70,10 @@ export const useStockbotState = () => {
       const errorMessage: StockbotMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
+        sender: 'assistant',
         content: `Error: ${error instanceof Error ? error.message : 'Failed to send message'}`,
-        timestamp: Date.now()
+        text: `Error: ${error instanceof Error ? error.message : 'Failed to send message'}`,
+        timestamp: new Date() // Using Date object instead of number
       };
       
       const finalMessages = [...updatedMessages, errorMessage];

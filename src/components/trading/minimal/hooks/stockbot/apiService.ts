@@ -42,7 +42,7 @@ export const callStockbotAPI = async (
 export const createAssistantMessage = (text: string): ChatMessage => {
   return {
     id: uuidv4(),
-    sender: 'assistant',
+    sender: 'assistant', // This is correct now that we've updated the type
     role: 'assistant',
     content: text,
     text: text,
@@ -58,7 +58,7 @@ export const createAssistantMessage = (text: string): ChatMessage => {
 export const createErrorMessage = (errorText: string): ChatMessage => {
   return {
     id: uuidv4(),
-    sender: 'assistant',
+    sender: 'assistant', // This is correct now that we've updated the type
     role: 'assistant',
     content: `Error: ${errorText}`,
     text: `Error: ${errorText}`,

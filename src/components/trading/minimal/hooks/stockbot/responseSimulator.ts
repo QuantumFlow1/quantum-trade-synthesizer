@@ -55,7 +55,7 @@ export function generateStockbotResponse(message: string, marketData: any[] = []
   
   return {
     id: uuidv4(),
-    sender: 'assistant',
+    sender: 'assistant', // This is correct now that we've updated the type
     role: 'assistant',
     text: responseContent,
     content: responseContent,
@@ -69,7 +69,7 @@ export function generateStockbotResponse(message: string, marketData: any[] = []
 export function generateErrorResponse(errorMsg: string): ChatMessage {
   return {
     id: uuidv4(),
-    sender: 'assistant',
+    sender: 'assistant', // This is correct now that we've updated the type
     role: 'assistant',
     text: `I encountered an error: ${errorMsg}. Please try again later or contact support if the issue persists.`,
     content: `I encountered an error: ${errorMsg}. Please try again later or contact support if the issue persists.`,

@@ -5,7 +5,7 @@ export type StockbotMessageRole = 'user' | 'assistant' | 'system';
 
 export interface ChatMessage {
   id: string;
-  sender: 'user' | 'system';
+  sender: 'user' | 'system' | 'assistant';  // Added 'assistant' as valid sender
   role: StockbotMessageRole;
   content: string;
   text: string;
@@ -16,6 +16,13 @@ export type StockbotMessage = ChatMessage;
 
 // Type definition for the API key check function
 export type CheckApiKeyFunction = () => Promise<boolean>;
+
+// API response type that was missing
+export interface StockbotApiResponse {
+  success: boolean;
+  response?: string;
+  error?: string;
+}
 
 // Type for the main Stockbot Chat hook
 export interface StockbotChatHook {
