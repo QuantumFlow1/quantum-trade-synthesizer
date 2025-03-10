@@ -1,8 +1,9 @@
 
-import React, { forwardRef } from "react";
+import React, { forwardRef, useMemo } from "react";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StockbotMessage } from "../hooks/stockbot/types";
+import { TradingViewChart, MarketHeatmap, StockNews } from "./stockbot/TradingViewWidgets";
 
 interface StockbotMessagesProps {
   messages: StockbotMessage[];
@@ -17,6 +18,55 @@ export const StockbotMessages = forwardRef<HTMLDivElement, StockbotMessagesProps
     const formatTimestamp = (timestamp: number | Date) => {
       const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const renderMessageContent = (content: string) => {
+      // Check for trading view widgets in the message
+      if (content.includes('[TradingView Chart Widget for')) {
+        const match = content.match(/\[TradingView Chart Widget for (\w+) with timeframe (\w+)\]/);
+        if (match && match[1] && match[2]) {
+          const symbol = match[1];
+          const timeframe = match[2];
+          return (
+            <>
+              <div className="mb-2">Here's the chart for {symbol}:</div>
+              <TradingViewChart symbol={symbol} timeframe={timeframe} />
+            </>
+          );
+        }
+      }
+      
+      // Check for market heatmap widgets
+      if (content.includes('[Market Heatmap for')) {
+        const match = content.match(/\[Market Heatmap for (\w+) sectors\]/);
+        if (match && match[1]) {
+          const sector = match[1];
+          return (
+            <>
+              <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
+              <MarketHeatmap sector={sector} />
+            </>
+          );
+        }
+      }
+      
+      // Check for stock news widgets
+      if (content.includes('[Latest news for')) {
+        const match = content.match(/\[Latest news for (\w+) \((\d+) items\)\]/);
+        if (match && match[1] && match[2]) {
+          const symbol = match[1];
+          const count = parseInt(match[2], 10);
+          return (
+            <>
+              <div className="mb-2">Here's the latest news for {symbol}:</div>
+              <StockNews symbol={symbol} count={count} />
+            </>
+          );
+        }
+      }
+      
+      // Default case: just render the text
+      return <div className="whitespace-pre-wrap">{content}</div>;
     };
 
     return (
@@ -49,9 +99,7 @@ export const StockbotMessages = forwardRef<HTMLDivElement, StockbotMessagesProps
                   : 'bg-gray-100 text-gray-800'
               }`}
             >
-              <div className="whitespace-pre-wrap">
-                {typeof message.content === 'string' ? message.content : String(message.content)}
-              </div>
+              {renderMessageContent(typeof message.content === 'string' ? message.content : String(message.content))}
               <div
                 className={`text-xs mt-1 ${
                   message.role === 'user' ? 'text-blue-600' : 'text-gray-500'

@@ -4,7 +4,8 @@ import {
   ChatMessage, 
   StockbotMessage,
   StockbotMessageRole,
-  CheckApiKeyFunction 
+  CheckApiKeyFunction,
+  StockbotToolCall
 } from "./types";
 import { generateStockbotResponse } from "./responseSimulator";
 import { toast } from "@/hooks/use-toast";
@@ -21,7 +22,7 @@ export const useStockbotMessages = (
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const callGroqApi = async (userMessage: string): Promise<ChatMessage> => {
+  const callGroqApi = async (userMessage: string): Promise<{message: ChatMessage, toolCalls?: StockbotToolCall[]}> => {
     try {
       console.log('Calling Groq API for response');
       
@@ -44,7 +45,8 @@ export const useStockbotMessages = (
       const systemMessage = {
         role: 'system',
         content: `You are Stockbot, a helpful trading assistant that provides insights about stocks and financial markets. 
-        You always give a confident, direct answer based on the available data.
+        You can analyze market data and use tools to visualize information.
+        You should use tools whenever they would enhance your response, especially when discussing specific stocks or market sectors.
         Current market data: ${JSON.stringify(marketData)}`
       };
       
@@ -54,7 +56,8 @@ export const useStockbotMessages = (
           messages: [systemMessage, ...messageHistory],
           model: "llama-3.3-70b-versatile",
           temperature: 0.7,
-          max_tokens: 1024
+          max_tokens: 1024,
+          function_calling: "auto"
         },
         headers: groqApiKey ? { 'x-groq-api-key': groqApiKey } : undefined
       });
@@ -68,18 +71,81 @@ export const useStockbotMessages = (
         throw new Error(data?.error || 'Invalid response from AI service');
       }
       
-      return {
+      const message = {
         id: crypto.randomUUID(),
-        sender: 'system',
+        sender: 'assistant',
         role: 'assistant',
         content: data.response,
         text: data.response,
         timestamp: new Date()
       };
+      
+      // Return both the message and any tool calls
+      return {
+        message,
+        toolCalls: data.tool_calls
+      };
     } catch (error) {
       console.error('Error in callGroqApi:', error);
       throw error;
     }
+  };
+
+  // Process tool calls and generate tool response messages
+  const processToolCalls = async (toolCalls: StockbotToolCall[]): Promise<ChatMessage[]> => {
+    if (!toolCalls || toolCalls.length === 0) return [];
+    
+    const toolMessages: ChatMessage[] = [];
+    
+    for (const toolCall of toolCalls) {
+      try {
+        const { function: func } = toolCall;
+        const { name, arguments: args } = func;
+        const parsedArgs = JSON.parse(args);
+        
+        // Create a message for the tool call
+        let responseContent = "";
+        
+        if (name === "showStockChart") {
+          const { symbol, timeframe = "1M" } = parsedArgs;
+          responseContent = `[TradingView Chart Widget for ${symbol} with timeframe ${timeframe}]`;
+        } 
+        else if (name === "showMarketHeatmap") {
+          const { sector = "all" } = parsedArgs;
+          responseContent = `[Market Heatmap for ${sector} sectors]`;
+        }
+        else if (name === "getStockNews") {
+          const { symbol, count = 3 } = parsedArgs;
+          responseContent = `[Latest news for ${symbol} (${count} items)]`;
+        }
+        
+        // Add a message for the tool response
+        const toolMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          sender: 'system',
+          role: 'assistant',
+          content: responseContent,
+          text: responseContent,
+          timestamp: new Date(),
+        };
+        
+        toolMessages.push(toolMessage);
+      } catch (error) {
+        console.error(`Error processing tool call ${toolCall.function.name}:`, error);
+        // Add error message for failed tool call
+        const errorMessage: ChatMessage = {
+          id: crypto.randomUUID(),
+          sender: 'system',
+          role: 'assistant',
+          content: `Failed to process tool call ${toolCall.function.name}: ${error.message}`,
+          text: `Failed to process tool call ${toolCall.function.name}: ${error.message}`,
+          timestamp: new Date(),
+        };
+        toolMessages.push(errorMessage);
+      }
+    }
+    
+    return toolMessages;
   };
 
   const handleSendMessage = useCallback(async () => {
@@ -101,6 +167,7 @@ export const useStockbotMessages = (
 
     try {
       let responseMessage: ChatMessage;
+      let toolCalls: StockbotToolCall[] | undefined;
       
       // Only use simulation mode if explicitly set or if there's no API key
       if (isSimulationMode || !hasGroqKey) {
@@ -121,11 +188,24 @@ export const useStockbotMessages = (
           });
         } else {
           // Use the Groq API
-          responseMessage = await callGroqApi(inputMessage);
+          const result = await callGroqApi(inputMessage);
+          responseMessage = result.message;
+          toolCalls = result.toolCalls;
         }
       }
 
-      const finalMessages = [...updatedMessages, responseMessage];
+      let finalMessages = [...updatedMessages, responseMessage];
+      
+      // Process any tool calls if they exist
+      if (toolCalls && toolCalls.length > 0) {
+        console.log('Processing tool calls:', toolCalls);
+        const toolMessages = await processToolCalls(toolCalls);
+        
+        if (toolMessages.length > 0) {
+          finalMessages = [...finalMessages, ...toolMessages];
+        }
+      }
+      
       setMessages(finalMessages);
       saveMessages(finalMessages);
     } catch (error: any) {
