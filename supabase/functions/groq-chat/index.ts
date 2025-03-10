@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -91,18 +92,27 @@ serve(async (req) => {
     const apiKey = clientApiKey || Deno.env.get('GROQ_API_KEY');
     
     if (!apiKey) {
-      console.error('No Groq API key available');
       throw new Error('API key not configured');
     }
 
-    const keyLength = apiKey.length;
-    console.log(`Using Groq API key (length: ${keyLength})`);
-    
+    // Add system message if not present
+    if (!messages.some(msg => msg.role === 'system')) {
+      messages.unshift({
+        role: 'system',
+        content: `You are Stockbot, a helpful trading assistant that provides insights about stocks and financial markets. 
+        You can analyze market data and use tools to visualize information.
+        
+        Today's date is ${new Date().toLocaleDateString()}.
+        When responding about market data, always mention that it's for the current date.`
+      });
+    }
+
     const requestBody: any = {
       messages,
       model,
       temperature,
-      max_tokens
+      max_tokens,
+      stream: false
     };
 
     if (response_format === 'json') {
@@ -111,7 +121,6 @@ serve(async (req) => {
     
     if (function_calling !== "none") {
       requestBody.tools = tradingTools;
-      
       if (function_calling === "auto" || function_calling === "required") {
         requestBody.tool_choice = function_calling;
       }
@@ -142,19 +151,26 @@ serve(async (req) => {
         error: errorData
       });
       
+      // Enhanced error messages
+      let errorMessage = 'An error occurred while processing your request.';
       if (response.status === 401) {
-        throw new Error('Invalid API key or authentication error');
+        errorMessage = 'Invalid API key or authentication error. Please check your Groq API key configuration.';
       } else if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later');
+        errorMessage = 'Rate limit exceeded. Please try again in a few moments.';
       } else if (response.status >= 500) {
-        throw new Error('Groq API service error. Please try again later');
+        errorMessage = 'The Groq API service is currently experiencing issues. Please try again later.';
       }
       
-      throw new Error(errorData?.error?.message || `API error: ${response.status}`);
+      throw new Error(errorMessage);
     }
     
     const data = await response.json();
     console.log('Successfully received Groq API response');
+    
+    // Check for empty or invalid response content
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Received invalid response from Groq API');
+    }
     
     const hasToolCalls = data.choices[0]?.message?.tool_calls?.length > 0;
     
@@ -173,10 +189,15 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in groq-chat function:', error);
     
+    // Create a more user-friendly error message
     const errorResponse = {
-      error: error.message || 'Unknown error occurred',
+      error: error.message || 'An unexpected error occurred',
       status: 'error',
-      details: error.stack
+      details: {
+        timestamp: new Date().toISOString(),
+        type: error.name,
+        message: error.message
+      }
     };
     
     return new Response(
