@@ -16,6 +16,7 @@ import { Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { setupFirebaseErrorHandling } from "@/utils/firebase-error-handler";
 
 const Index = () => {
   const { user, userProfile } = useAuth();
@@ -27,6 +28,11 @@ const Index = () => {
   const [renderError, setRenderError] = useState<string | null>(null);
   
   useOAuthRedirect();
+
+  // Setup Firebase error handling
+  useEffect(() => {
+    setupFirebaseErrorHandling();
+  }, []);
 
   // Error boundary effect
   useEffect(() => {
