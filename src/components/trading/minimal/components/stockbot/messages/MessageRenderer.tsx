@@ -74,22 +74,20 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
       }
     }
     
-    // Check for alternative function format without quotes: <function=name{param:value}>
-    const altFunctionRegex = /<function=(\w+)\{([^}]+)\}>/;
-    const altMatch = content.match(altFunctionRegex);
+    // Check for function format without tags: function=name{"param":"value"}
+    const rawFunctionRegex = /function=(\w+)(\{.*?\})/;
+    const rawFunctionMatch = content.match(rawFunctionRegex);
     
-    if (altMatch) {
-      const functionName = altMatch[1];
-      // Convert to proper JSON format
-      const paramsText = altMatch[2].replace(/(\w+):/g, '"$1":');
-      const paramsString = `{${paramsText}}`;
+    if (rawFunctionMatch) {
+      const functionName = rawFunctionMatch[1];
+      const paramsString = rawFunctionMatch[2];
       
       try {
         const params = JSON.parse(paramsString);
-        console.log(`Parsed alternative function ${functionName} with params:`, params);
+        console.log(`Parsed raw function ${functionName} with params:`, params);
         return { functionName, params };
       } catch (e) {
-        console.error("Failed to parse alternative function parameters:", e);
+        console.error("Failed to parse raw function parameters:", e);
       }
     }
     

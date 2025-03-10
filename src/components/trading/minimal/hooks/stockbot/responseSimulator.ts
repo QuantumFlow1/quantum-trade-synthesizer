@@ -20,25 +20,25 @@ export const generateStockbotResponse = (inputMessage: string, marketData: any[]
   }
   else if (normalizedInput.includes('chart') || normalizedInput.includes('graph')) {
     const symbol = extractSymbol(normalizedInput) || 'AAPL';
-    responseText = `I'd be happy to show you a chart for ${symbol}. In the full version with API access, I would display an interactive chart here. [TradingView Chart Widget for ${symbol} with timeframe 1M]`;
+    responseText = `<function=showStockChart{"symbol":"${symbol}","timeframe":"1D"}>`;
   }
   else if (normalizedInput.includes('sector') || normalizedInput.includes('industry')) {
     const sector = extractSector(normalizedInput) || 'technology';
-    responseText = `Here's an overview of the ${sector} sector performance. In the full version with API access, I would display a heatmap. [Market Heatmap for ${sector} sectors]`;
+    responseText = `<function=showMarketHeatmap{"sector":"${sector}"}>`;
   }
   else if (normalizedInput.includes('news') || normalizedInput.includes('headlines')) {
     const symbol = extractSymbol(normalizedInput) || 'market';
-    responseText = `Let me show you the latest news for ${symbol === 'market' ? 'the overall market' : symbol}. [Latest news for ${symbol} (3 items)]`;
+    responseText = `<function=getStockNews{"symbol":"${symbol}","count":3}>`;
   }
   else if (normalizedInput.includes('sentiment') || normalizedInput.includes('analysis') || normalizedInput.includes('feeling') || normalizedInput.includes('opinion')) {
     const symbol = extractSymbol(normalizedInput) || 'AAPL';
-    responseText = `I'd be happy to analyze the market sentiment for ${symbol}. Here's the current sentiment analysis: [Sentiment Analysis for ${symbol}]`;
+    responseText = `<function=analyzeSentiment{"symbol":"${symbol}","timeframe":"1D"}>`;
   }
   else if (normalizedInput.includes('price') || normalizedInput.includes('value') || normalizedInput.includes('worth')) {
     const symbol = extractSymbol(normalizedInput);
     if (symbol) {
       const priceData = getSimulatedPriceData(symbol);
-      responseText = `${symbol} is currently trading at $${priceData.price}. It's ${priceData.change >= 0 ? 'up' : 'down'} ${Math.abs(priceData.change).toFixed(2)}% today on a volume of ${priceData.volume} shares.`;
+      responseText = `${symbol} is currently trading at $${priceData.price}. It's ${priceData.change >= 0 ? 'up' : 'down'} ${Math.abs(priceData.change).toFixed(2)}% today on a volume of ${priceData.volume} shares.\n\n⚠️ NOTE: This is simulated data. To get real market data, please configure an API key and disable simulation mode.`;
     } else {
       responseText = "I'd be happy to provide price information. Could you specify which stock or cryptocurrency you're interested in?";
     }
@@ -52,16 +52,13 @@ export const generateStockbotResponse = (inputMessage: string, marketData: any[]
         `${m.symbol || 'Unknown'}: $${m.price || m.close || 0} (${m.change_percentage || '0'}%)`
       ).join(', ');
       
-      responseText = `Based on the current market data I have, here's a quick overview: ${marketSummary}. You can ask me about specific stocks for more details.`;
+      responseText = `Based on the current market data I have, here's a quick overview: ${marketSummary}. You can ask me about specific stocks for more details.\n\n⚠️ NOTE: This is simulated data. To get real market data, please configure an API key and disable simulation mode.`;
     } catch (error) {
       console.error('Error processing market data in simulation:', error);
       // Fallback to generic response
       responseText = "I'm analyzing the current market data. Is there a specific stock or sector you'd like insights about?";
     }
   }
-  
-  // Never send irrelevant responses about cryptocurrency pricing or general info
-  // unless explicitly asked about them
   
   return {
     id: crypto.randomUUID(),

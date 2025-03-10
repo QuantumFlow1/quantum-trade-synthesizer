@@ -20,6 +20,19 @@ export const useContentParser = () => {
         />;
       }
       
+      // Check for warning/notice about simulation mode
+      if (content.includes("⚠️ NOTE: This is simulated data")) {
+        const parts = content.split("⚠️ NOTE:");
+        return (
+          <div>
+            <div className="whitespace-pre-wrap">{parts[0]}</div>
+            <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-700 text-sm">
+              ⚠️ NOTE: {parts[1]}
+            </div>
+          </div>
+        );
+      }
+      
       // Default case: just render the text
       return <div className="whitespace-pre-wrap">{content}</div>;
     } catch (error) {

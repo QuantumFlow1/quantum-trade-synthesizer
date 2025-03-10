@@ -49,6 +49,21 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
     }
     
     setIsSimulationMode(checked);
+    
+    // Show toast notification when changing modes
+    if (checked) {
+      toast({
+        title: "Simulation Mode Enabled",
+        description: "Using simulated data and responses",
+        variant: "default"
+      });
+    } else {
+      toast({
+        title: "AI Mode Enabled",
+        description: "Using real AI for responses with your API key",
+        variant: "default"
+      });
+    }
   };
 
   return (
@@ -56,13 +71,16 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
       <div className="flex items-center space-x-2">
         <h3 className="font-medium">Stockbot</h3>
         <span className={`text-xs px-1.5 py-0.5 rounded ${hasApiKey ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-          {hasApiKey ? 'Live' : 'Limited'}
+          {hasApiKey ? 'Live API' : 'No API Key'}
         </span>
         {isUsingRealData && (
           <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
             Real Data
           </span>
         )}
+        <span className={`text-xs px-1.5 py-0.5 rounded ${isSimulationMode ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'}`}>
+          {isSimulationMode ? 'Simulation' : 'AI Mode'}
+        </span>
       </div>
 
       <div className="flex items-center space-x-2">
@@ -76,6 +94,18 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
             disabled={!hasApiKey && !isSimulationMode}
           />
         </div>
+        
+        {!hasApiKey && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={showApiKeyDialog} 
+            className="text-xs mr-2 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+          >
+            <Key className="h-3 w-3 mr-1" />
+            Add API Key
+          </Button>
+        )}
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
