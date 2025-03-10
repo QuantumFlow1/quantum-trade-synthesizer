@@ -66,6 +66,18 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
     }
   };
 
+  // Function to handle real data toggle
+  const handleRealDataToggle = () => {
+    toggleRealData();
+    toast({
+      title: isUsingRealData ? "Simulated Data Enabled" : "Real Market Data Enabled",
+      description: isUsingRealData 
+        ? "Switched to simulated market data" 
+        : "Now using real market data where available",
+      variant: "default"
+    });
+  };
+
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b">
       <div className="flex items-center space-x-2">
@@ -84,6 +96,16 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
       </div>
 
       <div className="flex items-center space-x-2">
+        {/* Data source toggle */}
+        <div className="flex items-center mr-2 border rounded px-2 py-1 bg-gray-50">
+          <span className="text-xs mr-2">Real Data</span>
+          <Switch
+            checked={isUsingRealData}
+            onCheckedChange={handleRealDataToggle}
+            aria-label="Toggle real market data"
+          />
+        </div>
+        
         {/* Simulation toggle outside the dropdown for direct access */}
         <div className="flex items-center mr-2 border rounded px-2 py-1 bg-gray-50">
           <span className="text-xs mr-2">Simulation</span>
@@ -123,7 +145,7 @@ export const StockbotHeader: React.FC<StockbotHeaderProps> = ({
               Configure API Key
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={toggleRealData}>
+            <DropdownMenuItem onClick={handleRealDataToggle}>
               <Database className="mr-2 h-4 w-4" />
               {isUsingRealData ? "Use Simulated Data" : "Use Real Market Data"}
             </DropdownMenuItem>

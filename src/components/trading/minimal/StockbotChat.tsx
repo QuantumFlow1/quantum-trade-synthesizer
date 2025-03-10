@@ -1,3 +1,4 @@
+
 import { useRef, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStockbotChat } from "./hooks/useStockbotChat";
@@ -16,6 +17,8 @@ interface StockbotChatProps {
 }
 
 export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData = [] }: StockbotChatProps) => {
+  const [isUsingRealData, setIsUsingRealData] = useState(false);
+  
   const { 
     messages, 
     inputMessage, 
@@ -39,12 +42,14 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   const keyCheckInProgress = useRef(false);
   const lastKeyUpdateTime = useRef(0);
   
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
+  // Check for API key changes
   useEffect(() => {
     const checkKey = () => {
       const now = Date.now();
@@ -190,6 +195,11 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
     }
   };
 
+  // Toggle real data state
+  const toggleRealData = () => {
+    setIsUsingRealData(prev => !prev);
+  };
+
   return (
     <Card className="flex flex-col h-[500px] shadow-md overflow-hidden">
       <StockbotHeader 
@@ -198,6 +208,8 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
         clearChat={clearChat}
         showApiKeyDialog={showApiKeyDialog}
         hasApiKey={apiKeyStatus.exists}
+        isUsingRealData={isUsingRealData}
+        toggleRealData={toggleRealData}
       />
 
       <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">
@@ -216,6 +228,7 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
           messagesEndRef={messagesEndRef}
           hasApiKey={apiKeyStatus.exists}
           onConfigureApiKey={showApiKeyDialog}
+          isUsingRealData={isUsingRealData}
         />
         
         <StockbotInput 

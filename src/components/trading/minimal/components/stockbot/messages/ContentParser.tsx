@@ -20,14 +20,26 @@ export const useContentParser = () => {
         />;
       }
       
-      // Check for warning/notice about simulation mode
-      if (content.includes("⚠️ NOTE: This is simulated data")) {
-        const parts = content.split("⚠️ NOTE:");
+      // Check for warning/notice about simulation mode or fictional data
+      if (content.includes("⚠️ NOTE:") || content.includes("Please note that these headlines are fictional")) {
+        let mainContent = content;
+        let noticeContent = "";
+        
+        if (content.includes("⚠️ NOTE:")) {
+          const parts = content.split("⚠️ NOTE:");
+          mainContent = parts[0];
+          noticeContent = parts[1];
+        } else if (content.includes("Please note that these headlines are fictional")) {
+          const index = content.indexOf("Please note that these headlines are fictional");
+          mainContent = content.substring(0, index);
+          noticeContent = content.substring(index);
+        }
+        
         return (
           <div>
-            <div className="whitespace-pre-wrap">{parts[0]}</div>
+            <div className="whitespace-pre-wrap">{mainContent}</div>
             <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-700 text-sm">
-              ⚠️ NOTE: {parts[1]}
+              ⚠️ NOTE: {noticeContent || "This is simulated data for demonstration purposes only."}
             </div>
           </div>
         );

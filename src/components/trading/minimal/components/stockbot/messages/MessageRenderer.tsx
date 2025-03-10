@@ -51,22 +51,21 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ functionName, 
   return <div className="whitespace-pre-wrap">Unsupported function: {functionName}</div>;
 };
 
-// Utility function that can be exported separately to extract function calls from content
+// Improved function to extract function calls from content with better error handling
 export const extractFunctionCall = (content: string): { functionName: string; params: any } | null => {
   try {
     console.log("Extracting function call from:", content.substring(0, 100) + (content.length > 100 ? "..." : ""));
     
-    // Handle function format: <function=name{"param":"value"}>
+    // First format: <function=name{"param":"value"}>
     const functionRegex = /<function=(\w+)(\{.*?\})>(?:<\/function>)?/;
     const functionMatch = content.match(functionRegex);
     
     if (functionMatch) {
       const functionName = functionMatch[1];
       const paramsString = functionMatch[2];
-      let params = {};
       
       try {
-        params = JSON.parse(paramsString);
+        const params = JSON.parse(paramsString);
         console.log(`Parsed function ${functionName} with params:`, params);
         return { functionName, params };
       } catch (e) {
@@ -74,7 +73,7 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
       }
     }
     
-    // Check for function format without tags: function=name{"param":"value"}
+    // Second format: function=name{"param":"value"}
     const rawFunctionRegex = /function=(\w+)(\{.*?\})/;
     const rawFunctionMatch = content.match(rawFunctionRegex);
     
@@ -91,7 +90,7 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
       }
     }
     
-    // Check for function format without tags, directly in content
+    // Third format: function at the beginning of content
     if (content.startsWith('<function=') && content.includes('>')) {
       const rawFunction = content.split('>')[0] + '>';
       const funcMatch = rawFunction.match(/<function=(\w+)(\{.*?\})>/);
@@ -108,7 +107,7 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
       }
     }
     
-    // Check for traditional bracket format
+    // Fourth format: structured for TradingView
     const tradViewMatch = content.match(/\[TradingView Chart Widget for (\w+) with timeframe (\w+)\]/);
     if (tradViewMatch) {
       return { 
@@ -120,17 +119,19 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
       };
     }
     
-    const heatmapMatch = content.match(/\[Market Heatmap for (\w+) sectors\]/);
+    // Fifth format: structured for Heatmap
+    const heatmapMatch = content.match(/\[Market Heatmap for (\w+) sectors?\]/);
     if (heatmapMatch) {
       return { 
         functionName: "showMarketHeatmap", 
         params: {
-          sector: heatmapMatch[1]
+          sector: heatmapMatch[1].toLowerCase() === "all" ? "all" : heatmapMatch[1]
         }
       };
     }
     
-    const newsMatch = content.match(/\[Latest news for (\w+) \((\d+) items\)\]/);
+    // Sixth format: structured for News
+    const newsMatch = content.match(/\[Latest news for (\w+) \((\d+) items?\)\]/);
     if (newsMatch) {
       return { 
         functionName: "getStockNews", 
@@ -141,12 +142,24 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
       };
     }
     
+    // Seventh format: structured for Sentiment
     const sentimentMatch = content.match(/\[Sentiment Analysis for (\w+)\]/);
     if (sentimentMatch) {
       return { 
         functionName: "analyzeSentiment", 
         params: {
           symbol: sentimentMatch[1]
+        }
+      };
+    }
+    
+    // Eighth format: general mentions of charts
+    if (content.includes("chart for") && content.includes("NVIDIA") || content.includes("NVDA")) {
+      return {
+        functionName: "showStockChart",
+        params: {
+          symbol: "NVDA",
+          timeframe: "1M"
         }
       };
     }

@@ -21,18 +21,20 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
     try {
       // Clean up symbol for safety
       const cleanSymbol = symbol.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
+      console.log(`Creating TradingView widget for symbol: ${cleanSymbol}, timeframe: ${timeframe}`);
       
       // Create script element to load TradingView widget script
       const script = document.createElement('script');
       script.src = 'https://s3.tradingview.com/tv.js';
       script.async = true;
       script.onload = () => {
-        if (containerRef.current && window.TradingView) {
+        if (containerRef.current && typeof window !== 'undefined' && window.TradingView) {
           if (widgetRef.current) {
             containerRef.current.innerHTML = '';
           }
 
           try {
+            console.log("TradingView script loaded, creating widget");
             // Create a new TradingView widget
             widgetRef.current = new window.TradingView.widget({
               autosize: true,
@@ -47,16 +49,21 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
               container_id: containerRef.current.id
             });
             setIsLoading(false);
+            console.log("TradingView widget created successfully");
           } catch (err) {
             console.error("Error creating TradingView widget:", err);
             setError("Failed to create chart widget");
             setIsLoading(false);
           }
+        } else {
+          console.error("Container ref or TradingView not available");
+          setError("Failed to initialize TradingView");
+          setIsLoading(false);
         }
       };
       
-      script.onerror = () => {
-        console.error("Failed to load TradingView script");
+      script.onerror = (e) => {
+        console.error("Failed to load TradingView script:", e);
         setError("Failed to load TradingView");
         setIsLoading(false);
       };
@@ -99,7 +106,10 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
       </div>
       {isLoading ? (
         <div className="h-[400px] flex items-center justify-center">
-          <Skeleton className="w-full h-full" />
+          <div className="text-center">
+            <Skeleton className="w-full h-[300px]" />
+            <p className="text-sm text-gray-500 mt-2">Loading TradingView chart...</p>
+          </div>
         </div>
       ) : error ? (
         <div className="h-[400px] flex items-center justify-center bg-gray-50 flex-col p-4">
