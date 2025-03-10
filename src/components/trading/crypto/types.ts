@@ -1,28 +1,34 @@
 
-export interface CryptoModel {
-  id: string;
-  name: string;
-  providerName: string;
-}
-
 export interface CryptoMessage {
-  id: string;
-  role: 'system' | 'user' | 'assistant' | 'error';
+  role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp: Date;
-  model?: string;
-  toolCalls?: any[];
+  functionCalls?: FunctionCall[];
 }
 
-export interface CryptoPrice {
-  id: string;
-  symbol: string;
+export interface FunctionCall {
   name: string;
+  arguments: Record<string, any>;
+}
+
+export interface CryptoModelOption {
+  id: string;
+  name: string;
+}
+
+export interface CryptoNewsItem {
+  title: string;
+  url: string;
+  source: string;
+  published: string;
+  summary: string;
+}
+
+export interface CryptoPriceData {
   price: number;
-  price_change_24h: number;
-  price_change_percentage_24h: number;
-  market_cap: number;
-  total_volume: number;
-  last_updated: string;
-  image?: string;
+  change24h: number;
+  high24h: number;
+  low24h: number;
+  volume24h: number;
+  marketCap: number;
+  lastUpdated: string;
 }
