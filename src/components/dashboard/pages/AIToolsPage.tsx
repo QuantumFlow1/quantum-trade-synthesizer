@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { AIAdvicePanel } from "@/components/dashboard/AIAdvicePanel";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,54 @@ import { useDashboardNavigation } from "@/hooks/use-dashboard-navigation";
 import { Dialog, DialogContent, DialogTitle, DialogHeader, DialogDescription } from "@/components/ui/dialog";
 import { useState } from "react";
 import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
+import { AgentDirectory } from "@/components/trading/agent-communication/AgentDirectory";
+import { Agent } from "@/types/agent";
+
+const sampleAgents: Agent[] = [
+  {
+    id: "agent-1",
+    name: "TrendMaster",
+    status: "active",
+    type: "trader",
+    description: "Specializes in trend-following strategies across multiple timeframes",
+    createdAt: new Date().toISOString(),
+    lastActive: new Date().toISOString(),
+    tradingStyle: "Momentum",
+    performance: {
+      successRate: 68,
+      tasksCompleted: 152,
+      winLossRatio: 2.1
+    }
+  },
+  {
+    id: "agent-2",
+    name: "MarketAnalyst Pro",
+    status: "active",
+    type: "analyst",
+    description: "Provides in-depth market analysis and identifies key support/resistance levels",
+    createdAt: new Date().toISOString(),
+    lastActive: new Date().toISOString(),
+    performance: {
+      successRate: 79,
+      tasksCompleted: 208
+    }
+  },
+  {
+    id: "agent-3",
+    name: "Portfolio Optimizer",
+    status: "active",
+    type: "portfolio_manager",
+    description: "Balances portfolio risk and optimizes asset allocation",
+    createdAt: new Date().toISOString(),
+    lastActive: new Date().toISOString(),
+    tradingStyle: "Value",
+    performance: {
+      successRate: 72,
+      tasksCompleted: 134,
+      winLossRatio: 1.8
+    }
+  }
+];
 
 interface AIToolsPageProps {
   apiStatus?: 'checking' | 'available' | 'unavailable';
@@ -26,7 +73,6 @@ export const AIToolsPage = ({
   const { openTradingAgentsTab } = useDashboardNavigation();
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   
-  // Function to navigate to different AI tools
   const handleNavigate = (destination: string, action?: () => void) => {
     if (action) {
       action();
@@ -65,7 +111,6 @@ export const AIToolsPage = ({
       </Alert>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* AI Trading Advice */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -86,7 +131,6 @@ export const AIToolsPage = ({
           </CardContent>
         </Card>
         
-        {/* Trading Agents */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -131,7 +175,6 @@ export const AIToolsPage = ({
           </CardContent>
         </Card>
         
-        {/* Stockbot Chat */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -161,7 +204,6 @@ export const AIToolsPage = ({
           </CardContent>
         </Card>
         
-        {/* LLM Extensions */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -193,7 +235,6 @@ export const AIToolsPage = ({
           </CardContent>
         </Card>
         
-        {/* Market Analysis */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -226,7 +267,6 @@ export const AIToolsPage = ({
           </CardFooter>
         </Card>
         
-        {/* Trading Advisor */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -258,6 +298,15 @@ export const AIToolsPage = ({
             </Button>
           </CardFooter>
         </Card>
+      </div>
+      
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4">Trading Agent Directory</h2>
+        <p className="text-muted-foreground mb-6">
+          Chat with specialized AI trading agents to get insights and recommendations
+        </p>
+        
+        <AgentDirectory agents={sampleAgents} />
       </div>
       
       {apiStatus === 'unavailable' && (
