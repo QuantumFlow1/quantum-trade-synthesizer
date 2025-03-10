@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { StockbotChatHook } from "./stockbot/types";
 import { useStockbotSettings } from "./stockbot/useStockbotSettings";
@@ -12,6 +13,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   const { 
     hasGroqKey, 
     checkGroqApiKey, 
+    isCheckingAdminKey,
     reloadApiKeys,
     setManuallySetMode
   } = useApiKeyMonitor(isSimulationMode, setIsSimulationMode);
@@ -50,6 +52,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     showApiKeyDialog,
     isKeyDialogOpen,
     setIsKeyDialogOpen,
-    reloadApiKeys
+    reloadApiKeys,
+    isCheckingAdminKey
   };
 };

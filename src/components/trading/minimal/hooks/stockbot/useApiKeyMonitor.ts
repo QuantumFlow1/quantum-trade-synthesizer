@@ -5,20 +5,24 @@ import { toast } from "@/hooks/use-toast";
 import { useApiKeyValidator } from "./useApiKeyValidator";
 import { useApiKeyEvents } from "./useApiKeyEvents";
 import { broadcastApiKeyChange } from "@/utils/apiKeyManager";
+import { checkApiKeysAvailability } from "@/hooks/trading-chart/api-key-manager";
 
 /**
  * Hook for monitoring API key status with improved reliability
+ * and admin key detection
  */
 export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode: (mode: boolean) => void) => {
   const [hasGroqKey, setHasGroqKey] = useState<boolean>(false);
+  const [isCheckingAdminKey, setIsCheckingAdminKey] = useState<boolean>(false);
   const lastKeyCheckTime = useRef(0);
   const manuallySetMode = useRef(false);
   const checkedThisSession = useRef(false);
   const checkLock = useRef(false);
+  const adminKeyChecked = useRef(false);
   
   const { validateGroqApiKey } = useApiKeyValidator();
   
-  // Check if the Groq API key exists with improved caching and debouncing
+  // Enhanced API key check that looks for both local and admin keys
   const checkGroqApiKey = useCallback(async () => {
     // Prevent reentrant checks
     if (checkLock.current) {
@@ -36,7 +40,32 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     lastKeyCheckTime.current = now;
     
     try {
-      const keyExists = await validateGroqApiKey();
+      // First check for a local API key
+      let keyExists = await validateGroqApiKey(false);
+      
+      // If no local key found, check for admin keys
+      if (!keyExists && !adminKeyChecked.current) {
+        setIsCheckingAdminKey(true);
+        console.log("No local Groq API key found, checking for admin key...");
+        
+        try {
+          // Check if there's an admin API key available
+          const result = await checkApiKeysAvailability('groq');
+          keyExists = result.available;
+          
+          console.log('Admin API key availability check result:', {
+            available: result.available,
+            provider: 'groq',
+            timestamp: new Date().toISOString()
+          });
+          
+          adminKeyChecked.current = true;
+        } catch (err) {
+          console.error("Error checking admin API keys:", err);
+        } finally {
+          setIsCheckingAdminKey(false);
+        }
+      }
       
       if (keyExists !== hasGroqKey || !checkedThisSession.current) {
         checkedThisSession.current = true;
@@ -90,6 +119,8 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
   // Run initial check on component mount
   useEffect(() => {
     const runInitialCheck = async () => {
+      // Reset admin key check status on mount
+      adminKeyChecked.current = false;
       const initialKeyStatus = await checkGroqApiKey();
       console.log('Initial API key status:', { exists: initialKeyStatus });
     };
@@ -110,6 +141,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     // Reset cached state to force a fresh check
     lastKeyCheckTime.current = 0;
     checkedThisSession.current = false;
+    adminKeyChecked.current = false;
     
     try {
       // Force immediate check
@@ -120,7 +152,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
       });
       
       // Broadcast the change to all components
-      broadcastApiKeyChange(keyExists);
+      broadcastApiKeyChange('groq', keyExists);
       
       // Show toast notification
       if (keyExists) {
@@ -132,7 +164,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
       } else {
         toast({
           title: "No API Key Found",
-          description: "No Groq API key could be found in storage",
+          description: "No Groq API key could be found in storage or admin configuration",
           variant: "warning",
           duration: 3000
         });
@@ -145,7 +177,8 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
   
   return { 
     hasGroqKey, 
-    checkGroqApiKey, 
+    checkGroqApiKey,
+    isCheckingAdminKey,
     reloadApiKeys,
     setManuallySetMode: (value: boolean) => {
       manuallySetMode.current = value;

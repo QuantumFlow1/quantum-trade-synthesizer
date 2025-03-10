@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStockbotChat } from "./hooks/useStockbotChat";
@@ -30,7 +29,8 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
     isKeyDialogOpen,
     setIsKeyDialogOpen,
     reloadApiKeys,
-    hasApiKey: hookHasApiKey
+    hasApiKey: hookHasApiKey,
+    isCheckingAdminKey
   } = useStockbotChat(marketData);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -39,17 +39,14 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   const keyCheckInProgress = useRef(false);
   const lastKeyUpdateTime = useRef(0);
   
-  // Auto-scroll when new messages are added
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Update API key status when any relevant state changes
   useEffect(() => {
     const checkKey = () => {
-      // Prevent multiple simultaneous checks and throttle checks
       const now = Date.now();
       if (keyCheckInProgress.current || now - lastKeyUpdateTime.current < 1000) {
         return false;
@@ -87,14 +84,12 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
       }
     };
     
-    // Immediate check
     checkKey();
     
-    // Set up event listeners for API key changes with throttling
     let lastEventTime = 0;
     const handleApiKeyChange = () => {
       const now = Date.now();
-      if (now - lastEventTime < 1000) return; // Debounce events that fire too rapidly
+      if (now - lastEventTime < 1000) return;
       
       lastEventTime = now;
       setTimeout(() => {
@@ -116,17 +111,13 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   const handleDialogClose = () => {
     console.log("Dialog closing, checking for API key");
     
-    // Clear any existing timeout
     if (dialogCloseTimeoutRef.current) {
       clearTimeout(dialogCloseTimeoutRef.current);
     }
     
-    // Set dialog closed first to prevent UI freeze
     setIsKeyDialogOpen(false);
     
-    // Force a direct check with a slight delay to ensure storage is updated
     dialogCloseTimeoutRef.current = window.setTimeout(() => {
-      // Clear timeout reference
       dialogCloseTimeoutRef.current = null;
       
       try {
@@ -149,7 +140,6 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
           });
         }
         
-        // Additional delay before reloading API keys
         setTimeout(reloadApiKeys, 300);
       } catch (err) {
         console.error("Error handling dialog close:", err);
@@ -158,11 +148,9 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   };
 
   const handleApiKeySuccess = () => {
-    // Execute additional logic after a successful API key save
     console.log("API key saved successfully, refreshing state");
     
     try {
-      // Check for API key with a slight delay to ensure storage is updated
       setTimeout(() => {
         if (dialogCloseTimeoutRef.current) {
           clearTimeout(dialogCloseTimeoutRef.current);
@@ -180,7 +168,6 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
         
         setApiKeyStatus({ exists: keyExists });
         
-        // If we have a key and are in simulation mode, offer to switch
         if (keyExists && isSimulationMode) {
           toast({
             title: "API Key Configured",
@@ -217,6 +204,7 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
         <StockbotAlerts
           hasApiKey={apiKeyStatus.exists}
           isSimulationMode={isSimulationMode}
+          isCheckingAdminKey={isCheckingAdminKey}
           showApiKeyDialog={showApiKeyDialog}
           setIsSimulationMode={setIsSimulationMode}
           handleForceReload={reloadApiKeys}

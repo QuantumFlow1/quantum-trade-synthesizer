@@ -1,44 +1,26 @@
 
-export interface ChatMessage {
-  id: string;
-  sender: 'user' | 'assistant';
-  role: 'user' | 'assistant';
-  text: string;
-  content: string;
-  timestamp: Date;
-  isLoading?: boolean;
-}
-
-export enum StockbotMessageRole {
-  User = 'user',
-  Bot = 'assistant'
-}
+import { ReactNode } from "react";
 
 export interface StockbotMessage {
-  role: StockbotMessageRole;
-  content: string;
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string | ReactNode;
+  timestamp: number;
 }
 
 export interface StockbotChatHook {
-  messages: ChatMessage[];
+  messages: StockbotMessage[];
   inputMessage: string;
   setInputMessage: (message: string) => void;
   isLoading: boolean;
   hasApiKey: boolean;
   isSimulationMode: boolean;
   setIsSimulationMode: (mode: boolean) => void;
-  handleSendMessage: () => Promise<void>;
+  handleSendMessage: () => void;
   clearChat: () => void;
   showApiKeyDialog: () => void;
   isKeyDialogOpen: boolean;
-  setIsKeyDialogOpen: (open: boolean) => void;
-  reloadApiKeys: () => void;
+  setIsKeyDialogOpen: (isOpen: boolean) => void;
+  reloadApiKeys: () => Promise<void>;
+  isCheckingAdminKey?: boolean;
 }
-
-export interface StockbotApiResponse {
-  success: boolean;
-  response?: string;
-  error?: string;
-}
-
-export type CheckApiKeyFunction = () => Promise<boolean>;
