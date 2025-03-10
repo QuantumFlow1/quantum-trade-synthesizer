@@ -16,6 +16,23 @@ export async function fetchAdminApiKey(provider: 'openai' | 'deepseek' | 'claude
       return null;
     }
     
+    // First try to check through the check-api-keys edge function
+    const { data: checkData, error: checkError } = await supabase.functions.invoke('check-api-keys', {
+      body: { service: provider }
+    });
+    
+    console.log(`API key check result for ${provider}:`, checkData);
+    
+    if (checkError) {
+      console.error(`Error checking admin key availability for ${provider}:`, checkError);
+    } else if (checkData && checkData.secretSet === false) {
+      console.log(`Admin key for ${provider} is NOT available via check-api-keys`);
+      return null;
+    } else if (checkData && checkData.secretSet === true) {
+      console.log(`Admin key for ${provider} IS available via check-api-keys`);
+    }
+    
+    // If the check indicates the key is available (or we're not sure), try to get the actual key
     // Call the Supabase edge function to get the admin API key
     const { data, error } = await supabase.functions.invoke('get-admin-key', {
       body: { provider }
@@ -27,7 +44,9 @@ export async function fetchAdminApiKey(provider: 'openai' | 'deepseek' | 'claude
     }
     
     if (data && data.key) {
-      console.log(`Admin API key for ${provider} retrieved successfully`);
+      // Log partial key for debugging (securely)
+      const maskedKey = data.key.substring(0, 4) + '...' + data.key.substring(data.key.length - 4);
+      console.log(`Admin API key for ${provider} retrieved successfully: ${maskedKey}`);
       return data.key;
     }
     
