@@ -1,57 +1,125 @@
 
-import { supabase } from '@/lib/supabase';
+import { useState } from 'react';
+import { CryptoMessage, StockbotToolCall } from '../../types';
 import { v4 as uuidv4 } from 'uuid';
-import { CryptoMessage } from '../../types';
 
 export function useToolCallsProcessor() {
-  const processToolCalls = async (toolCalls: any[], setMessages: React.Dispatch<React.SetStateAction<CryptoMessage[]>>) => {
-    if (!toolCalls || toolCalls.length === 0) return;
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Modified to accept a function that adds a single message
+  const processToolCalls = async (
+    toolCalls: StockbotToolCall[],
+    addMessageFn: (message: CryptoMessage) => void
+  ) => {
+    if (!toolCalls || toolCalls.length === 0) return [];
     
-    for (const call of toolCalls) {
-      try {
-        if (call.function.name === 'getCryptoPrice') {
-          const { symbol } = JSON.parse(call.function.arguments);
-          
-          // Call the crypto-price-data function
-          const { data, error } = await supabase.functions.invoke('crypto-price-data', {
-            body: { symbol }
-          });
-          
-          if (error) {
-            console.error('Error fetching crypto price data:', error);
-            continue;
-          }
-          
-          if (data.success && data.data) {
-            // Format price data message
-            const priceInfo = data.data;
-            const priceMessage = `
-### ${priceInfo.name} (${priceInfo.symbol}) Current Data
-**Price:** $${priceInfo.price.toLocaleString()}
-**24h Change:** ${priceInfo.price_change_percentage_24h > 0 ? '▲' : '▼'} ${Math.abs(priceInfo.price_change_percentage_24h).toFixed(2)}% ($${Math.abs(priceInfo.price_change_24h).toFixed(2)})
-**Market Cap:** $${priceInfo.market_cap.toLocaleString()}
-**24h Volume:** $${priceInfo.total_volume.toLocaleString()}
-**Last Updated:** ${new Date(priceInfo.last_updated).toLocaleString()}
-
-![${priceInfo.name} Logo](${priceInfo.image})
-`;
-            
-            const dataMessage: CryptoMessage = {
-              id: uuidv4(),
-              role: 'system',
-              content: priceMessage,
-              timestamp: new Date()
-            };
-            
-            setMessages(prev => [...prev, dataMessage]);
-          }
+    setIsProcessing(true);
+    const toolMessages: CryptoMessage[] = [];
+    
+    try {
+      for (const toolCall of toolCalls) {
+        console.log('Processing tool call:', toolCall);
+        
+        if (toolCall.type !== 'function') continue;
+        
+        const { name, arguments: argsString } = toolCall.function;
+        let args;
+        
+        try {
+          args = JSON.parse(argsString);
+        } catch (e) {
+          console.error('Failed to parse tool call arguments:', e);
+          continue;
         }
-        // Additional tool handling can be added here
-      } catch (error) {
-        console.error(`Error processing tool call ${call.function.name}:`, error);
+        
+        const toolResponse = await executeToolCall(name, args);
+        
+        // Create message for the tool execution result
+        const resultMessage: CryptoMessage = {
+          id: uuidv4(),
+          role: 'function',
+          content: JSON.stringify(toolResponse),
+          timestamp: new Date(),
+          name: name
+        };
+        
+        toolMessages.push(resultMessage);
+        addMessageFn(resultMessage); // Use the function to add each message
       }
+    } catch (error) {
+      console.error('Error processing tool calls:', error);
+    } finally {
+      setIsProcessing(false);
     }
+    
+    return toolMessages;
   };
   
-  return { processToolCalls };
+  return { processToolCalls, isProcessing };
+}
+
+// Execute the tool call based on the function name
+async function executeToolCall(name: string, args: any) {
+  switch (name) {
+    case 'getCurrentPrice':
+      return simulateGetCurrentPrice(args.symbol);
+    case 'getMarketSentiment':
+      return simulateGetMarketSentiment(args.symbol);
+    case 'getHistoricalData':
+      return simulateGetHistoricalData(args.symbol, args.timeframe);
+    default:
+      return { 
+        status: 'error',
+        message: `Unknown function: ${name}`
+      };
+  }
+}
+
+// Simulated tool functions
+function simulateGetCurrentPrice(symbol: string) {
+  const price = Math.random() * (symbol === 'BTC' ? 50000 : 2000) + (symbol === 'BTC' ? 30000 : 1000);
+  return {
+    symbol,
+    price: price.toFixed(2),
+    timestamp: new Date().toISOString(),
+    status: 'success'
+  };
+}
+
+function simulateGetMarketSentiment(symbol: string) {
+  const sentimentValues = ['bullish', 'bearish', 'neutral', 'extremely bullish', 'extremely bearish'];
+  const sentiment = sentimentValues[Math.floor(Math.random() * sentimentValues.length)];
+  return {
+    symbol,
+    sentiment,
+    confidence: (Math.random() * 50 + 50).toFixed(1) + '%',
+    timestamp: new Date().toISOString(),
+    status: 'success'
+  };
+}
+
+function simulateGetHistoricalData(symbol: string, timeframe: string) {
+  const dataPoints = [];
+  const now = new Date();
+  const basePrice = symbol === 'BTC' ? 40000 : 1800;
+  const volatility = symbol === 'BTC' ? 2000 : 100;
+  
+  // Generate 10 data points going backwards in time
+  for (let i = 0; i < 10; i++) {
+    const timestamp = new Date(now);
+    timestamp.setHours(now.getHours() - i * (timeframe === 'hourly' ? 1 : 24));
+    
+    dataPoints.push({
+      timestamp: timestamp.toISOString(),
+      price: (basePrice + (Math.random() - 0.5) * volatility).toFixed(2),
+      volume: Math.floor(Math.random() * 1000000)
+    });
+  }
+  
+  return {
+    symbol,
+    timeframe,
+    data: dataPoints,
+    status: 'success'
+  };
 }

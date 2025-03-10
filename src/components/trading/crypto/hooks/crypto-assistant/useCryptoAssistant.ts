@@ -74,6 +74,7 @@ export function useCryptoAssistant() {
       addMessage(assistantMessage);
       
       // Process any tool calls from the AI response
+      // Using the updated processToolCalls which accepts addMessage directly
       if (data.tool_calls && data.tool_calls.length > 0) {
         await processToolCalls(data.tool_calls, addMessage);
       }
