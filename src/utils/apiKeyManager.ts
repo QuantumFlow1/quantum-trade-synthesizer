@@ -13,6 +13,8 @@ export const LOCALSTORAGE_CHANGED_EVENT = 'localStorage-changed';
  */
 export const saveApiKey = (provider: string, apiKey: string): boolean => {
   try {
+    console.log(`Attempting to save ${provider} API key with length: ${apiKey ? apiKey.length : 0}`);
+    
     // Skip if key is empty
     if (!apiKey || apiKey.trim() === '') {
       console.log(`No ${provider} API key provided, skipping save`);
@@ -22,12 +24,14 @@ export const saveApiKey = (provider: string, apiKey: string): boolean => {
     }
     
     // Save to localStorage
-    localStorage.setItem(`${provider}ApiKey`, apiKey.trim());
+    const trimmedKey = apiKey.trim();
+    localStorage.setItem(`${provider}ApiKey`, trimmedKey);
     
-    // Verify the key was saved correctly
+    // Double-check the key was saved correctly
     const savedKey = localStorage.getItem(`${provider}ApiKey`);
-    if (!savedKey) {
-      console.error(`Failed to save ${provider} API key to localStorage`);
+    if (!savedKey || savedKey !== trimmedKey) {
+      console.error(`Failed to save ${provider} API key to localStorage: ` + 
+                   `Expected '${trimmedKey.substring(0, 3)}...' but got '${savedKey?.substring(0, 3) || "null"}...'`);
       return false;
     }
     

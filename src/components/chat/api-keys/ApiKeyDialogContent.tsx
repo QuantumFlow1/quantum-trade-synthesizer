@@ -48,6 +48,13 @@ export const ApiKeyDialogContent = ({
     }
   }, [apiKeys]);
 
+  // Set active tab from initialTab prop
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
   const loadKeysFromStorage = () => {
     try {
       const savedOpenAI = localStorage.getItem('openaiApiKey') || '';
@@ -116,8 +123,21 @@ export const ApiKeyDialogContent = ({
         
         // Save Groq API key
         if (groqKey.trim()) {
+          console.log(`Saving Groq API key (${groqKey.length} chars): ${groqKey.substring(0, 3)}...${groqKey.substring(groqKey.length - 3)}`);
+          
           if (!saveApiKey('groq', groqKey)) {
-            success = false;
+            console.error('Failed to save Groq API key with saveApiKey utility');
+            
+            // Fallback: try direct localStorage save
+            try {
+              localStorage.setItem('groqApiKey', groqKey.trim());
+              console.log('Saved Groq API key directly to localStorage');
+            } catch (err) {
+              console.error('Failed to save Groq API key directly to localStorage:', err);
+              success = false;
+            }
+          } else {
+            console.log('Successfully saved Groq API key with saveApiKey utility');
           }
           
           // Also save to Supabase if available (for backend usage)
