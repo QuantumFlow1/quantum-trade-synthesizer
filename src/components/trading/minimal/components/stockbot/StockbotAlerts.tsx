@@ -16,6 +16,7 @@ export const StockbotAlerts: React.FC<StockbotAlertsProps> = ({
   hasApiKey,
   isSimulationMode,
   isCheckingAdminKey,
+  showApiKeyDialog,
   setIsSimulationMode,
   handleForceReload
 }) => {
@@ -23,7 +24,7 @@ export const StockbotAlerts: React.FC<StockbotAlertsProps> = ({
     return (
       <div className="p-3 bg-blue-50 border-b border-blue-200 text-sm text-blue-700 flex items-center">
         <RefreshCw size={14} className="animate-spin mr-2" />
-        <span>Verbinding met Groq API Wordt Gecontroleerd...</span>
+        <span>Checking Groq API connection...</span>
       </div>
     );
   }
@@ -34,7 +35,7 @@ export const StockbotAlerts: React.FC<StockbotAlertsProps> = ({
       <div className="p-3 bg-blue-50 border-b border-blue-200 text-sm text-blue-700 flex justify-between items-center">
         <div className="flex items-center">
           <Info size={14} className="mr-2" />
-          <span>API Sleutel is beschikbaar, maar simulatiemodus is actief</span>
+          <span>API key is available, but simulation mode is active</span>
         </div>
         <Button
           variant="outline"
@@ -42,7 +43,7 @@ export const StockbotAlerts: React.FC<StockbotAlertsProps> = ({
           className="text-xs bg-white"
           onClick={() => setIsSimulationMode(false)}
         >
-          Schakel naar AI-modus
+          Switch to AI mode
         </Button>
       </div>
     );
@@ -54,7 +55,7 @@ export const StockbotAlerts: React.FC<StockbotAlertsProps> = ({
       <div className="p-3 bg-amber-50 border-b border-amber-200 text-sm text-amber-700 flex justify-between items-center">
         <div className="flex items-center">
           <AlertTriangle size={14} className="mr-2" />
-          <span>Geen API sleutel beschikbaar, schakel over naar simulatiemodus</span>
+          <span>No API key available, switch to simulation mode</span>
         </div>
         <div className="flex space-x-2">
           <Button
@@ -64,7 +65,7 @@ export const StockbotAlerts: React.FC<StockbotAlertsProps> = ({
             onClick={handleForceReload}
           >
             <RefreshCw size={12} className="mr-1" />
-            Hercontroleer
+            Check Again
           </Button>
           <Button
             variant="outline"
@@ -72,7 +73,15 @@ export const StockbotAlerts: React.FC<StockbotAlertsProps> = ({
             className="text-xs bg-white"
             onClick={() => setIsSimulationMode(true)}
           >
-            Simulatiemodus
+            Simulation Mode
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs bg-white"
+            onClick={showApiKeyDialog}
+          >
+            Configure API Key
           </Button>
         </div>
       </div>

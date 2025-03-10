@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { StockbotChatHook } from "./stockbot/types";
 import { useStockbotSettings } from "./stockbot/useStockbotSettings";
@@ -36,6 +37,16 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   useEffect(() => {
     setManuallySetMode(manuallySetMode.current);
   }, [manuallySetMode, setManuallySetMode]);
+  
+  // Perform a key check when component mounts
+  useEffect(() => {
+    // Delay the check slightly to ensure everything else is initialized
+    const timer = setTimeout(() => {
+      reloadApiKeys();
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [reloadApiKeys]);
   
   // Return the same interface as before to maintain compatibility
   return {

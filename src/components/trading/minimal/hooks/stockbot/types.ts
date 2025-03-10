@@ -1,33 +1,23 @@
 
-import { ReactNode } from "react";
+// Common types for the Stockbot module
 
-export interface StockbotMessage {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string | ReactNode;
-  timestamp: number;
-}
+export type StockbotMessageRole = 'user' | 'assistant' | 'system';
 
-// ChatMessage interface used across multiple files
 export interface ChatMessage {
   id: string;
-  sender?: 'user' | 'assistant' | 'system';
-  role: 'user' | 'assistant' | 'system';
-  content: string | ReactNode;
-  text?: string;
-  timestamp: Date | number;
+  sender: 'user' | 'system';
+  role: StockbotMessageRole;
+  content: string;
+  text: string;
+  timestamp: Date;
 }
 
-export type StockbotMessageRole = "user" | "assistant" | "system";
+export type StockbotMessage = ChatMessage;
 
-export interface StockbotApiResponse {
-  success: boolean;
-  response?: string;
-  error?: string;
-}
-
+// Type definition for the API key check function
 export type CheckApiKeyFunction = () => Promise<boolean>;
 
+// Type for the main Stockbot Chat hook
 export interface StockbotChatHook {
   messages: StockbotMessage[];
   inputMessage: string;
@@ -36,11 +26,14 @@ export interface StockbotChatHook {
   hasApiKey: boolean;
   isSimulationMode: boolean;
   setIsSimulationMode: (mode: boolean) => void;
-  handleSendMessage: () => void;
+  handleSendMessage: () => Promise<void>;
   clearChat: () => void;
   showApiKeyDialog: () => void;
   isKeyDialogOpen: boolean;
-  setIsKeyDialogOpen: (isOpen: boolean) => void;
+  setIsKeyDialogOpen: (open: boolean) => void;
   reloadApiKeys: () => Promise<void>;
   isCheckingAdminKey?: boolean;
 }
+
+// Type definition that extends the CheckApiKeyFunction
+export type CheckGroqApiKeyFunction = CheckApiKeyFunction;
