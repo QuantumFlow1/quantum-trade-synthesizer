@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { TabsContent } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { Tabs } from '@/components/ui/tabs';
 import { Key } from 'lucide-react';
 import { saveApiKey, broadcastApiKeyChange } from '@/utils/apiKeyManager';
-import { DialogFooter } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/lib/supabase';
 import { ApiKeySettings } from '../types/GrokSettings';
 import { toast } from '@/hooks/use-toast';
+import { ApiKeyTabsList } from './ApiKeyTabsList';
+import { ApiKeyTabContent } from './ApiKeyTabContent';
+import { ApiKeySaveButton } from './ApiKeySaveButton';
 
 type TabType = 'openai' | 'claude' | 'gemini' | 'deepseek' | 'groq';
 
@@ -248,107 +246,62 @@ export const ApiKeyDialogContent = ({
     }
   };
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as TabType);
+  };
+
   return (
     <div className="space-y-4 py-2 pb-4">
-      <Tabs defaultValue={activeTab} onValueChange={(value) => setActiveTab(value as TabType)}>
-        <TabsList className="grid grid-cols-5 mb-4">
-          <TabsTrigger value="openai">OpenAI</TabsTrigger>
-          <TabsTrigger value="claude">Claude</TabsTrigger>
-          <TabsTrigger value="gemini">Gemini</TabsTrigger>
-          <TabsTrigger value="deepseek">DeepSeek</TabsTrigger>
-          <TabsTrigger value="groq">Groq</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue={activeTab} onValueChange={handleTabChange}>
+        <ApiKeyTabsList activeTab={activeTab} onTabChange={handleTabChange} />
         
-        <TabsContent value="openai" className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="openai-key">OpenAI API Key</Label>
-            <Input
-              id="openai-key"
-              type="password"
-              placeholder="sk-..."
-              value={openaiKey}
-              onChange={(e) => setOpenaiKey(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">Used for GPT-3.5 and GPT-4 models</p>
-          </div>
-        </TabsContent>
+        <ApiKeyTabContent
+          tabId="openai"
+          label="OpenAI API Key"
+          placeholder="sk-..."
+          value={openaiKey}
+          onChange={setOpenaiKey}
+          description="Used for GPT-3.5 and GPT-4 models"
+        />
         
-        <TabsContent value="claude" className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="claude-key">Anthropic API Key</Label>
-            <Input
-              id="claude-key"
-              type="password"
-              placeholder="sk-ant-..."
-              value={claudeKey}
-              onChange={(e) => setClaudeKey(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">Used for Claude models</p>
-          </div>
-        </TabsContent>
+        <ApiKeyTabContent
+          tabId="claude"
+          label="Anthropic API Key"
+          placeholder="sk-ant-..."
+          value={claudeKey}
+          onChange={setClaudeKey}
+          description="Used for Claude models"
+        />
         
-        <TabsContent value="gemini" className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="gemini-key">Google Gemini API Key</Label>
-            <Input
-              id="gemini-key"
-              type="password"
-              placeholder="AIza..."
-              value={geminiKey}
-              onChange={(e) => setGeminiKey(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">Used for Google Gemini models</p>
-          </div>
-        </TabsContent>
+        <ApiKeyTabContent
+          tabId="gemini"
+          label="Google Gemini API Key"
+          placeholder="AIza..."
+          value={geminiKey}
+          onChange={setGeminiKey}
+          description="Used for Google Gemini models"
+        />
         
-        <TabsContent value="deepseek" className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="deepseek-key">DeepSeek API Key</Label>
-            <Input
-              id="deepseek-key"
-              type="password"
-              placeholder="sk-..."
-              value={deepseekKey}
-              onChange={(e) => setDeepseekKey(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">Used for DeepSeek models</p>
-          </div>
-        </TabsContent>
+        <ApiKeyTabContent
+          tabId="deepseek"
+          label="DeepSeek API Key"
+          placeholder="sk-..."
+          value={deepseekKey}
+          onChange={setDeepseekKey}
+          description="Used for DeepSeek models"
+        />
         
-        <TabsContent value="groq" className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="groq-key">Groq API Key</Label>
-            <Input
-              id="groq-key"
-              type="password"
-              placeholder="gsk_..."
-              value={groqKey}
-              onChange={(e) => setGroqKey(e.target.value)}
-            />
-            <p className="text-xs text-gray-500">Used for Groq models including LLama-3, Mixtral</p>
-          </div>
-        </TabsContent>
+        <ApiKeyTabContent
+          tabId="groq"
+          label="Groq API Key"
+          placeholder="gsk_..."
+          value={groqKey}
+          onChange={setGroqKey}
+          description="Used for Groq models including LLama-3, Mixtral"
+        />
       </Tabs>
       
-      <DialogFooter>
-        <Button 
-          type="submit" 
-          onClick={handleSave} 
-          disabled={isSaving}
-          className="w-full mt-4"
-        >
-          {isSaving ? (
-            <>
-              <span className="mr-2">Saving...</span>
-            </>
-          ) : (
-            <>
-              <Key className="mr-2 h-4 w-4" />
-              Save API Key
-            </>
-          )}
-        </Button>
-      </DialogFooter>
+      <ApiKeySaveButton isSaving={isSaving} onSave={handleSave} />
     </div>
   );
 };
