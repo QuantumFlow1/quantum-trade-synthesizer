@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
-import { CryptoMessage, StockbotToolCall } from '../../types';
+import { CryptoMessage } from '../../types';
+import { StockbotToolCall } from '../../../minimal/hooks/stockbot/types';
 import { v4 as uuidv4 } from 'uuid';
 
 export function useToolCallsProcessor() {
@@ -37,10 +38,13 @@ export function useToolCallsProcessor() {
         // Create message for the tool execution result
         const resultMessage: CryptoMessage = {
           id: uuidv4(),
-          role: 'function',
+          role: 'assistant', // Changed from 'function' to a valid role
           content: JSON.stringify(toolResponse),
           timestamp: new Date(),
-          name: name
+          functionCalls: [{ 
+            name: name,
+            arguments: args 
+          }]
         };
         
         toolMessages.push(resultMessage);
