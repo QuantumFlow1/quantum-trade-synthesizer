@@ -158,24 +158,54 @@ serve(async (req) => {
       throw new Error(errorMessage);
     }
     
-    const data = await response.json();
-    console.log(`Successfully received ${apiType.toUpperCase()} API response`);
-    
-    // Check for empty or invalid response content
-    if (!data.choices?.[0]?.message?.content) {
-      throw new Error(`Received invalid response from ${apiType.toUpperCase()} API`);
+    // Parse the response as JSON and add better error handling
+    let data;
+    try {
+      const responseText = await response.text();
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse API response as JSON:', responseText);
+        throw new Error(`Invalid JSON response from ${apiType.toUpperCase()} API`);
+      }
+    } catch (parseError) {
+      console.error('Error parsing response:', parseError);
+      throw new Error(`Failed to parse response from ${apiType.toUpperCase()} API: ${parseError.message}`);
     }
     
-    const hasToolCalls = data.choices[0]?.message?.tool_calls?.length > 0;
+    console.log(`Successfully received ${apiType.toUpperCase()} API response`);
+    
+    // Validate response structure
+    if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
+      console.error('Invalid response structure:', data);
+      throw new Error(`Received invalid response structure from ${apiType.toUpperCase()} API`);
+    }
+    
+    const firstChoice = data.choices[0];
+    if (!firstChoice || !firstChoice.message) {
+      console.error('Invalid choice structure:', firstChoice);
+      throw new Error(`Received invalid choice structure from ${apiType.toUpperCase()} API`);
+    }
+    
+    // Check for empty or invalid response content
+    if (typeof firstChoice.message.content !== 'string' && !firstChoice.message.tool_calls) {
+      console.error('Invalid message content:', firstChoice.message);
+      throw new Error(`Received invalid message content from ${apiType.toUpperCase()} API`);
+    }
+    
+    const hasToolCalls = firstChoice.message.tool_calls?.length > 0;
+    
+    // Ensure message content is always a string (even if empty when using tool calls)
+    const messageContent = firstChoice.message.content || "";
     
     return new Response(
       JSON.stringify({
-        response: data.choices[0].message.content,
+        response: messageContent,
         status: 'success',
         model: model,
         usage: data.usage,
         system_fingerprint: data.system_fingerprint || null,
-        tool_calls: hasToolCalls ? data.choices[0].message.tool_calls : null
+        tool_calls: hasToolCalls ? firstChoice.message.tool_calls : null
       }),
       { headers: corsHeaders }
     );
@@ -190,7 +220,8 @@ serve(async (req) => {
       details: {
         timestamp: new Date().toISOString(),
         type: error.name,
-        message: error.message
+        message: error.message,
+        stack: error.stack
       }
     };
     
