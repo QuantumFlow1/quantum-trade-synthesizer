@@ -1,6 +1,6 @@
 
 import React from "react";
-import { TradingViewChart, MarketHeatmap, StockNews } from "../widgets";
+import { TradingViewChart, MarketHeatmap, StockNews, SentimentAnalysis } from "../widgets";
 
 interface MessageRendererProps {
   functionName: string;
@@ -32,6 +32,15 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ functionName, 
       <>
         <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
         <MarketHeatmap sector={sector} />
+      </>
+    );
+  } else if (functionName === "analyzeSentiment") {
+    const symbol = params.symbol || "SPY";
+    const timeframe = params.timeframe || "1D";
+    return (
+      <>
+        <div className="mb-2">Here's the sentiment analysis for {symbol}:</div>
+        <SentimentAnalysis symbol={symbol} timeframe={timeframe} />
       </>
     );
   }
@@ -123,6 +132,16 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
         params: {
           symbol: newsMatch[1],
           count: parseInt(newsMatch[2], 10)
+        }
+      };
+    }
+    
+    const sentimentMatch = content.match(/\[Sentiment Analysis for (\w+)\]/);
+    if (sentimentMatch) {
+      return { 
+        functionName: "analyzeSentiment", 
+        params: {
+          symbol: sentimentMatch[1]
         }
       };
     }

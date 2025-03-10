@@ -34,6 +34,10 @@ export const useToolCallProcessor = () => {
           const { symbol, count = 3 } = parsedArgs as any;
           responseContent = `<function=getStockNews{"symbol":"${symbol}","count":${count}}>`;
         }
+        else if (name === "analyzeSentiment") {
+          const { symbol, timeframe = "1D" } = parsedArgs as any;
+          responseContent = `<function=analyzeSentiment{"symbol":"${symbol}","timeframe":"${timeframe}"}>`;
+        }
         
         // Add a message for the tool response
         const toolMessage: ChatMessage = {

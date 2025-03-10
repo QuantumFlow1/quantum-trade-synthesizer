@@ -30,6 +30,10 @@ export const generateStockbotResponse = (inputMessage: string, marketData: any[]
     const symbol = extractSymbol(normalizedInput) || 'market';
     responseText = `Let me show you the latest news for ${symbol === 'market' ? 'the overall market' : symbol}. [Latest news for ${symbol} (3 items)]`;
   }
+  else if (normalizedInput.includes('sentiment') || normalizedInput.includes('analysis') || normalizedInput.includes('feeling') || normalizedInput.includes('opinion')) {
+    const symbol = extractSymbol(normalizedInput) || 'AAPL';
+    responseText = `I'd be happy to analyze the market sentiment for ${symbol}. Here's the current sentiment analysis: [Sentiment Analysis for ${symbol}]`;
+  }
   else if (normalizedInput.includes('price') || normalizedInput.includes('value') || normalizedInput.includes('worth')) {
     const symbol = extractSymbol(normalizedInput);
     if (symbol) {
