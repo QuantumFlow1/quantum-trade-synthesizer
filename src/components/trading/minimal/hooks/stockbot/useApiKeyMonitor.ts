@@ -152,7 +152,7 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
       });
       
       // Broadcast the change to all components
-      broadcastApiKeyChange('groq', keyExists);
+      broadcastApiKeyChange();  // Fixing here - removed the extra arguments
       
       // Show toast notification
       if (keyExists) {

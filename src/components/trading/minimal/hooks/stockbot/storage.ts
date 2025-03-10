@@ -1,5 +1,5 @@
 
-import { ChatMessage } from './types';
+import { ChatMessage, StockbotMessage } from './types';
 import { 
   saveApiKey as saveApiKeyToManager, 
   hasApiKey, 
@@ -9,7 +9,7 @@ import {
 /**
  * Save stockbot chat messages to localStorage
  */
-export const saveStockbotChatHistory = (messages: ChatMessage[]) => {
+export const saveStockbotChatHistory = (messages: StockbotMessage[] | ChatMessage[]) => {
   try {
     localStorage.setItem('stockbot-chat-history', JSON.stringify(messages));
     return true;
@@ -22,7 +22,7 @@ export const saveStockbotChatHistory = (messages: ChatMessage[]) => {
 /**
  * Load stockbot chat messages from localStorage
  */
-export const loadStockbotChatHistory = (): ChatMessage[] => {
+export const loadStockbotChatHistory = (): StockbotMessage[] => {
   try {
     const savedMessages = localStorage.getItem('stockbot-chat-history');
     if (savedMessages) {
@@ -63,7 +63,7 @@ export const saveApiKey = (key: string, provider: string = 'groq'): boolean => {
       localStorage.setItem(`${provider}ApiKey`, key);
       
       // Dispatch events as fallback
-      broadcastApiKeyChange(!!key);
+      broadcastApiKeyChange();
     }
     
     return true;

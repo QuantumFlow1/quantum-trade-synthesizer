@@ -1,11 +1,11 @@
 
 import React from 'react';
 import { Loader2 } from 'lucide-react';
-import { ChatMessage } from '../hooks/stockbot/types';
+import { StockbotMessage } from '../hooks/stockbot/types';
 import { ClaudeMessage } from '@/components/llm-extensions/claude/ClaudeMessage';
 
 interface StockbotMessagesProps {
-  messages: ChatMessage[];
+  messages: StockbotMessage[];
   isLoading: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   hasApiKey: boolean;

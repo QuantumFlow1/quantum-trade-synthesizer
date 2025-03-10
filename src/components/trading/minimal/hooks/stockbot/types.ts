@@ -8,6 +8,26 @@ export interface StockbotMessage {
   timestamp: number;
 }
 
+// Add ChatMessage interface that's being used across multiple files
+export interface ChatMessage {
+  id: string;
+  sender?: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system';
+  content: string | ReactNode;
+  text?: string;
+  timestamp: Date | number;
+}
+
+export type StockbotMessageRole = "user" | "assistant" | "system";
+
+export interface StockbotApiResponse {
+  success: boolean;
+  response?: string;
+  error?: string;
+}
+
+export type CheckApiKeyFunction = () => Promise<boolean>;
+
 export interface StockbotChatHook {
   messages: StockbotMessage[];
   inputMessage: string;

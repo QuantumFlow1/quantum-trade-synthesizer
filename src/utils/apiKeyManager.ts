@@ -17,7 +17,7 @@ export const saveApiKey = (provider: string, apiKey: string): boolean => {
     if (!apiKey || apiKey.trim() === '') {
       console.log(`No ${provider} API key provided, skipping save`);
       localStorage.removeItem(`${provider}ApiKey`);
-      broadcastApiKeyChange(false);
+      broadcastApiKeyChange();
       return false;
     }
     
@@ -34,7 +34,7 @@ export const saveApiKey = (provider: string, apiKey: string): boolean => {
     console.log(`${provider} API key saved successfully to localStorage. Length: ${savedKey.length}`);
     
     // Broadcast the change
-    broadcastApiKeyChange(true);
+    broadcastApiKeyChange();
     return true;
   } catch (error) {
     console.error(`Error saving ${provider} API key:`, error);
@@ -66,9 +66,9 @@ export const hasApiKey = (provider: string): boolean => {
 /**
  * Broadcast API key changes to all components
  */
-export const broadcastApiKeyChange = (exists: boolean): void => {
+export const broadcastApiKeyChange = (): void => {
   try {
-    console.log(`Broadcasting API key change. Key exists: ${exists}`);
+    console.log(`Broadcasting API key change.`);
     
     // Dispatch custom events
     window.dispatchEvent(new Event(API_KEY_UPDATED_EVENT));
@@ -81,8 +81,7 @@ export const broadcastApiKeyChange = (exists: boolean): void => {
         const channel = new BroadcastChannel('api-key-updates');
         channel.postMessage({ 
           type: 'api-key-update',
-          timestamp: Date.now(),
-          exists
+          timestamp: Date.now()
         });
         channel.close();
       } catch (err) {

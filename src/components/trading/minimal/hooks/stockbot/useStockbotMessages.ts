@@ -17,7 +17,7 @@ export const useStockbotMessages = (
   isSimulationMode: boolean,
   checkApiKey: CheckApiKeyFunction
 ) => {
-  const [messages, setMessages] = useState<ChatMessage[]>(loadMessages());
+  const [messages, setMessages] = useState<ChatMessage[]>(loadMessages() as ChatMessage[]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
