@@ -33,8 +33,25 @@ export const TradingView = ({ chartData, apiStatus, useRealData = false }: Tradi
     toggleLegend
   } = useTradingViewState();
   
+  // Log chart data status voor debugging
+  console.log("Chart data ontvangen:", {
+    aantalPunten: chartData?.length || 0,
+    heeftValidePunten: chartData?.some(d => d && typeof d.timestamp === 'number' && typeof d.close === 'number'),
+    eersteDatapunt: chartData && chartData.length > 0 ? chartData[0] : null
+  });
+  
   // Enhanced chart data with indicators
-  const enhancedChartData = processChartData(chartData);
+  const enhancedChartData = processChartData(chartData || []);
+  
+  // Controle log
+  console.log("Enhanced chart data:", {
+    aantalPunten: enhancedChartData?.length || 0,
+    heeftSMA: enhancedChartData?.some(d => d && d.sma !== null),
+    heeftEMA: enhancedChartData?.some(d => d && d.ema !== null)
+  });
+  
+  // Controleer of er data is om weer te geven
+  const hasValidData = enhancedChartData && enhancedChartData.length > 0;
   
   return (
     <div className="space-y-4">
@@ -105,6 +122,13 @@ export const TradingView = ({ chartData, apiStatus, useRealData = false }: Tradi
         <CardContent className="p-0">
           {apiStatus === 'checking' ? (
             <LoadingState />
+          ) : !hasValidData ? (
+            <div className="h-[400px] w-full flex items-center justify-center bg-gray-50 rounded-lg border">
+              <div className="text-center">
+                <p className="text-gray-500 mb-2">Geen geldige chartdata beschikbaar</p>
+                <p className="text-gray-400 text-sm">Controleer de verbinding of API-status</p>
+              </div>
+            </div>
           ) : (
             <>
               <PriceChart 
