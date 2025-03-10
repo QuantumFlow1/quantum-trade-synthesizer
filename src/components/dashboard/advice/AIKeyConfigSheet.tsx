@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -6,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Key } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { broadcastApiKeyChange } from "@/utils/apiKeyManager";
 
 interface AIKeyConfigSheetProps {
   isOpen: boolean;
@@ -26,7 +26,7 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
   // Load saved API keys on component mount
   useEffect(() => {
     loadKeysFromStorage();
-  }, []);
+  }, [isOpen]); // Also reload when sheet opens
   
   const loadKeysFromStorage = () => {
     const savedOpenAI = localStorage.getItem('openaiApiKey') || '';
@@ -61,12 +61,38 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
       const prevDeepseek = localStorage.getItem('deepseekApiKey');
       const prevGroq = localStorage.getItem('groqApiKey');
       
-      // Save new values
-      if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
-      if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
-      if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
-      if (deepseekKey.trim()) localStorage.setItem('deepseekApiKey', deepseekKey.trim());
-      if (groqKey.trim()) localStorage.setItem('groqApiKey', groqKey.trim());
+      let keysChanged = false;
+      
+      // Save new values - with explicit checking and logging
+      if (openaiKey.trim()) {
+        localStorage.setItem('openaiApiKey', openaiKey.trim());
+        console.log('Saved OpenAI API key to localStorage');
+        if (prevOpenAI !== openaiKey.trim()) keysChanged = true;
+      }
+      
+      if (claudeKey.trim()) {
+        localStorage.setItem('claudeApiKey', claudeKey.trim());
+        console.log('Saved Claude API key to localStorage');
+        if (prevClaude !== claudeKey.trim()) keysChanged = true;
+      }
+      
+      if (geminiKey.trim()) {
+        localStorage.setItem('geminiApiKey', geminiKey.trim());
+        console.log('Saved Gemini API key to localStorage');
+        if (prevGemini !== geminiKey.trim()) keysChanged = true;
+      }
+      
+      if (deepseekKey.trim()) {
+        localStorage.setItem('deepseekApiKey', deepseekKey.trim());
+        console.log('Saved DeepSeek API key to localStorage');
+        if (prevDeepseek !== deepseekKey.trim()) keysChanged = true;
+      }
+      
+      if (groqKey.trim()) {
+        localStorage.setItem('groqApiKey', groqKey.trim());
+        console.log('Saved Groq API key to localStorage');
+        if (prevGroq !== groqKey.trim()) keysChanged = true;
+      }
       
       console.log('Saved API keys to localStorage:', {
         openai: openaiKey ? 'present' : 'not set',
@@ -76,6 +102,15 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
         groq: groqKey ? 'present' : 'not set'
       });
       
+      // Double check that Groq key was saved correctly
+      if (groqKey.trim()) {
+        const savedGroqKey = localStorage.getItem('groqApiKey');
+        if (savedGroqKey !== groqKey.trim()) {
+          console.error('Groq API key verification failed - fixing now');
+          localStorage.setItem('groqApiKey', groqKey.trim());
+        }
+      }
+      
       toast({
         title: "API sleutels opgeslagen",
         description: "Uw API sleutels zijn opgeslagen. Controleer opnieuw de verbinding.",
@@ -84,9 +119,13 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
       onOpenChange(false);
       onSave();
       
-      // Dispatch custom events for other components
-      window.dispatchEvent(new Event('localStorage-changed'));
-      window.dispatchEvent(new Event('apikey-updated'));
+      // Dispatch custom events for other components to pick up the change
+      if (keysChanged) {
+        console.log('Broadcasting API key changes');
+        window.dispatchEvent(new Event('localStorage-changed'));
+        window.dispatchEvent(new Event('apikey-updated'));
+        broadcastApiKeyChange(true);
+      }
       
       // For each API key that changed, dispatch a specific event
       if (prevOpenAI !== openaiKey && openaiKey) {
@@ -116,6 +155,7 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
       // Automatically trigger a connection check
       if (onManualCheck) {
         setTimeout(() => {
+          console.log('Triggering manual API key check');
           onManualCheck();
         }, 500);
       }

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -86,9 +85,17 @@ export const ApiKeyDialogContent = ({
   const handleSave = async () => {
     setIsSaving(true);
     let success = true;
+    let keysChanged = false;
     
     try {
       console.log('Saving API keys...');
+      
+      // Keep track of previous keys to detect changes
+      const prevOpenAI = localStorage.getItem('openaiApiKey');
+      const prevClaude = localStorage.getItem('claudeApiKey');
+      const prevGemini = localStorage.getItem('geminiApiKey');
+      const prevDeepseek = localStorage.getItem('deepseekApiKey');
+      const prevGroq = localStorage.getItem('groqApiKey');
       
       // If onSave prop is provided, use it first
       if (onSave) {
@@ -99,36 +106,56 @@ export const ApiKeyDialogContent = ({
           localStorage.setItem('groqApiKey', groqKey.trim());
           console.log(`Saved Groq API key directly to localStorage: ${groqKey.substring(0, 3)}...`);
           
+          if (prevGroq !== groqKey.trim()) {
+            keysChanged = true;
+          }
+          
           // Broadcast the change
           broadcastApiKeyChange(true);
         }
       } else {
-        // Otherwise use the default save behavior
+        // Otherwise use the default save behavior with direct localStorage access for more reliability
         // Save OpenAI API key
         if (openaiKey.trim()) {
+          localStorage.setItem('openaiApiKey', openaiKey.trim());
+          console.log('Saved OpenAI API key to localStorage');
+          if (prevOpenAI !== openaiKey.trim()) keysChanged = true;
+          
           if (!saveApiKey('openai', openaiKey)) {
-            success = false;
+            console.warn('saveApiKey utility failed for OpenAI key, but direct localStorage save succeeded');
           }
         }
         
         // Save Claude API key  
         if (claudeKey.trim()) {
+          localStorage.setItem('claudeApiKey', claudeKey.trim());
+          console.log('Saved Claude API key to localStorage');
+          if (prevClaude !== claudeKey.trim()) keysChanged = true;
+          
           if (!saveApiKey('claude', claudeKey)) {
-            success = false;
+            console.warn('saveApiKey utility failed for Claude key, but direct localStorage save succeeded');
           }
         }
         
         // Save Gemini API key
         if (geminiKey.trim()) {
+          localStorage.setItem('geminiApiKey', geminiKey.trim());
+          console.log('Saved Gemini API key to localStorage');
+          if (prevGemini !== geminiKey.trim()) keysChanged = true;
+          
           if (!saveApiKey('gemini', geminiKey)) {
-            success = false;
+            console.warn('saveApiKey utility failed for Gemini key, but direct localStorage save succeeded');
           }
         }
         
         // Save Deepseek API key
         if (deepseekKey.trim()) {
+          localStorage.setItem('deepseekApiKey', deepseekKey.trim());
+          console.log('Saved Deepseek API key to localStorage');
+          if (prevDeepseek !== deepseekKey.trim()) keysChanged = true;
+          
           if (!saveApiKey('deepseek', deepseekKey)) {
-            success = false;
+            console.warn('saveApiKey utility failed for Deepseek key, but direct localStorage save succeeded');
           }
         }
         
@@ -136,26 +163,17 @@ export const ApiKeyDialogContent = ({
         if (groqKey.trim()) {
           console.log(`Saving Groq API key (${groqKey.length} chars): ${groqKey.substring(0, 3)}...${groqKey.substring(groqKey.length - 3)}`);
           
-          // Try the utility function first
-          let groqSaveSuccess = saveApiKey('groq', groqKey);
+          // First try direct localStorage save
+          localStorage.setItem('groqApiKey', groqKey.trim());
+          console.log('Saved Groq API key directly to localStorage');
           
-          if (!groqSaveSuccess) {
-            console.error('Failed to save Groq API key with saveApiKey utility');
-            
-            // Fallback: try direct localStorage save
-            try {
-              localStorage.setItem('groqApiKey', groqKey.trim());
-              console.log('Saved Groq API key directly to localStorage');
-              groqSaveSuccess = true;
-              
-              // Manually broadcast the change
-              broadcastApiKeyChange(true);
-            } catch (err) {
-              console.error('Failed to save Groq API key directly to localStorage:', err);
-              success = false;
-            }
-          } else {
-            console.log('Successfully saved Groq API key with saveApiKey utility');
+          if (prevGroq !== groqKey.trim()) {
+            keysChanged = true;
+          }
+          
+          // Then try the utility function as backup
+          if (!saveApiKey('groq', groqKey)) {
+            console.warn('saveApiKey utility failed for Groq key, but direct localStorage save succeeded');
           }
           
           // Double check that the key was actually saved
@@ -187,6 +205,14 @@ export const ApiKeyDialogContent = ({
             // Continue even if this fails - localStorage is the primary storage
           }
         }
+      }
+      
+      // Broadcast key changes to the app
+      if (keysChanged) {
+        console.log('Broadcasting API key changes');
+        window.dispatchEvent(new Event('localStorage-changed'));
+        window.dispatchEvent(new Event('apikey-updated'));
+        broadcastApiKeyChange(true);
       }
       
       console.log('API keys saved successfully:', success);
