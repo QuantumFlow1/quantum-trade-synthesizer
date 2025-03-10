@@ -15,11 +15,16 @@ vi.mock('../../hooks/stockbot/useApiKeyEvents', () => ({
 }));
 
 vi.mock('@/utils/apiKeyManager', () => ({
-  broadcastApiKeyChange: vi.fn()
+  broadcastApiKeyChange: vi.fn(),
+  hasApiKey: vi.fn().mockReturnValue(false)
 }));
 
 vi.mock('@/hooks/use-toast', () => ({
   toast: vi.fn()
+}));
+
+vi.mock('@/components/chat/api-keys/ApiKeyToastNotification', () => ({
+  showApiKeyDetectedToast: vi.fn()
 }));
 
 describe('useApiKeyMonitor', () => {

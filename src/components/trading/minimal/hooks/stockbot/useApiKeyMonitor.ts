@@ -190,10 +190,17 @@ export const useApiKeyMonitor = (isSimulationMode: boolean, setIsSimulationMode:
     }
   }, [checkGroqApiKey, isSimulationMode, setIsSimulationMode]);
   
+  // Function to set the manually set mode flag
+  const setManuallySetMode = useCallback((value: boolean) => {
+    console.log('Manually set mode flag updated:', value);
+    manuallySetMode.current = value;
+  }, []);
+  
   // Expose the key status and manual check function
   return {
     hasGroqKey,
     checkGroqApiKey,
-    reloadApiKeys
+    reloadApiKeys,
+    setManuallySetMode
   };
 };
