@@ -1,6 +1,6 @@
 
 import React from "react";
-import { ChatMessage } from "./stockbot/types";
+import { ChatMessage } from "../hooks/stockbot/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useContentParser } from "./stockbot/messages/ContentParser";
 import { cn } from "@/lib/utils";

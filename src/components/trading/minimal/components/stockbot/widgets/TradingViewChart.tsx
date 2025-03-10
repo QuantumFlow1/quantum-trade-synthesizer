@@ -1,7 +1,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ChartWidgetProps {
   symbol: string;
@@ -13,14 +14,29 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
   const widgetRef = useRef<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     setIsLoading(true);
     setError(null);
     
     try {
-      // Clean up symbol for safety
-      const cleanSymbol = symbol.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase();
+      // Clean up symbol for safety, but preserve exchange prefix (e.g., BINANCE:)
+      let cleanSymbol = symbol;
+      if (symbol.includes(':')) {
+        const [exchange, ticker] = symbol.split(':');
+        cleanSymbol = `${exchange}:${ticker.replace(/[^a-zA-Z0-9-]/g, '')}`;
+      } else {
+        cleanSymbol = symbol.replace(/[^a-zA-Z0-9-:]/g, '').toUpperCase();
+      }
+      
+      // Handle common crypto symbols
+      if (cleanSymbol.toLowerCase() === "btc" || cleanSymbol.toLowerCase() === "bitcoin") {
+        cleanSymbol = "BINANCE:BTCUSD";
+      } else if (cleanSymbol.toLowerCase() === "eth" || cleanSymbol.toLowerCase() === "ethereum") {
+        cleanSymbol = "BINANCE:ETHUSD";
+      }
+      
       console.log(`Creating TradingView widget for symbol: ${cleanSymbol}, timeframe: ${timeframe}`);
       
       // Create script element to load TradingView widget script
@@ -34,7 +50,7 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
           }
 
           try {
-            console.log("TradingView script loaded, creating widget");
+            console.log("TradingView script loaded, creating widget for", cleanSymbol);
             // Create a new TradingView widget
             widgetRef.current = new window.TradingView.widget({
               autosize: true,
@@ -46,7 +62,11 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
               locale: "en",
               enable_publishing: false,
               allow_symbol_change: true,
-              container_id: containerRef.current.id
+              container_id: containerRef.current.id,
+              hide_side_toolbar: false,
+              debug: true,
+              studies: ["RSI@tv-basicstudies"],
+              save_image: true
             });
             setIsLoading(false);
             console.log("TradingView widget created successfully");
@@ -80,10 +100,10 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
       setError("Failed to initialize chart");
       setIsLoading(false);
     }
-  }, [symbol, timeframe]);
+  }, [symbol, timeframe, retryCount]);
 
   // Create a unique ID for each widget to avoid conflicts
-  const containerId = `tradingview-widget-${symbol}-${timeframe}`.replace(/[^a-zA-Z0-9-]/g, '');
+  const containerId = `tradingview-widget-${symbol}-${timeframe}-${retryCount}`.replace(/[^a-zA-Z0-9-]/g, '');
 
   // Helper function to convert timeframe to TradingView interval
   const getIntervalFromTimeframe = (tf: string): string => {
@@ -98,11 +118,26 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
       default: return "D";     // Default: 1 day
     }
   };
+  
+  // Handle retry
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
 
   return (
     <div className="mt-2 mb-4 border rounded-md overflow-hidden shadow-sm">
-      <div className="bg-gray-100 p-2 border-b text-sm font-medium">
-        {symbol} Chart - {timeframe} Timeframe
+      <div className="bg-gray-100 p-2 border-b text-sm font-medium flex justify-between items-center">
+        <span>{symbol} Chart - {timeframe} Timeframe</span>
+        {error && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleRetry}
+            className="h-7 px-2"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" /> Retry
+          </Button>
+        )}
       </div>
       {isLoading ? (
         <div className="h-[400px] flex items-center justify-center">
@@ -115,9 +150,12 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
         <div className="h-[400px] flex items-center justify-center bg-gray-50 flex-col p-4">
           <AlertCircle className="h-8 w-8 text-amber-500 mb-2" />
           <p className="text-gray-600 text-center">{error}</p>
-          <p className="text-gray-400 text-sm text-center mt-1">
+          <p className="text-gray-400 text-sm text-center mt-1 mb-3">
             Please try refreshing or check your connection
           </p>
+          <Button onClick={handleRetry} size="sm" variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" /> Retry with Different Format
+          </Button>
         </div>
       ) : (
         <div 

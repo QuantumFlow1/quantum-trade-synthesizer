@@ -20,6 +20,7 @@ export const useStockbotMessages = (
   const [messages, setMessages] = useState<ChatMessage[]>(loadMessages() as ChatMessage[]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errorCount, setErrorCount] = useState(0);
   
   const { callGroqApi } = useGroqApiCall();
   const { processToolCalls } = useToolCallProcessor();
@@ -64,9 +65,52 @@ export const useStockbotMessages = (
           });
         } else {
           // Use the Groq API
-          const result = await callGroqApi(inputMessage, messages);
-          responseMessage = result.message;
-          toolCalls = result.toolCalls;
+          try {
+            console.log('Attempting to call Groq API with valid key');
+            const result = await callGroqApi(inputMessage, messages);
+            responseMessage = result.message;
+            toolCalls = result.toolCalls;
+            // Reset error count on successful call
+            setErrorCount(0);
+          } catch (apiError) {
+            console.error('Error from Groq API:', apiError);
+            // Increment error count and check if we should fall back to simulation
+            const newErrorCount = errorCount + 1;
+            setErrorCount(newErrorCount);
+            
+            if (newErrorCount >= 3) {
+              // After 3 consecutive errors, suggest switching to simulation mode
+              toast({
+                title: "API Connection Issues",
+                description: "Multiple API errors detected. Consider switching to simulation mode.",
+                variant: "destructive",
+                duration: 6000
+              });
+            }
+            
+            // Create error message and then fall back to simulation
+            responseMessage = {
+              id: crypto.randomUUID(),
+              sender: 'system' as 'system',
+              role: 'assistant' as 'assistant',
+              content: `I'm sorry, I encountered an error connecting to the Groq API. ${apiError.message || ''}`,
+              text: `I'm sorry, I encountered an error connecting to the Groq API. ${apiError.message || ''}`,
+              timestamp: new Date()
+            };
+            
+            // Also fall back to simulation for the actual response
+            const simulatedResponse = generateStockbotResponse(inputMessage, marketData);
+            
+            // Add simulation notice to the message content
+            simulatedResponse.content = `${simulatedResponse.content}\n\n⚠️ NOTE: Falling back to simulation mode due to API connection issues.`;
+            
+            // Set messages with both error and fallback
+            let finalMessages = [...updatedMessages, responseMessage, simulatedResponse];
+            setMessages(finalMessages);
+            saveMessages(finalMessages);
+            setIsLoading(false);
+            return;
+          }
         }
       }
 
@@ -92,8 +136,8 @@ export const useStockbotMessages = (
         id: crypto.randomUUID(),
         sender: 'system' as 'system', // Explicitly cast to ensure correct type
         role: 'assistant' as 'assistant',
-        content: `I'm sorry, I encountered an error processing your request. Please try again later.`,
-        text: `I'm sorry, I encountered an error processing your request. Please try again later.`,
+        content: `I'm sorry, I encountered an error processing your request. ${error.message || 'Please try again later.'}`,
+        text: `I'm sorry, I encountered an error processing your request. ${error.message || 'Please try again later.'}`,
         timestamp: new Date()
       };
       
@@ -108,11 +152,12 @@ export const useStockbotMessages = (
     } finally {
       setIsLoading(false);
     }
-  }, [inputMessage, messages, marketData, isSimulationMode, hasGroqKey, checkApiKey, callGroqApi, processToolCalls]);
+  }, [inputMessage, messages, marketData, isSimulationMode, hasGroqKey, checkApiKey, callGroqApi, processToolCalls, errorCount]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
     saveMessages([]);
+    setErrorCount(0);
   }, []);
 
   return {

@@ -1,6 +1,7 @@
 
 import React from "react";
 import { TradingViewChart, MarketHeatmap, StockNews, SentimentAnalysis } from "../widgets";
+import { toast } from "@/hooks/use-toast";
 
 interface MessageRendererProps {
   functionName: string;
@@ -10,45 +11,78 @@ interface MessageRendererProps {
 export const MessageRenderer: React.FC<MessageRendererProps> = ({ functionName, params }) => {
   console.log(`Rendering function: ${functionName}`, params);
   
-  if (functionName === "getStockNews") {
-    const symbol = params.symbol || "market";
-    const count = params.count || 5;
-    return (
-      <>
-        <div className="mb-2">Here's the latest news for {symbol}:</div>
-        <StockNews symbol={symbol} count={count} />
-      </>
-    );
-  } else if (functionName === "showStockChart") {
-    const symbol = params.symbol || "SPY";
-    const timeframe = params.timeframe || "1M";
-    return (
-      <>
-        <div className="mb-2">Here's the chart for {symbol}:</div>
-        <TradingViewChart symbol={symbol} timeframe={timeframe} />
-      </>
-    );
-  } else if (functionName === "showMarketHeatmap") {
-    const sector = params.sector || "all";
-    return (
-      <>
-        <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
-        <MarketHeatmap sector={sector} />
-      </>
-    );
-  } else if (functionName === "analyzeSentiment") {
-    const symbol = params.symbol || "SPY";
-    const timeframe = params.timeframe || "1D";
-    return (
-      <>
-        <div className="mb-2">Here's the sentiment analysis for {symbol}:</div>
-        <SentimentAnalysis symbol={symbol} timeframe={timeframe} />
-      </>
-    );
+  try {
+    // Handle crypto symbols by ensuring they have proper format
+    if (functionName === "showStockChart") {
+      // Format crypto symbols to comply with TradingView format
+      let symbol = params.symbol || "BTCUSD";
+      const timeframe = params.timeframe || "1D";
+      
+      // Format crypto symbols for TradingView
+      if (symbol.toLowerCase() === "bitcoin" || symbol.toLowerCase() === "btc") {
+        symbol = "BTCUSD";
+      } else if (symbol.toLowerCase() === "ethereum" || symbol.toLowerCase() === "eth") {
+        symbol = "ETHUSD";
+      } else if (symbol.toLowerCase() === "dogecoin" || symbol.toLowerCase() === "doge") {
+        symbol = "DOGEUSD";
+      } else if (symbol.toLowerCase() === "solana" || symbol.toLowerCase() === "sol") {
+        symbol = "SOLUSD";
+      }
+      
+      // Add exchange prefix for crypto pairs if needed
+      if (/^[A-Za-z]+USD$/.test(symbol) && !symbol.includes(":")) {
+        symbol = "BINANCE:" + symbol;
+      }
+      
+      console.log(`Displaying chart for formatted symbol: ${symbol}`);
+      
+      return (
+        <>
+          <div className="mb-2">Here's the chart for {params.symbol}:</div>
+          <TradingViewChart symbol={symbol} timeframe={timeframe} />
+        </>
+      );
+    } else if (functionName === "getStockNews") {
+      const symbol = params.symbol || "market";
+      const count = params.count || 5;
+      return (
+        <>
+          <div className="mb-2">Here's the latest news for {symbol}:</div>
+          <StockNews symbol={symbol} count={count} />
+        </>
+      );
+    } else if (functionName === "showMarketHeatmap") {
+      const sector = params.sector || "all";
+      return (
+        <>
+          <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
+          <MarketHeatmap sector={sector} />
+        </>
+      );
+    } else if (functionName === "analyzeSentiment") {
+      const symbol = params.symbol || "SPY";
+      const timeframe = params.timeframe || "1D";
+      return (
+        <>
+          <div className="mb-2">Here's the sentiment analysis for {symbol}:</div>
+          <SentimentAnalysis symbol={symbol} timeframe={timeframe} />
+        </>
+      );
+    }
+    
+    // If no match, return fallback content
+    return <div className="whitespace-pre-wrap">Unsupported function: {functionName}</div>;
+  } catch (error) {
+    console.error("Error rendering function:", error);
+    toast({
+      title: "Widget Error",
+      description: `Failed to render ${functionName} widget`,
+      variant: "destructive"
+    });
+    return <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700">
+      Error rendering {functionName} widget. Please try again.
+    </div>;
   }
-  
-  // If no match, return fallback content
-  return <div className="whitespace-pre-wrap">Unsupported function: {functionName}</div>;
 };
 
 // Improved function to extract function calls from content with better error handling
@@ -104,6 +138,20 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
         } catch (e) {
           console.error("Failed to parse raw function:", e);
         }
+      }
+    }
+    
+    // Check for Bitcoin/crypto mentions specifically
+    if (/bitcoin|btc|crypto/i.test(content)) {
+      if (/price|chart|trend|performance|graph/i.test(content)) {
+        console.log("Detected Bitcoin chart request");
+        return { 
+          functionName: "showStockChart", 
+          params: {
+            symbol: "BTCUSD",
+            timeframe: "1D"
+          }
+        };
       }
     }
     

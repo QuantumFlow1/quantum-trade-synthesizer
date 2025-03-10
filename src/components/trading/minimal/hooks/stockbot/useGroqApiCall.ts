@@ -1,14 +1,19 @@
 
 import { ChatMessage, StockbotToolCall } from "./types";
 import { supabase } from "@/lib/supabase";
+import { toast } from "@/hooks/use-toast";
 
 export const useGroqApiCall = () => {
   const callGroqApi = async (userMessage: string, messages: ChatMessage[]): Promise<{message: ChatMessage, toolCalls?: StockbotToolCall[]}> => {
     try {
-      console.log('Calling Groq API for response');
+      console.log('Calling Groq API for response to:', userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : ''));
       
       // Get Groq API key from localStorage if available
       const groqApiKey = localStorage.getItem('groqApiKey');
+      
+      if (!groqApiKey) {
+        throw new Error('Groq API key is not configured');
+      }
       
       // Prepare the conversation history
       const messageHistory = messages.map(msg => ({
@@ -27,7 +32,16 @@ export const useGroqApiCall = () => {
         role: 'system',
         content: `You are Stockbot, a helpful trading assistant that provides insights about stocks and financial markets. 
         You can analyze market data and use tools to visualize information.
-        You should use tools whenever they would enhance your response, especially when discussing specific stocks or market sectors.
+        
+        IMPORTANT: For crypto or stock queries, use a function to display real-time charts. ALWAYS include a function call for charts when discussing assets:
+        
+        - For cryptocurrencies use: <function=showStockChart{"symbol":"BINANCE:BTCUSD","timeframe":"1D"}></function> 
+        - For stocks use: <function=showStockChart{"symbol":"AAPL","timeframe":"1D"}></function>
+        
+        When discussing market trends, use the market heatmap: <function=showMarketHeatmap{"sector":"all"}></function>
+        
+        For news about assets, use: <function=getStockNews{"symbol":"AAPL","count":3}></function>
+        
         Today's date is ${new Date().toLocaleDateString()}.
         When responding about market data, always mention that it's for the current date.`
       };
@@ -56,11 +70,14 @@ export const useGroqApiCall = () => {
       // Process the function call if it exists
       let responseContent = data.response;
       
-      // Handle function calls in the response
-      // Check if the response contains a function call pattern
-      const functionMatch = responseContent.match(/<function=(\w+)(\{.*\})>/);
-      if (functionMatch) {
-        console.log("Function call detected in Groq response:", functionMatch[0]);
+      // Check for keywords in the response to automatically add charts
+      if ((/bitcoin|btc|crypto/i.test(userMessage) || /bitcoin|btc|crypto/i.test(responseContent)) 
+           && !responseContent.includes('<function=')) {
+        // Add a Bitcoin chart if discussing Bitcoin without a chart
+        if (/bitcoin|btc/i.test(userMessage) || /bitcoin|btc/i.test(responseContent)) {
+          console.log("Auto-injecting Bitcoin chart into response");
+          responseContent += `\n\n<function=showStockChart{"symbol":"BINANCE:BTCUSD","timeframe":"1D"}></function>`;
+        }
       }
       
       const message: ChatMessage = {
@@ -79,6 +96,14 @@ export const useGroqApiCall = () => {
       };
     } catch (error) {
       console.error('Error in callGroqApi:', error);
+      
+      // Show toast notification for API errors
+      toast({
+        title: "API Error",
+        description: error.message || "Failed to get response from Groq API",
+        variant: "destructive"
+      });
+      
       throw error;
     }
   };
