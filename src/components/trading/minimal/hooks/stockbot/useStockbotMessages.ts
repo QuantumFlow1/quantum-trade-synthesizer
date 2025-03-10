@@ -83,7 +83,7 @@ export const useStockbotMessages = (
   }, []);
 
   return {
-    messages,
+    messages: messages as StockbotMessage[],
     inputMessage,
     setInputMessage,
     isLoading,

@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { ChatMessage } from './types';
+import { ChatMessage, StockbotMessage } from './types';
 
 /**
  * Generates a simulated response from Stockbot based on the user's message

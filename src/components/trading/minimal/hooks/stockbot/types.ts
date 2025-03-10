@@ -8,7 +8,7 @@ export interface StockbotMessage {
   timestamp: number;
 }
 
-// Add ChatMessage interface that's being used across multiple files
+// ChatMessage interface used across multiple files
 export interface ChatMessage {
   id: string;
   sender?: 'user' | 'assistant' | 'system';

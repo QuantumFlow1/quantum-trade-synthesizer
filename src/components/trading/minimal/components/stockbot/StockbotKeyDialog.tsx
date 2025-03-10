@@ -1,9 +1,11 @@
 
-import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ApiKeyDialogContent } from "@/components/chat/api-keys/ApiKeyDialogContent";
-import { toast } from "@/hooks/use-toast";
-import { saveApiKey, hasApiKey, broadcastApiKeyChange } from "@/utils/apiKeyManager";
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
+import { saveApiKey, hasApiKey } from '@/utils/apiKeyManager';
+import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface StockbotKeyDialogProps {
   isKeyDialogOpen: boolean;
@@ -11,98 +13,161 @@ interface StockbotKeyDialogProps {
   onSuccessfulSave?: () => void;
 }
 
-export const StockbotKeyDialog = ({
+export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
   isKeyDialogOpen,
   handleDialogClose,
-  onSuccessfulSave,
-}: StockbotKeyDialogProps) => {
+  onSuccessfulSave
+}) => {
+  const [apiKey, setApiKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   
-  // Reset saving state when dialog opens/closes
   useEffect(() => {
-    if (!isKeyDialogOpen) {
-      setIsSaving(false);
+    // Reset state when dialog opens
+    if (isKeyDialogOpen) {
+      const existingKey = localStorage.getItem('groqApiKey') || '';
+      setApiKey(existingKey);
+      setSaveSuccess(false);
     }
   }, [isKeyDialogOpen]);
-
-  const onSaveComplete = () => {
-    // Prevent multiple simultaneous save attempts
-    if (isSaving) {
-      console.log("Save operation already in progress, ignoring duplicate request");
-      return;
-    }
-    
+  
+  const handleSave = async () => {
     setIsSaving(true);
     
     try {
-      // Directly check if the API key was saved
-      const keyExists = hasApiKey('groq');
+      // Save API key to localStorage
+      const success = saveApiKey('groq', apiKey);
       
-      console.log("API key save completed. Key in storage:", {
-        exists: keyExists,
-        keyLength: keyExists ? localStorage.getItem('groqApiKey')?.length : 0
-      });
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (!keyExists) {
+      if (success) {
+        toast({
+          title: "API Key Saved",
+          description: "Your Groq API key has been saved successfully",
+          duration: 3000
+        });
+        setSaveSuccess(true);
+        
+        // Call the success callback
+        if (onSuccessfulSave) {
+          onSuccessfulSave();
+        }
+        
+        // Close the dialog after a short delay
+        setTimeout(() => {
+          handleDialogClose();
+        }, 1000);
+      } else {
         toast({
           title: "Error Saving API Key",
-          description: "The API key was not saved to storage. Please try again.",
-          variant: "destructive"
+          description: "There was a problem saving your API key",
+          variant: "destructive",
+          duration: 5000
         });
-        setIsSaving(false);
-        return;
       }
-      
+    } catch (error) {
+      console.error("Error saving API key:", error);
       toast({
-        title: "API Key Saved",
-        description: "The API key was successfully saved to storage.",
-        variant: "default"
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+        duration: 5000
       });
-      
-      // Use a single timeout with all operations to prevent race conditions
-      setTimeout(() => {
-        try {
-          // Broadcast API key change first
-          broadcastApiKeyChange(true);
-          
-          // Then close the dialog and trigger the success callback
-          handleDialogClose();
-          if (onSuccessfulSave) {
-            onSuccessfulSave();
-          }
-          
-          // Finally reset the saving state
-          setIsSaving(false);
-        } catch (err) {
-          console.error("Error in save completion process:", err);
-          setIsSaving(false);
-        }
-      }, 300);
-    } catch (err) {
-      console.error("Error in API key save process:", err);
+    } finally {
       setIsSaving(false);
     }
   };
+  
+  const handleClear = () => {
+    localStorage.removeItem('groqApiKey');
+    setApiKey('');
+    setSaveSuccess(false);
+    broadcastApiKeyChange();
+    
+    toast({
+      title: "API Key Removed",
+      description: "Your Groq API key has been removed",
+      duration: 3000
+    });
+  };
 
   return (
-    <Dialog 
-      open={isKeyDialogOpen} 
-      onOpenChange={(open) => {
-        if (!open && !isSaving) {
-          // Prevent closing while saving is in progress
-          // Give the dialog time to close visually before firing close handler
-          setTimeout(handleDialogClose, 100);
-        } else if (!open && isSaving) {
-          console.log("Ignoring close request while save is in progress");
-        }
-      }}
-    >
-      <DialogContent className="sm:max-w-[425px]">
-        <ApiKeyDialogContent 
-          initialTab="groq"
-          onClose={onSaveComplete}
-        />
+    <Dialog open={isKeyDialogOpen} onOpenChange={(open) => {
+      if (!open) handleDialogClose();
+    }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Configure API Key</DialogTitle>
+        </DialogHeader>
+        
+        <div className="py-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="groq-api-key" className="text-sm font-medium">
+                Groq API Key
+              </label>
+              <Input
+                id="groq-api-key"
+                value={apiKey}
+                onChange={(e) => {
+                  setApiKey(e.target.value);
+                  setSaveSuccess(false);
+                }}
+                placeholder="Enter your Groq API key"
+                className="w-full"
+              />
+              <p className="text-xs text-gray-500">
+                You can get a Groq API key by signing up at <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">console.groq.com</a>
+              </p>
+            </div>
+            
+            {saveSuccess && (
+              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded flex items-center">
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                <span className="text-sm">API key saved successfully!</span>
+              </div>
+            )}
+            
+            {hasApiKey('groq') && !saveSuccess && (
+              <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded flex items-center">
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                <span className="text-sm">You already have an API key configured.</span>
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-2 pt-2">
+              {apiKey && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClear}
+                  disabled={isSaving}
+                >
+                  Clear
+                </Button>
+              )}
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving || !apiKey.trim() || saveSuccess}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save API Key'
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
+
+// Add the missing import
+import { broadcastApiKeyChange } from '@/utils/apiKeyManager';
