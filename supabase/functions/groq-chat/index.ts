@@ -19,7 +19,13 @@ serve(async (req) => {
   try {
     // Parse request data
     const requestData = await req.json();
-    const { messages, model = "llama-3.3-70b-versatile" } = requestData;
+    const { 
+      messages, 
+      model = "llama-3.3-70b-versatile", 
+      temperature = 0.7, 
+      max_tokens = 1024,
+      response_format 
+    } = requestData;
     
     console.log(`Received Groq chat request for model: ${model}`);
     
@@ -43,6 +49,19 @@ serve(async (req) => {
       );
     }
     
+    // Prepare the request body
+    const requestBody: any = {
+      messages,
+      model,
+      temperature,
+      max_tokens
+    };
+    
+    // Add JSON response format if requested
+    if (response_format === 'json') {
+      requestBody.response_format = { type: "json_object" };
+    }
+    
     // Make the API call to Groq
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -50,12 +69,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        messages,
-        model,
-        temperature: 0.7,
-        max_tokens: 1024
-      })
+      body: JSON.stringify(requestBody)
     });
     
     // Handle non-OK responses
@@ -90,7 +104,8 @@ serve(async (req) => {
         response: data.choices[0].message.content,
         status: 'success',
         model: model,
-        usage: data.usage
+        usage: data.usage,
+        system_fingerprint: data.system_fingerprint || null
       }),
       { headers: corsHeaders }
     );
