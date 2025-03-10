@@ -6,6 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
 const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
+const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,6 +37,9 @@ serve(async (req) => {
         break;
       case 'deepseek':
         key = DEEPSEEK_API_KEY;
+        break;
+      case 'groq':
+        key = GROQ_API_KEY;
         break;
       default:
         console.log(`Unknown provider: ${provider}`);

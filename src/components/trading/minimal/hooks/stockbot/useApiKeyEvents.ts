@@ -21,7 +21,7 @@ export const useApiKeyEvents = (
         if (processingEvent.current) return;
         
         const now = Date.now();
-        if (now - lastCheckTime.current < 1000) return; // Minimum 1000ms between checks
+        if (now - lastCheckTime.current < 2000) return; // Minimum 2000ms between checks (increased from 1000)
         
         lastCheckTime.current = now;
         processingEvent.current = true;
@@ -32,7 +32,7 @@ export const useApiKeyEvents = (
         // Reset processing flag after a short delay
         setTimeout(() => {
           processingEvent.current = false;
-        }, 500);
+        }, 1000); // Increased from 500ms
       } catch (err) {
         console.error("Error in API key event handler:", err);
         processingEvent.current = false;
@@ -43,8 +43,9 @@ export const useApiKeyEvents = (
     window.addEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
     window.addEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
     window.addEventListener('storage', handleApiKeyUpdate);
+    window.addEventListener('connection-status-changed', handleApiKeyUpdate);
     
-    // Use a less frequent interval (15 seconds instead of 10) to reduce CPU usage
+    // Use a less frequent interval to reduce CPU usage
     if (typeof window !== 'undefined') {
       if (apiKeyCheckTimerId.current) {
         clearInterval(apiKeyCheckTimerId.current);
@@ -59,7 +60,7 @@ export const useApiKeyEvents = (
           console.error("Error in interval API key check:", err);
           processingEvent.current = false;
         }
-      }, 15000); // Check every 15 seconds instead of 10 seconds
+      }, 30000); // Reduced frequency - check every 30 seconds instead of 15
     }
     
     // Try to use BroadcastChannel if available for cross-tab communication
@@ -84,6 +85,7 @@ export const useApiKeyEvents = (
       window.removeEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
       window.removeEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
       window.removeEventListener('storage', handleApiKeyUpdate);
+      window.removeEventListener('connection-status-changed', handleApiKeyUpdate);
       
       if (apiKeyCheckTimerId.current) {
         clearInterval(apiKeyCheckTimerId.current);

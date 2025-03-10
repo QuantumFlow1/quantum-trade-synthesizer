@@ -4,10 +4,10 @@ import { supabase } from '@/lib/supabase';
  * Fetches an API key from the admin database (if the user has admin access),
  * or returns null if the user doesn't have access or the key doesn't exist.
  * 
- * @param provider The AI provider (openai, deepseek, claude, gemini)
+ * @param provider The AI provider (openai, deepseek, claude, gemini, groq)
  * @returns The API key or null if not available
  */
-export async function fetchAdminApiKey(provider: 'openai' | 'deepseek' | 'claude' | 'gemini'): Promise<string | null> {
+export async function fetchAdminApiKey(provider: 'openai' | 'deepseek' | 'claude' | 'gemini' | 'groq'): Promise<string | null> {
   try {
     // Check if in offline mode
     if (navigator.onLine === false) {
@@ -15,9 +15,22 @@ export async function fetchAdminApiKey(provider: 'openai' | 'deepseek' | 'claude
       return null;
     }
     
-    // For now, we'll skip admin API key checking - this should be implemented
-    // once the proper database table and columns are set up
-    console.log(`Admin API keys for ${provider} are not yet configured in the database`);
+    // Call the Supabase edge function to get the admin API key
+    const { data, error } = await supabase.functions.invoke('get-admin-key', {
+      body: { provider }
+    });
+    
+    if (error) {
+      console.error(`Error fetching admin key for ${provider}:`, error);
+      return null;
+    }
+    
+    if (data && data.key) {
+      console.log(`Admin API key for ${provider} retrieved successfully`);
+      return data.key;
+    }
+    
+    console.log(`No admin API key found for ${provider}`);
     return null;
   } catch (error) {
     console.error(`Error in fetchAdminApiKey for ${provider}:`, error);
@@ -36,7 +49,7 @@ export async function fetchAdminApiKey(provider: 'openai' | 'deepseek' | 'claude
  * @returns The API key or null if not available
  */
 export async function getApiKey(
-  provider: 'openai' | 'deepseek' | 'claude' | 'gemini',
+  provider: 'openai' | 'deepseek' | 'claude' | 'gemini' | 'groq',
   explicitApiKey?: string
 ): Promise<string | null> {
   // If an explicit API key was provided, use that first
@@ -60,6 +73,9 @@ export async function getApiKey(
     case 'gemini':
       localStorageKey = localStorage.getItem('geminiApiKey');
       break;
+    case 'groq':
+      localStorageKey = localStorage.getItem('groqApiKey');
+      break;
   }
   
   if (localStorageKey) {
@@ -72,8 +88,8 @@ export async function getApiKey(
     return null;
   }
   
-  // Skip admin API key access for now
-  return null;
+  // If no local key, try to get the admin API key
+  return await fetchAdminApiKey(provider);
 }
 
 /**

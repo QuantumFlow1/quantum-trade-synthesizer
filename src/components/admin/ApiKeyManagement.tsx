@@ -39,7 +39,6 @@ type AdminApiKeyStatus = {
   openai: boolean;
   claude: boolean;
   gemini: boolean;
-  grok3: boolean;
   groq: boolean;
   deepseek: boolean;
 };
@@ -60,7 +59,6 @@ const ApiKeyManagement = () => {
     openai: false,
     claude: false,
     gemini: false,
-    grok3: false,
     groq: false,
     deepseek: false
   });

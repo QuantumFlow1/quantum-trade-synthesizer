@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import AdminPanelHeader from "@/components/admin/AdminPanelHeader";
 import AdminPanelContent from "@/components/admin/AdminPanelContent";
 import UserDashboard from "@/components/UserDashboard";
+import ApiKeyManagement from "@/components/admin/ApiKeyManagement";
 import { Agent } from "@/types/agent";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -15,6 +16,7 @@ const AdminPanel = () => {
   const { userProfile, signOut } = useAuth();
   const [showUserDashboard, setShowUserDashboard] = useState(false);
   const [showAccountManagement, setShowAccountManagement] = useState(false);
+  const [showApiKeyManagement, setShowApiKeyManagement] = useState(false);
   const [agents, setAgents] = useState<Agent[]>([]);
   const navigate = useNavigate();
   const [showNavigationHint, setShowNavigationHint] = useState(false);
@@ -45,11 +47,19 @@ const AdminPanel = () => {
     
     setShowUserDashboard(true);
     setShowAccountManagement(false);
+    setShowApiKeyManagement(false);
   };
 
   const handleAccountManagement = () => {
     setShowAccountManagement(true);
     setShowUserDashboard(false);
+    setShowApiKeyManagement(false);
+  };
+  
+  const handleApiKeyManagement = () => {
+    setShowApiKeyManagement(true);
+    setShowUserDashboard(false);
+    setShowAccountManagement(false);
   };
 
   const handleAddAgent = () => {
@@ -68,6 +78,7 @@ const AdminPanel = () => {
   const handleBackToAdmin = () => {
     setShowUserDashboard(false);
     setShowAccountManagement(false);
+    setShowApiKeyManagement(false);
   };
 
   // Method to navigate to the dashboard
@@ -89,6 +100,22 @@ const AdminPanel = () => {
           Back to Admin
         </Button>
         <UserDashboard />
+      </div>
+    );
+  }
+  
+  if (showApiKeyManagement) {
+    return (
+      <div>
+        <Button
+          variant="outline"
+          onClick={handleBackToAdmin}
+          className="mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Admin
+        </Button>
+        <ApiKeyManagement />
       </div>
     );
   }
@@ -119,6 +146,7 @@ const AdminPanel = () => {
       <AdminPanelHeader
         onDashboardClick={handleDashboardClick}
         onAccountManagement={handleAccountManagement}
+        onApiKeyManagement={handleApiKeyManagement}
         onAddAgent={handleAddAgent}
         onSignOut={handleSignOut}
         setShowUserDashboard={setShowUserDashboard}
