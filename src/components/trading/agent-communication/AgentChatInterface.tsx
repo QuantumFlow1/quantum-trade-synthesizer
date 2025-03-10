@@ -5,12 +5,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Bot, Send, ArrowDown } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { getApiKey } from '@/utils/apiKeyManager';
-import { Agent } from '@/types/agent';
+import { Agent, AgentToolCall } from '@/types/agent';
 import { supabase } from '@/lib/supabase';
 
 interface Message {
   id: string;
-  role: 'user' | 'agent' | 'system';
+  role: 'user' | 'agent' | 'system' | 'assistant';
   content: string;
   agentId?: string;
   timestamp: Date;
@@ -58,8 +58,10 @@ export function AgentChatInterface({ agent, onClose }: AgentChatInterfaceProps) 
     
     try {
       // Check for API key
-      const groqKey = getApiKey('groq') || getApiKey('openai');
-      if (!groqKey) {
+      const groqKey = getApiKey('groq');
+      const openaiKey = getApiKey('openai');
+      
+      if (!groqKey && !openaiKey) {
         throw new Error('Groq or OpenAI API key is required for agent communication');
       }
       
@@ -84,7 +86,7 @@ export function AgentChatInterface({ agent, onClose }: AgentChatInterfaceProps) 
       const conversationHistory = messages
         .filter(msg => msg.role !== 'system')
         .map(msg => ({
-          role: msg.role === 'agent' ? 'assistant' : 'user',
+          role: msg.role === 'agent' ? 'assistant' : msg.role,
           content: msg.content
         }));
       
@@ -94,20 +96,24 @@ export function AgentChatInterface({ agent, onClose }: AgentChatInterfaceProps) 
         content: userMessage.content
       });
       
-      // Call the Groq edge function
+      // Decide which API to use (prefer Groq if available)
+      const apiToUse = groqKey ? 'groq' : 'openai';
+      const apiKey = groqKey || openaiKey;
+      
+      // Call the appropriate API via Supabase edge function
       const { data, error } = await supabase.functions.invoke('groq-chat', {
         body: {
           messages: [systemMessage, ...conversationHistory],
-          model: "llama-3.3-70b-versatile",
+          model: apiToUse === 'groq' ? "llama-3.3-70b-versatile" : "gpt-4-turbo",
           temperature: 0.8,
           max_tokens: 750
         },
-        headers: groqKey ? { 'x-groq-api-key': groqKey } : undefined
+        headers: apiKey ? { 'x-groq-api-key': apiKey } : undefined
       });
       
       if (error) {
-        console.error('Error calling groq-chat function:', error);
-        throw new Error(error.message || 'Failed to get agent response');
+        console.error(`Error calling ${apiToUse}-chat function:`, error);
+        throw new Error(error.message || `Failed to get agent response from ${apiToUse}`);
       }
       
       if (!data || data.status === 'error' || !data.response) {

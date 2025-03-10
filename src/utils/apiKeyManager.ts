@@ -1,74 +1,54 @@
 
-// API Key management utilities
-
-/**
- * Check if an API key is available for a specific provider
- * @param provider The AI provider (openai, claude, groq, etc.)
- * @returns true if a key is available in localStorage
- */
-export function hasApiKey(provider: string): boolean {
-  const key = localStorage.getItem(`${provider}ApiKey`);
-  return !!key && key.length > 10;
-}
-
-/**
- * Save an API key to localStorage for a specific provider
- * @param provider The AI provider (openai, claude, groq, etc.)
- * @param apiKey The API key to save
- * @returns true if the key was saved successfully
- */
-export function saveApiKey(provider: string, apiKey: string): boolean {
+// Function to save API key to local storage
+export const saveApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek', key: string): boolean => {
   try {
-    if (apiKey && apiKey.trim()) {
-      localStorage.setItem(`${provider}ApiKey`, apiKey.trim());
-      broadcastApiKeyChange();
-      return true;
-    } else {
-      // If empty key, remove it
-      localStorage.removeItem(`${provider}ApiKey`);
-      broadcastApiKeyChange();
-      return true;
+    if (!key || key.trim().length < 10) {
+      console.error(`Invalid ${type} API key`);
+      return false;
     }
+    
+    const storageKey = `${type}ApiKey`;
+    localStorage.setItem(storageKey, key.trim());
+    
+    // Dispatch event for listeners
+    window.dispatchEvent(new CustomEvent('api-key-updated', { detail: { type, action: 'save' } }));
+    
+    return true;
   } catch (error) {
-    console.error(`Error saving ${provider} API key:`, error);
+    console.error(`Error saving ${type} API key:`, error);
     return false;
   }
-}
+};
 
-/**
- * Broadcast an event to notify other components that an API key has changed
- */
-export function broadcastApiKeyChange(): void {
-  // Dispatch custom event for components that listen for it
-  window.dispatchEvent(new Event('apikey-updated'));
-  
-  // Also dispatch a storage event
-  window.dispatchEvent(new Event('storage'));
-  
-  // Force a storage event by setting and removing a dummy key
-  localStorage.setItem('_dummy_key_', Date.now().toString());
-  localStorage.removeItem('_dummy_key_');
-}
+// Function to get API key from local storage
+export const getApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): string | null => {
+  try {
+    const storageKey = `${type}ApiKey`;
+    return localStorage.getItem(storageKey);
+  } catch (error) {
+    console.error(`Error getting ${type} API key:`, error);
+    return null;
+  }
+};
 
-/**
- * Get an API key from localStorage for a specific provider
- * @param provider The AI provider (openai, claude, groq, etc.)
- * @returns The API key or null if not found
- */
-export function getApiKey(provider: string): string | null {
-  return localStorage.getItem(`${provider}ApiKey`);
-}
+// Function to check if API key exists
+export const hasApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): boolean => {
+  const key = getApiKey(type);
+  return !!key && key.length > 10;
+};
 
-/**
- * Check if API keys are available for AI features
- * @returns Object indicating which providers have keys available
- */
-export function getAvailableProviders(): Record<string, boolean> {
-  return {
-    openai: hasApiKey('openai'),
-    claude: hasApiKey('claude'),
-    groq: hasApiKey('groq'),
-    gemini: hasApiKey('gemini'),
-    deepseek: hasApiKey('deepseek')
-  };
-}
+// Function to remove API key
+export const removeApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): boolean => {
+  try {
+    const storageKey = `${type}ApiKey`;
+    localStorage.removeItem(storageKey);
+    
+    // Dispatch event for listeners
+    window.dispatchEvent(new CustomEvent('api-key-updated', { detail: { type, action: 'remove' } }));
+    
+    return true;
+  } catch (error) {
+    console.error(`Error removing ${type} API key:`, error);
+    return false;
+  }
+};
