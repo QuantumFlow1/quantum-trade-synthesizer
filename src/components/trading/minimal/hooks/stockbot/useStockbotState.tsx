@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { StockbotMessage } from './types';
+import { StockbotMessage, ChatMessage } from './types';
 import { useStockbotApi } from './useStockbotApi';
 import { useStockbotSettings } from './useStockbotSettings';
 import { loadMessages, saveMessages } from './storage';
@@ -12,7 +12,7 @@ export const useStockbotState = () => {
   // Load saved messages from localStorage
   const [messages, setMessages] = useState<StockbotMessage[]>(loadMessages() as StockbotMessage[]);
   const [inputMessage, setInputMessage] = useState('');
-  const { isLoading, sendMessage } = useStockbotApi();
+  const { isLoading, callApi } = useStockbotApi();
   const { isSimulationMode } = useStockbotSettings();
 
   /**
@@ -41,13 +41,15 @@ export const useStockbotState = () => {
 
     try {
       // Get response from API or simulation
-      const response = await sendMessage(inputMessage, isSimulationMode);
+      // Get the API key from localStorage if not in simulation mode
+      const apiKey = isSimulationMode ? '' : localStorage.getItem('groqApiKey') || '';
+      const response = await callApi(inputMessage, apiKey);
       
       // Create a response message
       const responseMessage: StockbotMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: response,
+        content: response.content || 'Error: No content received',
         timestamp: Date.now()
       };
 
@@ -72,7 +74,7 @@ export const useStockbotState = () => {
       setMessages(finalMessages);
       saveMessages(finalMessages);
     }
-  }, [inputMessage, messages, sendMessage, isSimulationMode]);
+  }, [inputMessage, messages, callApi, isSimulationMode]);
 
   /**
    * Clear the message history
