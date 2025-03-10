@@ -76,3 +76,6 @@ export function generateErrorResponse(errorMsg: string): ChatMessage {
     timestamp: new Date()
   };
 }
+
+// For backward compatibility
+export const generateSimulatedResponse = generateStockbotResponse;

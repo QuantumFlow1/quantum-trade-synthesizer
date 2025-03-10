@@ -1,3 +1,4 @@
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
@@ -6,6 +7,16 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   isLoading?: boolean;
+}
+
+export enum StockbotMessageRole {
+  User = 'user',
+  Bot = 'assistant'
+}
+
+export interface StockbotMessage {
+  role: StockbotMessageRole;
+  content: string;
 }
 
 export interface StockbotChatHook {

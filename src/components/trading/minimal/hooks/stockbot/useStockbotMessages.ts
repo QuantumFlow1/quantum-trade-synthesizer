@@ -1,13 +1,14 @@
+
 import { useState, useCallback } from "react";
 import { 
-  StockbotMessage, 
+  ChatMessage, 
+  StockbotMessage,
   StockbotMessageRole,
   CheckApiKeyFunction 
 } from "./types";
-import { generateSimulatedResponse } from "./responseSimulator";
-import { sendMessageToAPI } from "./apiService";
-import { getStoredMessages, storeMessages } from "./storage";
+import { generateStockbotResponse } from "./responseSimulator";
 import { toast } from "@/hooks/use-toast";
+import { loadMessages, saveMessages } from "./storage";
 
 // Update the function signature to accept a promise-returning function
 export const useStockbotMessages = (
@@ -16,7 +17,7 @@ export const useStockbotMessages = (
   isSimulationMode: boolean,
   checkApiKey: CheckApiKeyFunction
 ) => {
-  const [messages, setMessages] = useState<StockbotMessage[]>(getStoredMessages());
+  const [messages, setMessages] = useState<ChatMessage[]>(loadMessages());
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,19 +25,23 @@ export const useStockbotMessages = (
     if (!inputMessage.trim()) return;
 
     setIsLoading(true);
-    const userMessage: StockbotMessage = {
-      role: StockbotMessageRole.User,
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      sender: 'user',
+      role: 'user',
       content: inputMessage,
+      text: inputMessage,
+      timestamp: new Date()
     };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
-    storeMessages(updatedMessages);
+    saveMessages(updatedMessages);
     setInputMessage("");
 
     try {
-      let responseContent: string;
+      let responseMessage: ChatMessage;
       if (isSimulationMode) {
-        responseContent = generateSimulatedResponse(marketData, inputMessage);
+        responseMessage = generateStockbotResponse(inputMessage, marketData);
       } else {
         const apiKeyValid = await checkApiKey();
         if (!apiKeyValid) {
@@ -48,16 +53,18 @@ export const useStockbotMessages = (
           setIsLoading(false);
           return;
         }
-        responseContent = await sendMessageToAPI(updatedMessages, marketData);
+        
+        // For now, just simulate a response for non-simulation mode as well
+        // This will be replaced with actual API calls in a future update
+        responseMessage = generateStockbotResponse(inputMessage, marketData);
+        
+        // Add a delay to simulate network latency
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      const botMessage: StockbotMessage = {
-        role: StockbotMessageRole.Bot,
-        content: responseContent,
-      };
-      const finalMessages = [...updatedMessages, botMessage];
+      const finalMessages = [...updatedMessages, responseMessage];
       setMessages(finalMessages);
-      storeMessages(finalMessages);
+      saveMessages(finalMessages);
     } catch (error: any) {
       console.error("Error sending message:", error);
       toast({
@@ -72,7 +79,7 @@ export const useStockbotMessages = (
 
   const clearChat = useCallback(() => {
     setMessages([]);
-    storeMessages([]);
+    saveMessages([]);
   }, []);
 
   return {
