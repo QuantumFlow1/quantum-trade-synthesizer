@@ -1,144 +1,119 @@
 
-import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Loader2, Send, Trash2, CoinIcon } from "lucide-react";
-import { useCryptoAssistant } from "../hooks/useCryptoAssistant";
-import { cn } from "@/lib/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { CoinsIcon, Send, Loader2, XCircle } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/lib/supabase';
+import { CryptoMessage } from './types';
+import { CryptoAssistantMessages } from './CryptoAssistantMessages';
+import { useCryptoAssistant } from './hooks/useCryptoAssistant';
 
 export function CryptoAssistant() {
-  const { messages, isLoading, error, sendMessage, clearChat } = useCryptoAssistant();
-  const [input, setInput] = useState("");
+  const {
+    messages,
+    isLoading,
+    inputMessage,
+    setInputMessage,
+    sendMessage,
+    resetChat,
+    currentModel,
+    switchModel,
+    availableModels
+  } = useCryptoAssistant();
+
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
+  // Auto-focus the input field when component mounts
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
   // Auto-scroll to bottom when messages update
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) {
-      sendMessage(input);
-      setInput("");
+    if (inputMessage.trim() && !isLoading) {
+      sendMessage();
     }
   };
 
-  // Render cryptocurrency chart function
-  const renderFunctionCall = (content: string) => {
-    const regex = /<function=([a-zA-Z]+)(\{.*?\})><\/function>/g;
-    
-    if (!regex.test(content)) {
-      return content;
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Submit on Enter without shift key
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
     }
-    
-    return content.replace(regex, (match, funcName, args) => {
-      try {
-        const parsedArgs = JSON.parse(args);
-        
-        if (funcName === 'showCryptoChart') {
-          return `<div class="bg-black/5 p-3 rounded-md my-2">
-            <div class="font-medium text-sm mb-1">📊 Crypto Chart: ${parsedArgs.symbol}</div>
-            <div class="text-xs text-muted-foreground">Timeframe: ${parsedArgs.timeframe || '1D'}</div>
-            <img src="https://placeholder-api.com/chart/${parsedArgs.symbol.toLowerCase()}/${parsedArgs.timeframe || '1D'}" 
-                 alt="${parsedArgs.symbol} chart" class="rounded mt-2 w-full h-40 bg-gray-100" />
-          </div>`;
-        }
-        
-        if (funcName === 'getCryptoPrice') {
-          return `<div class="bg-black/5 p-3 rounded-md my-2">
-            <div class="font-medium text-sm mb-1">💰 Crypto Price: ${parsedArgs.symbol}</div>
-            <div class="text-xs text-muted-foreground">Fetching latest price data...</div>
-          </div>`;
-        }
-        
-        if (funcName === 'getCryptoNews') {
-          return `<div class="bg-black/5 p-3 rounded-md my-2">
-            <div class="font-medium text-sm mb-1">📰 Crypto News: ${parsedArgs.symbol}</div>
-            <div class="text-xs text-muted-foreground">Showing ${parsedArgs.count || 3} recent news items</div>
-          </div>`;
-        }
-        
-        return match;
-      } catch (e) {
-        console.error('Error parsing function call:', e);
-        return match;
-      }
-    });
   };
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="py-3">
-        <CardTitle className="text-lg font-semibold flex items-center">
-          <CoinIcon className="w-5 h-5 mr-2 text-yellow-500" />
-          Crypto Assistant
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 overflow-hidden flex flex-col p-0">
-        {error && (
-          <Alert variant="destructive" className="mx-4 mt-2">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-        
-        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4">
-          {messages.map((message) => (
-            <div 
-              key={message.id}
-              className={cn(
-                "flex flex-col max-w-[85%] rounded-lg p-3",
-                message.role === "user" 
-                  ? "ml-auto bg-primary text-primary-foreground" 
-                  : "bg-muted"
-              )}
-            >
-              <div 
-                className="text-sm" 
-                dangerouslySetInnerHTML={{ 
-                  __html: message.role === "assistant" 
-                    ? renderFunctionCall(message.content) 
-                    : message.content 
-                }} 
-              />
-              <span className="text-xs opacity-70 mt-1 self-end">
-                {message.timestamp.toLocaleTimeString()}
-              </span>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
-        
-        <div className="p-4 pt-2 border-t">
-          <form onSubmit={handleSubmit} className="flex space-x-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about cryptocurrencies..."
+    <Card className="flex flex-col h-[600px] shadow-md">
+      <CardHeader className="pb-3 pt-4">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-xl flex items-center">
+            <CoinsIcon className="mr-2 h-5 w-5" />
+            Crypto Assistant
+          </CardTitle>
+          <div className="flex gap-2">
+            <select
+              className="text-xs bg-secondary/50 px-2 py-1 rounded border border-secondary"
+              value={currentModel}
+              onChange={(e) => switchModel(e.target.value)}
               disabled={isLoading}
-              className="flex-1"
-            />
-            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+            >
+              {availableModels.map((model) => (
+                <option key={model.id} value={model.id}>
+                  {model.name}
+                </option>
+              ))}
+            </select>
             <Button 
-              type="button" 
               variant="outline" 
-              size="icon" 
-              onClick={clearChat}
+              size="sm" 
+              onClick={resetChat}
               disabled={isLoading || messages.length <= 1}
             >
-              <Trash2 className="h-4 w-4" />
+              <XCircle className="h-3.5 w-3.5 mr-1" />
+              Reset
             </Button>
-          </form>
+          </div>
         </div>
+      </CardHeader>
+      
+      <CardContent className="flex-grow overflow-auto pb-0 px-4">
+        <CryptoAssistantMessages messages={messages} />
+        <div ref={messagesEndRef} />
       </CardContent>
+      
+      <div className="p-4 pt-2">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Textarea
+            ref={inputRef}
+            placeholder="Ask about cryptocurrencies, market trends, or trading strategies..."
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="min-h-[60px] max-h-[120px]"
+            disabled={isLoading}
+          />
+          <Button type="submit" disabled={isLoading || !inputMessage.trim()}>
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
+        </form>
+      </div>
     </Card>
   );
 }

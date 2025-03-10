@@ -1,99 +1,74 @@
 
-/**
- * Centralized API key management utility
- * This eliminates conflicts between different components trying to save/retrieve API keys
- */
-
-// Event name constants
-export const API_KEY_UPDATED_EVENT = 'apikey-updated';
-export const LOCALSTORAGE_CHANGED_EVENT = 'localStorage-changed';
+// API Key management utilities
 
 /**
- * Save an API key to localStorage with proper validation and event dispatching
+ * Check if an API key is available for a specific provider
+ * @param provider The AI provider (openai, claude, groq, etc.)
+ * @returns true if a key is available in localStorage
  */
-export const saveApiKey = (provider: string, apiKey: string): boolean => {
+export function hasApiKey(provider: string): boolean {
+  const key = localStorage.getItem(`${provider}ApiKey`);
+  return !!key && key.length > 10;
+}
+
+/**
+ * Save an API key to localStorage for a specific provider
+ * @param provider The AI provider (openai, claude, groq, etc.)
+ * @param apiKey The API key to save
+ * @returns true if the key was saved successfully
+ */
+export function saveApiKey(provider: string, apiKey: string): boolean {
   try {
-    // Skip if key is empty
-    if (!apiKey || apiKey.trim() === '') {
-      console.log(`No ${provider} API key provided, skipping save`);
+    if (apiKey && apiKey.trim()) {
+      localStorage.setItem(`${provider}ApiKey`, apiKey.trim());
+      broadcastApiKeyChange();
+      return true;
+    } else {
+      // If empty key, remove it
       localStorage.removeItem(`${provider}ApiKey`);
       broadcastApiKeyChange();
-      return false;
+      return true;
     }
-    
-    // Save to localStorage
-    localStorage.setItem(`${provider}ApiKey`, apiKey.trim());
-    
-    // Verify the key was saved correctly
-    const savedKey = localStorage.getItem(`${provider}ApiKey`);
-    if (!savedKey) {
-      console.error(`Failed to save ${provider} API key to localStorage`);
-      return false;
-    }
-    
-    console.log(`${provider} API key saved successfully to localStorage. Length: ${savedKey.length}`);
-    
-    // Broadcast the change
-    broadcastApiKeyChange();
-    return true;
   } catch (error) {
     console.error(`Error saving ${provider} API key:`, error);
     return false;
   }
-};
+}
 
 /**
- * Get an API key from localStorage
+ * Broadcast an event to notify other components that an API key has changed
  */
-export const getApiKey = (provider: string): string | null => {
-  try {
-    const key = localStorage.getItem(`${provider}ApiKey`);
-    return key;
-  } catch (error) {
-    console.error(`Error getting ${provider} API key:`, error);
-    return null;
-  }
-};
+export function broadcastApiKeyChange(): void {
+  // Dispatch custom event for components that listen for it
+  window.dispatchEvent(new Event('apikey-updated'));
+  
+  // Also dispatch a storage event
+  window.dispatchEvent(new Event('storage'));
+  
+  // Force a storage event by setting and removing a dummy key
+  localStorage.setItem('_dummy_key_', Date.now().toString());
+  localStorage.removeItem('_dummy_key_');
+}
 
 /**
- * Check if an API key exists in localStorage
+ * Get an API key from localStorage for a specific provider
+ * @param provider The AI provider (openai, claude, groq, etc.)
+ * @returns The API key or null if not found
  */
-export const hasApiKey = (provider: string): boolean => {
-  const key = getApiKey(provider);
-  return !!key && key.trim().length > 0;
-};
+export function getApiKey(provider: string): string | null {
+  return localStorage.getItem(`${provider}ApiKey`);
+}
 
 /**
- * Broadcast API key changes to all components
+ * Check if API keys are available for AI features
+ * @returns Object indicating which providers have keys available
  */
-export const broadcastApiKeyChange = (): void => {
-  try {
-    console.log(`Broadcasting API key change.`);
-    
-    // Dispatch custom events
-    window.dispatchEvent(new Event(API_KEY_UPDATED_EVENT));
-    window.dispatchEvent(new Event(LOCALSTORAGE_CHANGED_EVENT));
-    window.dispatchEvent(new Event('storage'));
-    
-    // Use BroadcastChannel if available for cross-tab communication
-    if (typeof BroadcastChannel !== 'undefined') {
-      try {
-        const channel = new BroadcastChannel('api-key-updates');
-        channel.postMessage({ 
-          type: 'api-key-update',
-          timestamp: Date.now()
-        });
-        channel.close();
-      } catch (err) {
-        console.error("Failed to use BroadcastChannel:", err);
-      }
-    }
-    
-    // Force a storage event by setting and removing a dummy key
-    const dummyKey = `_dummy_key_${Date.now()}`;
-    localStorage.setItem(dummyKey, Date.now().toString());
-    localStorage.removeItem(dummyKey);
-  } catch (error) {
-    console.error('Error broadcasting API key change:', error);
-  }
-};
+export function getAvailableProviders(): Record<string, boolean> {
+  return {
+    openai: hasApiKey('openai'),
+    claude: hasApiKey('claude'),
+    groq: hasApiKey('groq'),
+    gemini: hasApiKey('gemini'),
+    deepseek: hasApiKey('deepseek')
+  };
+}
