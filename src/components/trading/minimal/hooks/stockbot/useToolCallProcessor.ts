@@ -19,6 +19,8 @@ export const useToolCallProcessor = () => {
           console.error(`Failed to parse arguments for ${name}:`, e);
         }
         
+        console.log(`Processing tool call: ${name}`, parsedArgs);
+        
         // Create a message for the tool call
         let responseContent = "";
         
@@ -38,24 +40,31 @@ export const useToolCallProcessor = () => {
           const { symbol, timeframe = "1D" } = parsedArgs as any;
           responseContent = `<function=analyzeSentiment{"symbol":"${symbol}","timeframe":"${timeframe}"}>`;
         }
+        else {
+          console.warn(`Unknown tool call function: ${name}`);
+          responseContent = `Sorry, I don't know how to handle the function: ${name}`;
+        }
         
-        // Add a message for the tool response
-        const toolMessage: ChatMessage = {
-          id: crypto.randomUUID(),
-          sender: 'system' as 'system', // Explicitly cast to ensure correct type
-          role: 'assistant' as 'assistant',
-          content: responseContent,
-          text: responseContent,
-          timestamp: new Date(),
-        };
-        
-        toolMessages.push(toolMessage);
+        // Only add a message if we have content to show
+        if (responseContent) {
+          // Add a message for the tool response
+          const toolMessage: ChatMessage = {
+            id: crypto.randomUUID(),
+            sender: 'system' as 'system',
+            role: 'assistant' as 'assistant',
+            content: responseContent,
+            text: responseContent,
+            timestamp: new Date(),
+          };
+          
+          toolMessages.push(toolMessage);
+        }
       } catch (error) {
         console.error(`Error processing tool call:`, error);
         // Add error message for failed tool call
         const errorMessage: ChatMessage = {
           id: crypto.randomUUID(),
-          sender: 'system' as 'system', // Explicitly cast to ensure correct type
+          sender: 'system' as 'system',
           role: 'assistant' as 'assistant',
           content: `Failed to process tool call: ${error instanceof Error ? error.message : String(error)}`,
           text: `Failed to process tool call: ${error instanceof Error ? error.message : String(error)}`,

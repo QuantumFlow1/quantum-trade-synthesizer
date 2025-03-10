@@ -8,6 +8,8 @@ interface MessageRendererProps {
 }
 
 export const MessageRenderer: React.FC<MessageRendererProps> = ({ functionName, params }) => {
+  console.log(`Rendering function: ${functionName}`, params);
+  
   if (functionName === "getStockNews") {
     const symbol = params.symbol || "market";
     const count = params.count || 5;
@@ -52,6 +54,8 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ functionName, 
 // Utility function that can be exported separately to extract function calls from content
 export const extractFunctionCall = (content: string): { functionName: string; params: any } | null => {
   try {
+    console.log("Extracting function call from:", content.substring(0, 100) + (content.length > 100 ? "..." : ""));
+    
     // Handle function format: <function=name{"param":"value"}>
     const functionRegex = /<function=(\w+)(\{.*?\})>(?:<\/function>)?/;
     const functionMatch = content.match(functionRegex);
@@ -63,6 +67,7 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
       
       try {
         params = JSON.parse(paramsString);
+        console.log(`Parsed function ${functionName} with params:`, params);
         return { functionName, params };
       } catch (e) {
         console.error("Failed to parse function parameters:", e);
@@ -81,6 +86,7 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
       
       try {
         const params = JSON.parse(paramsString);
+        console.log(`Parsed alternative function ${functionName} with params:`, params);
         return { functionName, params };
       } catch (e) {
         console.error("Failed to parse alternative function parameters:", e);
@@ -96,6 +102,7 @@ export const extractFunctionCall = (content: string): { functionName: string; pa
         const functionName = funcMatch[1];
         try {
           const params = JSON.parse(funcMatch[2]);
+          console.log(`Parsed raw function ${functionName} with params:`, params);
           return { functionName, params };
         } catch (e) {
           console.error("Failed to parse raw function:", e);
