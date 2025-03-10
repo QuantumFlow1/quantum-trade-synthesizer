@@ -21,52 +21,97 @@ export const StockbotMessages = forwardRef<HTMLDivElement, StockbotMessagesProps
     };
 
     const renderMessageContent = (content: string) => {
-      // Check for trading view widgets in the message
-      if (content.includes('[TradingView Chart Widget for')) {
-        const match = content.match(/\[TradingView Chart Widget for (\w+) with timeframe (\w+)\]/);
-        if (match && match[1] && match[2]) {
-          const symbol = match[1];
-          const timeframe = match[2];
-          return (
-            <>
-              <div className="mb-2">Here's the chart for {symbol}:</div>
-              <TradingViewChart symbol={symbol} timeframe={timeframe} />
-            </>
-          );
+      try {
+        // Check for function call format: <function=name{params}>
+        const functionMatch = content.match(/<function=(\w+)(\{.*\})>/);
+        if (functionMatch) {
+          const functionName = functionMatch[1];
+          let params = {};
+          try {
+            params = JSON.parse(functionMatch[2]);
+          } catch (e) {
+            console.error("Failed to parse function parameters:", e);
+          }
+          
+          if (functionName === "getStockNews") {
+            const symbol = (params as any).symbol || "market";
+            const count = (params as any).count || 5;
+            return (
+              <>
+                <div className="mb-2">Here's the latest news for {symbol}:</div>
+                <StockNews symbol={symbol} count={count} />
+              </>
+            );
+          } else if (functionName === "showStockChart") {
+            const symbol = (params as any).symbol || "SPY";
+            const timeframe = (params as any).timeframe || "1M";
+            return (
+              <>
+                <div className="mb-2">Here's the chart for {symbol}:</div>
+                <TradingViewChart symbol={symbol} timeframe={timeframe} />
+              </>
+            );
+          } else if (functionName === "showMarketHeatmap") {
+            const sector = (params as any).sector || "all";
+            return (
+              <>
+                <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
+                <MarketHeatmap sector={sector} />
+              </>
+            );
+          }
         }
-      }
-      
-      // Check for market heatmap widgets
-      if (content.includes('[Market Heatmap for')) {
-        const match = content.match(/\[Market Heatmap for (\w+) sectors\]/);
-        if (match && match[1]) {
-          const sector = match[1];
-          return (
-            <>
-              <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
-              <MarketHeatmap sector={sector} />
-            </>
-          );
+        
+        // Check for traditional trading view widgets format
+        if (content.includes('[TradingView Chart Widget for')) {
+          const match = content.match(/\[TradingView Chart Widget for (\w+) with timeframe (\w+)\]/);
+          if (match && match[1] && match[2]) {
+            const symbol = match[1];
+            const timeframe = match[2];
+            return (
+              <>
+                <div className="mb-2">Here's the chart for {symbol}:</div>
+                <TradingViewChart symbol={symbol} timeframe={timeframe} />
+              </>
+            );
+          }
         }
-      }
-      
-      // Check for stock news widgets
-      if (content.includes('[Latest news for')) {
-        const match = content.match(/\[Latest news for (\w+) \((\d+) items\)\]/);
-        if (match && match[1] && match[2]) {
-          const symbol = match[1];
-          const count = parseInt(match[2], 10);
-          return (
-            <>
-              <div className="mb-2">Here's the latest news for {symbol}:</div>
-              <StockNews symbol={symbol} count={count} />
-            </>
-          );
+        
+        // Check for market heatmap widgets
+        if (content.includes('[Market Heatmap for')) {
+          const match = content.match(/\[Market Heatmap for (\w+) sectors\]/);
+          if (match && match[1]) {
+            const sector = match[1];
+            return (
+              <>
+                <div className="mb-2">Here's the market heatmap{sector !== "all" ? ` for the ${sector} sector` : ""}:</div>
+                <MarketHeatmap sector={sector} />
+              </>
+            );
+          }
         }
+        
+        // Check for stock news widgets
+        if (content.includes('[Latest news for')) {
+          const match = content.match(/\[Latest news for (\w+) \((\d+) items\)\]/);
+          if (match && match[1] && match[2]) {
+            const symbol = match[1];
+            const count = parseInt(match[2], 10);
+            return (
+              <>
+                <div className="mb-2">Here's the latest news for {symbol}:</div>
+                <StockNews symbol={symbol} count={count} />
+              </>
+            );
+          }
+        }
+        
+        // Default case: just render the text
+        return <div className="whitespace-pre-wrap">{content}</div>;
+      } catch (error) {
+        console.error("Error rendering message content:", error);
+        return <div className="whitespace-pre-wrap">{content}</div>;
       }
-      
-      // Default case: just render the text
-      return <div className="whitespace-pre-wrap">{content}</div>;
     };
 
     return (

@@ -1,49 +1,75 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle } from "lucide-react";
 
 interface ChartWidgetProps {
   symbol: string;
   timeframe?: string;
 }
 
-export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe = "1M" }) => {
+export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe = "1D" }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Create script element to load TradingView widget script
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/tv.js';
-    script.async = true;
-    script.onload = () => {
-      if (containerRef.current && window.TradingView) {
-        if (widgetRef.current) {
-          containerRef.current.innerHTML = '';
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Create script element to load TradingView widget script
+      const script = document.createElement('script');
+      script.src = 'https://s3.tradingview.com/tv.js';
+      script.async = true;
+      script.onload = () => {
+        if (containerRef.current && window.TradingView) {
+          if (widgetRef.current) {
+            containerRef.current.innerHTML = '';
+          }
+
+          try {
+            // Create a new TradingView widget
+            widgetRef.current = new window.TradingView.widget({
+              autosize: true,
+              symbol: symbol,
+              interval: getIntervalFromTimeframe(timeframe),
+              timezone: "exchange",
+              theme: "light",
+              style: "1",
+              locale: "en",
+              enable_publishing: false,
+              allow_symbol_change: true,
+              container_id: containerRef.current.id
+            });
+            setIsLoading(false);
+          } catch (err) {
+            console.error("Error creating TradingView widget:", err);
+            setError("Failed to create chart widget");
+            setIsLoading(false);
+          }
         }
+      };
+      
+      script.onerror = () => {
+        console.error("Failed to load TradingView script");
+        setError("Failed to load TradingView");
+        setIsLoading(false);
+      };
 
-        // Create a new TradingView widget
-        widgetRef.current = new window.TradingView.widget({
-          autosize: true,
-          symbol: symbol,
-          interval: getIntervalFromTimeframe(timeframe),
-          timezone: "exchange",
-          theme: "light",
-          style: "1",
-          locale: "en",
-          enable_publishing: false,
-          allow_symbol_change: true,
-          container_id: containerRef.current.id
-        });
-      }
-    };
+      document.head.appendChild(script);
 
-    document.head.appendChild(script);
-
-    return () => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-    };
+      return () => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      };
+    } catch (e) {
+      console.error("Error setting up TradingView chart:", e);
+      setError("Failed to initialize chart");
+      setIsLoading(false);
+    }
   }, [symbol, timeframe]);
 
   const containerId = `tradingview-widget-${symbol}-${timeframe}`.replace(/[^a-zA-Z0-9-]/g, '');
@@ -67,11 +93,25 @@ export const TradingViewChart: React.FC<ChartWidgetProps> = ({ symbol, timeframe
       <div className="bg-gray-100 p-2 border-b text-sm font-medium">
         {symbol} Chart - {timeframe} Timeframe
       </div>
-      <div 
-        id={containerId}
-        ref={containerRef}
-        className="w-full h-[400px]"
-      />
+      {isLoading ? (
+        <div className="h-[400px] flex items-center justify-center">
+          <Skeleton className="w-full h-full" />
+        </div>
+      ) : error ? (
+        <div className="h-[400px] flex items-center justify-center bg-gray-50 flex-col p-4">
+          <AlertCircle className="h-8 w-8 text-amber-500 mb-2" />
+          <p className="text-gray-600 text-center">{error}</p>
+          <p className="text-gray-400 text-sm text-center mt-1">
+            Please try refreshing or check your connection
+          </p>
+        </div>
+      ) : (
+        <div 
+          id={containerId}
+          ref={containerRef}
+          className="w-full h-[400px]"
+        />
+      )}
     </div>
   );
 };
@@ -83,48 +123,71 @@ interface HeatmapWidgetProps {
 export const MarketHeatmap: React.FC<HeatmapWidgetProps> = ({ sector = "all" }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Create script element to load TradingView widget script
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js';
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      colorTheme: "light",
-      dateRange: "1D",
-      exchange: "US",
-      showChart: true,
-      locale: "en",
-      largeChartUrl: "",
-      isTransparent: false,
-      showSymbolLogo: true,
-      plotLineColorGrowing: "rgba(60, 188, 152, 1)",
-      plotLineColorFalling: "rgba(255, 74, 104, 1)",
-      gridLineColor: "rgba(238, 238, 238, 1)",
-      scaleFontColor: "rgba(82, 82, 82, 1)",
-      belowLineFillColorGrowing: "rgba(60, 188, 152, 0.05)",
-      belowLineFillColorFalling: "rgba(255, 74, 104, 0.05)",
-      symbolActiveColor: "rgba(242, 250, 254, 1)",
-      tabs: [
-        {
-          title: sector !== "all" ? sector : "All",
-          symbols: getSymbolsForSector(sector)
-        }
-      ]
-    });
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Create script element to load TradingView widget script
+      const script = document.createElement('script');
+      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js';
+      script.async = true;
+      
+      script.innerHTML = JSON.stringify({
+        colorTheme: "light",
+        dateRange: "1D",
+        exchange: "US",
+        showChart: true,
+        locale: "en",
+        largeChartUrl: "",
+        isTransparent: false,
+        showSymbolLogo: true,
+        plotLineColorGrowing: "rgba(60, 188, 152, 1)",
+        plotLineColorFalling: "rgba(255, 74, 104, 1)",
+        gridLineColor: "rgba(238, 238, 238, 1)",
+        scaleFontColor: "rgba(82, 82, 82, 1)",
+        belowLineFillColorGrowing: "rgba(60, 188, 152, 0.05)",
+        belowLineFillColorFalling: "rgba(255, 74, 104, 0.05)",
+        symbolActiveColor: "rgba(242, 250, 254, 1)",
+        tabs: [
+          {
+            title: sector !== "all" ? sector : "All",
+            symbols: getSymbolsForSector(sector)
+          }
+        ]
+      });
 
-    // Append the script to the container
-    if (containerRef.current) {
-      containerRef.current.innerHTML = '';
-      containerRef.current.appendChild(script);
-      widgetRef.current = script;
-    }
+      // Set up onload and onerror handlers
+      script.onload = () => {
+        setIsLoading(false);
+      };
+      
+      script.onerror = () => {
+        console.error("Failed to load TradingView heatmap script");
+        setError("Failed to load market heatmap");
+        setIsLoading(false);
+      };
 
-    return () => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+      // Append the script to the container
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        containerRef.current.appendChild(script);
+        widgetRef.current = script;
       }
-    };
+
+      return () => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      };
+    } catch (e) {
+      console.error("Error setting up market heatmap:", e);
+      setError("Failed to initialize heatmap");
+      setIsLoading(false);
+    }
   }, [sector]);
 
   // Helper function to get symbols based on sector
@@ -178,10 +241,24 @@ export const MarketHeatmap: React.FC<HeatmapWidgetProps> = ({ sector = "all" }) 
       <div className="bg-gray-100 p-2 border-b text-sm font-medium">
         Market Heatmap {sector !== "all" ? `- ${sector} Sector` : ""}
       </div>
-      <div 
-        ref={containerRef}
-        className="w-full h-[400px]"
-      />
+      {isLoading ? (
+        <div className="h-[400px] flex items-center justify-center">
+          <Skeleton className="w-full h-full" />
+        </div>
+      ) : error ? (
+        <div className="h-[400px] flex items-center justify-center bg-gray-50 flex-col p-4">
+          <AlertCircle className="h-8 w-8 text-amber-500 mb-2" />
+          <p className="text-gray-600 text-center">{error}</p>
+          <p className="text-gray-400 text-sm text-center mt-1">
+            Please try refreshing or check your connection
+          </p>
+        </div>
+      ) : (
+        <div 
+          ref={containerRef}
+          className="w-full h-[400px]"
+        />
+      )}
     </div>
   );
 };
@@ -194,35 +271,58 @@ interface StockNewsProps {
 export const StockNews: React.FC<StockNewsProps> = ({ symbol, count = 3 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetRef = useRef<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Create script element to load TradingView widget script
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-timeline.js';
-    script.async = true;
-    script.innerHTML = JSON.stringify({
-      colorTheme: "light",
-      isTransparent: false,
-      displayMode: "regular",
-      width: "100%",
-      height: "400",
-      locale: "en",
-      feedMode: "symbol",
-      symbol: symbol === "market" ? "SPY" : symbol
-    });
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Create script element to load TradingView widget script
+      const script = document.createElement('script');
+      script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-timeline.js';
+      script.async = true;
+      
+      script.innerHTML = JSON.stringify({
+        colorTheme: "light",
+        isTransparent: false,
+        displayMode: "regular",
+        width: "100%",
+        height: "400",
+        locale: "en",
+        feedMode: "symbol",
+        symbol: symbol === "market" ? "SPY" : symbol
+      });
+      
+      // Set up onload and onerror handlers
+      script.onload = () => {
+        setIsLoading(false);
+      };
+      
+      script.onerror = () => {
+        console.error("Failed to load TradingView news script");
+        setError("Failed to load stock news");
+        setIsLoading(false);
+      };
 
-    // Append the script to the container
-    if (containerRef.current) {
-      containerRef.current.innerHTML = '';
-      containerRef.current.appendChild(script);
-      widgetRef.current = script;
-    }
-
-    return () => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
+      // Append the script to the container
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+        containerRef.current.appendChild(script);
+        widgetRef.current = script;
       }
-    };
+
+      return () => {
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      };
+    } catch (e) {
+      console.error("Error setting up news widget:", e);
+      setError("Failed to initialize news feed");
+      setIsLoading(false);
+    }
   }, [symbol, count]);
 
   return (
@@ -230,10 +330,31 @@ export const StockNews: React.FC<StockNewsProps> = ({ symbol, count = 3 }) => {
       <div className="bg-gray-100 p-2 border-b text-sm font-medium">
         {symbol === "market" ? "Market News" : `News for ${symbol}`}
       </div>
-      <div 
-        ref={containerRef}
-        className="w-full h-[400px]"
-      />
+      {isLoading ? (
+        <div className="h-[400px] flex items-center justify-center">
+          <Skeleton className="w-full h-full" />
+        </div>
+      ) : error ? (
+        <div className="h-[400px] flex items-center justify-center bg-gray-50 flex-col p-4">
+          <AlertCircle className="h-8 w-8 text-amber-500 mb-2" />
+          <p className="text-gray-600 text-center">{error}</p>
+          <p className="text-gray-400 text-sm text-center mt-1">
+            Please try refreshing or check your connection
+          </p>
+        </div>
+      ) : (
+        <div 
+          ref={containerRef}
+          className="w-full h-[400px]"
+        />
+      )}
     </div>
   );
 };
+
+// Add TradingView type definition to global Window interface
+declare global {
+  interface Window {
+    TradingView: any;
+  }
+}
