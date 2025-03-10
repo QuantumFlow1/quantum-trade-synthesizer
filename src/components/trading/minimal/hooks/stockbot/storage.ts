@@ -81,3 +81,7 @@ export const saveApiKey = (provider: string, key: string): boolean => {
     return false;
   }
 };
+
+// Aliases for backward compatibility
+export const loadStockbotChatHistory = loadMessages;
+export const saveStockbotChatHistory = saveMessages;

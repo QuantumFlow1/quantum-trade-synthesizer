@@ -4,8 +4,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Key } from "lucide-react";
+import { Key, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AIKeyConfigSheetProps {
   isOpen: boolean;
@@ -22,12 +24,50 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
   const [deepseekKey, setDeepseekKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
+  
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        setIsCheckingAdmin(true);
+        
+        // Check if user is logged in first
+        const { data: authData } = await supabase.auth.getUser();
+        if (!authData.user) {
+          setIsAdmin(false);
+          setIsCheckingAdmin(false);
+          return;
+        }
+        
+        // Check for admin role
+        const { data, error } = await supabase.rpc('has_role', {
+          user_id: authData.user.id,
+          role: 'admin'
+        });
+        
+        if (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(!!data);
+        }
+      } catch (error) {
+        console.error('Error in admin check:', error);
+        setIsAdmin(false);
+      } finally {
+        setIsCheckingAdmin(false);
+      }
+    };
+    
+    if (isOpen) {
+      checkAdminStatus();
+      loadKeysFromStorage();
+    }
+  }, [isOpen]);
   
   // Load saved API keys on component mount
-  useEffect(() => {
-    loadKeysFromStorage();
-  }, []);
-  
   const loadKeysFromStorage = () => {
     const savedOpenAI = localStorage.getItem('openaiApiKey') || '';
     const savedClaude = localStorage.getItem('claudeApiKey') || '';
@@ -51,6 +91,15 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
   };
   
   const saveApiKeys = async () => {
+    if (!isAdmin) {
+      toast({
+        title: "Niet toegestaan",
+        description: "Alleen administrators kunnen API sleutels instellen.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setIsSaving(true);
     
     try {
@@ -140,89 +189,149 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
           size="sm"
         >
           <Key size={16} className="mr-2" />
-          API Sleutels Configureren
+          API Sleutels Status
         </Button>
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>API Sleutels Instellen</SheetTitle>
+          <SheetTitle>API Sleutels Status</SheetTitle>
         </SheetHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="openai-api-key">OpenAI API Sleutel</Label>
-            <Input 
-              id="openai-api-key"
-              type="password" 
-              placeholder="sk-..." 
-              value={openaiKey}
-              onChange={(e) => setOpenaiKey(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">Vereist voor GPT-4 en andere OpenAI modellen</p>
+        
+        {isCheckingAdmin ? (
+          <div className="flex items-center justify-center h-40">
+            <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+            <span className="ml-2">Controleert admin status...</span>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="claude-api-key">Claude API Sleutel</Label>
-            <Input 
-              id="claude-api-key"
-              type="password" 
-              placeholder="sk-ant-..." 
-              value={claudeKey}
-              onChange={(e) => setClaudeKey(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">Vereist voor Claude modellen</p>
+        ) : isAdmin ? (
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="openai-api-key">OpenAI API Sleutel</Label>
+              <Input 
+                id="openai-api-key"
+                type="password" 
+                placeholder="sk-..." 
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Vereist voor GPT-4 en andere OpenAI modellen</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="claude-api-key">Claude API Sleutel</Label>
+              <Input 
+                id="claude-api-key"
+                type="password" 
+                placeholder="sk-ant-..." 
+                value={claudeKey}
+                onChange={(e) => setClaudeKey(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Vereist voor Claude modellen</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="gemini-api-key">Gemini API Sleutel</Label>
+              <Input 
+                id="gemini-api-key"
+                type="password" 
+                placeholder="AIza..." 
+                value={geminiKey}
+                onChange={(e) => setGeminiKey(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Vereist voor Gemini modellen</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="deepseek-api-key">DeepSeek API Sleutel</Label>
+              <Input 
+                id="deepseek-api-key"
+                type="password" 
+                placeholder="sk-..." 
+                value={deepseekKey}
+                onChange={(e) => setDeepseekKey(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Vereist voor DeepSeek modellen</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="groq-api-key">Groq API Sleutel</Label>
+              <Input 
+                id="groq-api-key"
+                type="password" 
+                placeholder="gsk_..." 
+                value={groqKey}
+                onChange={(e) => setGroqKey(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Vereist voor Stockbot en Groq functionaliteit</p>
+            </div>
+            
+            <Button 
+              className="w-full mt-4" 
+              onClick={saveApiKeys}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <>
+                  <span className="animate-spin mr-2">⟳</span>
+                  Opslaan...
+                </>
+              ) : (
+                "Opslaan"
+              )}
+            </Button>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="gemini-api-key">Gemini API Sleutel</Label>
-            <Input 
-              id="gemini-api-key"
-              type="password" 
-              placeholder="AIza..." 
-              value={geminiKey}
-              onChange={(e) => setGeminiKey(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">Vereist voor Gemini modellen</p>
+        ) : (
+          <div className="py-4">
+            <Alert className="bg-amber-50 border-amber-200">
+              <Shield className="h-4 w-4 text-amber-500" />
+              <AlertDescription className="text-amber-800">
+                <p className="font-medium mb-2">Alleen voor Administrators</p>
+                <p>API Sleutels kunnen alleen door administrators worden geconfigureerd.</p>
+                <p className="mt-2">De applicatie gebruikt door de administrator ingestelde API sleutels. Er is geen actie van uw kant nodig.</p>
+              </AlertDescription>
+            </Alert>
+            
+            <div className="mt-6">
+              <h3 className="text-sm font-medium mb-2">API Sleutels Status:</h3>
+              <ul className="space-y-2">
+                <li className="flex justify-between">
+                  <span className="text-gray-600">OpenAI:</span>
+                  <span className={openaiKey ? "text-green-600" : "text-gray-400"}>
+                    {openaiKey ? "Beschikbaar" : "Niet beschikbaar"}
+                  </span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Claude:</span>
+                  <span className={claudeKey ? "text-green-600" : "text-gray-400"}>
+                    {claudeKey ? "Beschikbaar" : "Niet beschikbaar"}
+                  </span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">Groq:</span>
+                  <span className={groqKey ? "text-green-600" : "text-gray-400"}>
+                    {groqKey ? "Beschikbaar" : "Niet beschikbaar"}
+                  </span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-gray-600">DeepSeek:</span>
+                  <span className={deepseekKey ? "text-green-600" : "text-gray-400"}>
+                    {deepseekKey ? "Beschikbaar" : "Niet beschikbaar"}
+                  </span>
+                </li>
+              </ul>
+            </div>
+            
+            <Button 
+              className="w-full mt-6" 
+              variant="outline"
+              onClick={() => {
+                onManualCheck?.();
+                onOpenChange(false);
+              }}
+            >
+              Controleer API verbindingen
+            </Button>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="deepseek-api-key">DeepSeek API Sleutel</Label>
-            <Input 
-              id="deepseek-api-key"
-              type="password" 
-              placeholder="sk-..." 
-              value={deepseekKey}
-              onChange={(e) => setDeepseekKey(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">Vereist voor DeepSeek modellen</p>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="groq-api-key">Groq API Sleutel</Label>
-            <Input 
-              id="groq-api-key"
-              type="password" 
-              placeholder="gsk_..." 
-              value={groqKey}
-              onChange={(e) => setGroqKey(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">Vereist voor Stockbot en Groq functionaliteit</p>
-          </div>
-          
-          <Button 
-            className="w-full mt-4" 
-            onClick={saveApiKeys}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <>
-                <span className="animate-spin mr-2">⟳</span>
-                Opslaan...
-              </>
-            ) : (
-              "Opslaan"
-            )}
-          </Button>
-        </div>
+        )}
       </SheetContent>
     </Sheet>
   );

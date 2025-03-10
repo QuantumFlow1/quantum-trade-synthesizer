@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { StockbotChatHook } from "./stockbot/types";
 import { useStockbotSettings } from "./stockbot/useStockbotSettings";
@@ -52,7 +51,11 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     showApiKeyDialog,
     isKeyDialogOpen,
     setIsKeyDialogOpen,
-    reloadApiKeys,
+    // Convert reloadApiKeys to return Promise<void>
+    reloadApiKeys: async () => {
+      await reloadApiKeys();
+      return;
+    },
     isCheckingAdminKey
   };
 };

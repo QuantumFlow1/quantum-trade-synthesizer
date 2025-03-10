@@ -1,241 +1,222 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
+import { checkApiKeysAvailability } from '@/hooks/trading-chart/api-key-manager';
 
-interface ConnectionStatus {
-  deepseek: 'connected' | 'disconnected' | 'unavailable' | 'checking';
-  openai: 'connected' | 'disconnected' | 'unavailable' | 'checking';
-  grok: 'connected' | 'disconnected' | 'unavailable' | 'checking';
-  claude: 'connected' | 'disconnected' | 'unavailable' | 'checking';
-}
-
-export function useLLMExtensions() {
+export const useLLMExtensions = () => {
   const [activeTab, setActiveTab] = useState('deepseek');
-  const [enabledLLMs, setEnabledLLMs] = useState<Record<string, boolean>>({
+  const [enabledLLMs, setEnabledLLMs] = useState({
     deepseek: false,
     openai: false,
     grok: false,
     claude: false
   });
-  
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
-    deepseek: 'checking',
-    openai: 'checking',
-    grok: 'checking',
-    claude: 'checking'
+
+  const [connectionStatus, setConnectionStatus] = useState({
+    deepseek: 'checking' as 'connected' | 'disconnected' | 'unavailable' | 'checking',
+    openai: 'checking' as 'connected' | 'disconnected' | 'unavailable' | 'checking',
+    grok: 'checking' as 'connected' | 'disconnected' | 'unavailable' | 'checking',
+    claude: 'checking' as 'connected' | 'disconnected' | 'unavailable' | 'checking'
   });
 
-  // Load enabled LLMs from localStorage
-  useEffect(() => {
-    const savedEnabledLLMs = localStorage.getItem('enabledLLMs');
-    if (savedEnabledLLMs) {
-      try {
-        const parsed = JSON.parse(savedEnabledLLMs);
-        setEnabledLLMs(parsed);
-        
-        // Set active tab to the first enabled LLM, if any
-        const enabledLLM = Object.keys(parsed).find(llm => parsed[llm]);
-        if (enabledLLM) {
-          setActiveTab(enabledLLM);
-        }
-      } catch (error) {
-        console.error('Error loading enabled LLMs:', error);
-      }
+  // Check connection status for an LLM
+  const checkConnectionStatusForLLM = useCallback(async (llm: keyof typeof connectionStatus) => {
+    console.log(`Checking connection status for ${llm}...`);
+    
+    let providerName: string;
+    switch (llm) {
+      case 'deepseek':
+        providerName = 'deepseek';
+        break;
+      case 'openai':
+        providerName = 'openai';
+        break;
+      case 'grok': // Grok uses Groq API
+        providerName = 'groq';
+        break;
+      case 'claude':
+        providerName = 'claude';
+        break;
+      default:
+        providerName = llm;
     }
     
-    // Check connection status for each LLM
-    checkConnectionStatus();
-    
-    // Listen for connection status changes
-    const handleConnectionStatusChange = (event: CustomEvent) => {
-      const { provider, status } = event.detail;
-      
-      setConnectionStatus(prev => ({
-        ...prev,
-        [provider]: status
-      }));
-    };
-    
-    // Listen for API key changes in localStorage
-    const handleApiKeyChange = () => {
-      checkConnectionStatus();
-    };
-    
-    window.addEventListener('connection-status-changed', handleConnectionStatusChange as EventListener);
-    window.addEventListener('storage', handleApiKeyChange);
-    window.addEventListener('apikey-updated', handleApiKeyChange);
-    
-    return () => {
-      window.removeEventListener('connection-status-changed', handleConnectionStatusChange as EventListener);
-      window.removeEventListener('storage', handleApiKeyChange);
-      window.removeEventListener('apikey-updated', handleApiKeyChange);
-    };
-  }, []);
-
-  // Save enabled LLMs to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem('enabledLLMs', JSON.stringify(enabledLLMs));
-  }, [enabledLLMs]);
-
-  // Toggle LLM enabled state
-  const toggleLLM = useCallback((llm: string, enabled: boolean) => {
-    setEnabledLLMs(prev => ({
-      ...prev,
-      [llm]: enabled
-    }));
-    
-    // If enabling an LLM, make it the active tab
-    if (enabled) {
-      setActiveTab(llm);
-    } else if (activeTab === llm) {
-      // If disabling the active tab, find another enabled one to switch to
-      const nextEnabledLLM = Object.keys(enabledLLMs).find(key => key !== llm && enabledLLMs[key]);
-      if (nextEnabledLLM) {
-        setActiveTab(nextEnabledLLM);
-      }
-    }
-    
-    // If enabling an LLM and its status is still checking, verify its connection
-    if (enabled && connectionStatus[llm as keyof ConnectionStatus] === 'checking') {
-      checkConnectionStatusForLLM(llm as keyof ConnectionStatus);
-    }
-  }, [activeTab, enabledLLMs, connectionStatus]);
-
-  // Check connection status for a specific LLM
-  const checkConnectionStatusForLLM = useCallback(async (llm: keyof ConnectionStatus) => {
     setConnectionStatus(prev => ({
       ...prev,
       [llm]: 'checking'
     }));
     
-    // First check if API key exists in localStorage
-    const apiKey = localStorage.getItem(`${llm}ApiKey`);
-    if (!apiKey) {
-      setConnectionStatus(prev => ({
-        ...prev,
-        [llm]: 'disconnected'
-      }));
-      return;
-    }
-    
     try {
-      // Use the Supabase Edge Function to verify the connection
-      const { data, error } = await supabase.functions.invoke(`${llm}-ping`, {
-        body: { apiKey, checkSecret: true }
-      });
+      // Check both localStorage and admin-panel keys
+      const storedKey = localStorage.getItem(`${providerName}ApiKey`);
       
-      if (error) {
-        console.error(`Error checking ${llm} connection:`, error);
+      if (storedKey && storedKey.length > 5) {
+        console.log(`Found localStorage key for ${providerName}`);
         setConnectionStatus(prev => ({
           ...prev,
-          [llm]: 'unavailable'
+          [llm]: 'connected'
         }));
         return;
       }
       
-      // Special handling for Grok which doesn't use standard API keys
-      if (llm === 'grok') {
-        const isAvailable = data?.status === 'available';
-        setConnectionStatus(prev => ({
-          ...prev,
-          grok: isAvailable ? 'connected' : 'unavailable'
-        }));
-        return;
-      }
+      // Check for admin-managed keys
+      const { available } = await checkApiKeysAvailability(providerName as any);
       
-      // Check if the API key is valid
-      const isConnected = data?.success === true || data?.status === 'available';
+      console.log(`${providerName} admin key available:`, available);
       setConnectionStatus(prev => ({
         ...prev,
-        [llm]: isConnected ? 'connected' : 'disconnected'
+        [llm]: available ? 'connected' : 'disconnected'
       }));
       
-      // If connected, show a toast notification
-      if (isConnected) {
+      // If key is available, enable the LLM
+      if (available && !enabledLLMs[llm as keyof typeof enabledLLMs]) {
+        setEnabledLLMs(prev => ({
+          ...prev,
+          [llm]: true
+        }));
+        
+        // Show notification
         toast({
-          title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} Connected`,
-          description: `Successfully connected to ${llm.charAt(0).toUpperCase() + llm.slice(1)} API.`,
+          title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} Available`,
+          description: `${llm.charAt(0).toUpperCase() + llm.slice(1)} API is available and ready to use`,
           duration: 3000
         });
       }
     } catch (error) {
-      console.error(`Error in ${llm} connection check:`, error);
+      console.error(`Error checking connection for ${llm}:`, error);
       setConnectionStatus(prev => ({
         ...prev,
         [llm]: 'unavailable'
       }));
     }
-  }, []);
+  }, [enabledLLMs]);
 
-  // Check connection status for all LLMs
-  const checkConnectionStatus = useCallback(() => {
-    // Check if API keys exist in localStorage
-    const deepseekKey = localStorage.getItem('deepseekApiKey');
-    const openaiKey = localStorage.getItem('openaiApiKey');
-    const claudeKey = localStorage.getItem('claudeApiKey');
+  // Initialize connection status on component mount
+  useEffect(() => {
+    const checkAllConnectionStatuses = async () => {
+      await Promise.all([
+        checkConnectionStatusForLLM('deepseek'),
+        checkConnectionStatusForLLM('openai'),
+        checkConnectionStatusForLLM('grok'),
+        checkConnectionStatusForLLM('claude')
+      ]);
+    };
+
+    checkAllConnectionStatuses();
     
-    // Update connection status based on API key presence
-    setConnectionStatus(prev => ({
-      ...prev,
-      deepseek: deepseekKey ? 'connected' : 'disconnected',
-      openai: openaiKey ? 'connected' : 'disconnected',
-      claude: claudeKey ? 'connected' : 'disconnected',
-      // For Grok, we need to do an additional check with the backend
-      grok: prev.grok === 'checking' ? 'checking' : prev.grok
-    }));
-    
-    // For Grok, check availability from a different source
-    checkGrokAvailability();
-    
-    // For models with API keys, verify the connection works
-    if (deepseekKey) checkConnectionStatusForLLM('deepseek');
-    if (openaiKey) checkConnectionStatusForLLM('openai');
-    if (claudeKey) checkConnectionStatusForLLM('claude');
-  }, [checkConnectionStatusForLLM]);
-  
-  // Specifically check Grok availability
-  const checkGrokAvailability = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('grok-ping', {
-        body: { isAvailabilityCheck: true }
-      });
+    // Listen for API key status changes
+    const handleConnectionStatusChange = (event: CustomEvent) => {
+      const { provider, status } = event.detail;
+      let llmName: string;
       
-      if (error) {
-        console.error('Error checking Grok availability:', error);
-        setConnectionStatus(prev => ({
-          ...prev,
-          grok: 'unavailable'
-        }));
-        return;
+      // Map provider name to LLM name
+      switch (provider) {
+        case 'deepseek':
+          llmName = 'deepseek';
+          break;
+        case 'openai':
+          llmName = 'openai';
+          break;
+        case 'groq':
+          llmName = 'grok'; // Groq API is used for Grok
+          break;
+        case 'claude':
+          llmName = 'claude';
+          break;
+        default:
+          return;
       }
       
-      const isAvailable = data?.status === 'available';
+      // Update connection status
       setConnectionStatus(prev => ({
         ...prev,
-        grok: isAvailable ? 'connected' : 'unavailable'
+        [llmName]: status === 'connected' ? 'connected' : 'disconnected'
       }));
+    };
+
+    window.addEventListener('connection-status-changed', handleConnectionStatusChange as EventListener);
+    window.addEventListener('apikey-updated', () => checkAllConnectionStatuses());
+    window.addEventListener('localStorage-changed', () => checkAllConnectionStatuses());
+    
+    return () => {
+      window.removeEventListener('connection-status-changed', handleConnectionStatusChange as EventListener);
+      window.removeEventListener('apikey-updated', () => checkAllConnectionStatuses());
+      window.removeEventListener('localStorage-changed', () => checkAllConnectionStatuses());
+    };
+  }, [checkConnectionStatusForLLM]);
+
+  // Toggle LLM on/off
+  const toggleLLM = (llm: string, enabled: boolean) => {
+    console.log(`Toggling ${llm} to ${enabled}`);
+    
+    setEnabledLLMs(prev => ({
+      ...prev,
+      [llm]: enabled
+    }));
+    
+    if (enabled && connectionStatus[llm as keyof typeof connectionStatus] !== 'connected') {
+      checkConnectionStatusForLLM(llm as keyof typeof connectionStatus);
+    }
+  };
+
+  // Configure API key (this now just checks for admin keys, doesn't show UI)
+  const configureApiKey = async (llm: string) => {
+    console.log(`Checking admin keys for ${llm}...`);
+    
+    let providerName: string;
+    switch (llm) {
+      case 'deepseek':
+        providerName = 'deepseek';
+        break;
+      case 'openai':
+        providerName = 'openai';
+        break;
+      case 'grok':
+        providerName = 'groq';
+        break;
+      case 'claude':
+        providerName = 'claude';
+        break;
+      default:
+        providerName = llm;
+    }
+    
+    try {
+      // Check for admin-managed keys
+      const { available } = await checkApiKeysAvailability(providerName as any);
       
-      if (isAvailable) {
+      if (available) {
         toast({
-          title: "Grok Connected",
-          description: "Successfully connected to Grok API.",
+          title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} API Key Available`,
+          description: `Admin has configured the ${llm.charAt(0).toUpperCase() + llm.slice(1)} API key`,
           duration: 3000
+        });
+        
+        // Update connection status
+        setConnectionStatus(prev => ({
+          ...prev,
+          [llm]: 'connected'
+        }));
+        
+        return;
+      } else {
+        toast({
+          title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} API Key Unavailable`,
+          description: `Please contact your administrator to enable ${llm.charAt(0).toUpperCase() + llm.slice(1)} API integration`,
+          variant: 'destructive',
+          duration: 5000
         });
       }
     } catch (error) {
-      console.error('Exception checking Grok availability:', error);
-      setConnectionStatus(prev => ({
-        ...prev,
-        grok: 'unavailable'
-      }));
+      console.error(`Error checking admin keys for ${llm}:`, error);
+      toast({
+        title: "Error",
+        description: `Unable to check API key status for ${llm}`,
+        variant: 'destructive',
+        duration: 3000
+      });
     }
-  }, []);
-
-  // Function to configure API key for an LLM
-  const configureApiKey = useCallback((llm: string) => {
-    window.location.href = '/dashboard/settings';
-  }, []);
+  };
 
   return {
     activeTab,
@@ -243,8 +224,7 @@ export function useLLMExtensions() {
     enabledLLMs,
     connectionStatus,
     toggleLLM,
-    checkConnectionStatus,
     checkConnectionStatusForLLM,
     configureApiKey
   };
-}
+};

@@ -1,147 +1,94 @@
 
 import { TabsContent } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { DeepSeekChat } from '../deepseek/DeepSeekChat';
 import { OpenAIChat } from '../openai/OpenAIChat';
 import { GrokChat } from '../grok/GrokChat';
 import { ClaudeChat } from '../claude/ClaudeChat';
-import { ChatEmpty } from './ChatEmpty';
-import { Cpu, Sparkles, Brain, MessageSquare, Settings } from 'lucide-react';
-import { ConnectionStatus } from './ConnectionStatus';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface LLMTabContentProps {
   tabValue: string;
   isEnabled: boolean;
   toggleLLM: (llm: string, enabled: boolean) => void;
   connectionStatus: 'connected' | 'disconnected' | 'unavailable' | 'checking';
-  onRetryConnection?: () => void;
-  onConfigure?: () => void;
+  onRetryConnection: () => void;
+  onConfigure: () => void;
 }
 
-export function LLMTabContent({ 
-  tabValue, 
-  isEnabled, 
+export function LLMTabContent({
+  tabValue,
+  isEnabled,
   toggleLLM,
   connectionStatus,
   onRetryConnection,
   onConfigure
 }: LLMTabContentProps) {
-  // Render appropriate chat component based on tab value
-  const renderChatComponent = () => {
-    if (!isEnabled) {
-      return (
-        <div className="h-full flex flex-col items-center justify-center p-6">
-          {getLLMIcon(tabValue, "w-12 h-12 text-gray-400 mb-4")}
-          <p className="text-gray-500 mb-4 text-center max-w-md">
-            This LLM extension is currently disabled.
-            Enable it to use {getLLMName(tabValue)} capabilities.
-          </p>
-          <Button onClick={() => toggleLLM(tabValue, true)} className="flex items-center">
-            {getLLMIcon(tabValue, "w-4 h-4 mr-2")}
-            Enable {getLLMName(tabValue)}
-          </Button>
-        </div>
-      );
-    }
-
-    if (connectionStatus === 'disconnected') {
-      return (
-        <div className="h-full flex flex-col items-center justify-center p-6">
-          {getLLMIcon(tabValue, "w-12 h-12 text-amber-400 mb-4")}
-          <p className="text-gray-500 mb-4 text-center max-w-md">
-            {getLLMName(tabValue)} is not connected. Please set up your API key.
-          </p>
-          <Button onClick={onConfigure} className="flex items-center">
-            <Settings className="w-4 h-4 mr-2" />
-            Configure API Keys
-          </Button>
-        </div>
-      );
-    }
-
-    if (connectionStatus === 'unavailable') {
-      return (
-        <div className="h-full flex flex-col items-center justify-center p-6">
-          {getLLMIcon(tabValue, "w-12 h-12 text-red-400 mb-4")}
-          <p className="text-gray-500 mb-4 text-center max-w-md">
-            {getLLMName(tabValue)} service is currently unavailable. Please try again later.
-          </p>
-          <Button onClick={onRetryConnection} className="flex items-center">
-            Retry Connection
-          </Button>
-        </div>
-      );
-    }
-
-    if (connectionStatus === 'checking') {
-      return (
-        <div className="h-full flex flex-col items-center justify-center p-6">
-          {getLLMIcon(tabValue, "w-12 h-12 text-blue-400 mb-4 animate-pulse")}
-          <p className="text-gray-500 mb-4 text-center max-w-md">
-            Checking connection to {getLLMName(tabValue)}...
-          </p>
-          <div className="w-8 h-8 border-t-2 border-blue-500 rounded-full animate-spin"></div>
-        </div>
-      );
-    }
-
-    switch (tabValue) {
-      case 'deepseek':
-        return <DeepSeekChat />;
-      case 'openai':
-        return <OpenAIChat />;
-      case 'grok':
-        return <GrokChat />;
-      case 'claude':
-        return <ClaudeChat />;
-      default:
-        return <ChatEmpty />;
-    }
-  };
-
-  // Get user-friendly LLM name
-  const getLLMName = (value: string) => {
-    switch (value) {
-      case 'deepseek':
-        return 'DeepSeek';
-      case 'openai':
-        return 'OpenAI';
-      case 'grok':
-        return 'Grok';
-      case 'claude':
-        return 'Claude';
-      default:
-        return value;
-    }
-  };
-
-  // Get the icon for the LLM
-  const getLLMIcon = (value: string, className: string = "w-5 h-5") => {
-    switch (value) {
-      case 'deepseek':
-        return <Cpu className={className} />;
-      case 'openai':
-        return <Sparkles className={className} />;
-      case 'grok':
-        return <Brain className={className} />;
-      case 'claude':
-        return <MessageSquare className={className} />;
-      default:
-        return null;
-    }
-  };
-
   return (
-    <TabsContent value={tabValue} className="mt-0 h-[500px] border-none p-0">
-      <div className="w-full h-full flex flex-col">
-        <ConnectionStatus 
-          status={connectionStatus} 
-          llm={tabValue} 
-          onRetryConnection={onRetryConnection}
-          onConfigure={onConfigure}
-        />
-        {renderChatComponent()}
-      </div>
+    <TabsContent value={tabValue} className="border rounded-md p-0 h-[400px]">
+      {isEnabled ? (
+        connectionStatus === 'connected' ? (
+          // Show the appropriate chat component
+          <>
+            {tabValue === 'deepseek' && <DeepSeekChat />}
+            {tabValue === 'openai' && <OpenAIChat />}
+            {tabValue === 'grok' && <GrokChat />}
+            {tabValue === 'claude' && <ClaudeChat />}
+          </>
+        ) : connectionStatus === 'checking' ? (
+          // Show loading state
+          <div className="h-full flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 text-blue-500 animate-spin mb-4" />
+            <h3 className="text-lg font-medium text-gray-700">Connecting to API</h3>
+            <p className="text-gray-500 text-center mt-2 max-w-md px-4">
+              Checking administrator-configured API keys...
+            </p>
+          </div>
+        ) : (
+          // Show disconnected state with retry button
+          <div className="h-full flex flex-col items-center justify-center p-6">
+            <Alert className="max-w-lg">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>API Connection Required</AlertTitle>
+              <AlertDescription>
+                {connectionStatus === 'unavailable' ? (
+                  <p>Could not connect to the {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} API. This may be due to a network issue or the API service being unavailable.</p>
+                ) : (
+                  <p>Administrator has not yet configured the {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} API key. This feature is currently unavailable.</p>
+                )}
+                <div className="mt-4 flex space-x-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={onRetryConnection}
+                  >
+                    Retry Connection
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )
+      ) : (
+        // Show disabled state
+        <div className="h-full flex flex-col items-center justify-center p-6">
+          <h3 className="text-lg font-medium text-gray-500">
+            {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} is currently disabled
+          </h3>
+          <p className="text-gray-400 text-center mt-2">
+            Enable this extension using the toggle above to use it.
+          </p>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => toggleLLM(tabValue, true)}
+          >
+            Enable {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}
+          </Button>
+        </div>
+      )}
     </TabsContent>
   );
 }

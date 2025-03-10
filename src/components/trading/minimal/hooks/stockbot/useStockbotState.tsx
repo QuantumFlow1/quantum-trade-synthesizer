@@ -1,61 +1,96 @@
 
-import { useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { ChatMessage } from './types';
-import { loadStockbotChatHistory, saveStockbotChatHistory } from './storage';
+import { useState, useCallback } from 'react';
+import { StockbotMessage } from './types';
+import { useStockbotApi } from './useStockbotApi';
+import { useStockbotSettings } from './useStockbotSettings';
+import { loadMessages, saveMessages } from './storage';
 
+/**
+ * Hook to manage Stockbot state
+ */
 export const useStockbotState = () => {
-  // Load chat history from localStorage on initial render
-  const [messages, setMessages] = useState<ChatMessage[]>(loadStockbotChatHistory() || []);
+  // Load saved messages from localStorage
+  const [messages, setMessages] = useState<StockbotMessage[]>(loadMessages() as StockbotMessage[]);
   const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { isLoading, sendMessage } = useStockbotApi();
+  const { isSimulationMode } = useStockbotSettings();
 
-  // Save messages to localStorage whenever they change
-  useEffect(() => {
-    saveStockbotChatHistory(messages);
-  }, [messages]);
+  /**
+   * Send a message and get a response
+   */
+  const handleSendMessage = useCallback(async () => {
+    if (!inputMessage.trim()) return;
 
-  const addUserMessage = (content: string) => {
-    const userMessage: ChatMessage = {
-      id: uuidv4(),
-      sender: 'user',
+    // Create a new user message
+    const userMessage: StockbotMessage = {
+      id: crypto.randomUUID(),
       role: 'user',
-      text: content,
-      content: content,
-      timestamp: new Date()
+      content: inputMessage,
+      timestamp: Date.now()
     };
-    
-    setMessages(prev => [...prev, userMessage]);
-    return userMessage;
-  };
 
-  const addAssistantMessage = (content: string) => {
-    const assistantMessage: ChatMessage = {
-      id: uuidv4(),
-      sender: 'assistant',
-      role: 'assistant',
-      text: content,
-      content: content,
-      timestamp: new Date()
-    };
+    // Add the user message to the list
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     
-    setMessages(prev => [...prev, assistantMessage]);
-    return assistantMessage;
-  };
+    // Save to localStorage
+    saveMessages(updatedMessages);
+    
+    // Clear the input
+    setInputMessage('');
 
-  const clearChat = () => {
+    try {
+      // Get response from API or simulation
+      const response = await sendMessage(inputMessage, isSimulationMode);
+      
+      // Create a response message
+      const responseMessage: StockbotMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: response,
+        timestamp: Date.now()
+      };
+
+      // Add the response to the list
+      const finalMessages = [...updatedMessages, responseMessage];
+      setMessages(finalMessages);
+      
+      // Save to localStorage
+      saveMessages(finalMessages);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Add error message
+      const errorMessage: StockbotMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Error: ${error instanceof Error ? error.message : 'Failed to send message'}`,
+        timestamp: Date.now()
+      };
+      
+      const finalMessages = [...updatedMessages, errorMessage];
+      setMessages(finalMessages);
+      saveMessages(finalMessages);
+    }
+  }, [inputMessage, messages, sendMessage, isSimulationMode]);
+
+  /**
+   * Clear the message history
+   */
+  const clearChat = useCallback(() => {
     setMessages([]);
-  };
+    saveMessages([]);
+  }, []);
 
   return {
     messages,
-    setMessages,
     inputMessage,
     setInputMessage,
     isLoading,
-    setIsLoading,
-    addUserMessage,
-    addAssistantMessage,
+    handleSendMessage,
     clearChat
   };
 };
+
+// For backward compatibility
+export const useStockbotChatState = useStockbotState;

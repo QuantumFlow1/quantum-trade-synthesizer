@@ -1,107 +1,84 @@
 
-import React from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, Info, Loader2 } from "lucide-react";
+import React from 'react';
+import { AlertTriangle, Info, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface StockbotAlertsProps {
   hasApiKey: boolean;
   isSimulationMode: boolean;
   isCheckingAdminKey?: boolean;
   showApiKeyDialog: () => void;
-  setIsSimulationMode: (value: boolean) => void;
-  handleForceReload: () => void;
+  setIsSimulationMode: (mode: boolean) => void;
+  handleForceReload: () => Promise<void>;
 }
 
-export const StockbotAlerts = ({
+export const StockbotAlerts: React.FC<StockbotAlertsProps> = ({
   hasApiKey,
   isSimulationMode,
-  isCheckingAdminKey = false,
-  showApiKeyDialog,
+  isCheckingAdminKey,
   setIsSimulationMode,
-  handleForceReload,
-}: StockbotAlertsProps) => {
-  return (
-    <>
-      {isCheckingAdminKey && (
-        <Alert variant="default" className="bg-blue-50 border-blue-200 text-blue-700 m-3">
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          <AlertTitle>Checking API Keys...</AlertTitle>
-          <AlertDescription>
-            <p>Verifying if admin API keys are available...</p>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!hasApiKey && !isSimulationMode && !isCheckingAdminKey && (
-        <Alert variant="warning" className="m-3">
-          <AlertTitle>API Key Required</AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            <p>Please set your Groq API key to enable full Stockbot functionality.</p>
-            <div className="flex flex-wrap gap-2 mt-1">
-              <button 
-                onClick={showApiKeyDialog}
-                className="text-amber-800 underline font-medium self-start"
-              >
-                Configure API Key
-              </button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleForceReload}
-                className="flex items-center gap-1"
-              >
-                <RefreshCw className="h-3 w-3" />
-                Refresh Status
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {hasApiKey && !isSimulationMode && (
-        <Alert variant="default" className="bg-green-50 border-green-200 text-green-700 m-3">
-          <AlertTitle>API Key Available</AlertTitle>
-          <AlertDescription className="flex flex-col gap-1">
-            {localStorage.getItem("groqApiKey") ? (
-              <p>Your personal Groq API key is configured and ready to use with Stockbot.</p>
-            ) : (
-              <div className="flex items-center">
-                <Info className="h-4 w-4 mr-1" />
-                <p>Using admin-provided Groq API key for Stockbot functionality.</p>
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {isSimulationMode && (
-        <Alert variant="warning" className="m-3">
-          <AlertTitle>Simulation Mode Active</AlertTitle>
-          <AlertDescription>
-            <p>Stockbot is using simulated responses instead of real AI analysis.</p>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {hasApiKey && (
-                <button 
-                  onClick={() => setIsSimulationMode(false)}
-                  className="text-amber-800 underline font-medium"
-                >
-                  Switch to real AI mode
-                </button>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleForceReload}
-                className="flex items-center gap-1"
-              >
-                <RefreshCw className="h-3 w-3" />
-                Refresh API Status
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-    </>
-  );
+  handleForceReload
+}) => {
+  if (isCheckingAdminKey) {
+    return (
+      <div className="p-3 bg-blue-50 border-b border-blue-200 text-sm text-blue-700 flex items-center">
+        <RefreshCw size={14} className="animate-spin mr-2" />
+        <span>Verbinding met Groq API Wordt Gecontroleerd...</span>
+      </div>
+    );
+  }
+  
+  // If has API key but in simulation mode, show option to switch to AI mode
+  if (hasApiKey && isSimulationMode) {
+    return (
+      <div className="p-3 bg-blue-50 border-b border-blue-200 text-sm text-blue-700 flex justify-between items-center">
+        <div className="flex items-center">
+          <Info size={14} className="mr-2" />
+          <span>API Sleutel is beschikbaar, maar simulatiemodus is actief</span>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-xs bg-white"
+          onClick={() => setIsSimulationMode(false)}
+        >
+          Schakel naar AI-modus
+        </Button>
+      </div>
+    );
+  }
+  
+  // If no API key, show fallback to simulation mode
+  if (!hasApiKey && !isSimulationMode) {
+    return (
+      <div className="p-3 bg-amber-50 border-b border-amber-200 text-sm text-amber-700 flex justify-between items-center">
+        <div className="flex items-center">
+          <AlertTriangle size={14} className="mr-2" />
+          <span>Geen API sleutel beschikbaar, schakel over naar simulatiemodus</span>
+        </div>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs bg-white"
+            onClick={handleForceReload}
+          >
+            <RefreshCw size={12} className="mr-1" />
+            Hercontroleer
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs bg-white"
+            onClick={() => setIsSimulationMode(true)}
+          >
+            Simulatiemodus
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
+  // If no alerts needed, return null to hide the component
+  return null;
 };
