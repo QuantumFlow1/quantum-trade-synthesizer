@@ -1,8 +1,4 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-// Get the Groq API key from environment variables
-const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,7 +6,6 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 };
 
-// Define trading tools for the model to use
 const tradingTools = [
   {
     type: "function",
@@ -75,13 +70,11 @@ const tradingTools = [
 ];
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Parse request data
     const requestData = await req.json();
     const { 
       messages, 
@@ -92,54 +85,40 @@ serve(async (req) => {
       function_calling = "auto" 
     } = requestData;
     
-    console.log(`Received Groq chat request for model: ${model}`);
+    console.log(`Processing Groq chat request for model: ${model}`);
     
-    // Check for client-provided API key in the header
     const clientApiKey = req.headers.get('x-groq-api-key');
-    
-    // Use client API key if provided, otherwise use the server's API key
-    const apiKey = clientApiKey || GROQ_API_KEY;
+    const apiKey = clientApiKey || Deno.env.get('GROQ_API_KEY');
     
     if (!apiKey) {
       console.error('No Groq API key available');
-      return new Response(
-        JSON.stringify({ 
-          error: 'API key not configured. Please provide a Groq API key.',
-          status: 'error' 
-        }),
-        { 
-          status: 401, 
-          headers: corsHeaders 
-        }
-      );
+      throw new Error('API key not configured');
     }
+
+    const keyLength = apiKey.length;
+    console.log(`Using Groq API key (length: ${keyLength})`);
     
-    // Prepare the request body
     const requestBody: any = {
       messages,
       model,
       temperature,
       max_tokens
     };
-    
-    // Add JSON response format if requested
+
     if (response_format === 'json') {
       requestBody.response_format = { type: "json_object" };
     }
     
-    // Add tools/functions if function calling is enabled
     if (function_calling !== "none") {
       requestBody.tools = tradingTools;
       
-      // If specific mode is requested, add it
       if (function_calling === "auto" || function_calling === "required") {
         requestBody.tool_choice = function_calling;
       }
     }
     
-    console.log("Sending request to Groq API with body:", JSON.stringify(requestBody).substring(0, 200) + "...");
+    console.log("Sending request to Groq API...");
     
-    // Make the API call to Groq
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -149,34 +128,34 @@ serve(async (req) => {
       body: JSON.stringify(requestBody)
     });
     
-    // Handle non-OK responses
     if (!response.ok) {
       let errorData;
       try {
         errorData = await response.json();
       } catch (e) {
-        errorData = { message: `HTTP error: ${response.status} ${response.statusText}` };
+        errorData = { message: response.statusText };
       }
       
-      console.error('Groq API error:', errorData);
+      console.error('Groq API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      });
       
-      return new Response(
-        JSON.stringify({ 
-          error: errorData.error?.message || `Groq API error: ${response.status}`,
-          status: 'error'
-        }),
-        { 
-          status: response.status, 
-          headers: corsHeaders 
-        }
-      );
+      if (response.status === 401) {
+        throw new Error('Invalid API key or authentication error');
+      } else if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later');
+      } else if (response.status >= 500) {
+        throw new Error('Groq API service error. Please try again later');
+      }
+      
+      throw new Error(errorData?.error?.message || `API error: ${response.status}`);
     }
     
-    // Process successful response
     const data = await response.json();
-    console.log('Groq API response received successfully');
+    console.log('Successfully received Groq API response');
     
-    // Check for tool calls in the response
     const hasToolCalls = data.choices[0]?.message?.tool_calls?.length > 0;
     
     return new Response(
@@ -194,11 +173,14 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in groq-chat function:', error);
     
+    const errorResponse = {
+      error: error.message || 'Unknown error occurred',
+      status: 'error',
+      details: error.stack
+    };
+    
     return new Response(
-      JSON.stringify({ 
-        error: `Server error: ${error.message}`,
-        status: 'error'
-      }),
+      JSON.stringify(errorResponse),
       { 
         status: 500, 
         headers: corsHeaders 
