@@ -88,14 +88,6 @@ const AdminPanel = () => {
     navigate('/dashboard');
   };
 
-  // Directly show API Key Management on initial render if not showing anything else
-  useEffect(() => {
-    if (!showUserDashboard && !showAccountManagement && !showApiKeyManagement) {
-      // Default to API Key Management on first load
-      setShowApiKeyManagement(true);
-    }
-  }, [showUserDashboard, showAccountManagement, showApiKeyManagement]);
-
   if (showUserDashboard) {
     return (
       <div>

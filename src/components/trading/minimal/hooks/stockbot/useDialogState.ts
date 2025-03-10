@@ -1,24 +1,19 @@
 
-import { useState } from 'react';
+import { useState, useCallback } from "react";
 
 /**
- * Hook for managing API key dialog state
+ * Hook for managing dialog state
  */
 export const useDialogState = () => {
   const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
-
-  const showApiKeyDialog = () => {
+  
+  const showApiKeyDialog = useCallback(() => {
     setIsKeyDialogOpen(true);
-  };
-
-  const handleDialogClose = () => {
-    setIsKeyDialogOpen(false);
-  };
-
+  }, []);
+  
   return {
     isKeyDialogOpen,
     setIsKeyDialogOpen,
-    showApiKeyDialog,
-    handleDialogClose
+    showApiKeyDialog
   };
 };

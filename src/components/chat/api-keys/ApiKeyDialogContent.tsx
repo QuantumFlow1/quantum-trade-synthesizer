@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs } from '@/components/ui/tabs';
+import { TabsContent } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Key } from 'lucide-react';
-import { saveApiKey, broadcastApiKeyChange } from '@/utils/apiKeyManager';
+import { saveApiKey } from '@/utils/apiKeyManager';
+import { DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/lib/supabase';
 import { ApiKeySettings } from '../types/GrokSettings';
-import { toast } from '@/hooks/use-toast';
-import { ApiKeyTabsList } from './ApiKeyTabsList';
-import { ApiKeyTabContent } from './ApiKeyTabContent';
-import { ApiKeySaveButton } from './ApiKeySaveButton';
 
 type TabType = 'openai' | 'claude' | 'gemini' | 'deepseek' | 'groq';
 
@@ -47,13 +48,6 @@ export const ApiKeyDialogContent = ({
     }
   }, [apiKeys]);
 
-  // Set active tab from initialTab prop
-  useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
-
   const loadKeysFromStorage = () => {
     try {
       const savedOpenAI = localStorage.getItem('openaiApiKey') || '';
@@ -83,114 +77,47 @@ export const ApiKeyDialogContent = ({
   const handleSave = async () => {
     setIsSaving(true);
     let success = true;
-    let keysChanged = false;
     
     try {
       console.log('Saving API keys...');
       
-      // Keep track of previous keys to detect changes
-      const prevOpenAI = localStorage.getItem('openaiApiKey');
-      const prevClaude = localStorage.getItem('claudeApiKey');
-      const prevGemini = localStorage.getItem('geminiApiKey');
-      const prevDeepseek = localStorage.getItem('deepseekApiKey');
-      const prevGroq = localStorage.getItem('groqApiKey');
-      
       // If onSave prop is provided, use it first
       if (onSave) {
         onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
-        
-        // Also ensure Groq key is saved directly to localStorage
-        if (groqKey.trim()) {
-          localStorage.setItem('groqApiKey', groqKey.trim());
-          console.log(`Saved Groq API key directly to localStorage: ${groqKey.substring(0, 3)}...`);
-          
-          if (prevGroq !== groqKey.trim()) {
-            keysChanged = true;
-          }
-          
-          // Broadcast the change
-          broadcastApiKeyChange(true);
-        }
       } else {
-        // Otherwise use the default save behavior with direct localStorage access for more reliability
+        // Otherwise use the default save behavior
         // Save OpenAI API key
         if (openaiKey.trim()) {
-          localStorage.setItem('openaiApiKey', openaiKey.trim());
-          console.log('Saved OpenAI API key to localStorage');
-          if (prevOpenAI !== openaiKey.trim()) keysChanged = true;
-          
           if (!saveApiKey('openai', openaiKey)) {
-            console.warn('saveApiKey utility failed for OpenAI key, but direct localStorage save succeeded');
+            success = false;
           }
         }
         
         // Save Claude API key  
         if (claudeKey.trim()) {
-          localStorage.setItem('claudeApiKey', claudeKey.trim());
-          console.log('Saved Claude API key to localStorage');
-          if (prevClaude !== claudeKey.trim()) keysChanged = true;
-          
           if (!saveApiKey('claude', claudeKey)) {
-            console.warn('saveApiKey utility failed for Claude key, but direct localStorage save succeeded');
+            success = false;
           }
         }
         
         // Save Gemini API key
         if (geminiKey.trim()) {
-          localStorage.setItem('geminiApiKey', geminiKey.trim());
-          console.log('Saved Gemini API key to localStorage');
-          if (prevGemini !== geminiKey.trim()) keysChanged = true;
-          
           if (!saveApiKey('gemini', geminiKey)) {
-            console.warn('saveApiKey utility failed for Gemini key, but direct localStorage save succeeded');
+            success = false;
           }
         }
         
         // Save Deepseek API key
         if (deepseekKey.trim()) {
-          localStorage.setItem('deepseekApiKey', deepseekKey.trim());
-          console.log('Saved Deepseek API key to localStorage');
-          if (prevDeepseek !== deepseekKey.trim()) keysChanged = true;
-          
           if (!saveApiKey('deepseek', deepseekKey)) {
-            console.warn('saveApiKey utility failed for Deepseek key, but direct localStorage save succeeded');
+            success = false;
           }
         }
         
-        // Save Groq API key - with multiple layers of fallback
+        // Save Groq API key
         if (groqKey.trim()) {
-          console.log(`Saving Groq API key (${groqKey.length} chars): ${groqKey.substring(0, 3)}...${groqKey.substring(groqKey.length - 3)}`);
-          
-          // First try direct localStorage save
-          localStorage.setItem('groqApiKey', groqKey.trim());
-          console.log('Saved Groq API key directly to localStorage');
-          
-          if (prevGroq !== groqKey.trim()) {
-            keysChanged = true;
-          }
-          
-          // Then try the utility function as backup
           if (!saveApiKey('groq', groqKey)) {
-            console.warn('saveApiKey utility failed for Groq key, but direct localStorage save succeeded');
-          }
-          
-          // Double check that the key was actually saved
-          const savedGroqKey = localStorage.getItem('groqApiKey');
-          if (!savedGroqKey || savedGroqKey.trim() !== groqKey.trim()) {
-            console.error('Groq API key verification failed - key in localStorage does not match input');
-            
-            // Try one more time with a slight delay
-            setTimeout(() => {
-              try {
-                localStorage.setItem('groqApiKey', groqKey.trim());
-                console.log('Saved Groq API key in delayed fallback');
-                
-                // Broadcast the change again
-                broadcastApiKeyChange(true);
-              } catch (err) {
-                console.error('Failed in delayed fallback save:', err);
-              }
-            }, 100);
+            success = false;
           }
           
           // Also save to Supabase if available (for backend usage)
@@ -205,29 +132,7 @@ export const ApiKeyDialogContent = ({
         }
       }
       
-      // Broadcast key changes to the app
-      if (keysChanged) {
-        console.log('Broadcasting API key changes');
-        window.dispatchEvent(new Event('localStorage-changed'));
-        window.dispatchEvent(new Event('apikey-updated'));
-        broadcastApiKeyChange(true);
-      }
-      
       console.log('API keys saved successfully:', success);
-      
-      if (success) {
-        toast({
-          title: "API Keys Saved",
-          description: "Your API keys have been saved successfully.",
-          variant: "default"
-        });
-      } else {
-        toast({
-          title: "Warning",
-          description: "Some API keys may not have been saved correctly.",
-          variant: "warning"
-        });
-      }
       
       if (onClose) {
         onClose();
@@ -235,73 +140,112 @@ export const ApiKeyDialogContent = ({
     } catch (error) {
       console.error('Error saving API keys:', error);
       success = false;
-      
-      toast({
-        title: "Error",
-        description: "Failed to save API keys. Please try again.",
-        variant: "destructive"
-      });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value as TabType);
-  };
-
   return (
     <div className="space-y-4 py-2 pb-4">
-      <Tabs defaultValue={activeTab} onValueChange={handleTabChange}>
-        <ApiKeyTabsList activeTab={activeTab} onTabChange={handleTabChange} />
+      <Tabs defaultValue={activeTab} onValueChange={(value) => setActiveTab(value as TabType)}>
+        <TabsList className="grid grid-cols-5 mb-4">
+          <TabsTrigger value="openai">OpenAI</TabsTrigger>
+          <TabsTrigger value="claude">Claude</TabsTrigger>
+          <TabsTrigger value="gemini">Gemini</TabsTrigger>
+          <TabsTrigger value="deepseek">DeepSeek</TabsTrigger>
+          <TabsTrigger value="groq">Groq</TabsTrigger>
+        </TabsList>
         
-        <ApiKeyTabContent
-          tabId="openai"
-          label="OpenAI API Key"
-          placeholder="sk-..."
-          value={openaiKey}
-          onChange={setOpenaiKey}
-          description="Used for GPT-3.5 and GPT-4 models"
-        />
+        <TabsContent value="openai" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="openai-key">OpenAI API Key</Label>
+            <Input
+              id="openai-key"
+              type="password"
+              placeholder="sk-..."
+              value={openaiKey}
+              onChange={(e) => setOpenaiKey(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">Used for GPT-3.5 and GPT-4 models</p>
+          </div>
+        </TabsContent>
         
-        <ApiKeyTabContent
-          tabId="claude"
-          label="Anthropic API Key"
-          placeholder="sk-ant-..."
-          value={claudeKey}
-          onChange={setClaudeKey}
-          description="Used for Claude models"
-        />
+        <TabsContent value="claude" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="claude-key">Anthropic API Key</Label>
+            <Input
+              id="claude-key"
+              type="password"
+              placeholder="sk-ant-..."
+              value={claudeKey}
+              onChange={(e) => setClaudeKey(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">Used for Claude models</p>
+          </div>
+        </TabsContent>
         
-        <ApiKeyTabContent
-          tabId="gemini"
-          label="Google Gemini API Key"
-          placeholder="AIza..."
-          value={geminiKey}
-          onChange={setGeminiKey}
-          description="Used for Google Gemini models"
-        />
+        <TabsContent value="gemini" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="gemini-key">Google Gemini API Key</Label>
+            <Input
+              id="gemini-key"
+              type="password"
+              placeholder="AIza..."
+              value={geminiKey}
+              onChange={(e) => setGeminiKey(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">Used for Google Gemini models</p>
+          </div>
+        </TabsContent>
         
-        <ApiKeyTabContent
-          tabId="deepseek"
-          label="DeepSeek API Key"
-          placeholder="sk-..."
-          value={deepseekKey}
-          onChange={setDeepseekKey}
-          description="Used for DeepSeek models"
-        />
+        <TabsContent value="deepseek" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="deepseek-key">DeepSeek API Key</Label>
+            <Input
+              id="deepseek-key"
+              type="password"
+              placeholder="sk-..."
+              value={deepseekKey}
+              onChange={(e) => setDeepseekKey(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">Used for DeepSeek models</p>
+          </div>
+        </TabsContent>
         
-        <ApiKeyTabContent
-          tabId="groq"
-          label="Groq API Key"
-          placeholder="gsk_..."
-          value={groqKey}
-          onChange={setGroqKey}
-          description="Used for Groq models including LLama-3, Mixtral"
-        />
+        <TabsContent value="groq" className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="groq-key">Groq API Key</Label>
+            <Input
+              id="groq-key"
+              type="password"
+              placeholder="gsk_..."
+              value={groqKey}
+              onChange={(e) => setGroqKey(e.target.value)}
+            />
+            <p className="text-xs text-gray-500">Used for Groq models including LLama-3, Mixtral</p>
+          </div>
+        </TabsContent>
       </Tabs>
       
-      <ApiKeySaveButton isSaving={isSaving} onSave={handleSave} />
+      <DialogFooter>
+        <Button 
+          type="submit" 
+          onClick={handleSave} 
+          disabled={isSaving}
+          className="w-full mt-4"
+        >
+          {isSaving ? (
+            <>
+              <span className="mr-2">Saving...</span>
+            </>
+          ) : (
+            <>
+              <Key className="mr-2 h-4 w-4" />
+              Save API Key
+            </>
+          )}
+        </Button>
+      </DialogFooter>
     </div>
   );
 };

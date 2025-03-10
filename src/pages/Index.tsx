@@ -11,7 +11,7 @@ import { ZoomControls } from "@/components/ZoomControls";
 import { LoadingProfile } from "@/components/LoadingProfile";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Users, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -22,7 +22,6 @@ const Index = () => {
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [connectionStatus, setConnectionStatus] = React.useState<'checking' | 'connected' | 'error'>('checking');
   const [dashboardPage, setDashboardPage] = React.useState("overview");
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -54,18 +53,6 @@ const Index = () => {
       delete (window as any).__dashboardNavigationHandler;
     };
   }, []);
-
-  // Redirect to appropriate dashboard based on user role
-  React.useEffect(() => {
-    if (user && userProfile) {
-      // Small delay to ensure stable transition
-      const timer = setTimeout(() => {
-        console.log("Redirecting to dashboard based on user role:", userProfile.role);
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [user, userProfile, navigate]);
 
   // Show loading screen while fetching profile
   if (user && !userProfile) {
@@ -131,12 +118,13 @@ const Index = () => {
                 )}
               </div>
               
-              {isAdmin ? (
+              {isSuperAdmin ? (
+                <AdminPanel key="admin-panel" />
+              ) : userProfile?.role === "admin" ? (
                 <AdminPanel key="admin-panel" />
               ) : (
                 <UserDashboard key="user-dashboard" />
               )}
-              
               {!isMobile && <ZoomControls
                 scale={scale}
                 onZoomIn={handleZoomIn}
