@@ -74,6 +74,20 @@ export const StockbotKeyDialog = ({
         return;
       }
       
+      // Force saving to localStorage again to ensure it's there
+      const forceSaveResult = saveApiKey('groq', groqKey);
+      
+      if (!forceSaveResult) {
+        console.error("Force save of API key failed");
+        toast({
+          title: "Error Saving API Key",
+          description: "The API key could not be saved. Please try again.",
+          variant: "destructive"
+        });
+        setIsSaving(false);
+        return;
+      }
+      
       toast({
         title: "API Key Saved",
         description: "The API key was successfully saved to storage.",

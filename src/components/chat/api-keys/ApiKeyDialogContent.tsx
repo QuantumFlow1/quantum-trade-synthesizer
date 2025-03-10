@@ -1,14 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Key } from 'lucide-react';
-import { saveApiKey } from '@/utils/apiKeyManager';
+import { saveApiKey, broadcastApiKeyChange } from '@/utils/apiKeyManager';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/lib/supabase';
 import { ApiKeySettings } from '../types/GrokSettings';
+import { toast } from '@/hooks/use-toast';
 
 type TabType = 'openai' | 'claude' | 'gemini' | 'deepseek' | 'groq';
 
@@ -91,6 +93,15 @@ export const ApiKeyDialogContent = ({
       // If onSave prop is provided, use it first
       if (onSave) {
         onSave(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
+        
+        // Also ensure Groq key is saved directly to localStorage
+        if (groqKey.trim()) {
+          localStorage.setItem('groqApiKey', groqKey.trim());
+          console.log(`Saved Groq API key directly to localStorage: ${groqKey.substring(0, 3)}...`);
+          
+          // Broadcast the change
+          broadcastApiKeyChange(true);
+        }
       } else {
         // Otherwise use the default save behavior
         // Save OpenAI API key
@@ -121,23 +132,49 @@ export const ApiKeyDialogContent = ({
           }
         }
         
-        // Save Groq API key
+        // Save Groq API key - with multiple layers of fallback
         if (groqKey.trim()) {
           console.log(`Saving Groq API key (${groqKey.length} chars): ${groqKey.substring(0, 3)}...${groqKey.substring(groqKey.length - 3)}`);
           
-          if (!saveApiKey('groq', groqKey)) {
+          // Try the utility function first
+          let groqSaveSuccess = saveApiKey('groq', groqKey);
+          
+          if (!groqSaveSuccess) {
             console.error('Failed to save Groq API key with saveApiKey utility');
             
             // Fallback: try direct localStorage save
             try {
               localStorage.setItem('groqApiKey', groqKey.trim());
               console.log('Saved Groq API key directly to localStorage');
+              groqSaveSuccess = true;
+              
+              // Manually broadcast the change
+              broadcastApiKeyChange(true);
             } catch (err) {
               console.error('Failed to save Groq API key directly to localStorage:', err);
               success = false;
             }
           } else {
             console.log('Successfully saved Groq API key with saveApiKey utility');
+          }
+          
+          // Double check that the key was actually saved
+          const savedGroqKey = localStorage.getItem('groqApiKey');
+          if (!savedGroqKey || savedGroqKey.trim() !== groqKey.trim()) {
+            console.error('Groq API key verification failed - key in localStorage does not match input');
+            
+            // Try one more time with a slight delay
+            setTimeout(() => {
+              try {
+                localStorage.setItem('groqApiKey', groqKey.trim());
+                console.log('Saved Groq API key in delayed fallback');
+                
+                // Broadcast the change again
+                broadcastApiKeyChange(true);
+              } catch (err) {
+                console.error('Failed in delayed fallback save:', err);
+              }
+            }, 100);
           }
           
           // Also save to Supabase if available (for backend usage)
@@ -154,12 +191,32 @@ export const ApiKeyDialogContent = ({
       
       console.log('API keys saved successfully:', success);
       
+      if (success) {
+        toast({
+          title: "API Keys Saved",
+          description: "Your API keys have been saved successfully.",
+          variant: "default"
+        });
+      } else {
+        toast({
+          title: "Warning",
+          description: "Some API keys may not have been saved correctly.",
+          variant: "warning"
+        });
+      }
+      
       if (onClose) {
         onClose();
       }
     } catch (error) {
       console.error('Error saving API keys:', error);
       success = false;
+      
+      toast({
+        title: "Error",
+        description: "Failed to save API keys. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSaving(false);
     }

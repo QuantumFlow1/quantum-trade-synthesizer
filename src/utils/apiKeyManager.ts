@@ -42,6 +42,23 @@ export const saveApiKey = (provider: string, apiKey: string): boolean => {
     if (!savedKey || savedKey !== trimmedKey) {
       console.error(`Failed to save ${provider} API key to localStorage: ` + 
                    `Expected '${trimmedKey.substring(0, 3)}...' but got '${savedKey?.substring(0, 3) || "null"}...'`);
+      
+      // Try again with a different approach
+      try {
+        console.log(`Trying alternative method to save ${provider} API key`);
+        window.localStorage.setItem(`${provider}ApiKey`, trimmedKey);
+        
+        // Check again
+        const retryKey = localStorage.getItem(`${provider}ApiKey`);
+        if (retryKey && retryKey === trimmedKey) {
+          console.log(`Successfully saved ${provider} API key using alternative method`);
+          broadcastApiKeyChange(true);
+          return true;
+        }
+      } catch (retryErr) {
+        console.error(`Failed alternative save method for ${provider} API key:`, retryErr);
+      }
+      
       return false;
     }
     
@@ -52,7 +69,16 @@ export const saveApiKey = (provider: string, apiKey: string): boolean => {
     return true;
   } catch (error) {
     console.error(`Error saving ${provider} API key:`, error);
-    return false;
+    
+    // Last resort: direct localStorage access
+    try {
+      console.log(`Last resort: direct localStorage access for ${provider} API key`);
+      localStorage.setItem(`${provider}ApiKey`, apiKey.trim());
+      return true;
+    } catch (finalErr) {
+      console.error(`Final attempt to save ${provider} API key failed:`, finalErr);
+      return false;
+    }
   }
 };
 
@@ -88,7 +114,15 @@ export const hasApiKey = (provider: string): boolean => {
     return hasKey;
   } catch (error) {
     console.error(`Error checking for ${provider} API key:`, error);
-    return false;
+    
+    // Direct localStorage check as fallback
+    try {
+      const directKey = localStorage.getItem(`${provider}ApiKey`);
+      return !!directKey && directKey.trim().length > 0;
+    } catch (fallbackErr) {
+      console.error(`Fallback check for ${provider} API key failed:`, fallbackErr);
+      return false;
+    }
   }
 };
 
@@ -123,6 +157,18 @@ export const broadcastApiKeyChange = (exists: boolean): void => {
     const dummyKey = `_dummy_key_${Date.now()}`;
     localStorage.setItem(dummyKey, Date.now().toString());
     localStorage.removeItem(dummyKey);
+    
+    // Dispatch synthetic events to ensure maximum compatibility
+    try {
+      const storageEvent = new StorageEvent('storage', {
+        key: 'groqApiKey',
+        newValue: exists ? 'changed' : null,
+        storageArea: localStorage
+      });
+      window.dispatchEvent(storageEvent);
+    } catch (err) {
+      console.error("Failed to dispatch synthetic storage event:", err);
+    }
   } catch (error) {
     console.error('Error broadcasting API key change:', error);
   }
