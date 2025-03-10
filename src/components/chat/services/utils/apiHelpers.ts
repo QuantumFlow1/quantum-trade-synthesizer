@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 
 /**
@@ -30,7 +31,7 @@ export async function fetchAdminApiKey(provider: 'openai' | 'deepseek' | 'claude
       return data.key;
     }
     
-    console.log(`No admin API key found for ${provider}`);
+    console.log(`No admin key found for ${provider}`);
     return null;
   } catch (error) {
     console.error(`Error in fetchAdminApiKey for ${provider}:`, error);

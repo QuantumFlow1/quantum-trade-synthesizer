@@ -1,8 +1,10 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { useStockbotSettings } from './useStockbotSettings';
 import { hasApiKey, getApiKey, broadcastApiKeyChange } from '@/utils/apiKeyManager';
 import { checkApiKeysAvailability } from '@/hooks/trading-chart/api-key-manager';
+import { fetchAdminApiKey } from '@/components/chat/services/utils/apiHelpers';
 
 /**
  * Hook to monitor API key status and provide key verification functionality
@@ -27,10 +29,11 @@ export const useApiKeyMonitor = (
   // Function to check for a valid Groq API key
   const checkGroqApiKey = useCallback(async (): Promise<boolean> => {
     try {
+      // First check for a local key in localStorage
       const keyExists = hasApiKey('groq');
       const groqKeyValue = getApiKey('groq');
       
-      console.log('Checking Groq API key:', { 
+      console.log('Checking local Groq API key:', { 
         exists: keyExists, 
         keyLength: groqKeyValue ? groqKeyValue.length : 0 
       });
@@ -41,26 +44,44 @@ export const useApiKeyMonitor = (
         await new Promise(resolve => setTimeout(resolve, 300));
         
         setHasGroqKey(true);
-        console.log('Valid Groq API key found');
+        console.log('Valid local Groq API key found');
         return true;
       }
       
-      // If no personal key, check for admin-managed key
+      // If no personal key, check for admin-managed key directly from the API
+      setIsCheckingAdminKey(true);
+      
+      // First try the apiKeysAvailability function
       const { available } = await checkApiKeysAvailability('groq');
       setIsAdminKeyAvailable(available);
       
-      if (available) {
+      // If not available through the first method, try the direct edge function call
+      if (!available) {
+        const adminKey = await fetchAdminApiKey('groq');
+        console.log('Direct admin Groq API key check:', !!adminKey);
+        
+        if (adminKey) {
+          setIsAdminKeyAvailable(true);
+          setHasGroqKey(true);
+          setIsCheckingAdminKey(false);
+          console.log('Admin-managed Groq API key is available via direct check');
+          return true;
+        }
+      } else {
         setHasGroqKey(true);
+        setIsCheckingAdminKey(false);
         console.log('Admin-managed Groq API key is available');
         return true;
       }
       
       setHasGroqKey(false);
-      console.log('No valid Groq API key found');
+      setIsCheckingAdminKey(false);
+      console.log('No valid Groq API key found (local or admin)');
       return false;
     } catch (error) {
       console.error('Error checking Groq API key:', error);
       setHasGroqKey(false);
+      setIsCheckingAdminKey(false);
       return false;
     }
   }, []);
@@ -100,8 +121,9 @@ export const useApiKeyMonitor = (
       if (!hasGroqKey && !isAdminKeyAvailable && !isSimulationMode) {
         console.log('No API key available, enabling simulation mode automatically');
         setIsSimulationMode(true);
-      } else if (hasGroqKey && isSimulationMode && !isCheckingAdminKey) {
-        console.log('API key available, keeping simulation mode as is (user choice)');
+      } else if ((hasGroqKey || isAdminKeyAvailable) && isSimulationMode && !isCheckingAdminKey) {
+        console.log('API key available, disabling simulation mode automatically');
+        setIsSimulationMode(false);
       }
     }
   }, [hasGroqKey, isAdminKeyAvailable, isSimulationMode, setIsSimulationMode, isCheckingAdminKey]);

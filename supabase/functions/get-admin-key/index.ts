@@ -7,6 +7,7 @@ const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
 const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
 const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,13 +42,18 @@ serve(async (req) => {
       case 'groq':
         key = GROQ_API_KEY;
         break;
+      case 'gemini':
+        key = GEMINI_API_KEY;
+        break;
       default:
         console.log(`Unknown provider: ${provider}`);
     }
     
     // Only return the key if it exists
     if (key) {
-      console.log(`Admin key for ${provider} found`);
+      // Log partial key for debugging (securely)
+      const maskedKey = key.substring(0, 4) + '...' + key.substring(key.length - 4);
+      console.log(`Admin key for ${provider} found: ${maskedKey}`);
       return new Response(
         JSON.stringify({ key }),
         { headers: corsHeaders }

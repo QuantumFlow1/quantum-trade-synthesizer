@@ -1,5 +1,13 @@
 
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+// Get environment variables for the API keys
+const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
+const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
+const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,60 +22,48 @@ serve(async (req) => {
   }
 
   try {
-    // Get request details
-    let body = {};
-    try {
-      body = await req.json();
-    } catch (e) {
-      console.log('No request body or malformed JSON');
-    }
+    // Parse the request body
+    const { service, checkSecret } = await req.json();
     
-    const { service = 'any', checkSecret = false } = body;
+    console.log(`Checking API keys. Service: ${service}, checkSecret: ${checkSecret}`);
     
-    console.log(`Checking API keys for service: ${service}`);
-    
-    // Get all the API keys from environment variables
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    const CLAUDE_API_KEY = Deno.env.get('CLAUDE_API_KEY');
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY');
-    const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY');
-    
-    // Check if specific keys are set
-    const hasOpenAI = !!OPENAI_API_KEY && OPENAI_API_KEY.length > 10;
-    const hasClaude = !!CLAUDE_API_KEY && CLAUDE_API_KEY.length > 10;
-    const hasGemini = !!GEMINI_API_KEY && GEMINI_API_KEY.length > 10;
-    const hasDeepseek = !!DEEPSEEK_API_KEY && DEEPSEEK_API_KEY.length > 10;
-    const hasGroq = !!GROQ_API_KEY && GROQ_API_KEY.length > 10;
-    
-    // Create a collection of all keys
+    // Check all keys
     const allKeys = {
-      openai: hasOpenAI,
-      claude: hasClaude,
-      gemini: hasGemini,
-      deepseek: hasDeepseek,
-      groq: hasGroq
+      openai: !!OPENAI_API_KEY && OPENAI_API_KEY.length > 10,
+      claude: !!CLAUDE_API_KEY && CLAUDE_API_KEY.length > 10,
+      deepseek: !!DEEPSEEK_API_KEY && DEEPSEEK_API_KEY.length > 10,
+      groq: !!GROQ_API_KEY && GROQ_API_KEY.length > 10,
+      gemini: !!GEMINI_API_KEY && GEMINI_API_KEY.length > 10
     };
     
+    console.log('API Keys availability:', {
+      openai: allKeys.openai,
+      claude: allKeys.claude,
+      deepseek: allKeys.deepseek,
+      groq: allKeys.groq,
+      gemini: allKeys.gemini
+    });
+    
     // If checking a specific service
-    if (service !== 'any') {
-      let available = false;
+    if (service && service !== 'any') {
+      let secretSet = false;
       
+      // Check if the specific service has a key
       switch(service.toLowerCase()) {
         case 'openai':
-          available = hasOpenAI;
+          secretSet = allKeys.openai;
           break;
         case 'claude':
-          available = hasClaude;
-          break;
-        case 'gemini':
-          available = hasGemini;
+          secretSet = allKeys.claude;
           break;
         case 'deepseek':
-          available = hasDeepseek;
+          secretSet = allKeys.deepseek;
           break;
         case 'groq':
-          available = hasGroq;
+          secretSet = allKeys.groq;
+          break;
+        case 'gemini':
+          secretSet = allKeys.gemini;
           break;
         default:
           console.log(`Unknown service: ${service}`);
@@ -75,28 +71,30 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify({
-          status: 'success',
+          status: secretSet ? 'available' : 'unavailable',
+          secretSet,
           service,
-          available,
-          allKeys
+          allKeys,
+          available: secretSet
         }),
         { headers: corsHeaders }
       );
     }
     
-    // If checking all services
-    const anyAvailable = hasOpenAI || hasClaude || hasGemini || hasDeepseek || hasGroq;
+    // Check if any key is available
+    const anyKeyAvailable = Object.values(allKeys).some(value => value);
     
     return new Response(
       JSON.stringify({
-        status: 'success',
-        available: anyAvailable,
-        allKeys
+        status: anyKeyAvailable ? 'available' : 'unavailable',
+        allKeys,
+        available: anyKeyAvailable,
+        message: anyKeyAvailable ? 'API keys are available' : 'No API keys are available'
       }),
       { headers: corsHeaders }
     );
   } catch (error) {
-    console.error(`Error checking API keys:`, error);
+    console.error(`Error in check-api-keys function:`, error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: corsHeaders }
