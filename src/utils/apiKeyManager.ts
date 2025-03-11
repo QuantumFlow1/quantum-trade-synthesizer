@@ -114,4 +114,4 @@ export const getAvailableProviders = (): {provider: ApiKeyType, hasKey: boolean}
 };
 
 // For backward compatibility
-export const broadcastApiKeyChange as broadcastApiKeychange;
+export { broadcastApiKeyChange as broadcastApiKeychange };
