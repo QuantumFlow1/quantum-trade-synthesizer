@@ -1,106 +1,117 @@
 
-// Function to save API key to local storage
-export const saveApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek', key: string): boolean => {
-  try {
-    if (!key || key.trim().length < 10) {
-      console.error(`Invalid ${type} API key`);
-      return false;
-    }
-    
-    const storageKey = `${type}ApiKey`;
-    localStorage.setItem(storageKey, key.trim());
-    
-    // Dispatch event for listeners
-    window.dispatchEvent(new CustomEvent('api-key-updated', { detail: { type, action: 'save' } }));
-    
-    // Broadcast change via custom method
-    broadcastApiKeyChange(type, 'save');
-    
-    return true;
-  } catch (error) {
-    console.error(`Error saving ${type} API key:`, error);
-    return false;
-  }
+// Define supported API key types
+type ApiKeyType = "openai" | "groq" | "claude" | "anthropic" | "gemini" | "deepseek";
+
+/**
+ * Get API key from localStorage
+ */
+export const getApiKey = (keyType: ApiKeyType): string | null => {
+  const key = localStorage.getItem(`${keyType}ApiKey`);
+  return key || null;
 };
 
-// Function to get API key from local storage
-export const getApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): string | null => {
-  try {
-    const storageKey = `${type}ApiKey`;
-    return localStorage.getItem(storageKey);
-  } catch (error) {
-    console.error(`Error getting ${type} API key:`, error);
-    return null;
-  }
-};
-
-// Function to check if API key exists
-export const hasApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): boolean => {
-  const key = getApiKey(type);
+/**
+ * Check if API key exists and is valid
+ */
+export const hasApiKey = (keyType: ApiKeyType): boolean => {
+  const key = getApiKey(keyType);
   return !!key && key.length > 10;
 };
 
-// Function to remove API key
-export const removeApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): boolean => {
+/**
+ * Save API key to localStorage
+ */
+export const saveApiKey = (keyType: ApiKeyType, apiKey: string): boolean => {
   try {
-    const storageKey = `${type}ApiKey`;
-    localStorage.removeItem(storageKey);
+    if (!apiKey || apiKey.trim() === '') {
+      localStorage.removeItem(`${keyType}ApiKey`);
+      broadcastApiKeyChange(keyType, false);
+      
+      // Dispatch a custom event for other components to react to
+      const event = new CustomEvent('apikey-updated', { 
+        detail: { keyType, removed: true } 
+      });
+      window.dispatchEvent(event);
+      
+      return true;
+    }
     
-    // Dispatch event for listeners
-    window.dispatchEvent(new CustomEvent('api-key-updated', { detail: { type, action: 'remove' } }));
+    localStorage.setItem(`${keyType}ApiKey`, apiKey);
     
-    // Broadcast change via custom method
-    broadcastApiKeyChange(type, 'remove');
+    // Dispatch a custom event for other components to react to
+    const event = new CustomEvent('apikey-updated', { 
+      detail: { keyType, added: true } 
+    });
+    window.dispatchEvent(event);
+    
+    broadcastApiKeyChange(keyType, true);
+    
+    // Also trigger a localStorage change event for compatibility
+    const storageEvent = new CustomEvent('localStorage-changed', {
+      detail: { key: `${keyType}ApiKey` }
+    });
+    window.dispatchEvent(storageEvent);
     
     return true;
   } catch (error) {
-    console.error(`Error removing ${type} API key:`, error);
+    console.error(`Error saving ${keyType} API key:`, error);
     return false;
   }
 };
 
-// Function to broadcast API key changes across components
-export const broadcastApiKeyChange = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek', action: 'save' | 'remove'): void => {
+/**
+ * Remove API key from localStorage
+ */
+export const removeApiKey = (keyType: ApiKeyType): boolean => {
   try {
-    // Dispatch a custom event
-    window.dispatchEvent(new CustomEvent('apikey-updated', { 
-      detail: { type, action }
-    }));
+    localStorage.removeItem(`${keyType}ApiKey`);
     
-    // Also dispatch a localStorage change event for broader component updates
-    window.dispatchEvent(new CustomEvent('localStorage-changed', {
-      detail: { key: `${type}ApiKey`, action }
-    }));
+    // Dispatch a custom event for other components to react to
+    const event = new CustomEvent('apikey-updated', { 
+      detail: { keyType, removed: true } 
+    });
+    window.dispatchEvent(event);
     
-    console.log(`API key change broadcasted: ${type}, ${action}`);
+    broadcastApiKeyChange(keyType, false);
+    
+    return true;
   } catch (error) {
-    console.error('Error broadcasting API key change:', error);
+    console.error(`Error removing ${keyType} API key:`, error);
+    return false;
   }
 };
 
-// Get all available API providers that have keys configured
-export const getAvailableProviders = (): { id: string, name: string }[] => {
-  const providers = [];
-  
-  if (hasApiKey('groq')) {
-    providers.push({ id: 'groq', name: 'Groq (Llama)' });
+/**
+ * Broadcast API key change to other tabs
+ */
+export const broadcastApiKeyChange = (keyType: ApiKeyType, isAvailable: boolean) => {
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('api-key-updates');
+      channel.postMessage({
+        type: 'api-key-update',
+        keyType,
+        isAvailable
+      });
+    }
+  } catch (error) {
+    console.error("Error broadcasting API key change:", error);
   }
-  
-  if (hasApiKey('openai')) {
-    providers.push({ id: 'openai', name: 'OpenAI (GPT-4)' });
-  }
-  
-  if (hasApiKey('anthropic') || hasApiKey('claude')) {
-    providers.push({ id: 'claude', name: 'Anthropic (Claude)' });
-  }
-  
-  if (hasApiKey('gemini')) {
-    providers.push({ id: 'gemini', name: 'Google (Gemini)' });
-  }
-  
-  if (hasApiKey('deepseek')) {
-    providers.push({ id: 'deepseek', name: 'DeepSeek' });
-  }
-  
-  return providers;
 };
+
+/**
+ * Get all available API key providers
+ */
+export const getAvailableProviders = (): {provider: ApiKeyType, hasKey: boolean}[] => {
+  return [
+    { provider: "openai", hasKey: hasApiKey("openai") },
+    { provider: "groq", hasKey: hasApiKey("groq") },
+    { provider: "claude", hasKey: hasApiKey("claude") },
+    { provider: "anthropic", hasKey: hasApiKey("anthropic") },
+    { provider: "gemini", hasKey: hasApiKey("gemini") },
+    { provider: "deepseek", hasKey: hasApiKey("deepseek") }
+  ];
+};
+
+// For backward compatibility
+export const broadcastApiKeyChange as broadcastApiKeychange;

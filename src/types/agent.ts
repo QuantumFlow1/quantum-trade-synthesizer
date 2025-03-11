@@ -7,15 +7,18 @@ export interface Agent {
   status: 'active' | 'offline' | 'training' | 'paused' | 'terminated';
   lastActive: string;
   tradingStyle?: string;
+  specialization?: string;
+  createdAt?: string;
   performance?: {
     successRate: number;
     tradeCount?: number;
     tasksCompleted?: number;
+    winLossRatio?: number;
   };
   tasks?: {
     pending: number;
     completed: number;
-  };
+  } | string[];
 }
 
 export interface AgentToolCall {
@@ -32,11 +35,12 @@ export type AgentStatus = Agent['status'];
 
 export interface AgentRecommendation {
   agentId: string;
-  action: "BUY" | "SELL" | "HOLD";
+  action: "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
   ticker: string;
   confidence: number;
   reasoning: string;
   timestamp: string;
+  price?: number;
 }
 
 export interface PortfolioDecision {
@@ -46,9 +50,17 @@ export interface PortfolioDecision {
   finalDecision: TradeAction;
   confidence: number;
   reasoning: string;
+  ticker?: string;
+  amount?: number;
+  price?: number;
+  riskScore?: number;
+  action?: string;
+  stopLoss?: number;
+  takeProfit?: number;
+  contributors?: string[];
 }
 
-export type TradeAction = "BUY" | "SELL" | "HOLD";
+export type TradeAction = "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
 
 // Type voor gebruik met de groqAgent
 export interface GroqAgentSettings {

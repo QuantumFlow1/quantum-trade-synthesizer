@@ -83,7 +83,7 @@ export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
     localStorage.removeItem('groqApiKey');
     setApiKey('');
     setSaveSuccess(false);
-    broadcastApiKeyChange('groq', 'remove');
+    broadcastApiKeyChange('groq', false);
     
     toast({
       title: "API Key Removed",

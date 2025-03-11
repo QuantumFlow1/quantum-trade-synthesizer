@@ -52,7 +52,7 @@ export const clearMessages = () => {
  * Save API key to localStorage
  * Returns true if successful, false otherwise
  */
-export const saveApiKey = (provider: string, key: string): boolean => {
+export const saveApiKey = (provider: "openai" | "groq" | "claude" | "anthropic" | "gemini" | "deepseek", key: string): boolean => {
   try {
     // Use the centralized API key manager
     const result = saveApiKeyToManager(provider, key);
@@ -64,7 +64,7 @@ export const saveApiKey = (provider: string, key: string): boolean => {
       // Skip if key is empty
       if (!key || key.trim() === '') {
         localStorage.removeItem(`${provider}ApiKey`);
-        broadcastApiKeyChange();
+        broadcastApiKeyChange(provider, false);
         return false;
       }
       
@@ -72,7 +72,7 @@ export const saveApiKey = (provider: string, key: string): boolean => {
       localStorage.setItem(`${provider}ApiKey`, key);
       
       // Dispatch events as fallback
-      broadcastApiKeyChange();
+      broadcastApiKeyChange(provider, true);
     }
     
     return true;
