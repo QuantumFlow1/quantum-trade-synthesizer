@@ -1,227 +1,285 @@
-import { AgentRecommendation, PortfolioDecision, TradeAction } from '@/types/agent';
+import { 
+  AgentDetails, 
+  TradeAction,
+  AgentMessage as AgentMessageType,
+  AgentTask as AgentTaskType,
+  CollaborationSession as CollaborationSessionType,
+  PortfolioDecision as PortfolioDecisionType,
+  AgentRecommendation as AgentRecommendationType
+} from '@/types/agent';
 
-// Agent network service for managing communication between trading agents
-export class AgentNetworkService {
-  private agents: Map<string, any> = new Map();
-  private connections: Map<string, string[]> = new Map();
-  private messageQueue: any[] = [];
-  private isProcessing: boolean = false;
-
-  constructor() {
-    this.initializeNetwork();
+// Mock data for agents
+const mockAgents: AgentDetails[] = [
+  {
+    id: 'value-investor-001',
+    name: 'Value Investor',
+    description: 'Focuses on undervalued assets with strong fundamentals.',
+    specialization: 'Value Investing',
+    confidence: 0.8,
+    weight: 0.7,
+    isActive: true
+  },
+  {
+    id: 'technical-analyst-001',
+    name: 'Technical Analyst',
+    description: 'Analyzes price patterns and trading signals.',
+    specialization: 'Technical Analysis',
+    confidence: 0.75,
+    weight: 0.6,
+    isActive: true
+  },
+  {
+    id: 'sentiment-analyst-001',
+    name: 'Sentiment Analyst',
+    description: 'Gauges market sentiment from news and social media.',
+    specialization: 'Sentiment Analysis',
+    confidence: 0.7,
+    weight: 0.5,
+    isActive: true
+  },
+  {
+    id: 'quantitative-analyst-001',
+    name: 'Quantitative Analyst',
+    description: 'Uses statistical models and algorithms for trading.',
+    specialization: 'Quantitative Analysis',
+    confidence: 0.85,
+    weight: 0.8,
+    isActive: false
+  },
+  {
+    id: 'macroeconomic-analyst-001',
+    name: 'Macroeconomic Analyst',
+    description: 'Assesses economic trends and their impact on markets.',
+    specialization: 'Macroeconomics',
+    confidence: 0.75,
+    weight: 0.6,
+    isActive: false
   }
+];
 
-  private initializeNetwork() {
-    console.log("Initializing agent network...");
-    // Set up default connections between agents
-    this.connections.set('ai-trader-001', ['technical-analyst-002', 'fundamental-analyst-001']);
-    this.connections.set('technical-analyst-002', ['ai-trader-001', 'risk-manager-001']);
-    this.connections.set('fundamental-analyst-001', ['ai-trader-001', 'market-researcher-001']);
-    this.connections.set('risk-manager-001', ['technical-analyst-002', 'portfolio-manager-001']);
-    this.connections.set('market-researcher-001', ['fundamental-analyst-001', 'news-analyzer-001']);
-    this.connections.set('portfolio-manager-001', ['risk-manager-001', 'ai-trader-001']);
-    this.connections.set('news-analyzer-001', ['market-researcher-001', 'sentiment-analyzer-001']);
-    this.connections.set('sentiment-analyzer-001', ['news-analyzer-001', 'ai-trader-001']);
-  }
-
-  public registerAgent(agentId: string, agentInstance: any) {
-    this.agents.set(agentId, agentInstance);
-    if (!this.connections.has(agentId)) {
-      this.connections.set(agentId, []);
-    }
-    console.log(`Agent ${agentId} registered with the network`);
-    return true;
-  }
-
-  public connectAgents(sourceId: string, targetId: string) {
-    if (!this.agents.has(sourceId) || !this.agents.has(targetId)) {
-      console.error(`Cannot connect: one or both agents not registered`);
-      return false;
-    }
-
-    const connections = this.connections.get(sourceId) || [];
-    if (!connections.includes(targetId)) {
-      connections.push(targetId);
-      this.connections.set(sourceId, connections);
-      console.log(`Connected ${sourceId} to ${targetId}`);
-    }
-    return true;
-  }
-
-  public async sendMessage(fromAgentId: string, toAgentId: string, message: any) {
-    if (!this.agents.has(fromAgentId) || !this.agents.has(toAgentId)) {
-      console.error(`Cannot send message: one or both agents not registered`);
-      return false;
-    }
-
-    const connections = this.connections.get(fromAgentId) || [];
-    if (!connections.includes(toAgentId)) {
-      console.error(`Cannot send message: agents are not connected`);
-      return false;
-    }
-
-    this.messageQueue.push({
-      from: fromAgentId,
-      to: toAgentId,
-      content: message,
-      timestamp: new Date().toISOString()
-    });
-
-    if (!this.isProcessing) {
-      await this.processMessageQueue();
-    }
-    return true;
-  }
-
-  public async broadcast(fromAgentId: string, message: any) {
-    if (!this.agents.has(fromAgentId)) {
-      console.error(`Cannot broadcast: agent not registered`);
-      return false;
-    }
-
-    const connections = this.connections.get(fromAgentId) || [];
-    for (const targetId of connections) {
-      this.messageQueue.push({
-        from: fromAgentId,
-        to: targetId,
-        content: message,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    if (!this.isProcessing) {
-      await this.processMessageQueue();
-    }
-    return true;
-  }
-
-  private async processMessageQueue() {
-    this.isProcessing = true;
-    while (this.messageQueue.length > 0) {
-      const message = this.messageQueue.shift();
-      const targetAgent = this.agents.get(message.to);
-      if (targetAgent && typeof targetAgent.receiveMessage === 'function') {
-        try {
-          await targetAgent.receiveMessage(message.from, message.content);
-        } catch (error) {
-          console.error(`Error processing message to ${message.to}:`, error);
-        }
-      }
-    }
-    this.isProcessing = false;
-  }
-
-  public getConnectedAgents(agentId: string): string[] {
-    return this.connections.get(agentId) || [];
-  }
-
-  public getNetworkTopology() {
-    const topology: Record<string, string[]> = {};
-    for (const [agentId, connections] of this.connections.entries()) {
-      topology[agentId] = [...connections];
-    }
-    return topology;
-  }
-}
-
-// Singleton instance
-export const agentNetwork = new AgentNetworkService();
-
-// Ergens in een functie waar er een portfolio decision object wordt gemaakt
-export function createPortfolioDecision(action: TradeAction, ticker: string, price: number): PortfolioDecision {
-  return {
+// Mock data for agent messages
+const mockAgentMessages: AgentMessageType[] = [
+  {
     id: crypto.randomUUID(),
-    action,
-    finalDecision: action,
-    ticker,
-    amount: 0.5,
-    price,
-    stopLoss: price * 0.95,
-    takeProfit: price * 1.1,
-    confidence: 75,
-    riskScore: 45,
-    contributors: ['ai-trader-001', 'technical-analyst-002'],
-    reasoning: `Recommendation to ${action} ${ticker} based on technical analysis and market trends.`,
+    fromAgent: 'value-investor-001',
+    toAgent: 'technical-analyst-001',
+    message: 'I see a strong buying opportunity in BTC based on its current valuation.',
     timestamp: new Date().toISOString(),
-    recommendedActions: []
-  };
-}
+    read: true
+  },
+  {
+    id: crypto.randomUUID(),
+    fromAgent: 'technical-analyst-001',
+    toAgent: 'value-investor-001',
+    message: 'Technicals confirm the upward trend, but be cautious of resistance at $45,000.',
+    timestamp: new Date().toISOString(),
+    read: true
+  },
+  {
+    id: crypto.randomUUID(),
+    fromAgent: 'sentiment-analyst-001',
+    toAgent: 'network',
+    message: 'Market sentiment is increasingly positive, driven by recent news.',
+    timestamp: new Date().toISOString(),
+    read: false
+  }
+];
 
-// Helper function to create agent recommendations
-export function createAgentRecommendation(
-  agentId: string, 
-  action: TradeAction, 
-  ticker: string, 
-  confidence: number, 
-  reasoning: string
-): AgentRecommendation {
+// Mock data for agent tasks
+const mockAgentTasks: AgentTaskType[] = [
+  {
+    id: crypto.randomUUID(),
+    assignedTo: 'value-investor-001',
+    description: 'Research potential long-term investments in the energy sector.',
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    completedAt: null
+  },
+  {
+    id: crypto.randomUUID(),
+    assignedTo: 'technical-analyst-001',
+    description: 'Analyze recent trading volumes for TSLA and identify key levels.',
+    status: 'in-progress',
+    createdAt: new Date().toISOString(),
+    completedAt: null
+  },
+  {
+    id: crypto.randomUUID(),
+    assignedTo: 'sentiment-analyst-001',
+    description: 'Monitor social media for mentions of AAPL and assess public sentiment.',
+    status: 'completed',
+    createdAt: new Date().toISOString(),
+    completedAt: new Date().toISOString()
+  }
+];
+
+// Mock data for collaboration sessions
+const mockCollaborationSessions: CollaborationSessionType[] = [
+  {
+    id: crypto.randomUUID(),
+    participants: ['value-investor-001', 'technical-analyst-001'],
+    topic: 'Joint analysis of BTC',
+    startTime: new Date().toISOString(),
+    endTime: null,
+    status: 'active'
+  },
+  {
+    id: crypto.randomUUID(),
+    participants: ['sentiment-analyst-001', 'quantitative-analyst-001'],
+    topic: 'Correlating sentiment with quantitative data for ETH',
+    startTime: new Date().toISOString(),
+    endTime: new Date().toISOString(),
+    status: 'completed'
+  }
+];
+
+// Mock function to create agent recommendations
+const createAgentRecommendation = (
+  agent: AgentDetails,
+  ticker: string,
+  action: TradeAction
+): AgentRecommendationType => {
   return {
-    agentId,
-    action,
-    ticker,
-    confidence,
-    reasoning,
+    agentId: agent.id,
+    action: action,
+    ticker: ticker,
+    confidence: agent.confidence * 100,
+    reasoning: `Based on ${agent.specialization} analysis.`,
     timestamp: new Date().toISOString()
   };
-}
+};
 
-// Function to aggregate recommendations from multiple agents
-export function aggregateRecommendations(recommendations: AgentRecommendation[]): PortfolioDecision | null {
-  if (!recommendations || recommendations.length === 0) {
-    return null;
+// Mock data for agent recommendations
+const mockRecommendations: AgentRecommendationType[] = [
+  createAgentRecommendation(mockAgents[0], 'BTC', 'BUY'),
+  createAgentRecommendation(mockAgents[1], 'ETH', 'SELL'),
+  createAgentRecommendation(mockAgents[2], 'AAPL', 'HOLD')
+];
+
+// Mock data for portfolio decisions
+const mockPortfolioDecisions: PortfolioDecisionType[] = [
+  {
+    id: crypto.randomUUID(),
+    finalDecision: 'BUY',
+    ticker: 'BTC',
+    amount: 0.5,
+    price: 45000,
+    confidence: 0.85,
+    riskScore: 60,
+    contributors: ['value-investor-001', 'technical-analyst-001'],
+    reasoning: 'Strong consensus among value and technical analysts.',
+    timestamp: new Date().toISOString(),
+    recommendedActions: [],
+  },
+  {
+    id: crypto.randomUUID(),
+    finalDecision: 'SELL',
+    ticker: 'ETH',
+    amount: 1.0,
+    price: 2500,
+    confidence: 0.75,
+    riskScore: 70,
+    contributors: ['sentiment-analyst-001', 'quantitative-analyst-001'],
+    reasoning: 'Negative sentiment and quantitative indicators suggest selling.',
+    timestamp: new Date().toISOString(),
+    recommendedActions: [],
   }
+];
 
-  // Count votes for each action
-  const votes: Record<TradeAction, number> = {
-    BUY: 0,
-    SELL: 0,
-    HOLD: 0,
-    SHORT: 0,
-    COVER: 0
-  };
+// Add the missing type exports
+export type { AgentMessage, AgentTask, CollaborationSession } from '@/types/agent';
 
-  // Calculate weighted confidence
-  let totalConfidence = 0;
-  const ticker = recommendations[0].ticker;
-  const contributors: string[] = [];
+// Mock API functions
+export const getAgentMessages = (): AgentMessage[] => {
+  return mockAgentMessages;
+};
 
-  recommendations.forEach(rec => {
-    votes[rec.action] += rec.confidence;
-    totalConfidence += rec.confidence;
-    if (!contributors.includes(rec.agentId)) {
-      contributors.push(rec.agentId);
-    }
-  });
+export const getAgentTasks = (): AgentTask[] => {
+  return mockAgentTasks;
+};
 
-  // Find the action with the highest vote
-  let finalAction: TradeAction = 'HOLD';
-  let maxVotes = 0;
+export const initializeAgentNetwork = (): void => {
+  console.log("Agent network initialized");
+};
 
-  for (const [action, voteCount] of Object.entries(votes)) {
-    if (voteCount > maxVotes) {
-      maxVotes = voteCount;
-      finalAction = action as TradeAction;
-    }
-  }
-
-  // Calculate average confidence
-  const avgConfidence = Math.round(totalConfidence / recommendations.length);
-
-  // Simulate a price based on the ticker (in a real app, this would come from market data)
-  const price = ticker === 'BTC' ? 45000 : ticker === 'ETH' ? 3000 : 100;
-
+export const generateCollaborativeTradingAnalysis = (
+  ticker: string,
+  timeframe: string
+) => {
   return {
     id: crypto.randomUUID(),
-    action: finalAction,
-    finalDecision: finalAction,
     ticker,
-    amount: 0.1,
-    price,
-    confidence: avgConfidence,
-    riskScore: 50,
-    contributors,
-    reasoning: `Aggregated recommendation based on ${recommendations.length} agent inputs with ${avgConfidence}% confidence.`,
     timestamp: new Date().toISOString(),
-    recommendedActions: recommendations.slice(0, 3)
+    signals: []
   };
-}
+};
+
+export const getActiveAgents = () => {
+  return mockAgents.filter(agent => agent.isActive);
+};
+
+export const toggleAgentStatus = (id: string): void => {
+  const agent = mockAgents.find(a => a.id === id);
+  if (agent) {
+    agent.isActive = !agent.isActive;
+  }
+};
+
+export const sendAgentMessage = (message: string, toAgent?: string): AgentMessage => {
+  const newMessage: AgentMessage = {
+    id: crypto.randomUUID(),
+    fromAgent: 'user',
+    toAgent: toAgent || 'network',
+    message,
+    timestamp: new Date().toISOString(),
+    read: false
+  };
+  mockAgentMessages.push(newMessage);
+  return newMessage;
+};
+
+export const createAgentTask = (description: string, assignedTo: string): AgentTask => {
+  const newTask: AgentTask = {
+    id: crypto.randomUUID(),
+    assignedTo,
+    description,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    completedAt: null
+  };
+  mockAgentTasks.push(newTask);
+  return newTask;
+};
+
+export const syncAgentMessages = (): void => {
+  console.log("Syncing agent messages...");
+};
+
+export const getCollaborationSessions = () => {
+  return mockCollaborationSessions;
+};
+
+export const submitAgentRecommendation = (
+  agent: AgentDetails,
+  ticker: string,
+  action: TradeAction
+) => {
+  const newRecommendation = createAgentRecommendation(agent, ticker, action);
+  return newRecommendation;
+};
+
+export const getAgentRecommendations = () => {
+  return mockRecommendations;
+};
+
+export const getRecentAgentRecommendations = (limit: number = 5) => {
+  return mockRecommendations.slice(0, limit);
+};
+
+export const getPortfolioDecisions = () => {
+  return mockPortfolioDecisions;
+};
+
+export const getRecentPortfolioDecisions = (limit: number = 5) => {
+  return mockPortfolioDecisions.slice(0, limit);
+};

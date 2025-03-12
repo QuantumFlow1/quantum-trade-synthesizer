@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Network, Users, MessageSquare, BarChart2 } from 'lucide-react';
 import { useAgentNetwork } from '@/hooks/use-agent-network';
 import { Agent } from '@/types/agent';
-import { AgentMessage, AgentTask } from '@/services/agentNetwork';
+import { AgentMessage, AgentTask } from '@/types/agent';
 
 interface AgentCardProps {
   agent: Agent;
