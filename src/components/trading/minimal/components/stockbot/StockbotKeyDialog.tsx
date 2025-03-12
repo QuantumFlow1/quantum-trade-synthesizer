@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { saveApiKey, hasApiKey, getApiKey } from '@/utils/apiKeyManager';
-import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
+import { GroqKeyValidator } from '../stockbot/widgets/GroqKeyValidator';
 
 interface StockbotKeyDialogProps {
   isKeyDialogOpen: boolean;
@@ -22,6 +23,7 @@ export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [isKeyValidated, setIsKeyValidated] = useState(false);
   
   useEffect(() => {
     // Reset state when dialog opens
@@ -30,6 +32,7 @@ export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
       setApiKey(existingKey);
       setSaveSuccess(false);
       setValidationError(null);
+      setIsKeyValidated(false);
     }
   }, [isKeyDialogOpen]);
   
@@ -112,12 +115,20 @@ export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
     saveApiKey('groq', '');
     setApiKey('');
     setSaveSuccess(false);
+    setIsKeyValidated(false);
     
     toast({
       title: "API Key Removed",
       description: "Your Groq API key has been removed",
       duration: 3000
     });
+  };
+
+  const handleKeyValidationComplete = (isValid: boolean) => {
+    setIsKeyValidated(isValid);
+    if (isValid) {
+      setValidationError(null);
+    }
   };
 
   return (
@@ -145,13 +156,24 @@ export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
                   setApiKey(e.target.value);
                   setSaveSuccess(false);
                   setValidationError(null);
+                  setIsKeyValidated(false);
                 }}
                 placeholder="gsk_..."
                 className="w-full"
               />
-              <p className="text-xs text-gray-500">
-                You can get a Groq API key by signing up at <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">console.groq.com</a>
-              </p>
+              <div className="flex flex-col space-y-1 text-xs text-gray-500">
+                <p>
+                  You can get a Groq API key by signing up at <a href="https://console.groq.com" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center">console.groq.com <ExternalLink size={12} className="inline ml-1" /></a>
+                </p>
+                <p>
+                  Make sure to copy the full API key including the "gsk_" prefix.
+                </p>
+              </div>
+              
+              <GroqKeyValidator 
+                apiKey={apiKey} 
+                onValidationComplete={handleKeyValidationComplete} 
+              />
             </div>
             
             {validationError && (
@@ -168,10 +190,10 @@ export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
               </div>
             )}
             
-            {hasApiKey('groq') && !saveSuccess && !validationError && (
+            {hasApiKey('groq') && !saveSuccess && !validationError && !isKeyValidated && (
               <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 rounded flex items-center">
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                <span className="text-sm">You already have an API key configured.</span>
+                <span className="text-sm">You already have an API key configured. Validate it to ensure it works.</span>
               </div>
             )}
             
@@ -189,7 +211,7 @@ export const StockbotKeyDialog: React.FC<StockbotKeyDialogProps> = ({
               <Button
                 type="button"
                 onClick={handleSave}
-                disabled={isSaving || !apiKey.trim() || saveSuccess}
+                disabled={isSaving || !apiKey.trim() || (!isKeyValidated && apiKey !== getApiKey('groq'))}
               >
                 {isSaving ? (
                   <>

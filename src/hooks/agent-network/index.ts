@@ -1,5 +1,4 @@
 
-import { useEffect } from 'react';
 import { useUser } from '@/hooks/use-user';
 import { UseAgentNetworkReturn } from '@/types/agent';
 import { useAgentInitialization } from './use-agent-initialization';
@@ -8,16 +7,22 @@ import { useAgentMessaging } from './use-agent-messaging';
 import { useAgentTasks } from './use-agent-tasks';
 import { useMarketAnalysis } from './use-market-analysis';
 
+/**
+ * Master hook that combines all agent network functionality
+ */
 export function useAgentNetwork(): UseAgentNetworkReturn {
   const { user } = useUser();
+
+  // Initialize loading state outside other hooks
+  const [isLoading, setIsLoading] = useState(false);
 
   // Initialize the agent state hook first to get the refreshAgentState function
   const {
     agents,
     activeAgents,
-    agentMessages,
     agentTasks,
-    collaborationSessions,
+    setAgentTasks,  // Make sure this is exported from useAgentState
+    agentMessages,
     selectedAgent,
     setSelectedAgent,
     refreshAgentState,
@@ -27,67 +32,45 @@ export function useAgentNetwork(): UseAgentNetworkReturn {
   // Now we can initialize the hook that depends on refreshAgentState
   const { 
     isInitialized, 
-    isLoading, 
-    initializeNetwork, 
-    setIsLoading 
+    initializeNetwork
   } = useAgentInitialization(user, refreshAgentState);
 
   // Initialize other hooks with properly scoped variables
   const {
     sendMessage,
     syncMessages
-  } = useAgentMessaging(user, selectedAgent, setAgentMessages);
+  } = useAgentMessaging(user, agents, agentMessages, setAgentMessages);
 
   const {
-    createTask,
-    toggleAgent
-  } = useAgentTasks(user, setAgentTasks);
+    assignTask,
+    completeTask,
+    taskStatus
+  } = useAgentTasks(user, agents, agentTasks, setAgentTasks);
 
   const {
-    currentMarketData,
-    setCurrentMarketData,
-    agentRecommendations,
-    recentAgentRecommendations,
-    portfolioDecisions,
-    recentPortfolioDecisions,
-    generateAnalysis,
-    submitRecommendation
-  } = useMarketAnalysis(user);
+    performMarketAnalysis
+  } = useMarketAnalysis(user, agents, sendMessage);
 
-  // Update agent state periodically
-  useEffect(() => {
-    if (!isInitialized || !user) return;
-    
-    const interval = setInterval(() => {
-      refreshAgentState();
-    }, 60000); // Update every minute
-    
-    return () => clearInterval(interval);
-  }, [isInitialized, user, refreshAgentState]);
-
+  // Return all needed functions and state
   return {
-    agents,
-    activeAgents,
-    agentMessages,
-    agentTasks,
-    collaborationSessions,
-    selectedAgent,
-    setSelectedAgent,
-    currentMarketData,
-    setCurrentMarketData,
-    initializeNetwork,
-    generateAnalysis,
-    toggleAgent,
-    sendMessage,
-    createTask,
-    syncMessages,
-    submitRecommendation,
-    agentRecommendations,
-    recentAgentRecommendations,
-    portfolioDecisions,
-    recentPortfolioDecisions,
     isInitialized,
     isLoading,
-    refreshAgentState
+    agents,
+    activeAgents,
+    selectedAgent,
+    setSelectedAgent,
+    agentMessages,
+    agentTasks,
+    initializeNetwork,
+    refreshAgentState,
+    sendMessage,
+    syncMessages,
+    assignTask,
+    completeTask,
+    taskStatus,
+    performMarketAnalysis
   };
 }
+
+// Need to import useState at the top
+import { useState } from 'react';

@@ -1,117 +1,174 @@
 
-// Define supported API key types
-type ApiKeyType = "openai" | "groq" | "claude" | "anthropic" | "gemini" | "deepseek";
-
 /**
- * Get API key from localStorage
+ * Utility for managing API keys in the application
  */
-export const getApiKey = (keyType: ApiKeyType): string | null => {
-  const key = localStorage.getItem(`${keyType}ApiKey`);
-  return key || null;
+
+// For type safety
+type ApiProvider = 'openai' | 'groq' | 'claude' | 'gemini' | 'anthropic' | 'deepseek';
+
+// Storage keys for different API providers
+const API_KEY_STORAGE_KEYS: Record<ApiProvider, string> = {
+  openai: 'openaiApiKey',
+  groq: 'groqApiKey',
+  claude: 'claudeApiKey',
+  gemini: 'geminiApiKey',
+  anthropic: 'claudeApiKey', // alias for claude
+  deepseek: 'deepseekApiKey'
 };
 
 /**
- * Check if API key exists and is valid
+ * Save an API key to localStorage
+ * @param provider The API provider
+ * @param key The API key to save
+ * @returns Boolean indicating success
  */
-export const hasApiKey = (keyType: ApiKeyType): boolean => {
-  const key = getApiKey(keyType);
-  return !!key && key.length > 10;
-};
-
-/**
- * Save API key to localStorage
- */
-export const saveApiKey = (keyType: ApiKeyType, apiKey: string): boolean => {
+export const saveApiKey = (provider: ApiProvider, key: string): boolean => {
   try {
-    if (!apiKey || apiKey.trim() === '') {
-      localStorage.removeItem(`${keyType}ApiKey`);
-      broadcastApiKeyChange(keyType, false);
-      
-      // Dispatch a custom event for other components to react to
-      const event = new CustomEvent('apikey-updated', { 
-        detail: { keyType, removed: true } 
-      });
-      window.dispatchEvent(event);
-      
-      return true;
+    // Get the correct storage key
+    const storageKey = API_KEY_STORAGE_KEYS[provider];
+    if (!storageKey) {
+      console.error(`Unknown API provider: ${provider}`);
+      return false;
     }
     
-    localStorage.setItem(`${keyType}ApiKey`, apiKey);
+    // Save the key to localStorage
+    localStorage.setItem(storageKey, key);
     
-    // Dispatch a custom event for other components to react to
-    const event = new CustomEvent('apikey-updated', { 
-      detail: { keyType, added: true } 
-    });
-    window.dispatchEvent(event);
+    // Dispatch events to notify other components
+    window.dispatchEvent(new Event('localStorage-changed'));
+    window.dispatchEvent(new Event('apikey-updated'));
     
-    broadcastApiKeyChange(keyType, true);
-    
-    // Also trigger a localStorage change event for compatibility
-    const storageEvent = new CustomEvent('localStorage-changed', {
-      detail: { key: `${keyType}ApiKey` }
-    });
-    window.dispatchEvent(storageEvent);
+    // Dispatch a connection status event
+    if (key) {
+      window.dispatchEvent(new CustomEvent('connection-status-changed', {
+        detail: { provider, status: 'connected' }
+      }));
+    } else {
+      window.dispatchEvent(new CustomEvent('connection-status-changed', {
+        detail: { provider, status: 'disconnected' }
+      }));
+    }
     
     return true;
   } catch (error) {
-    console.error(`Error saving ${keyType} API key:`, error);
+    console.error(`Error saving ${provider} API key:`, error);
     return false;
   }
 };
 
 /**
- * Remove API key from localStorage
+ * Check if an API key exists for a provider
+ * @param provider The API provider
+ * @returns Boolean indicating if key exists
  */
-export const removeApiKey = (keyType: ApiKeyType): boolean => {
+export const hasApiKey = (provider: ApiProvider): boolean => {
   try {
-    localStorage.removeItem(`${keyType}ApiKey`);
+    const storageKey = API_KEY_STORAGE_KEYS[provider];
+    if (!storageKey) return false;
     
-    // Dispatch a custom event for other components to react to
-    const event = new CustomEvent('apikey-updated', { 
-      detail: { keyType, removed: true } 
-    });
-    window.dispatchEvent(event);
-    
-    broadcastApiKeyChange(keyType, false);
-    
-    return true;
+    const key = localStorage.getItem(storageKey);
+    return !!key && key.length > 10; // Basic validation - key should be substantial
   } catch (error) {
-    console.error(`Error removing ${keyType} API key:`, error);
+    console.error(`Error checking for ${provider} API key:`, error);
     return false;
   }
 };
 
 /**
- * Broadcast API key change to other tabs
+ * Get an API key for a provider
+ * @param provider The API provider
+ * @returns The API key or null if not found
  */
-export const broadcastApiKeyChange = (keyType: ApiKeyType, isAvailable: boolean) => {
+export const getApiKey = (provider: ApiProvider): string | null => {
   try {
-    if (typeof BroadcastChannel !== 'undefined') {
-      const channel = new BroadcastChannel('api-key-updates');
-      channel.postMessage({
-        type: 'api-key-update',
-        keyType,
-        isAvailable
-      });
-    }
+    const storageKey = API_KEY_STORAGE_KEYS[provider];
+    if (!storageKey) return null;
+    
+    return localStorage.getItem(storageKey);
   } catch (error) {
-    console.error("Error broadcasting API key change:", error);
+    console.error(`Error getting ${provider} API key:`, error);
+    return null;
   }
 };
 
 /**
- * Get all available API key providers
+ * Validate an API key format for specific providers
+ * @param provider The API provider
+ * @param key The API key to validate
+ * @returns Boolean indicating if key format is valid
  */
-export const getAvailableProviders = (): {provider: ApiKeyType, hasKey: boolean}[] => {
-  return [
-    { provider: "openai", hasKey: hasApiKey("openai") },
-    { provider: "groq", hasKey: hasApiKey("groq") },
-    { provider: "claude", hasKey: hasApiKey("claude") },
-    { provider: "anthropic", hasKey: hasApiKey("anthropic") },
-    { provider: "gemini", hasKey: hasApiKey("gemini") },
-    { provider: "deepseek", hasKey: hasApiKey("deepseek") }
-  ];
+export const validateApiKeyFormat = (provider: ApiProvider, key: string): boolean => {
+  if (!key || key.trim() === '') return false;
+  
+  switch (provider) {
+    case 'openai':
+      return key.startsWith('sk-') && key.length > 20;
+    case 'groq':
+      return key.startsWith('gsk_') && key.length > 20;
+    case 'claude':
+    case 'anthropic':
+      return key.startsWith('sk-ant-') && key.length > 20;
+    case 'gemini':
+      return key.startsWith('AIza') && key.length > 20;
+    case 'deepseek':
+      return key.startsWith('sk-') && key.length > 20;
+    default:
+      return key.length > 10; // Basic validation for unknown providers
+  }
 };
 
-// For backward compatibility
-export { broadcastApiKeyChange as broadcastApiKeychange };
+/**
+ * Remove an API key
+ * @param provider The API provider
+ * @returns Boolean indicating success
+ */
+export const removeApiKey = (provider: ApiProvider): boolean => {
+  return saveApiKey(provider, '');
+};
+
+/**
+ * Attempt to test an API key with the actual service
+ * @param provider The API provider 
+ * @param key The API key to test
+ * @returns Promise resolving to boolean indicating if key works
+ */
+export const testApiKey = async (provider: ApiProvider, key: string): Promise<boolean> => {
+  try {
+    if (!validateApiKeyFormat(provider, key)) {
+      return false;
+    }
+    
+    switch (provider) {
+      case 'groq':
+        // Test Groq API key
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return groqResponse.ok;
+        
+      case 'openai':
+        // Test OpenAI API key
+        const openaiResponse = await fetch('https://api.openai.com/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return openaiResponse.ok;
+        
+      // Add more providers as needed
+        
+      default:
+        // For providers without direct testing, just validate format
+        return validateApiKeyFormat(provider, key);
+    }
+  } catch (error) {
+    console.error(`Error testing ${provider} API key:`, error);
+    return false;
+  }
+};
