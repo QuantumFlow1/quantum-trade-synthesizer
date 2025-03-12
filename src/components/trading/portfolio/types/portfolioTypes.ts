@@ -21,6 +21,8 @@ export interface PortfolioDecision {
   reasoning: string;
   timestamp: string;
   recommendedActions: AgentRecommendation[];
+  stopLoss?: number;
+  takeProfit?: number;
 }
 
 export interface PortfolioManagerProps {

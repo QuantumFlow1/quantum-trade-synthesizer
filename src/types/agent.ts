@@ -43,6 +43,8 @@ export interface AgentRecommendation {
   price?: number;
 }
 
+export type TradeAction = "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
+
 export interface PortfolioDecision {
   id: string;
   timestamp: string;
@@ -59,8 +61,6 @@ export interface PortfolioDecision {
   takeProfit?: number;
   contributors?: string[];
 }
-
-export type TradeAction = "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
 
 // Type voor gebruik met de groqAgent
 export interface GroqAgentSettings {

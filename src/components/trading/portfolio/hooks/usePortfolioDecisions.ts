@@ -1,7 +1,8 @@
 
 import { useState, useCallback } from 'react';
-import { AgentRecommendation, PortfolioDecision as PortfolioDecisionType, TradeAction } from '@/types/agent';
+import { AgentRecommendation, PortfolioDecision as PortfolioDecisionType } from '@/components/trading/portfolio/types/portfolioTypes';
 import { TradingAgent } from '../types/portfolioTypes';
+import { TradeAction } from '@/types/agent';
 
 export const usePortfolioDecisions = () => {
   const [portfolioDecision, setPortfolioDecision] = useState<PortfolioDecisionType | null>(null);
