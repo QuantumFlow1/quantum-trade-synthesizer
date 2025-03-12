@@ -3,10 +3,22 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, ArrowDown, ArrowUp, Check, Pause } from "lucide-react";
-import { PortfolioDecision as PortfolioDecisionType } from "@/types/agent";
 
+// Create a common interface that's compatible with both types
 interface PortfolioDecisionProps {
-  decision: PortfolioDecisionType;
+  decision: {
+    action: string;
+    confidence: number;
+    reasoning: string;
+    contributors?: string[];
+    timestamp: string;
+    ticker: string;
+    amount: number; // This is now required, not optional
+    price: number;
+    riskScore: number;
+    stopLoss?: number;
+    takeProfit?: number;
+  };
   isSimulationMode: boolean;
   onExecuteDecision: () => void;
 }
@@ -67,19 +79,16 @@ export const PortfolioDecision: React.FC<PortfolioDecisionProps> = ({
     }
   };
   
-  // Use the action from finalDecision, fall back to action property, or default to "HOLD"
-  const actionText = decision.finalDecision || decision.action || "HOLD";
-  
   return (
     <Card className="border border-primary/20 backdrop-blur-sm">
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className={`p-1.5 rounded-full ${getActionColor(actionText.toString())} bg-opacity-20`}>
-              {getActionIcon(actionText.toString())}
+            <div className={`p-1.5 rounded-full ${getActionColor(decision.action)} bg-opacity-20`}>
+              {getActionIcon(decision.action)}
             </div>
             <div className="font-semibold">
-              {actionText} {decision.ticker}
+              {decision.action} {decision.ticker}
             </div>
           </div>
           {getRiskBadge(decision.riskScore)}

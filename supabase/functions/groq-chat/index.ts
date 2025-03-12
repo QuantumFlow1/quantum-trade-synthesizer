@@ -161,38 +161,18 @@ serve(async (req) => {
     // Parse the response as JSON and add better error handling
     let data;
     try {
-      // Get the response text first so we can log it
       const responseText = await response.text();
-      
-      // Log the first part of the response for debugging
       console.log("Raw API response:", responseText.substring(0, 200) + (responseText.length > 200 ? "..." : ""));
       
-      // Now try to parse it as JSON
       try {
         data = JSON.parse(responseText);
-      } catch (parseError) {
+      } catch (e) {
         console.error('Failed to parse API response as JSON:', responseText);
-        
-        // If we can't parse the response as JSON, return a fallback response
-        return new Response(JSON.stringify({
-          response: "I'm having trouble processing your request. The API returned an invalid response. Please try again later.",
-          status: 'error',
-          error: "Failed to parse API response as JSON",
-          model: model,
-          fallback: true
-        }), { headers: corsHeaders });
+        throw new Error(`Invalid JSON response from ${apiType.toUpperCase()} API`);
       }
     } catch (parseError) {
       console.error('Error parsing response:', parseError);
-      
-      // Return a user-friendly error
-      return new Response(JSON.stringify({
-        response: "I'm having trouble reaching the AI service. Please try again in a moment.",
-        status: 'error',
-        error: `Failed to parse response: ${parseError.message}`,
-        model: model,
-        fallback: true
-      }), { headers: corsHeaders });
+      throw new Error(`Failed to parse response from ${apiType.toUpperCase()} API: ${parseError.message}`);
     }
     
     console.log(`Successfully received ${apiType.toUpperCase()} API response:`, {
@@ -201,68 +181,32 @@ serve(async (req) => {
       choicesLength: data.choices?.length || 0
     });
     
-    // Extra validation to handle potential API response format changes
+    // Validate response structure
     if (!data || !data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
       console.error('Invalid response structure:', JSON.stringify(data).substring(0, 500));
-      
-      // Return a fallback response instead of throwing an error
-      return new Response(JSON.stringify({
-        response: "I received an unexpected response format from the AI service. Let's try again with a simpler question.",
-        status: 'partial',
-        error: "Invalid response structure",
-        model: model,
-        fallback: true
-      }), { headers: corsHeaders });
+      throw new Error(`Received invalid response structure from ${apiType.toUpperCase()} API`);
     }
     
     const firstChoice = data.choices[0];
-    
-    // More validation
     if (!firstChoice || typeof firstChoice !== 'object') {
       console.error('Invalid choice structure:', firstChoice);
-      
-      return new Response(JSON.stringify({
-        response: "The AI service returned an invalid response format. Please try again later.",
-        status: 'error',
-        error: "Invalid choice structure",
-        model: model,
-        fallback: true
-      }), { headers: corsHeaders });
+      throw new Error(`Received invalid choice structure from ${apiType.toUpperCase()} API`);
     }
     
     if (!firstChoice.message || typeof firstChoice.message !== 'object') {
       console.error('Invalid message in choice:', firstChoice);
-      
-      return new Response(JSON.stringify({
-        response: "I encountered an issue with the AI service response format. Please try a different question.",
-        status: 'error',
-        error: "Invalid message structure",
-        model: model,
-        fallback: true
-      }), { headers: corsHeaders });
+      throw new Error(`Received invalid message from ${apiType.toUpperCase()} API`);
     }
     
     // Check for empty or invalid response content
     const hasToolCalls = Array.isArray(firstChoice.message.tool_calls) && firstChoice.message.tool_calls.length > 0;
     
     // Ensure message content is always a string (even if empty when using tool calls)
-    const messageContent = typeof firstChoice.message.content === 'string' 
-      ? firstChoice.message.content 
-      : firstChoice.message.content === null && hasToolCalls 
-        ? "" // It's okay for content to be null if we have tool calls
-        : "I apologize, but I received an unusual response format. Let me try to answer your question differently.";
+    const messageContent = typeof firstChoice.message.content === 'string' ? firstChoice.message.content : "";
     
-    // If no content and no tool calls, return a fallback instead of throwing an error
     if (!messageContent && !hasToolCalls) {
       console.error('Empty message content and no tool calls:', firstChoice.message);
-      
-      return new Response(JSON.stringify({
-        response: "I received an empty response from the AI service. Let's try rephrasing your question.",
-        status: 'partial',
-        error: "Empty content",
-        model: model,
-        fallback: true
-      }), { headers: corsHeaders });
+      throw new Error(`Received empty content from ${apiType.toUpperCase()} API`);
     }
     
     return new Response(
@@ -283,20 +227,19 @@ serve(async (req) => {
     // Create a more user-friendly error message
     const errorResponse = {
       error: error.message || 'An unexpected error occurred',
-      response: "I'm having trouble connecting to the AI service. Please check your API key or try again later.",
       status: 'error',
-      fallback: true,
       details: {
         timestamp: new Date().toISOString(),
         type: error.name,
-        message: error.message
+        message: error.message,
+        stack: error.stack
       }
     };
     
     return new Response(
       JSON.stringify(errorResponse),
       { 
-        status: 200, // Return 200 instead of 500 to allow client to handle the error gracefully
+        status: 500, 
         headers: corsHeaders 
       }
     );

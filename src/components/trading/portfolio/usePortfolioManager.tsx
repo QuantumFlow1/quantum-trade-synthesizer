@@ -1,24 +1,25 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { PortfolioManagerHookReturn } from '../types/portfolioTypes';
-import { tradingAgents } from '../data/tradingAgents';
-import { generateCollaborationMessages } from '../utils/collaborationUtils';
-import { generateBacktestResults, calculateAgentAccuracy } from '../utils/backtestingUtils';
-import { generateAgentRecommendations, setGroqAgentInstance } from '../utils/recommendationUtils';
-import { useAgentPerformance } from './useAgentPerformance';
-import { usePortfolioDecisions } from './usePortfolioDecisions';
-import { useGroqAgent } from './useGroqAgent';
+import { PortfolioManagerHookReturn, AgentRecommendation } from './types/portfolioTypes';
+import { tradingAgents } from './data/tradingAgents';
+import { generateCollaborationMessages } from './utils/collaborationUtils';
+import { generateBacktestResults, calculateAgentAccuracy } from './utils/backtestingUtils';
+import { generateAgentRecommendations, setGroqAgentInstance } from './utils/recommendationUtils';
+import { useAgentPerformance } from './hooks/useAgentPerformance';
+import { usePortfolioDecisions } from './hooks/usePortfolioDecisions';
+import { supabase } from "@/lib/supabase";
 
 export const usePortfolioManager = (currentData: any): PortfolioManagerHookReturn => {
   const { toast } = useToast();
-  const [agentRecommendations, setAgentRecommendations] = useState([]);
+  const [agentRecommendations, setAgentRecommendations] = useState<AgentRecommendation[]>([]);
   const [loadingDecision, setLoadingDecision] = useState(false);
   const [collaborationMessages, setCollaborationMessages] = useState([]);
   const [collaborationScore, setCollaborationScore] = useState(0);
   const [agentAccuracy, setAgentAccuracy] = useState({});
   const [activeDiscussions, setActiveDiscussions] = useState([]);
   const [backtestResults, setBacktestResults] = useState([]);
+  const [realMarketData, setRealMarketData] = useState<any[]>([]);
   const { agentPerformance, updateAgentPerformance } = useAgentPerformance();
   const { 
     portfolioDecision, 
@@ -27,16 +28,44 @@ export const usePortfolioManager = (currentData: any): PortfolioManagerHookRetur
     setPortfolioDecision 
   } = usePortfolioDecisions();
   
-  // Initialize the Groq agent hook
-  const groqAgentHook = useGroqAgent();
-  
-  // Set the Groq agent instance for the recommendation utils
-  useEffect(() => {
-    setGroqAgentInstance(groqAgentHook);
-  }, [groqAgentHook]);
-  
   const lastDataRef = useRef<any>(null);
   const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch real market data for backtesting
+  const fetchRealMarketData = useCallback(async () => {
+    try {
+      console.log("Fetching real market data for backtesting portfolio strategies...");
+      
+      const { data, error } = await supabase.functions.invoke('real-crypto-data');
+      
+      if (error) {
+        console.error("Error fetching real market data:", error);
+        return;
+      }
+      
+      if (data && data.success && Array.isArray(data.data)) {
+        console.log("Successfully fetched real market data for backtesting:", data.data.length, "items");
+        setRealMarketData(data.data);
+        toast({
+          title: "Real Market Data Ready",
+          description: `Loaded ${data.data.length} market data points for backtesting`,
+          duration: 3000
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch real market data:", err);
+    }
+  }, [toast]);
+
+  // Effect to fetch real market data on mount
+  useEffect(() => {
+    fetchRealMarketData();
+    
+    // Set up an interval to refresh market data periodically
+    const intervalId = setInterval(fetchRealMarketData, 60000); // refresh every minute
+    
+    return () => clearInterval(intervalId);
+  }, [fetchRealMarketData]);
 
   // Effect to run analysis when currentData changes, but with debouncing
   useEffect(() => {
@@ -103,45 +132,56 @@ export const usePortfolioManager = (currentData: any): PortfolioManagerHookRetur
     setActiveDiscussions(newActiveDiscussions);
     
     // Generate backtest results and calculate accuracy metrics
-    const backtests = generateBacktestResults(currentData, tradingAgents);
+    // Now using real market data if available
+    const backtests = generateBacktestResults(
+      currentData, 
+      tradingAgents,
+      realMarketData.length > 0 ? realMarketData : undefined
+    );
+    
     setBacktestResults(backtests);
     const accuracyMetrics = calculateAgentAccuracy(backtests);
     setAgentAccuracy(accuracyMetrics);
     
     try {
-      // Generate agent recommendations asynchronously
+      // Generate agent recommendations - now properly awaiting the Promise
       const newRecommendations = await generateAgentRecommendations(
         currentData, 
         tradingAgents,
-        accuracyMetrics
+        accuracyMetrics,
+        realMarketData.length > 0 ? realMarketData : undefined
       );
       
       console.log(`Generated ${newRecommendations.length} trading agent recommendations`);
       setAgentRecommendations(newRecommendations);
       
-      // Generate portfolio decision
-      generatePortfolioDecision(
-        newRecommendations,
-        tradingAgents,
-        accuracyMetrics,
-        collaborationMsgs,
-        newCollaborationScore,
-        currentData
-      );
-      
-      // Update agent performance metrics
-      updateAgentPerformance(tradingAgents, accuracyMetrics);
+      setTimeout(() => {
+        // Generate portfolio decision
+        generatePortfolioDecision(
+          newRecommendations,
+          tradingAgents,
+          accuracyMetrics,
+          collaborationMsgs,
+          newCollaborationScore,
+          currentData
+        );
+        
+        // Update agent performance metrics
+        updateAgentPerformance(tradingAgents, accuracyMetrics);
+        
+        setLoadingDecision(false);
+      }, 1500);
     } catch (error) {
-      console.error('Error generating recommendations:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate agent recommendations",
-        variant: "destructive"
-      });
-    } finally {
+      console.error("Error generating recommendations:", error);
+      setAgentRecommendations([]);
       setLoadingDecision(false);
+      toast({
+        title: "Error generating recommendations",
+        description: "Failed to generate agent recommendations. Please try again.",
+        variant: "destructive",
+      });
     }
-  }, [currentData, loadingDecision, generatePortfolioDecision, updateAgentPerformance, toast]);
+  }, [currentData, loadingDecision, generatePortfolioDecision, updateAgentPerformance, toast, realMarketData]);
 
   const handleExecuteDecision = useCallback((isSimulationMode: boolean) => {
     if (!portfolioDecision) return;
@@ -181,6 +221,8 @@ export const usePortfolioManager = (currentData: any): PortfolioManagerHookRetur
     backtestResults,
     tradingAgents,
     handleExecuteDecision,
-    handleRefreshAnalysis
+    handleRefreshAnalysis,
+    realMarketData,
+    hasRealMarketData: realMarketData.length > 0
   };
 };

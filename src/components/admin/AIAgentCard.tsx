@@ -69,45 +69,6 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
     }
   };
 
-  // Helper to render tasks based on the type
-  const renderTasks = () => {
-    if (!agent.tasks) return null;
-    
-    if (Array.isArray(agent.tasks)) {
-      // Handle string array case
-      return (
-        <div className="mt-2">
-          <p className="text-sm font-medium mb-1">Primaire taken:</p>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            {agent.tasks.slice(0, 3).map((task, index) => (
-              <li key={index} className="flex items-start">
-                <span className="mr-1">•</span>
-                <span>{task}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    } else {
-      // Handle object case with pending and completed properties
-      return (
-        <div className="mt-2">
-          <p className="text-sm font-medium mb-1">Taken status:</p>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            <li className="flex items-start">
-              <span className="mr-1">•</span>
-              <span>Voltooid: {agent.tasks.completed}</span>
-            </li>
-            <li className="flex items-start">
-              <span className="mr-1">•</span>
-              <span>In behandeling: {agent.tasks.pending}</span>
-            </li>
-          </ul>
-        </div>
-      );
-    }
-  };
-
   return (
     <Card className={`bg-secondary/30 backdrop-blur-sm border-secondary/50 hover:border-secondary/80 transition-all duration-300 ${agent.status === "terminated" ? "opacity-70" : ""}`}>
       <CardHeader>
@@ -177,7 +138,19 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
               </div>
             </div>
           )}
-          {renderTasks()}
+          {agent.tasks && (
+            <div className="mt-2">
+              <p className="text-sm font-medium mb-1">Primaire taken:</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                {agent.tasks.slice(0, 3).map((task, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="mr-1">•</span>
+                    <span>{task}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="text-xs text-muted-foreground mt-3 flex items-center justify-between">
             <span>
               Laatst actief: {formatDate(agent.lastActive)}

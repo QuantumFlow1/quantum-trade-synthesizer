@@ -1,6 +1,7 @@
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { usePortfolioManager } from '@/components/trading/portfolio/hooks/usePortfolioManager';
+import { usePortfolioManager } from '@/components/trading/portfolio/usePortfolioManager';
 import { useToast } from '@/hooks/use-toast';
 
 // Mock the useToast hook

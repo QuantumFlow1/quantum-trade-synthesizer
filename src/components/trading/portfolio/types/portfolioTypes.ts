@@ -1,7 +1,7 @@
 
 export interface AgentRecommendation {
   agentId: string;
-  action: "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
+  action: "BUY" | "SELL" | "HOLD";
   ticker: string;
   confidence: number;
   reasoning: string;
@@ -9,9 +9,7 @@ export interface AgentRecommendation {
 }
 
 export interface PortfolioDecision {
-  id: string;
-  action?: "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
-  finalDecision: "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
+  action: "BUY" | "SELL" | "HOLD";
   ticker: string;
   amount: number;
   price: number;
@@ -20,9 +18,6 @@ export interface PortfolioDecision {
   contributors: string[];
   reasoning: string;
   timestamp: string;
-  recommendedActions: AgentRecommendation[];
-  stopLoss?: number;
-  takeProfit?: number;
 }
 
 export interface PortfolioManagerProps {

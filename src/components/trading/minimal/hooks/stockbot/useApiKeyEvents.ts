@@ -1,51 +1,37 @@
 
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { broadcastApiKeyChange } from '@/utils/apiKeyManager';
 
-export interface ApiKeyEvent {
-  type: 'api-key-update';
-  keyType: string;
-  isAvailable: boolean;
-}
+// Custom event names for API key updates
+const API_KEY_UPDATED_EVENT = 'apikey-updated';
+const LOCALSTORAGE_CHANGED_EVENT = 'storage';
 
 /**
- * Hook to listen for API key events from other tabs
+ * Hook to listen for API key change events
+ * @param callback Function to call when API key changes
  */
-export const useApiKeyEvents = (
-  onApiKeyChange?: (keyType: string, isAvailable: boolean) => void
-) => {
-  const handleApiKeyEvent = useCallback((event: MessageEvent<ApiKeyEvent>) => {
-    const { type, keyType, isAvailable } = event.data;
-    
-    if (type === 'api-key-update' && onApiKeyChange) {
-      console.log(`API key update event received for ${keyType}: ${isAvailable ? 'available' : 'unavailable'}`);
-      onApiKeyChange(keyType, isAvailable);
-    }
-  }, [onApiKeyChange]);
-
-  // Set up broadcast channel listener
+export const useApiKeyEvents = (callback: () => void) => {
   useEffect(() => {
-    let channel: BroadcastChannel | null = null;
+    // Handler for API key update events
+    const handleApiKeyUpdate = () => {
+      console.log('API key update detected');
+      callback();
+    };
     
-    try {
-      channel = new BroadcastChannel('api-key-updates');
-      channel.addEventListener('message', handleApiKeyEvent);
-      
-      // Notify other components that we're listening
-      broadcastApiKeyChange('groq', false);
-    } catch (error) {
-      console.error('Error setting up BroadcastChannel:', error);
-    }
+    // Listen for both custom apikey-updated event and storage event
+    window.addEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
+    window.addEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
     
     return () => {
-      if (channel) {
-        channel.removeEventListener('message', handleApiKeyEvent);
-        channel.close();
-      }
+      window.removeEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
+      window.removeEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
     };
-  }, [handleApiKeyEvent]);
+  }, [callback]);
+  
+  // Function to manually trigger API key change events
+  const triggerApiKeyChange = () => {
+    broadcastApiKeyChange();
+  };
 
-  return null;
+  return { triggerApiKeyChange };
 };
-
-export default useApiKeyEvents;

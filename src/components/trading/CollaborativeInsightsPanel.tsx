@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Brain, Users, RefreshCw, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAgentConnection } from "@/hooks/use-agent-connection";
-import { usePortfolioManager } from '@/components/trading/portfolio/hooks/usePortfolioManager';
+import { usePortfolioManager } from "./portfolio/usePortfolioManager";
 import { RecommendationList } from "./portfolio/RecommendationList";
 import { PortfolioDecision } from "./portfolio/PortfolioDecision";
 import { LoadingDecision } from "./portfolio/LoadingDecision";
@@ -38,6 +39,7 @@ export const CollaborativeInsightsPanel = ({
     simulateConnection
   } = useAgentConnection();
 
+  // Handle simulation mode changes
   useEffect(() => {
     if (isSimulationMode && !isConnected) {
       simulateConnection(true);

@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { AgentPerformance } from "../types/portfolioTypes";
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
-export interface PerformanceMetricsProps {
-  agentPerformance: AgentPerformance;
+interface PerformanceMetricsProps {
+  performanceScore: number;
   accuracyData?: {
     overall: number;
     recent: number;
@@ -12,46 +12,34 @@ export interface PerformanceMetricsProps {
   };
 }
 
-export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
-  agentPerformance,
+export const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({ 
+  performanceScore,
   accuracyData
 }) => {
+  const score = Math.round(performanceScore * 100);
+  const color = score > 80 ? 'text-green-500' : 
+                score > 65 ? 'text-blue-500' : 
+                score > 50 ? 'text-yellow-500' : 'text-red-500';
+  
   return (
-    <div className="p-3 bg-background">
-      <div className="text-sm font-medium mb-2 pb-1 border-b">Agent Performance</div>
-      
-      <div className="space-y-2 text-xs">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Accuracy:</span>
-          <span className="font-medium">{Math.round(agentPerformance.accuracy * 100)}%</span>
-        </div>
-        
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Profit Factor:</span>
-          <span className="font-medium">{agentPerformance.profitFactor.toFixed(2)}</span>
-        </div>
-        
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Recent Success:</span>
-          <div className="flex gap-1">
-            {agentPerformance.recentSuccess.map((success, i) => (
-              <div 
-                key={i} 
-                className={`h-2 w-2 rounded-full ${success ? 'bg-green-500' : 'bg-red-500'}`}
-              />
-            ))}
-          </div>
-        </div>
-        
-        {accuracyData && (
-          <div className="flex justify-between mt-1 pt-1 border-t">
-            <span className="text-muted-foreground">Confidence Range:</span>
-            <span className="font-medium">
-              {Math.round(accuracyData.confidence[0])}%-{Math.round(accuracyData.confidence[1])}%
-            </span>
-          </div>
-        )}
+    <div className="flex justify-between items-center">
+      <div className="text-xs text-muted-foreground">
+        Success rate:
       </div>
+      <Tooltip>
+        <TooltipTrigger className="flex items-center">
+          <span className={`text-xs font-medium ${color}`}>{score}%</span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <div className="space-y-1 text-xs">
+            <p>Overall accuracy: {(accuracyData?.overall || 0).toFixed(0)}%</p>
+            <p>Recent performance: {(accuracyData?.recent || 0).toFixed(0)}%</p>
+            {accuracyData?.predictionHistory && (
+              <p>Past predictions: {accuracyData.predictionHistory.length}</p>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 };

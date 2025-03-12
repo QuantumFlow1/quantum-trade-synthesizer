@@ -2,11 +2,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@/tests/utils/test-utils';
 import { PortfolioDecision } from '@/components/trading/portfolio/PortfolioDecision';
-import { PortfolioDecision as PortfolioDecisionType, TradeAction } from '@/types/agent';
+import { PortfolioDecision as PortfolioDecisionType } from '@/types/agent';
 
 describe('PortfolioDecision', () => {
   const mockDecision: PortfolioDecisionType = {
-    id: crypto.randomUUID(),
+    action: 'BUY',
     ticker: 'BTC',
     amount: 0.05,
     price: 45000,
@@ -16,10 +16,7 @@ describe('PortfolioDecision', () => {
     riskScore: 35,
     contributors: ['value-investor-001', 'technical-analyst-001'],
     reasoning: 'Consensus among the specialized agents suggests a BUY action with strong confidence.',
-    timestamp: new Date().toISOString(),
-    recommendedActions: [],
-    finalDecision: 'BUY',
-    action: 'BUY' // For backward compatibility
+    timestamp: new Date().toISOString()
   };
 
   it('renders the decision details correctly', () => {
@@ -119,10 +116,7 @@ describe('PortfolioDecision', () => {
 
   it('renders high risk indicators for high risk decisions', () => {
     const mockExecute = vi.fn();
-    const highRiskDecision: PortfolioDecisionType = { 
-      ...mockDecision, 
-      riskScore: 75 
-    };
+    const highRiskDecision = { ...mockDecision, riskScore: 75 };
     
     render(
       <PortfolioDecision 
