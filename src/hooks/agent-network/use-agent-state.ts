@@ -58,6 +58,7 @@ export function useAgentState(user: any, isLoading: boolean, setIsLoading: (load
     selectedAgent,
     setSelectedAgent,
     refreshAgentState,
-    setAgentMessages
+    setAgentMessages,
+    setAgentTasks // Export this function to fix the error
   };
 }

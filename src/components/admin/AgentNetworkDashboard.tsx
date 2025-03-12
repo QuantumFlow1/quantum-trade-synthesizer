@@ -1,10 +1,9 @@
-
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import { AgentNetworkVisualizer } from "@/components/agent-network/AgentNetworkVisualizer";
-import { useAgentNetwork } from "@/hooks/use-agent-network";
+import { useAgentNetwork } from "@/hooks/use-agent-network"; // Updated import path
 
 export function AgentNetworkDashboard() {
   // Use the agent network hook to access agent data and functions

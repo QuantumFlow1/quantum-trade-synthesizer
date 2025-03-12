@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAgentNetwork } from "@/hooks/use-agent-network";
+import { useAgentNetwork } from "@/hooks/use-agent-network"; // Updated import path
 import { Agent, AgentDetails, AgentMessage, AgentTask } from '@/types/agent';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";

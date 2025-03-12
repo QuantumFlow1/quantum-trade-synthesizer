@@ -11,14 +11,7 @@ import { useMarketAnalysis } from './use-market-analysis';
 export function useAgentNetwork(): UseAgentNetworkReturn {
   const { user } = useUser();
 
-  // Initialize all hook dependencies
-  const { 
-    isInitialized, 
-    isLoading, 
-    initializeNetwork, 
-    setIsLoading 
-  } = useAgentInitialization(user, refreshAgentState);
-
+  // Initialize the agent state hook first to get the refreshAgentState function
   const {
     agents,
     activeAgents,
@@ -31,6 +24,15 @@ export function useAgentNetwork(): UseAgentNetworkReturn {
     setAgentMessages
   } = useAgentState(user, isLoading, setIsLoading);
 
+  // Now we can initialize the hook that depends on refreshAgentState
+  const { 
+    isInitialized, 
+    isLoading, 
+    initializeNetwork, 
+    setIsLoading 
+  } = useAgentInitialization(user, refreshAgentState);
+
+  // Initialize other hooks with properly scoped variables
   const {
     sendMessage,
     syncMessages
