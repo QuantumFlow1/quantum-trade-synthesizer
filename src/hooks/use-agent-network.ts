@@ -46,6 +46,18 @@ export function useAgentNetwork(): UseAgentNetworkReturn {
   const [portfolioDecisions, setPortfolioDecisions] = useState<PortfolioDecision[]>([]);
   const [recentPortfolioDecisions, setRecentPortfolioDecisions] = useState<PortfolioDecision[]>([]);
 
+  // Sync agent messages - moved up before it's used in other functions
+  const syncMessages = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const newMessages = await executeQuery(() => fetchAgentMessages(), 'Failed to fetch messages');
+      if (newMessages) setAgentMessages(newMessages);
+    } catch (error) {
+      console.error('Failed to sync messages:', error);
+    }
+  }, [user, executeQuery]);
+
   // Initialize the agent network
   const initializeNetwork = useCallback(async () => {
     if (isInitialized || isLoading || !user) return;
@@ -181,18 +193,6 @@ export function useAgentNetwork(): UseAgentNetworkReturn {
       }
     } catch (error) {
       console.error('Failed to toggle agent status:', error);
-    }
-  }, [user, executeQuery]);
-
-  // Sync agent messages
-  const syncMessages = useCallback(async () => {
-    if (!user) return;
-    
-    try {
-      const newMessages = await executeQuery(() => fetchAgentMessages(), 'Failed to fetch messages');
-      if (newMessages) setAgentMessages(newMessages);
-    } catch (error) {
-      console.error('Failed to sync messages:', error);
     }
   }, [user, executeQuery]);
 
