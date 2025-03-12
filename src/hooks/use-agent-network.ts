@@ -3,5 +3,5 @@
 // to maintain backward compatibility with existing imports
 export { useAgentNetwork } from './agent-network';
 
-// Re-export any types that might be needed
-export * from './agent-network/types';
+// Re-export types needed by consumers
+export type { UseAgentNetworkReturn } from './agent-network/types';

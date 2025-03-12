@@ -1,39 +1,48 @@
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useAgentState } from './use-agent-state';
 import { useAgentInitialization } from './use-agent-initialization';
 import { useAgentMessaging } from './use-agent-messaging';
 import { useAgentTasks } from './use-agent-tasks';
 import { useMarketAnalysis } from './use-market-analysis';
-import { UseAgentNetworkReturn } from './types'; // Assuming types are defined here
+import { UseAgentNetworkReturn } from './types';
 
 export const useAgentNetwork = (): UseAgentNetworkReturn => {
-  // Use hooks for different functionalities
+  // Create a user object placeholder for hooks that need it
+  const [user] = useState({ id: 'current-user' });
+  
+  // Create isLoading state that can be shared across hooks
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Use hooks for different functionalities with proper parameters
   const { 
     agents, 
-    agentStatus, 
     activeAgents, 
     agentMessages,
     agentTasks,
-    setAgents,
+    collaborationSessions,
+    selectedAgent,
+    setSelectedAgent,
+    refreshAgentState,
+    setAgentMessages,
     setAgentTasks,
-    refreshAgentState 
-  } = useAgentState();
+    setAgents 
+  } = useAgentState(user, isLoading, setIsLoading);
   
   const { 
-    initializeAgentNetwork, 
-    resetAgentNetwork 
-  } = useAgentInitialization(setAgents);
+    isInitialized,
+    initializeNetwork
+  } = useAgentInitialization(user, refreshAgentState);
   
   const { 
-    sendMessageToAgent, 
-    broadcastMessage 
-  } = useAgentMessaging(agents, agentMessages);
+    sendMessage, 
+    syncMessages 
+  } = useAgentMessaging(user, selectedAgent, setAgentMessages);
   
   const { 
     createTask,
     toggleAgent
-  } = useAgentTasks(agents, setAgents, agentTasks, setAgentTasks);
+  } = useAgentTasks(user, setAgentTasks);
   
   const {
     currentMarketData,
@@ -42,31 +51,30 @@ export const useAgentNetwork = (): UseAgentNetworkReturn => {
     recentAgentRecommendations,
     portfolioDecisions,
     recentPortfolioDecisions,
-    generateAnalysis
-  } = useMarketAnalysis();
-
-  // Callback to refresh the state
-  const refreshState = useCallback(() => {
-    refreshAgentState();
-  }, [refreshAgentState]);
+    generateAnalysis,
+    submitRecommendation
+  } = useMarketAnalysis(user);
 
   // Return the combined API
   return {
     // Agent state
     agents,
-    agentStatus,
     activeAgents,
     agentMessages,
     agentTasks,
+    collaborationSessions,
+    selectedAgent,
+    setSelectedAgent,
     
     // Initialization
-    initializeAgentNetwork,
-    resetAgentNetwork,
-    refreshState,
+    isInitialized,
+    isLoading,
+    initializeNetwork,
+    refreshAgentState,
     
     // Messaging
-    sendMessageToAgent,
-    broadcastMessage,
+    sendMessage,
+    syncMessages,
     
     // Tasks
     createTask,
@@ -79,9 +87,7 @@ export const useAgentNetwork = (): UseAgentNetworkReturn => {
     recentAgentRecommendations,
     portfolioDecisions,
     recentPortfolioDecisions,
-    generateAnalysis
+    generateAnalysis,
+    submitRecommendation
   };
 };
-
-// Re-export from the folder
-export { useAgentNetwork };
