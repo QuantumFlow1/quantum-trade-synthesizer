@@ -69,6 +69,36 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
     }
   };
 
+  // Render agent tasks, handling both array and object formats
+  const renderTasks = () => {
+    if (!agent.tasks) return null;
+    
+    if (Array.isArray(agent.tasks)) {
+      return (
+        <div className="mt-2">
+          <p className="text-sm font-medium mb-1">Primaire taken:</p>
+          <ul className="text-xs text-muted-foreground space-y-1">
+            {agent.tasks.slice(0, 3).map((task, index) => (
+              <li key={index} className="flex items-start">
+                <span className="mr-1">•</span>
+                <span>{task}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    } else {
+      return (
+        <div className="mt-2">
+          <p className="text-sm font-medium mb-1">Taken status:</p>
+          <p className="text-xs text-muted-foreground">
+            Voltooid: {agent.tasks.completed} | Wachtend: {agent.tasks.pending}
+          </p>
+        </div>
+      );
+    }
+  };
+
   return (
     <Card className={`bg-secondary/30 backdrop-blur-sm border-secondary/50 hover:border-secondary/80 transition-all duration-300 ${agent.status === "terminated" ? "opacity-70" : ""}`}>
       <CardHeader>
@@ -138,19 +168,7 @@ const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
               </div>
             </div>
           )}
-          {agent.tasks && (
-            <div className="mt-2">
-              <p className="text-sm font-medium mb-1">Primaire taken:</p>
-              <ul className="text-xs text-muted-foreground space-y-1">
-                {agent.tasks.slice(0, 3).map((task, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="mr-1">•</span>
-                    <span>{task}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {renderTasks()}
           <div className="text-xs text-muted-foreground mt-3 flex items-center justify-between">
             <span>
               Laatst actief: {formatDate(agent.lastActive)}

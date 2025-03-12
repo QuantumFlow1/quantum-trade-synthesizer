@@ -54,8 +54,11 @@ export const clearMessages = () => {
  */
 export const saveApiKey = (provider: string, key: string): boolean => {
   try {
+    // Handle provider type safely by checking if it's a valid provider
+    const validProvider = isValidProvider(provider) ? provider : 'groq';
+    
     // Use the centralized API key manager
-    const result = saveApiKeyToManager(provider, key);
+    const result = saveApiKeyToManager(validProvider as any, key);
     
     // For backward compatibility
     if (!result) {
@@ -64,7 +67,7 @@ export const saveApiKey = (provider: string, key: string): boolean => {
       // Skip if key is empty
       if (!key || key.trim() === '') {
         localStorage.removeItem(`${provider}ApiKey`);
-        broadcastApiKeyChange();
+        broadcastApiKeyChange(validProvider as any, 'remove');
         return false;
       }
       
@@ -72,7 +75,7 @@ export const saveApiKey = (provider: string, key: string): boolean => {
       localStorage.setItem(`${provider}ApiKey`, key);
       
       // Dispatch events as fallback
-      broadcastApiKeyChange();
+      broadcastApiKeyChange(validProvider as any, 'save');
     }
     
     return true;
@@ -81,6 +84,12 @@ export const saveApiKey = (provider: string, key: string): boolean => {
     return false;
   }
 };
+
+// Helper function to check if a provider is valid
+function isValidProvider(provider: string): boolean {
+  const validProviders = ['openai', 'groq', 'claude', 'anthropic', 'gemini', 'deepseek'];
+  return validProviders.includes(provider);
+}
 
 // Aliases for backward compatibility
 export const loadStockbotChatHistory = loadMessages;

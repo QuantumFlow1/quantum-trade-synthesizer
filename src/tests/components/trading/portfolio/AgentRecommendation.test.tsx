@@ -11,8 +11,8 @@ describe('AgentRecommendation', () => {
     confidence: 85,
     reasoning: 'Strong fundamentals and growth potential',
     ticker: 'BTC',
-    price: 45000,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    price: 45000 // Now allowed by the updated type
   };
 
   it('renders recommendation correctly', () => {
