@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { usePortfolioManager } from './portfolio/usePortfolioManager';
+import { usePortfolioManager } from './portfolio/hooks/usePortfolioManager';
 import { SimulationAlert } from './portfolio/SimulationAlert';
 import { EmptyAnalysisState } from './portfolio/EmptyAnalysisState';
 import { RecommendationList } from './portfolio/RecommendationList';

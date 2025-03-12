@@ -86,14 +86,16 @@ export const AgentRecommendationCard: React.FC<AgentRecommendationCardProps> = (
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1.5 text-xs cursor-help">
                     <BarChart2 className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="font-medium">{Math.round(agentPerformance.accuracy)}%</span>
+                    <span className="font-medium">{Math.round(agentPerformance.accuracy * 100)}%</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent className="w-64 p-0" side="bottom">
-                  <PerformanceMetrics 
-                    agentPerformance={agentPerformance}
-                    accuracyData={accuracyData}
-                  />
+                  {agentPerformance && (
+                    <PerformanceMetrics 
+                      agentPerformance={agentPerformance}
+                      accuracyData={accuracyData}
+                    />
+                  )}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
