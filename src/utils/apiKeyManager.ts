@@ -35,25 +35,39 @@ export const saveApiKey = (provider: ApiProvider, key: string): boolean => {
     localStorage.setItem(storageKey, key);
     
     // Dispatch events to notify other components
-    window.dispatchEvent(new Event('localStorage-changed'));
-    window.dispatchEvent(new Event('apikey-updated'));
-    
-    // Dispatch a connection status event
-    if (key) {
-      window.dispatchEvent(new CustomEvent('connection-status-changed', {
-        detail: { provider, status: 'connected' }
-      }));
-    } else {
-      window.dispatchEvent(new CustomEvent('connection-status-changed', {
-        detail: { provider, status: 'disconnected' }
-      }));
-    }
+    broadcastApiKeyChange(provider, !!key);
     
     return true;
   } catch (error) {
     console.error(`Error saving ${provider} API key:`, error);
     return false;
   }
+};
+
+/**
+ * Broadcast API key change events
+ * @param provider The API provider
+ * @param isConnected Whether the provider is connected
+ */
+export const broadcastApiKeyChange = (provider: ApiProvider, isConnected: boolean): void => {
+  // Dispatch general localStorage change event
+  window.dispatchEvent(new Event('localStorage-changed'));
+  window.dispatchEvent(new Event('apikey-updated'));
+  
+  // Dispatch a connection status event
+  window.dispatchEvent(new CustomEvent('connection-status-changed', {
+    detail: { provider, status: isConnected ? 'connected' : 'disconnected' }
+  }));
+};
+
+/**
+ * Get a list of available API providers that have keys configured
+ * @returns Array of provider names that have valid keys
+ */
+export const getAvailableProviders = (): ApiProvider[] => {
+  return Object.keys(API_KEY_STORAGE_KEYS).filter(provider => 
+    hasApiKey(provider as ApiProvider)
+  ) as ApiProvider[];
 };
 
 /**

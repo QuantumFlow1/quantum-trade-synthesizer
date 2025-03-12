@@ -3,8 +3,8 @@ import { ChatMessage, StockbotMessage } from './types';
 import { 
   saveApiKey as saveApiKeyToManager, 
   hasApiKey, 
-  getApiKey, 
-  broadcastApiKeyChange 
+  getApiKey,
+  broadcastApiKeyChange
 } from '@/utils/apiKeyManager';
 
 /**
