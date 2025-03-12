@@ -47,7 +47,6 @@ export interface AgentStateReturn {
   refreshAgentState: () => void;
   setAgentMessages: Dispatch<SetStateAction<AgentMessage[]>>;
   setAgentTasks: Dispatch<SetStateAction<AgentTask[]>>;
-  setAgents: Dispatch<SetStateAction<AgentDetails[]>>;
 }
 
 export interface AgentInitializationReturn {
