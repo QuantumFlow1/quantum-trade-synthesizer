@@ -50,11 +50,11 @@ export interface PortfolioDecision {
   finalDecision: TradeAction;
   confidence: number;
   reasoning: string;
-  ticker?: string;
-  amount?: number;
-  price?: number;
-  riskScore?: number;
-  action?: string;
+  ticker: string;
+  amount: number;
+  price: number;
+  riskScore: number;
+  action?: TradeAction;  // Kept for backward compatibility
   stopLoss?: number;
   takeProfit?: number;
   contributors?: string[];
