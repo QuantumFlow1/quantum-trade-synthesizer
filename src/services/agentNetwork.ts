@@ -1,285 +1,319 @@
+
+import { supabase } from '@/lib/supabase';
 import { 
   AgentDetails, 
-  TradeAction,
   AgentMessage,
   AgentTask,
   CollaborationSession,
-  PortfolioDecision,
-  AgentRecommendation
+  AgentRecommendation,
+  TradeAction,
+  PortfolioDecision
 } from '@/types/agent';
 
-// Mock data for agents
+// Mock data for development purposes
 const mockAgents: AgentDetails[] = [
   {
-    id: 'value-investor-001',
-    name: 'Value Investor',
-    description: 'Focuses on undervalued assets with strong fundamentals.',
-    specialization: 'Value Investing',
-    confidence: 0.8,
+    id: 'agent-1',
+    name: 'Market Analyst',
+    description: 'Analyzes market trends and provides recommendations',
+    specialization: 'technical',
+    confidence: 0.85,
     weight: 0.7,
     isActive: true
   },
   {
-    id: 'technical-analyst-001',
-    name: 'Technical Analyst',
-    description: 'Analyzes price patterns and trading signals.',
-    specialization: 'Technical Analysis',
-    confidence: 0.75,
-    weight: 0.6,
-    isActive: true
-  },
-  {
-    id: 'sentiment-analyst-001',
-    name: 'Sentiment Analyst',
-    description: 'Gauges market sentiment from news and social media.',
-    specialization: 'Sentiment Analysis',
-    confidence: 0.7,
-    weight: 0.5,
-    isActive: true
-  },
-  {
-    id: 'quantitative-analyst-001',
-    name: 'Quantitative Analyst',
-    description: 'Uses statistical models and algorithms for trading.',
-    specialization: 'Quantitative Analysis',
-    confidence: 0.85,
+    id: 'agent-2',
+    name: 'Risk Manager',
+    description: 'Evaluates risk factors and recommends mitigation strategies',
+    specialization: 'risk',
+    confidence: 0.9,
     weight: 0.8,
-    isActive: false
+    isActive: true
   },
   {
-    id: 'macroeconomic-analyst-001',
-    name: 'Macroeconomic Analyst',
-    description: 'Assesses economic trends and their impact on markets.',
-    specialization: 'Macroeconomics',
+    id: 'agent-3',
+    name: 'Portfolio Optimizer',
+    description: 'Optimizes portfolio allocations for maximum returns',
+    specialization: 'portfolio',
     confidence: 0.75,
     weight: 0.6,
     isActive: false
   }
 ];
 
-// Mock data for agent messages
-const mockAgentMessages: AgentMessage[] = [
+const mockMessages: AgentMessage[] = [
   {
-    id: crypto.randomUUID(),
-    fromAgent: 'value-investor-001',
-    toAgent: 'technical-analyst-001',
-    message: 'I see a strong buying opportunity in BTC based on its current valuation.',
-    timestamp: new Date().toISOString(),
-    read: true
-  },
-  {
-    id: crypto.randomUUID(),
-    fromAgent: 'technical-analyst-001',
-    toAgent: 'value-investor-001',
-    message: 'Technicals confirm the upward trend, but be cautious of resistance at $45,000.',
-    timestamp: new Date().toISOString(),
-    read: true
-  },
-  {
-    id: crypto.randomUUID(),
-    fromAgent: 'sentiment-analyst-001',
-    toAgent: 'network',
-    message: 'Market sentiment is increasingly positive, driven by recent news.',
+    id: 'msg-1',
+    fromAgent: 'agent-1',
+    toAgent: 'agent-2',
+    message: 'Market volatility is increasing, recommend reducing exposure',
     timestamp: new Date().toISOString(),
     read: false
+  },
+  {
+    id: 'msg-2',
+    fromAgent: 'agent-2',
+    toAgent: 'agent-3',
+    message: 'Risk levels elevated, adjust portfolio allocations',
+    timestamp: new Date().toISOString(),
+    read: true
   }
 ];
 
-// Mock data for agent tasks
-const mockAgentTasks: AgentTask[] = [
+const mockTasks: AgentTask[] = [
   {
-    id: crypto.randomUUID(),
-    assignedTo: 'value-investor-001',
-    description: 'Research potential long-term investments in the energy sector.',
+    id: 'task-1',
+    assignedTo: 'agent-1',
+    description: 'Analyze BTC price movement for the next 24 hours',
     status: 'pending',
     createdAt: new Date().toISOString(),
     completedAt: null
   },
   {
-    id: crypto.randomUUID(),
-    assignedTo: 'technical-analyst-001',
-    description: 'Analyze recent trading volumes for TSLA and identify key levels.',
-    status: 'in-progress',
-    createdAt: new Date().toISOString(),
-    completedAt: null
-  },
-  {
-    id: crypto.randomUUID(),
-    assignedTo: 'sentiment-analyst-001',
-    description: 'Monitor social media for mentions of AAPL and assess public sentiment.',
+    id: 'task-2',
+    assignedTo: 'agent-2',
+    description: 'Evaluate risk exposure of current portfolio',
     status: 'completed',
     createdAt: new Date().toISOString(),
-    completedAt: new Date().toISOString()
+    completedAt: new Date().toISOString(),
+    result: 'Risk exposure is within acceptable parameters'
   }
 ];
 
-// Mock data for collaboration sessions
-const mockCollaborationSessions: CollaborationSession[] = [
+const mockSessions: CollaborationSession[] = [
   {
-    id: crypto.randomUUID(),
-    participants: ['value-investor-001', 'technical-analyst-001'],
-    topic: 'Joint analysis of BTC',
+    id: 'session-1',
+    participants: ['agent-1', 'agent-2'],
+    topic: 'Market volatility assessment',
     startTime: new Date().toISOString(),
     endTime: null,
     status: 'active'
   },
   {
-    id: crypto.randomUUID(),
-    participants: ['sentiment-analyst-001', 'quantitative-analyst-001'],
-    topic: 'Correlating sentiment with quantitative data for ETH',
+    id: 'session-2',
+    participants: ['agent-2', 'agent-3'],
+    topic: 'Portfolio rebalancing strategy',
     startTime: new Date().toISOString(),
     endTime: new Date().toISOString(),
     status: 'completed'
   }
 ];
 
-// Mock function to create agent recommendations
-const createAgentRecommendation = (
-  agent: AgentDetails,
-  ticker: string,
-  action: TradeAction
-): AgentRecommendation => {
-  return {
-    agentId: agent.id,
-    action: action,
-    ticker: ticker,
-    confidence: agent.confidence * 100,
-    reasoning: `Based on ${agent.specialization} analysis.`,
-    timestamp: new Date().toISOString()
-  };
-};
-
-// Mock data for agent recommendations
-const mockRecommendations: AgentRecommendation[] = [
-  createAgentRecommendation(mockAgents[0], 'BTC', 'BUY'),
-  createAgentRecommendation(mockAgents[1], 'ETH', 'SELL'),
-  createAgentRecommendation(mockAgents[2], 'AAPL', 'HOLD')
-];
-
-// Mock data for portfolio decisions
-const mockPortfolioDecisions: PortfolioDecision[] = [
-  {
-    id: crypto.randomUUID(),
-    finalDecision: 'BUY',
-    ticker: 'BTC',
-    amount: 0.5,
-    price: 45000,
-    confidence: 0.85,
-    riskScore: 60,
-    contributors: ['value-investor-001', 'technical-analyst-001'],
-    reasoning: 'Strong consensus among value and technical analysts.',
-    timestamp: new Date().toISOString(),
-    recommendedActions: [],
-  },
-  {
-    id: crypto.randomUUID(),
-    finalDecision: 'SELL',
-    ticker: 'ETH',
-    amount: 1.0,
-    price: 2500,
-    confidence: 0.75,
-    riskScore: 70,
-    contributors: ['sentiment-analyst-001', 'quantitative-analyst-001'],
-    reasoning: 'Negative sentiment and quantitative indicators suggest selling.',
-    timestamp: new Date().toISOString(),
-    recommendedActions: [],
+// Fetch agents from the database or use mock data
+export async function fetchAgents(): Promise<{ data: AgentDetails[] | null; error: Error | null }> {
+  try {
+    // In a real implementation, this would fetch from Supabase
+    // const { data, error } = await supabase.from('agents').select('*');
+    
+    // For now, use mock data
+    return { data: mockAgents, error: null };
+  } catch (error) {
+    console.error('Error fetching agents:', error);
+    return { data: null, error: error as Error };
   }
-];
+}
 
-// Update the export statement
-export type { AgentMessage, AgentTask, CollaborationSession } from '@/types/agent';
+// Fetch agent messages
+export async function fetchAgentMessages(): Promise<{ data: AgentMessage[] | null; error: Error | null }> {
+  try {
+    // In a real implementation, this would fetch from Supabase
+    // const { data, error } = await supabase.from('agent_messages').select('*').order('timestamp', { ascending: false });
+    
+    // For now, use mock data
+    return { data: mockMessages, error: null };
+  } catch (error) {
+    console.error('Error fetching agent messages:', error);
+    return { data: null, error: error as Error };
+  }
+}
 
-// Mock API functions
-export const getAgentMessages = (): AgentMessage[] => {
-  return mockAgentMessages;
-};
+// Fetch agent tasks
+export async function fetchAgentTasks(): Promise<{ data: AgentTask[] | null; error: Error | null }> {
+  try {
+    // In a real implementation, this would fetch from Supabase
+    // const { data, error } = await supabase.from('agent_tasks').select('*').order('createdAt', { ascending: false });
+    
+    // For now, use mock data
+    return { data: mockTasks, error: null };
+  } catch (error) {
+    console.error('Error fetching agent tasks:', error);
+    return { data: null, error: error as Error };
+  }
+}
 
-export const getAgentTasks = (): AgentTask[] => {
-  return mockAgentTasks;
-};
+// Fetch collaboration sessions
+export async function fetchCollaborationSessions(): Promise<{ data: CollaborationSession[] | null; error: Error | null }> {
+  try {
+    // In a real implementation, this would fetch from Supabase
+    // const { data, error } = await supabase.from('collaboration_sessions').select('*').order('startTime', { ascending: false });
+    
+    // For now, use mock data
+    return { data: mockSessions, error: null };
+  } catch (error) {
+    console.error('Error fetching collaboration sessions:', error);
+    return { data: null, error: error as Error };
+  }
+}
 
-export const initializeAgentNetwork = (): void => {
-  console.log("Agent network initialized");
-};
+// Initialize agent network
+export async function initializeAgentNetwork(): Promise<boolean> {
+  try {
+    // In a real implementation, this might involve setting up database tables or initializing agents
+    // For now, just return true
+    return true;
+  } catch (error) {
+    console.error('Error initializing agent network:', error);
+    return false;
+  }
+}
 
-export const generateCollaborativeTradingAnalysis = (
-  ticker: string,
+// Send a message to an agent
+export async function sendAgentMessage(message: string, toAgent: string): Promise<boolean> {
+  try {
+    // In a real implementation, this would insert a message into Supabase
+    // const { data, error } = await supabase.from('agent_messages').insert([
+    //   {
+    //     fromAgent: 'user',
+    //     toAgent,
+    //     message,
+    //     timestamp: new Date().toISOString(),
+    //     read: false
+    //   }
+    // ]);
+    
+    // For now, just add to mock data
+    mockMessages.push({
+      id: `msg-${mockMessages.length + 1}`,
+      fromAgent: 'user',
+      toAgent,
+      message,
+      timestamp: new Date().toISOString(),
+      read: false
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error sending agent message:', error);
+    return false;
+  }
+}
+
+// Create a task for an agent
+export async function createAgentTask(description: string, assignedTo: string): Promise<boolean> {
+  try {
+    // In a real implementation, this would insert a task into Supabase
+    // const { data, error } = await supabase.from('agent_tasks').insert([
+    //   {
+    //     assignedTo,
+    //     description,
+    //     status: 'pending',
+    //     createdAt: new Date().toISOString(),
+    //     completedAt: null
+    //   }
+    // ]);
+    
+    // For now, just add to mock data
+    mockTasks.push({
+      id: `task-${mockTasks.length + 1}`,
+      assignedTo,
+      description,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      completedAt: null
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error creating agent task:', error);
+    return false;
+  }
+}
+
+// Toggle agent active status
+export async function toggleAgentStatus(agentId: string): Promise<boolean> {
+  try {
+    // Find the agent in mock data and toggle its status
+    const agent = mockAgents.find(a => a.id === agentId);
+    if (agent) {
+      agent.isActive = !agent.isActive;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error toggling agent status:', error);
+    return false;
+  }
+}
+
+// Submit a trading recommendation
+export async function submitTradeRecommendation(
+  ticker: string, 
+  action: TradeAction, 
+  confidence: number
+): Promise<AgentRecommendation | null> {
+  try {
+    // Create a new recommendation
+    const recommendation: AgentRecommendation = {
+      agentId: 'user',
+      action,
+      ticker,
+      confidence,
+      reasoning: 'User-submitted recommendation',
+      timestamp: new Date().toISOString()
+    };
+    
+    return recommendation;
+  } catch (error) {
+    console.error('Error submitting recommendation:', error);
+    return null;
+  }
+}
+
+// Execute portfolio analysis
+export async function executePortfolioAnalysis(
+  ticker: string, 
   timeframe: string
-) => {
-  return {
-    id: crypto.randomUUID(),
-    ticker,
-    timestamp: new Date().toISOString(),
-    signals: []
-  };
-};
-
-export const getActiveAgents = () => {
-  return mockAgents.filter(agent => agent.isActive);
-};
-
-export const toggleAgentStatus = (id: string): void => {
-  const agent = mockAgents.find(a => a.id === id);
-  if (agent) {
-    agent.isActive = !agent.isActive;
+): Promise<{
+  recommendations: AgentRecommendation[];
+  recentRecommendations: AgentRecommendation[];
+  portfolioDecisions: PortfolioDecision[];
+  recentPortfolioDecisions: PortfolioDecision[];
+} | null> {
+  try {
+    // Generate mock recommendations
+    const mockRecommendations: AgentRecommendation[] = mockAgents
+      .filter(agent => agent.isActive)
+      .map(agent => ({
+        agentId: agent.id,
+        action: Math.random() > 0.5 ? 'BUY' : 'SELL',
+        ticker,
+        confidence: Math.round(agent.confidence * 100),
+        reasoning: `${agent.name} recommendation based on ${timeframe} analysis`,
+        timestamp: new Date().toISOString()
+      }));
+    
+    // Generate mock portfolio decision
+    const mockDecision: PortfolioDecision = {
+      id: `decision-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      recommendedActions: mockRecommendations,
+      finalDecision: 'BUY',
+      confidence: 75,
+      reasoning: `Based on agent recommendations for ${ticker} over ${timeframe}`,
+      ticker,
+      amount: 0.1,
+      price: 50000,
+      riskScore: 65
+    };
+    
+    return {
+      recommendations: mockRecommendations,
+      recentRecommendations: mockRecommendations,
+      portfolioDecisions: [mockDecision],
+      recentPortfolioDecisions: [mockDecision]
+    };
+  } catch (error) {
+    console.error('Error executing portfolio analysis:', error);
+    return null;
   }
-};
-
-export const sendAgentMessage = (message: string, toAgent?: string): AgentMessage => {
-  const newMessage: AgentMessage = {
-    id: crypto.randomUUID(),
-    fromAgent: 'user',
-    toAgent: toAgent || 'network',
-    message,
-    timestamp: new Date().toISOString(),
-    read: false
-  };
-  mockAgentMessages.push(newMessage);
-  return newMessage;
-};
-
-export const createAgentTask = (description: string, assignedTo: string): AgentTask => {
-  const newTask: AgentTask = {
-    id: crypto.randomUUID(),
-    assignedTo,
-    description,
-    status: 'pending',
-    createdAt: new Date().toISOString(),
-    completedAt: null
-  };
-  mockAgentTasks.push(newTask);
-  return newTask;
-};
-
-export const syncAgentMessages = (): void => {
-  console.log("Syncing agent messages...");
-};
-
-export const getCollaborationSessions = () => {
-  return mockCollaborationSessions;
-};
-
-export const submitAgentRecommendation = (
-  agent: AgentDetails,
-  ticker: string,
-  action: TradeAction
-) => {
-  const newRecommendation = createAgentRecommendation(agent, ticker, action);
-  return newRecommendation;
-};
-
-export const getAgentRecommendations = () => {
-  return mockRecommendations;
-};
-
-export const getRecentAgentRecommendations = (limit: number = 5) => {
-  return mockRecommendations.slice(0, limit);
-};
-
-export const getPortfolioDecisions = () => {
-  return mockPortfolioDecisions;
-};
-
-export const getRecentPortfolioDecisions = (limit: number = 5) => {
-  return mockPortfolioDecisions.slice(0, limit);
-};
+}

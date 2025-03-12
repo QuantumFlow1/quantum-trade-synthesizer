@@ -1,3 +1,4 @@
+
 export interface Agent {
   id: string;
   name: string;
@@ -71,7 +72,7 @@ export interface GroqAgentSettings {
   apiKey?: string;
 }
 
-export interface AgentDetails {
+export interface AgentDetails extends Omit<Agent, 'type' | 'status' | 'lastActive'> {
   id: string;
   name: string;
   description: string;
@@ -88,15 +89,19 @@ export interface AgentMessage {
   message: string;
   timestamp: string;
   read: boolean;
+  content?: string; // Added missing property
 }
 
 export interface AgentTask {
   id: string;
   assignedTo: string;
   description: string;
-  status: 'pending' | 'in-progress' | 'completed';
+  status: 'pending' | 'in-progress' | 'completed' | 'failed';
   createdAt: string;
   completedAt: string | null;
+  agentId?: string; // Added missing property
+  priority?: 'low' | 'medium' | 'high'; // Added missing property
+  result?: string; // Added missing property
 }
 
 export interface CollaborationSession {
