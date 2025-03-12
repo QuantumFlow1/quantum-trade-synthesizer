@@ -1,0 +1,91 @@
+
+import { useEffect } from 'react';
+import { useUser } from '@/hooks/use-user';
+import { UseAgentNetworkReturn } from '@/types/agent';
+import { useAgentInitialization } from './use-agent-initialization';
+import { useAgentState } from './use-agent-state';
+import { useAgentMessaging } from './use-agent-messaging';
+import { useAgentTasks } from './use-agent-tasks';
+import { useMarketAnalysis } from './use-market-analysis';
+
+export function useAgentNetwork(): UseAgentNetworkReturn {
+  const { user } = useUser();
+
+  // Initialize all hook dependencies
+  const { 
+    isInitialized, 
+    isLoading, 
+    initializeNetwork, 
+    setIsLoading 
+  } = useAgentInitialization(user, refreshAgentState);
+
+  const {
+    agents,
+    activeAgents,
+    agentMessages,
+    agentTasks,
+    collaborationSessions,
+    selectedAgent,
+    setSelectedAgent,
+    refreshAgentState,
+    setAgentMessages
+  } = useAgentState(user, isLoading, setIsLoading);
+
+  const {
+    sendMessage,
+    syncMessages
+  } = useAgentMessaging(user, selectedAgent, setAgentMessages);
+
+  const {
+    createTask,
+    toggleAgent
+  } = useAgentTasks(user, setAgentTasks);
+
+  const {
+    currentMarketData,
+    setCurrentMarketData,
+    agentRecommendations,
+    recentAgentRecommendations,
+    portfolioDecisions,
+    recentPortfolioDecisions,
+    generateAnalysis,
+    submitRecommendation
+  } = useMarketAnalysis(user);
+
+  // Update agent state periodically
+  useEffect(() => {
+    if (!isInitialized || !user) return;
+    
+    const interval = setInterval(() => {
+      refreshAgentState();
+    }, 60000); // Update every minute
+    
+    return () => clearInterval(interval);
+  }, [isInitialized, user, refreshAgentState]);
+
+  return {
+    agents,
+    activeAgents,
+    agentMessages,
+    agentTasks,
+    collaborationSessions,
+    selectedAgent,
+    setSelectedAgent,
+    currentMarketData,
+    setCurrentMarketData,
+    initializeNetwork,
+    generateAnalysis,
+    toggleAgent,
+    sendMessage,
+    createTask,
+    syncMessages,
+    submitRecommendation,
+    agentRecommendations,
+    recentAgentRecommendations,
+    portfolioDecisions,
+    recentPortfolioDecisions,
+    isInitialized,
+    isLoading,
+    refreshAgentState
+  };
+}
