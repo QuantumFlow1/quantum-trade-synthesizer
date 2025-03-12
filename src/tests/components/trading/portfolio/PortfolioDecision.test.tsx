@@ -18,7 +18,8 @@ describe('PortfolioDecision', () => {
     reasoning: 'Consensus among the specialized agents suggests a BUY action with strong confidence.',
     timestamp: new Date().toISOString(),
     recommendedActions: [],
-    finalDecision: 'BUY'
+    finalDecision: 'BUY',
+    action: 'BUY' // For backward compatibility
   };
 
   it('renders the decision details correctly', () => {

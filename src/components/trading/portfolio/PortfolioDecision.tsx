@@ -67,7 +67,7 @@ export const PortfolioDecision: React.FC<PortfolioDecisionProps> = ({
     }
   };
   
-  // Use the action from finalDecision or action property
+  // Use the action from finalDecision, fall back to action property, or default to "HOLD"
   const actionText = decision.finalDecision || decision.action || "HOLD";
   
   return (

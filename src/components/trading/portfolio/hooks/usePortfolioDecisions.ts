@@ -25,7 +25,9 @@ export const usePortfolioDecisions = () => {
     const votes = {
       BUY: 0,
       SELL: 0,
-      HOLD: 0
+      HOLD: 0,
+      SHORT: 0,
+      COVER: 0
     };
     
     // Track contributing agents
