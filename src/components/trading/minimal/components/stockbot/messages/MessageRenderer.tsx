@@ -1,6 +1,5 @@
-
 import React from "react";
-import { TradingViewChart, MarketHeatmap, StockNews, SentimentAnalysis } from "../widgets";
+import { TradingViewChart, MarketHeatmap, StockNews, SentimentAnalysis, MarketTrend } from "../widgets";
 import { toast } from "@/hooks/use-toast";
 
 interface MessageRendererProps {
@@ -68,6 +67,24 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ functionName, 
           <SentimentAnalysis symbol={symbol} timeframe={timeframe} />
         </>
       );
+    } else if (functionName === "showMarketTrend") {
+      const symbol = params.symbol || "BTC";
+      const timeframe = params.timeframe || "1D";
+      
+      // Format the symbol properly
+      let formattedSymbol = symbol;
+      if (symbol.toLowerCase() === "bitcoin" || symbol.toLowerCase() === "btc") {
+        formattedSymbol = "BTCUSD";
+      } else if (symbol.toLowerCase() === "ethereum" || symbol.toLowerCase() === "eth") {
+        formattedSymbol = "ETHUSD";
+      }
+      
+      return (
+        <>
+          <div className="mb-2">Here's the market trend data for {symbol}:</div>
+          <MarketTrend symbol={formattedSymbol} timeframe={timeframe} />
+        </>
+      );
     }
     
     // If no match, return fallback content
@@ -85,7 +102,6 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ functionName, 
   }
 };
 
-// Improved function to extract function calls from content with better error handling
 export const extractFunctionCall = (content: string): { functionName: string; params: any } | null => {
   try {
     console.log("Extracting function call from:", content.substring(0, 100) + (content.length > 100 ? "..." : ""));

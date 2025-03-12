@@ -34,11 +34,18 @@ export const generateStockbotResponse = (inputMessage: string, marketData: any[]
     const symbol = extractSymbol(normalizedInput) || 'AAPL';
     responseText = `<function=analyzeSentiment{"symbol":"${symbol}","timeframe":"1D"}>`;
   }
+  else if (normalizedInput.includes('trend') || normalizedInput.includes('performance') || normalizedInput.includes('data')) {
+    const symbol = extractSymbol(normalizedInput) || 'BTC';
+    responseText = `<function=showMarketTrend{"symbol":"${symbol}","timeframe":"1D"}>`;
+  }
   else if (normalizedInput.includes('price') || normalizedInput.includes('value') || normalizedInput.includes('worth')) {
     const symbol = extractSymbol(normalizedInput);
     if (symbol) {
       const priceData = getSimulatedPriceData(symbol);
-      responseText = `${symbol} is currently trading at $${priceData.price}. It's ${priceData.change >= 0 ? 'up' : 'down'} ${Math.abs(priceData.change).toFixed(2)}% today on a volume of ${priceData.volume} shares.\n\n⚠️ NOTE: This is simulated data. To get real market data, please configure an API key and disable simulation mode.`;
+      
+      // Use the new market trend function with a clear simulation indicator
+      responseText = `<function=showMarketTrend{"symbol":"${symbol}","timeframe":"1D"}>`;
+      responseText += `\n\n⚠️ NOTE: This is simulated data. To get real market data, please configure an API key and disable simulation mode.`;
     } else {
       responseText = "I'd be happy to provide price information. Could you specify which stock or cryptocurrency you're interested in?";
     }
@@ -52,7 +59,15 @@ export const generateStockbotResponse = (inputMessage: string, marketData: any[]
         `${m.symbol || 'Unknown'}: $${m.price || m.close || 0} (${m.change_percentage || '0'}%)`
       ).join(', ');
       
-      responseText = `Based on the current market data I have, here's a quick overview: ${marketSummary}. You can ask me about specific stocks for more details.\n\n⚠️ NOTE: This is simulated data. To get real market data, please configure an API key and disable simulation mode.`;
+      // If it looks like a request for specific data, use the market trend function
+      if (normalizedInput.includes('bitcoin') || normalizedInput.includes('btc') || 
+          normalizedInput.includes('ethereum') || normalizedInput.includes('eth')) {
+        const symbol = normalizedInput.includes('bitcoin') || normalizedInput.includes('btc') ? 'BTC' : 'ETH';
+        responseText = `<function=showMarketTrend{"symbol":"${symbol}","timeframe":"1D"}>`;
+        responseText += `\n\n⚠️ NOTE: This is simulated data. To get real market data, please configure an API key and disable simulation mode.`;
+      } else {
+        responseText = `Based on the current market data I have, here's a quick overview: ${marketSummary}. You can ask me about specific stocks for more details.\n\n⚠️ NOTE: This is simulated data. To get real market data, please configure an API key and disable simulation mode.`;
+      }
     } catch (error) {
       console.error('Error processing market data in simulation:', error);
       // Fallback to generic response
