@@ -4,7 +4,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TradingView } from "./components/TradingView";
 import { TradingAgents } from "./components/TradingAgents";
 import { NewsFeed } from "./components/NewsFeed";
-import { StockbotChat } from "./StockbotChat";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { ApiStatus } from "@/hooks/trading-chart/types";
 
@@ -99,11 +98,10 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
       onValueChange={setActiveTab}
       className="w-full"
     >
-      <TabsList className="grid grid-cols-4 mb-4">
+      <TabsList className="grid grid-cols-3 mb-4">
         <TabsTrigger value="chart">Price Chart</TabsTrigger>
         <TabsTrigger value="agents">Trading Agents</TabsTrigger>
         <TabsTrigger value="news">Market News</TabsTrigger>
-        <TabsTrigger value="chat">Stockbot</TabsTrigger>
       </TabsList>
       
       <TabsContent value="chart" className="space-y-4">
@@ -123,13 +121,6 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
       
       <TabsContent value="news" className="space-y-4">
         <NewsFeed selectedPair={selectedPair} />
-      </TabsContent>
-      
-      <TabsContent value="chat" className="space-y-4">
-        <StockbotChat 
-          hasApiKey={hasApiKey} 
-          marketData={mockChartData} 
-        />
       </TabsContent>
     </Tabs>
   );

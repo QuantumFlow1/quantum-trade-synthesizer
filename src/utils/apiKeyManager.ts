@@ -1,106 +1,188 @@
 
-// Function to save API key to local storage
-export const saveApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek', key: string): boolean => {
+/**
+ * Utility for managing API keys in the application
+ */
+
+// For type safety
+type ApiProvider = 'openai' | 'groq' | 'claude' | 'gemini' | 'anthropic' | 'deepseek';
+
+// Storage keys for different API providers
+const API_KEY_STORAGE_KEYS: Record<ApiProvider, string> = {
+  openai: 'openaiApiKey',
+  groq: 'groqApiKey',
+  claude: 'claudeApiKey',
+  gemini: 'geminiApiKey',
+  anthropic: 'claudeApiKey', // alias for claude
+  deepseek: 'deepseekApiKey'
+};
+
+/**
+ * Save an API key to localStorage
+ * @param provider The API provider
+ * @param key The API key to save
+ * @returns Boolean indicating success
+ */
+export const saveApiKey = (provider: ApiProvider, key: string): boolean => {
   try {
-    if (!key || key.trim().length < 10) {
-      console.error(`Invalid ${type} API key`);
+    // Get the correct storage key
+    const storageKey = API_KEY_STORAGE_KEYS[provider];
+    if (!storageKey) {
+      console.error(`Unknown API provider: ${provider}`);
       return false;
     }
     
-    const storageKey = `${type}ApiKey`;
-    localStorage.setItem(storageKey, key.trim());
+    // Save the key to localStorage
+    localStorage.setItem(storageKey, key);
     
-    // Dispatch event for listeners
-    window.dispatchEvent(new CustomEvent('api-key-updated', { detail: { type, action: 'save' } }));
-    
-    // Broadcast change via custom method
-    broadcastApiKeyChange(type, 'save');
+    // Dispatch events to notify other components
+    broadcastApiKeyChange(provider, !!key);
     
     return true;
   } catch (error) {
-    console.error(`Error saving ${type} API key:`, error);
+    console.error(`Error saving ${provider} API key:`, error);
     return false;
   }
 };
 
-// Function to get API key from local storage
-export const getApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): string | null => {
+/**
+ * Broadcast API key change events
+ * @param provider The API provider
+ * @param isConnected Whether the provider is connected
+ */
+export const broadcastApiKeyChange = (provider: ApiProvider, isConnected: boolean): void => {
+  // Dispatch general localStorage change event
+  window.dispatchEvent(new Event('localStorage-changed'));
+  window.dispatchEvent(new Event('apikey-updated'));
+  
+  // Dispatch a connection status event
+  window.dispatchEvent(new CustomEvent('connection-status-changed', {
+    detail: { provider, status: isConnected ? 'connected' : 'disconnected' }
+  }));
+};
+
+/**
+ * Get a list of available API providers that have keys configured
+ * @returns Array of provider names that have valid keys
+ */
+export const getAvailableProviders = (): ApiProvider[] => {
+  return Object.keys(API_KEY_STORAGE_KEYS).filter(provider => 
+    hasApiKey(provider as ApiProvider)
+  ) as ApiProvider[];
+};
+
+/**
+ * Check if an API key exists for a provider
+ * @param provider The API provider
+ * @returns Boolean indicating if key exists
+ */
+export const hasApiKey = (provider: ApiProvider): boolean => {
   try {
-    const storageKey = `${type}ApiKey`;
+    const storageKey = API_KEY_STORAGE_KEYS[provider];
+    if (!storageKey) return false;
+    
+    const key = localStorage.getItem(storageKey);
+    return !!key && key.length > 10; // Basic validation - key should be substantial
+  } catch (error) {
+    console.error(`Error checking for ${provider} API key:`, error);
+    return false;
+  }
+};
+
+/**
+ * Get an API key for a provider
+ * @param provider The API provider
+ * @returns The API key or null if not found
+ */
+export const getApiKey = (provider: ApiProvider): string | null => {
+  try {
+    const storageKey = API_KEY_STORAGE_KEYS[provider];
+    if (!storageKey) return null;
+    
     return localStorage.getItem(storageKey);
   } catch (error) {
-    console.error(`Error getting ${type} API key:`, error);
+    console.error(`Error getting ${provider} API key:`, error);
     return null;
   }
 };
 
-// Function to check if API key exists
-export const hasApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): boolean => {
-  const key = getApiKey(type);
-  return !!key && key.length > 10;
+/**
+ * Validate an API key format for specific providers
+ * @param provider The API provider
+ * @param key The API key to validate
+ * @returns Boolean indicating if key format is valid
+ */
+export const validateApiKeyFormat = (provider: ApiProvider, key: string): boolean => {
+  if (!key || key.trim() === '') return false;
+  
+  switch (provider) {
+    case 'openai':
+      return key.startsWith('sk-') && key.length > 20;
+    case 'groq':
+      return key.startsWith('gsk_') && key.length > 20;
+    case 'claude':
+    case 'anthropic':
+      return key.startsWith('sk-ant-') && key.length > 20;
+    case 'gemini':
+      return key.startsWith('AIza') && key.length > 20;
+    case 'deepseek':
+      return key.startsWith('sk-') && key.length > 20;
+    default:
+      return key.length > 10; // Basic validation for unknown providers
+  }
 };
 
-// Function to remove API key
-export const removeApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): boolean => {
+/**
+ * Remove an API key
+ * @param provider The API provider
+ * @returns Boolean indicating success
+ */
+export const removeApiKey = (provider: ApiProvider): boolean => {
+  return saveApiKey(provider, '');
+};
+
+/**
+ * Attempt to test an API key with the actual service
+ * @param provider The API provider 
+ * @param key The API key to test
+ * @returns Promise resolving to boolean indicating if key works
+ */
+export const testApiKey = async (provider: ApiProvider, key: string): Promise<boolean> => {
   try {
-    const storageKey = `${type}ApiKey`;
-    localStorage.removeItem(storageKey);
+    if (!validateApiKeyFormat(provider, key)) {
+      return false;
+    }
     
-    // Dispatch event for listeners
-    window.dispatchEvent(new CustomEvent('api-key-updated', { detail: { type, action: 'remove' } }));
-    
-    // Broadcast change via custom method
-    broadcastApiKeyChange(type, 'remove');
-    
-    return true;
+    switch (provider) {
+      case 'groq':
+        // Test Groq API key
+        const groqResponse = await fetch('https://api.groq.com/openai/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return groqResponse.ok;
+        
+      case 'openai':
+        // Test OpenAI API key
+        const openaiResponse = await fetch('https://api.openai.com/v1/models', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return openaiResponse.ok;
+        
+      // Add more providers as needed
+        
+      default:
+        // For providers without direct testing, just validate format
+        return validateApiKeyFormat(provider, key);
+    }
   } catch (error) {
-    console.error(`Error removing ${type} API key:`, error);
+    console.error(`Error testing ${provider} API key:`, error);
     return false;
   }
-};
-
-// Function to broadcast API key changes across components
-export const broadcastApiKeyChange = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek', action: 'save' | 'remove'): void => {
-  try {
-    // Dispatch a custom event
-    window.dispatchEvent(new CustomEvent('apikey-updated', { 
-      detail: { type, action }
-    }));
-    
-    // Also dispatch a localStorage change event for broader component updates
-    window.dispatchEvent(new CustomEvent('localStorage-changed', {
-      detail: { key: `${type}ApiKey`, action }
-    }));
-    
-    console.log(`API key change broadcasted: ${type}, ${action}`);
-  } catch (error) {
-    console.error('Error broadcasting API key change:', error);
-  }
-};
-
-// Get all available API providers that have keys configured
-export const getAvailableProviders = (): { id: string, name: string }[] => {
-  const providers = [];
-  
-  if (hasApiKey('groq')) {
-    providers.push({ id: 'groq', name: 'Groq (Llama)' });
-  }
-  
-  if (hasApiKey('openai')) {
-    providers.push({ id: 'openai', name: 'OpenAI (GPT-4)' });
-  }
-  
-  if (hasApiKey('anthropic') || hasApiKey('claude')) {
-    providers.push({ id: 'claude', name: 'Anthropic (Claude)' });
-  }
-  
-  if (hasApiKey('gemini')) {
-    providers.push({ id: 'gemini', name: 'Google (Gemini)' });
-  }
-  
-  if (hasApiKey('deepseek')) {
-    providers.push({ id: 'deepseek', name: 'DeepSeek' });
-  }
-  
-  return providers;
 };

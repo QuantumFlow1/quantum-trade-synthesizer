@@ -1,165 +1,202 @@
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Network, Users, MessageSquare, BarChart2 } from 'lucide-react';
-import { useAgentNetwork } from '@/hooks/use-agent-network';
-import { Agent } from '@/types/agent';
-import { AgentMessage, AgentTask } from '@/services/agentNetwork';
-
-interface AgentCardProps {
-  agent: Agent;
-  onToggle: (agentId: string, isActive: boolean) => void;
-}
-
-const AgentCard = ({ agent, onToggle }: AgentCardProps) => (
-  <div className="flex items-center justify-between p-4 border rounded-lg mb-3 bg-card hover:bg-accent/5 transition-colors">
-    <div className="flex items-center">
-      <div className={`w-3 h-3 rounded-full mr-3 ${agent.status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
-      <div>
-        <h3 className="font-medium">{agent.name}</h3>
-        <p className="text-xs text-muted-foreground">{agent.description}</p>
-      </div>
-    </div>
-    <div className="flex items-center gap-2">
-      <Badge variant={agent.type === 'advisor' ? 'default' : agent.type === 'analyst' ? 'outline' : 'secondary'}>
-        {agent.type}
-      </Badge>
-      <button
-        onClick={() => onToggle(agent.id, agent.status !== 'active')}
-        className={`px-2 py-1 text-xs rounded-md transition-colors ${
-          agent.status === 'active'
-            ? 'bg-red-500/10 text-red-600 hover:bg-red-500/20'
-            : 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
-        }`}
-      >
-        {agent.status === 'active' ? 'Deactivate' : 'Activate'}
-      </button>
-    </div>
-  </div>
-);
-
-const MessageList = ({ messages }: { messages: AgentMessage[] }) => (
-  <div className="space-y-3 max-h-[300px] overflow-y-auto">
-    {messages.length === 0 ? (
-      <p className="text-center text-muted-foreground p-4">No messages exchanged yet</p>
-    ) : (
-      messages.map((message) => (
-        <div key={message.id} className="p-3 border rounded-lg">
-          <div className="flex justify-between text-xs text-muted-foreground mb-1">
-            <span>From: <strong>{message.fromAgent}</strong> to <strong>{message.toAgent}</strong></span>
-            <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
-          </div>
-          <p className="text-sm">{message.content}</p>
-        </div>
-      ))
-    )}
-  </div>
-);
-
-const TaskList = ({ tasks }: { tasks: AgentTask[] }) => (
-  <div className="space-y-3 max-h-[300px] overflow-y-auto">
-    {tasks.length === 0 ? (
-      <p className="text-center text-muted-foreground p-4">No tasks created yet</p>
-    ) : (
-      tasks.map((task) => (
-        <div key={task.id} className="p-3 border rounded-lg">
-          <div className="flex justify-between items-center mb-1">
-            <span className="font-medium">{task.description}</span>
-            <Badge 
-              variant={
-                task.status === 'completed' ? 'default' :
-                task.status === 'in-progress' ? 'secondary' :
-                task.status === 'failed' ? 'destructive' : 'outline'
-              }
-            >
-              {task.status}
-            </Badge>
-          </div>
-          <div className="flex justify-between text-xs text-muted-foreground mb-1">
-            <span>Agent: <strong>{task.agentId}</strong></span>
-            <span>Priority: <strong>{task.priority}</strong></span>
-          </div>
-          {task.result && (
-            <div className="mt-2 p-2 bg-muted rounded text-xs">
-              <strong>Result:</strong> {task.result.substring(0, 100)}...
-            </div>
-          )}
-        </div>
-      ))
-    )}
-  </div>
-);
+import React, { useEffect, useState } from 'react';
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useAgentNetwork } from "@/hooks/use-agent-network"; // Updated import path
+import { Agent, AgentDetails, AgentMessage, AgentTask } from '@/types/agent';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, MessageSquare, CheckCircle, AlertCircle } from "lucide-react";
 
 export function AgentNetworkVisualizer() {
-  const { 
-    isInitialized,
-    isLoading,
-    activeAgents,
+  const [activeTab, setActiveTab] = useState("network");
+  const [isAnimating, setIsAnimating] = useState(false);
+  const {
+    agents,
     agentMessages,
     agentTasks,
-    toggleAgent,
+    collaborationSessions,
+    isInitialized,
+    isLoading,
     refreshAgentState
   } = useAgentNetwork();
-  
-  const [activeTab, setActiveTab] = useState('agents');
-  
+
   useEffect(() => {
-    // Refresh the state periodically
-    const interval = setInterval(() => {
+    if (!isInitialized) {
       refreshAgentState();
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [refreshAgentState]);
+    }
+  }, [isInitialized, refreshAgentState]);
+
+  // Trigger animation effect when data updates
+  useEffect(() => {
+    setIsAnimating(true);
+    const timer = setTimeout(() => setIsAnimating(false), 500);
+    return () => clearTimeout(timer);
+  }, [agents, agentMessages, agentTasks]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <p className="ml-2 text-gray-500">Loading agent network data...</p>
+      </div>
+    );
+  }
+
+  const renderMessages = () => {
+    return (
+      <div className="space-y-3">
+        {agentMessages.length > 0 ? (
+          agentMessages.map((message) => (
+            <Card key={message.id} className="p-3 text-sm">
+              <div className="flex justify-between mb-1">
+                <Badge variant="outline">{message.fromAgent} → {message.toAgent}</Badge>
+                <span className="text-xs text-gray-500">
+                  {new Date(message.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              <p>{message.message}</p>
+            </Card>
+          ))
+        ) : (
+          <p className="text-center text-gray-500 py-8">No agent messages</p>
+        )}
+      </div>
+    );
+  };
+
+  const renderTasks = () => {
+    return (
+      <div className="space-y-3">
+        {agentTasks.length > 0 ? (
+          agentTasks.map((task) => (
+            <Card key={task.id} className="p-3 text-sm">
+              <div className="flex justify-between mb-1">
+                <Badge variant={task.status === 'completed' ? 'success' : task.status === 'pending' ? 'outline' : 'destructive'}>
+                  {task.status}
+                </Badge>
+                <Badge variant="outline">{task.assignedTo}</Badge>
+              </div>
+              <p className="mb-1">{task.description}</p>
+              {task.status === 'completed' && task.result && (
+                <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                  {task.result}
+                </div>
+              )}
+            </Card>
+          ))
+        ) : (
+          <p className="text-center text-gray-500 py-8">No agent tasks</p>
+        )}
+      </div>
+    );
+  };
+
+  const renderCollaborations = () => {
+    return (
+      <div className="space-y-3">
+        {collaborationSessions.length > 0 ? (
+          collaborationSessions.map((session) => (
+            <Card key={session.id} className="p-3 text-sm">
+              <div className="flex justify-between mb-1">
+                <Badge>{session.status}</Badge>
+                <span className="text-xs text-gray-500">
+                  {new Date(session.startTime).toLocaleString()}
+                </span>
+              </div>
+              <p className="font-medium">{session.topic}</p>
+              <div className="mt-2">
+                <p className="text-xs text-gray-500">Participants:</p>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {session.participants.map((participant) => (
+                    <Badge key={participant} variant="outline" className="text-xs">
+                      {participant}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          ))
+        ) : (
+          <p className="text-center text-gray-500 py-8">No collaboration sessions</p>
+        )}
+      </div>
+    );
+  };
+
+  const renderNetworkView = () => {
+    // Convert AgentDetails to Agent type
+    const agentsWithFullInfo: Agent[] = agents.map(agent => ({
+      id: agent.id,
+      name: agent.name,
+      description: agent.description,
+      type: 'analyst', // Default type
+      status: agent.isActive ? 'active' : 'offline', // Convert isActive to status
+      lastActive: new Date().toISOString(),
+      specialization: agent.specialization
+    }));
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {agentsWithFullInfo.map((agent) => (
+          <Card key={agent.id} className={`p-3 border-l-4 ${
+            agent.status === 'active' ? 'border-l-green-500' : 
+            agent.status === 'training' ? 'border-l-blue-500' : 
+            agent.status === 'offline' ? 'border-l-gray-500' : 
+            'border-l-yellow-500'
+          } ${isAnimating ? 'animate-pulse' : ''}`}>
+            <div className="flex justify-between">
+              <h4 className="font-medium">{agent.name}</h4>
+              <Badge variant={agent.status === 'active' ? 'success' : 'secondary'}>
+                {agent.status}
+              </Badge>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">{agent.description}</p>
+            <div className="flex justify-between mt-2">
+              <span className="text-xs text-gray-500">Type: {agent.type}</span>
+              <span className="text-xs text-gray-500">
+                Last active: {new Date(agent.lastActive).toLocaleTimeString()}
+              </span>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
 
   return (
-    <Card className="shadow-md">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Network className="h-5 w-5" /> Agent Network Status
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading && !isInitialized ? (
-          <div className="flex justify-center p-8">
-            <div className="animate-spin h-6 w-6 border-2 border-primary rounded-full border-t-transparent"></div>
-          </div>
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="agents" className="flex items-center gap-1">
-                <Users className="h-4 w-4" /> Agents <Badge variant="outline">{activeAgents.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="messages" className="flex items-center gap-1">
-                <MessageSquare className="h-4 w-4" /> Messages <Badge variant="outline">{agentMessages.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="tasks" className="flex items-center gap-1">
-                <BarChart2 className="h-4 w-4" /> Tasks <Badge variant="outline">{agentTasks.length}</Badge>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="agents" className="mt-4">
-              {activeAgents.map(agent => (
-                <AgentCard 
-                  key={agent.id} 
-                  agent={agent} 
-                  onToggle={toggleAgent} 
-                />
-              ))}
-            </TabsContent>
-            
-            <TabsContent value="messages" className="mt-4">
-              <MessageList messages={agentMessages} />
-            </TabsContent>
-            
-            <TabsContent value="tasks" className="mt-4">
-              <TaskList tasks={agentTasks} />
-            </TabsContent>
-          </Tabs>
-        )}
-      </CardContent>
-    </Card>
+    <div className="p-2">
+      <Tabs defaultValue="network" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid grid-cols-4 mb-4">
+          <TabsTrigger value="network">
+            Network <Badge className="ml-2">{agents.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="messages">
+            <MessageSquare className="h-4 w-4 mr-1" /> Messages <Badge className="ml-1">{agentMessages.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="tasks">
+            <CheckCircle className="h-4 w-4 mr-1" /> Tasks <Badge className="ml-1">{agentTasks.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="collaborations">
+            Collaborations <Badge className="ml-1">{collaborationSessions.length}</Badge>
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="network" className="mt-0">
+          {renderNetworkView()}
+        </TabsContent>
+        
+        <TabsContent value="messages" className="mt-0">
+          {renderMessages()}
+        </TabsContent>
+        
+        <TabsContent value="tasks" className="mt-0">
+          {renderTasks()}
+        </TabsContent>
+        
+        <TabsContent value="collaborations" className="mt-0">
+          {renderCollaborations()}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

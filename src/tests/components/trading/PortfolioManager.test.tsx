@@ -1,11 +1,10 @@
-
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@/tests/utils/test-utils';
 import { PortfolioManager } from '@/components/trading/PortfolioManager';
-import { usePortfolioManager } from '@/components/trading/portfolio/usePortfolioManager';
+import { usePortfolioManager } from '@/components/trading/portfolio/hooks/usePortfolioManager';
 
 // Mock the hooks and components used in PortfolioManager
-vi.mock('@/components/trading/portfolio/usePortfolioManager', () => ({
+vi.mock('@/components/trading/portfolio/hooks/usePortfolioManager', () => ({
   usePortfolioManager: vi.fn()
 }));
 

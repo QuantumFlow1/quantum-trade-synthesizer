@@ -1,6 +1,7 @@
 
-export * from './TradingViewChart';
-export * from './MarketHeatmap';
-export * from './StockNews';
-export * from './SentimentAnalysis';
-export * from './types';
+export { TradingViewChart } from './TradingViewChart';
+export { MarketHeatmap } from './MarketHeatmap';
+export { StockNews } from './StockNews';
+export { SentimentAnalysis } from './SentimentAnalysis';
+export { GroqKeyValidator } from './GroqKeyValidator';
+export { DeepseekKeyValidator } from './DeepseekKeyValidator';

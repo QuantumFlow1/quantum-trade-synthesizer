@@ -1,9 +1,11 @@
 
 import { useState, useCallback } from 'react';
-import { AgentRecommendation, PortfolioDecision, TradingAgent } from '../types/portfolioTypes';
+import { AgentRecommendation, PortfolioDecision as PortfolioDecisionType } from '@/components/trading/portfolio/types/portfolioTypes';
+import { TradingAgent } from '../types/portfolioTypes';
+import { TradeAction } from '@/types/agent';
 
 export const usePortfolioDecisions = () => {
-  const [portfolioDecision, setPortfolioDecision] = useState<PortfolioDecision | null>(null);
+  const [portfolioDecision, setPortfolioDecision] = useState<PortfolioDecisionType | null>(null);
   const [riskScore, setRiskScore] = useState<number>(50);
   
   // Generate a final portfolio decision based on agent recommendations
@@ -24,7 +26,9 @@ export const usePortfolioDecisions = () => {
     const votes = {
       BUY: 0,
       SELL: 0,
-      HOLD: 0
+      HOLD: 0,
+      SHORT: 0,
+      COVER: 0
     };
     
     // Track contributing agents
@@ -58,13 +62,13 @@ export const usePortfolioDecisions = () => {
     });
     
     // Determine the final action (highest weighted vote)
-    const action = Object.entries(votes).reduce((a, b) => a[1] > b[1] ? a : b)[0] as "BUY" | "SELL" | "HOLD";
+    const finalDecision = Object.entries(votes).reduce((a, b) => a[1] > b[1] ? a : b)[0] as TradeAction;
     
     // Calculate overall confidence (weighted average of contributing agents)
     const confidence = totalWeight > 0 ? Math.round(totalWeightedConfidence / totalWeight) : 60;
     
     // Calculate simulated amount based on confidence and action
-    const baseAmount = action === "BUY" ? 0.25 : (action === "SELL" ? 0.15 : 0);
+    const baseAmount = finalDecision === "BUY" ? 0.25 : (finalDecision === "SELL" ? 0.15 : 0);
     const adjustedAmount = baseAmount * (confidence / 70);
     const finalAmount = Math.round(adjustedAmount * 100) / 100;
     
@@ -72,7 +76,7 @@ export const usePortfolioDecisions = () => {
     const volatility = marketData?.volatility || 0.3;
     const calculatedRiskScore = Math.round(
       (volatility * 50) + 
-      (action === "BUY" ? 15 : action === "SELL" ? 10 : 0) + 
+      (finalDecision === "BUY" ? 15 : finalDecision === "SELL" ? 10 : 0) + 
       ((1 - (confidence / 100)) * 20) - 
       (collaborationScore * 10)
     );
@@ -86,19 +90,21 @@ export const usePortfolioDecisions = () => {
       reasoning += ` with strong collaborative consensus (${Math.round(collaborationScore * 100)}%)`;
     }
     
-    reasoning += `, the recommended action is to ${action} ${ticker} at the current price of $${currentPrice}.`;
+    reasoning += `, the recommended action is to ${finalDecision} ${ticker} at the current price of $${currentPrice}.`;
     
-    if (action === "BUY") {
+    if (finalDecision === "BUY") {
       reasoning += ` Bullish signals outweigh bearish indicators by ${Math.round((votes.BUY - votes.SELL) * 100)}%.`;
-    } else if (action === "SELL") {
+    } else if (finalDecision === "SELL") {
       reasoning += ` Bearish signals outweigh bullish indicators by ${Math.round((votes.SELL - votes.BUY) * 100)}%.`;
     } else {
       reasoning += ` Market signals are mixed with insufficient conviction for a directional trade.`;
     }
     
     // Create the portfolio decision
-    const decision: PortfolioDecision = {
-      action,
+    const decision: PortfolioDecisionType = {
+      id: crypto.randomUUID(),
+      action: finalDecision, // For backward compatibility
+      finalDecision: finalDecision,
       ticker,
       amount: finalAmount,
       price: currentPrice,
@@ -106,7 +112,8 @@ export const usePortfolioDecisions = () => {
       riskScore: calculatedRiskScore,
       contributors: contributors.slice(0, 3), // Top 3 contributors
       reasoning,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      recommendedActions: recommendations.slice(0, 3) // Include top recommendations
     };
     
     setPortfolioDecision(decision);
