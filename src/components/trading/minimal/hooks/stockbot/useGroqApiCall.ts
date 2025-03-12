@@ -15,6 +15,9 @@ export const useGroqApiCall = () => {
         throw new Error('Groq API key is not configured');
       }
       
+      // Log key information for debugging (safely)
+      console.log(`Using Groq API key: ${groqApiKey.substring(0, 4)}...${groqApiKey.substring(groqApiKey.length - 4)} (length: ${groqApiKey.length})`);
+      
       // Prepare the conversation history
       const messageHistory = messages.map(msg => ({
         role: msg.role === 'assistant' ? 'assistant' : 'user',
@@ -55,7 +58,7 @@ export const useGroqApiCall = () => {
           max_tokens: 1024,
           function_calling: "auto"
         },
-        headers: groqApiKey ? { 'x-groq-api-key': groqApiKey } : undefined
+        headers: { 'x-groq-api-key': groqApiKey }
       });
       
       if (error) {
@@ -64,6 +67,7 @@ export const useGroqApiCall = () => {
       }
       
       if (!data || data.status === 'error') {
+        console.error('Invalid response from AI service:', data);
         throw new Error(data?.error || 'Invalid response from AI service');
       }
       
