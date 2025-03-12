@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Key Checker Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { margin: 5px; padding: 10px; }
+        #result { margin-top: 20px; white-space: pre; background: #f0f0f0; padding: 10px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>API Key Checker Test</h1>
+    
+    <button onclick="checkService('any')">Check All Services</button>
+    <button onclick="checkService('openai')">Check OpenAI</button>
+    <button onclick="checkService('claude')">Check Claude</button>
+    <button onclick="checkService('deepseek')">Check Deepseek</button>
+    <button onclick="checkService('groq')">Check Groq</button>
+    <button onclick="checkService('gemini')">Check Gemini</button>
+    
+    <div id="result"></div>
+
+    <script>
+        async function checkService(service) {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Sending request...';
+            
+            try {
+                const requestBody = {
+                    service: service,
+                    checkSecret: true
+                };
+                
+                console.log('Sending request:', requestBody);
+                result.innerHTML = 'Request body: ' + JSON.stringify(requestBody, null, 2);
+                
+                const response = await fetch('http://localhost:8000', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                console.log('Response status:', response.status);
+                result.innerHTML += '\n\nResponse status: ' + response.status;
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                result.innerHTML += '\n\nResponse data:\n' + JSON.stringify(data, null, 2);
+                
+                if (data.error) {
+                    result.innerHTML += '\n\n<span class="error">Error: ' + data.error + '</span>';
+                } else {
+                    result.innerHTML += '\n\n<span class="success">Request successful!</span>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                result.innerHTML += '\n\n<span class="error">Error: ' + error.message + '</span>';
+            }
+        }
+    </script>
+</body>
+</html> 

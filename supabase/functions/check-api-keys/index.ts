@@ -1,6 +1,23 @@
+/// <reference lib="deno.ns" />
+/// <reference lib="dom" />
+/* The code snippet you provided is a TypeScript script that sets up a simple HTTP server using Deno
+runtime. Here's a breakdown of what the code does: */
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "xhr";
+import { serve } from "std/http/server.ts";
+
+interface RequestBody {
+  service?: string;
+  checkSecret?: boolean;
+}
+
+interface ApiKeyStatus {
+  openai: boolean;
+  claude: boolean;
+  deepseek: boolean;
+  groq: boolean;
+  gemini: boolean;
+}
 
 // Get environment variables for the API keys
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -11,19 +28,32 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Content-Type': 'application/json'
 };
 
+console.log('Starting server...');
+
 serve(async (req) => {
+  console.log(`Received ${req.method} request to ${req.url}`);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Log request headers
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+    
+    // Get request body
+    const bodyText = await req.text();
+    console.log('Request body text:', bodyText);
+    
     // Parse the request body
-    const { service, checkSecret } = await req.json();
+    const { service, checkSecret } = bodyText ? JSON.parse(bodyText) : {};
     
     console.log(`Checking API keys. Service: ${service}, checkSecret: ${checkSecret}`);
     
