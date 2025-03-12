@@ -1,4 +1,3 @@
-
 export interface Agent {
   id: string;
   name: string;
@@ -70,4 +69,68 @@ export interface GroqAgentSettings {
   systemPrompt: string;
   enabled: boolean;
   apiKey?: string;
+}
+
+export interface AgentDetails {
+  id: string;
+  name: string;
+  description: string;
+  specialization: string;
+  confidence: number;
+  weight: number;
+  isActive: boolean;
+}
+
+export interface AgentMessage {
+  id: string;
+  fromAgent: string;
+  toAgent: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface AgentTask {
+  id: string;
+  assignedTo: string;
+  description: string;
+  status: 'pending' | 'in-progress' | 'completed';
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface CollaborationSession {
+  id: string;
+  participants: string[];
+  topic: string;
+  startTime: string;
+  endTime: string | null;
+  status: 'active' | 'completed';
+}
+
+// Update UseAgentNetworkReturn interface
+export interface UseAgentNetworkReturn {
+  agents: AgentDetails[];
+  activeAgents: AgentDetails[];
+  agentMessages: AgentMessage[];
+  agentTasks: AgentTask[];
+  collaborationSessions: CollaborationSession[];
+  selectedAgent: AgentDetails | null;
+  setSelectedAgent: (agent: AgentDetails | null) => void;
+  currentMarketData: any | null;
+  setCurrentMarketData: (data: any | null) => void;
+  initializeNetwork: () => void;
+  generateAnalysis: (ticker: string, timeframe: string) => void;
+  toggleAgent: (id: string) => void;
+  sendMessage: (message: string, toAgent?: string) => void;
+  createTask: (description: string, assignedTo: string) => void;
+  syncMessages: () => void;
+  submitRecommendation: (ticker: string, action: TradeAction, confidence: number) => Promise<any>;
+  agentRecommendations: AgentRecommendation[];
+  recentAgentRecommendations: AgentRecommendation[];
+  portfolioDecisions: PortfolioDecision[];
+  recentPortfolioDecisions: PortfolioDecision[];
+  isInitialized: boolean;
+  isLoading: boolean;
+  refreshAgentState: () => void;
 }

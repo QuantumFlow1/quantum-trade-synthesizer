@@ -1,11 +1,11 @@
 import { 
   AgentDetails, 
   TradeAction,
-  AgentMessage as AgentMessageType,
-  AgentTask as AgentTaskType,
-  CollaborationSession as CollaborationSessionType,
-  PortfolioDecision as PortfolioDecisionType,
-  AgentRecommendation as AgentRecommendationType
+  AgentMessage,
+  AgentTask,
+  CollaborationSession,
+  PortfolioDecision,
+  AgentRecommendation
 } from '@/types/agent';
 
 // Mock data for agents
@@ -58,7 +58,7 @@ const mockAgents: AgentDetails[] = [
 ];
 
 // Mock data for agent messages
-const mockAgentMessages: AgentMessageType[] = [
+const mockAgentMessages: AgentMessage[] = [
   {
     id: crypto.randomUUID(),
     fromAgent: 'value-investor-001',
@@ -86,7 +86,7 @@ const mockAgentMessages: AgentMessageType[] = [
 ];
 
 // Mock data for agent tasks
-const mockAgentTasks: AgentTaskType[] = [
+const mockAgentTasks: AgentTask[] = [
   {
     id: crypto.randomUUID(),
     assignedTo: 'value-investor-001',
@@ -114,7 +114,7 @@ const mockAgentTasks: AgentTaskType[] = [
 ];
 
 // Mock data for collaboration sessions
-const mockCollaborationSessions: CollaborationSessionType[] = [
+const mockCollaborationSessions: CollaborationSession[] = [
   {
     id: crypto.randomUUID(),
     participants: ['value-investor-001', 'technical-analyst-001'],
@@ -138,7 +138,7 @@ const createAgentRecommendation = (
   agent: AgentDetails,
   ticker: string,
   action: TradeAction
-): AgentRecommendationType => {
+): AgentRecommendation => {
   return {
     agentId: agent.id,
     action: action,
@@ -150,14 +150,14 @@ const createAgentRecommendation = (
 };
 
 // Mock data for agent recommendations
-const mockRecommendations: AgentRecommendationType[] = [
+const mockRecommendations: AgentRecommendation[] = [
   createAgentRecommendation(mockAgents[0], 'BTC', 'BUY'),
   createAgentRecommendation(mockAgents[1], 'ETH', 'SELL'),
   createAgentRecommendation(mockAgents[2], 'AAPL', 'HOLD')
 ];
 
 // Mock data for portfolio decisions
-const mockPortfolioDecisions: PortfolioDecisionType[] = [
+const mockPortfolioDecisions: PortfolioDecision[] = [
   {
     id: crypto.randomUUID(),
     finalDecision: 'BUY',
@@ -186,7 +186,7 @@ const mockPortfolioDecisions: PortfolioDecisionType[] = [
   }
 ];
 
-// Add the missing type exports
+// Update the export statement
 export type { AgentMessage, AgentTask, CollaborationSession } from '@/types/agent';
 
 // Mock API functions

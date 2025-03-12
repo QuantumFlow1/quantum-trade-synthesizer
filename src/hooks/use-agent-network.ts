@@ -3,18 +3,19 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/hooks/use-user";
 import { useSupabase } from "@/hooks/use-supabase";
 import { 
-  AgentDetails, 
+  AgentDetails,
   TradeAction,
-  AgentMessage as AgentMessageType,
-  AgentTask as AgentTaskType,
-  CollaborationSession as CollaborationSessionType
-} from '@/types/agent';
-import { 
   AgentMessage,
   AgentTask,
   CollaborationSession,
+  UseAgentNetworkReturn,
+  AgentRecommendation,
+  PortfolioDecision
+} from '@/types/agent';
+
+import {
   initializeAgentNetwork,
-  generateCollaborativeTradingAnalysis, 
+  generateCollaborativeTradingAnalysis,
   getActiveAgents,
   getAgentMessages,
   getAgentTasks,
@@ -47,10 +48,13 @@ interface UseAgentNetworkReturn {
   createTask: (description: string, assignedTo: string) => void;
   syncMessages: () => void;
   submitRecommendation: (ticker: string, action: TradeAction, confidence: number) => Promise<any>;
-  agentRecommendations: AgentMessageType[];
-  recentAgentRecommendations: AgentMessageType[];
-  portfolioDecisions: AgentTaskType[];
-  recentPortfolioDecisions: AgentTaskType[];
+  agentRecommendations: AgentRecommendation[];
+  recentAgentRecommendations: AgentRecommendation[];
+  portfolioDecisions: PortfolioDecision[];
+  recentPortfolioDecisions: PortfolioDecision[];
+  isInitialized: boolean;
+  isLoading: boolean;
+  refreshAgentState: () => void;
 }
 
 export const useAgentNetwork = (): UseAgentNetworkReturn => {
@@ -61,18 +65,21 @@ export const useAgentNetwork = (): UseAgentNetworkReturn => {
   const [collaborationSessions, setCollaborationSessions] = useState<CollaborationSession[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AgentDetails | null>(null);
   const [currentMarketData, setCurrentMarketData] = useState<any | null>(null);
-  const [agentRecommendations, setAgentRecommendations] = useState<AgentMessageType[]>([]);
-  const [recentAgentRecommendations, setRecentAgentRecommendations] = useState<AgentMessageType[]>([]);
-  const [portfolioDecisions, setPortfolioDecisions] = useState<AgentTaskType[]>([]);
-  const [recentPortfolioDecisions, setRecentPortfolioDecisions] = useState<AgentTaskType[]>([]);
+  const [agentRecommendations, setAgentRecommendations] = useState<AgentRecommendation[]>([]);
+  const [recentAgentRecommendations, setRecentAgentRecommendations] = useState<AgentRecommendation[]>([]);
+  const [portfolioDecisions, setPortfolioDecisions] = useState<PortfolioDecision[]>([]);
+  const [recentPortfolioDecisions, setRecentPortfolioDecisions] = useState<PortfolioDecision[]>([]);
   const { toast } = useToast();
   const { user } = useUser();
   const { supabase } = useSupabase();
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Fetch agents from Supabase on mount
     const fetchAgents = async () => {
       try {
+        setIsLoading(true);
         const { data, error } = await supabase
           .from('agents')
           .select('*');
@@ -91,6 +98,8 @@ export const useAgentNetwork = (): UseAgentNetworkReturn => {
           description: error.message,
           variant: "destructive",
         });
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -103,6 +112,7 @@ export const useAgentNetwork = (): UseAgentNetworkReturn => {
     setAgentMessages(getAgentMessages());
     setAgentTasks(getAgentTasks());
     setCollaborationSessions(getCollaborationSessions());
+    setIsInitialized(true);
     
     toast({
       title: "Agent Network Initialized",
@@ -182,6 +192,24 @@ export const useAgentNetwork = (): UseAgentNetworkReturn => {
     );
   }, [selectedAgent, currentMarketData]);
 
+  const refreshAgentState = useCallback(() => {
+    setIsLoading(true);
+    
+    // Simulate refreshing agent state
+    setTimeout(() => {
+      setActiveAgents(getActiveAgents());
+      setAgentMessages(getAgentMessages());
+      setAgentTasks(getAgentTasks());
+      setCollaborationSessions(getCollaborationSessions());
+      setIsLoading(false);
+      
+      toast({
+        title: "Agent Network Refreshed",
+        description: "The agent network state has been refreshed.",
+      });
+    }, 1000);
+  }, [toast]);
+
   return {
     agents,
     activeAgents,
@@ -202,6 +230,9 @@ export const useAgentNetwork = (): UseAgentNetworkReturn => {
     agentRecommendations,
     recentAgentRecommendations,
     portfolioDecisions,
-    recentPortfolioDecisions
+    recentPortfolioDecisions,
+    isInitialized,
+    isLoading,
+    refreshAgentState
   };
 };
