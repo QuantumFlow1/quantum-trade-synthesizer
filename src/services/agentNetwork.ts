@@ -1,454 +1,497 @@
 
+import { Agent, AgentRecommendation, PortfolioDecision, TradeAction } from '@/types/agent';
 import { supabase } from '@/lib/supabase';
-import { Agent, AgentRecommendation, TradeAction } from '@/types/agent';
 
-// Define types needed for the agent network
-export interface AgentMessage {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  content: string;
-  timestamp: string;
-  read: boolean;
-}
-
-export interface AgentTask {
-  id: string;
-  agentId: string;
-  title: string;
-  description: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'failed';
-  priority: 'low' | 'normal' | 'high' | 'critical';
-  createdAt: string;
-  completedAt?: string;
-}
-
-export interface CollaborationSession {
-  id: string;
-  title: string;
-  description: string;
-  status: 'active' | 'completed' | 'archived';
-  participants: string[];
-  createdAt: string;
-  completedAt?: string;
-}
-
-export interface PortfolioDecision {
-  id: string;
-  ticker: string;
-  action: TradeAction;
-  confidence: number;
-  reasoning: string;
-  timestamp: string;
-  agentIds: string[];
-  price?: number;
-}
-
-// Initialize agent network
-export const initializeAgentNetwork = async (): Promise<boolean> => {
+/**
+ * Retrieves agents from the database or falls back to sample data
+ */
+export async function fetchAgents(): Promise<Agent[]> {
   try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { action: 'initialize_network' }
-    });
+    console.log('Fetching agents from database...');
+    
+    // Try to fetch real agents from database
+    const { data, error } = await supabase
+      .from('agents')
+      .select('*')
+      .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Error initializing agent network:', error);
-      return false;
+      console.error('Error fetching agents:', error);
+      throw error;
     }
     
-    return data?.success || false;
+    if (data && data.length > 0) {
+      console.log(`Retrieved ${data.length} agents from database`);
+      return data as Agent[];
+    }
+    
+    console.log('No agents found in database, using sample data');
+    return getSampleAgents();
   } catch (error) {
-    console.error('Exception initializing agent network:', error);
-    return false;
+    console.error('Exception fetching agents:', error);
+    console.log('Falling back to sample agents data');
+    return getSampleAgents();
   }
-};
+}
 
-// Get active agents
-export const getActiveAgents = async (): Promise<Agent[]> => {
+/**
+ * Create a new agent in the database
+ */
+export async function createAgent(agent: Omit<Agent, 'id' | 'createdAt' | 'lastActive'>): Promise<Agent | null> {
   try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { action: 'list_agents', status: 'active' }
-    });
+    console.log('Creating new agent:', agent.name);
+    
+    const newAgent: Omit<Agent, 'id'> = {
+      ...agent,
+      status: agent.status || 'training',
+      createdAt: new Date().toISOString(),
+      lastActive: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabase
+      .from('agents')
+      .insert([newAgent])
+      .select()
+      .single();
     
     if (error) {
-      console.error('Error fetching active agents:', error);
-      return [];
+      console.error('Error creating agent:', error);
+      throw error;
     }
     
-    return data?.agents || [];
+    console.log('New agent created successfully:', data);
+    return data as Agent;
   } catch (error) {
-    console.error('Exception fetching active agents:', error);
-    return [];
+    console.error('Exception creating agent:', error);
+    return null;
   }
-};
+}
 
-// Toggle agent status
-export const toggleAgentStatus = async (
-  agentId: string, 
-  status: 'active' | 'offline' | 'paused' | 'terminated'
-): Promise<boolean> => {
+/**
+ * Update an agent's status
+ */
+export async function updateAgentStatus(agentId: string, status: Agent['status']): Promise<boolean> {
   try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'update_agent_status', 
-        agentId, 
-        status 
-      }
-    });
+    console.log(`Updating agent ${agentId} status to ${status}`);
+    
+    const { error } = await supabase
+      .from('agents')
+      .update({ 
+        status, 
+        lastActive: new Date().toISOString() 
+      })
+      .eq('id', agentId);
     
     if (error) {
       console.error('Error updating agent status:', error);
-      return false;
+      throw error;
     }
     
-    return data?.success || false;
+    console.log('Agent status updated successfully');
+    return true;
   } catch (error) {
     console.error('Exception updating agent status:', error);
     return false;
   }
-};
+}
 
-// Generate collaborative trading analysis
-export const generateCollaborativeTradingAnalysis = async (
+/**
+ * Generate a recommendation from an agent using AI
+ */
+export async function generateAgentRecommendation(
+  agent: Agent,
   ticker: string,
-  timeframe: string = '1d',
-  agentTypes: string[] = ['trader', 'analyst', 'portfolio_manager']
-): Promise<string> => {
+  marketData: any
+): Promise<AgentRecommendation | null> {
   try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'collaborative_analysis',
+    console.log(`Generating recommendation from ${agent.name} for ${ticker}`);
+    
+    // Try to use edge function first
+    const { data: edgeData, error: edgeError } = await supabase.functions.invoke('agent-recommendation', {
+      body: {
+        agentId: agent.id,
+        agentType: agent.type,
+        agentName: agent.name,
         ticker,
-        timeframe,
-        agentTypes
+        marketData
       }
     });
     
-    if (error) {
-      console.error('Error generating collaborative analysis:', error);
-      return 'Failed to generate analysis. Please try again later.';
+    if (edgeError) {
+      console.error('Error from agent-recommendation edge function:', edgeError);
+      throw new Error(edgeError.message);
     }
     
-    return data?.analysis || 'No analysis available';
-  } catch (error) {
-    console.error('Exception generating collaborative analysis:', error);
-    return 'An unexpected error occurred. Please try again later.';
-  }
-};
-
-// Get agent messages
-export const getAgentMessages = async (agentId: string): Promise<AgentMessage[]> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'get_agent_messages',
-        agentId
-      }
-    });
-    
-    if (error) {
-      console.error('Error fetching agent messages:', error);
-      return [];
+    if (edgeData && edgeData.recommendation) {
+      console.log('Received recommendation from edge function:', edgeData.recommendation);
+      return edgeData.recommendation as AgentRecommendation;
     }
     
-    return data?.messages || [];
+    // Fallback to simulated recommendation
+    console.log('No recommendation received, falling back to simulation');
+    return simulateAgentRecommendation(agent, ticker);
   } catch (error) {
-    console.error('Exception fetching agent messages:', error);
-    return [];
+    console.error('Exception in generateAgentRecommendation:', error);
+    console.log('Falling back to simulated recommendation after error');
+    return simulateAgentRecommendation(agent, ticker);
   }
-};
+}
 
-// Send agent message
-export const sendAgentMessage = async (
-  senderId: string, 
-  receiverId: string, 
-  content: string
-): Promise<AgentMessage | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'send_agent_message',
-        senderId,
-        receiverId,
-        content
-      }
-    });
-    
-    if (error) {
-      console.error('Error sending agent message:', error);
-      return null;
-    }
-    
-    return data?.message || null;
-  } catch (error) {
-    console.error('Exception sending agent message:', error);
-    return null;
-  }
-};
-
-// Get agent tasks
-export const getAgentTasks = async (agentId: string): Promise<AgentTask[]> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'get_agent_tasks',
-        agentId
-      }
-    });
-    
-    if (error) {
-      console.error('Error fetching agent tasks:', error);
-      return [];
-    }
-    
-    return data?.tasks || [];
-  } catch (error) {
-    console.error('Exception fetching agent tasks:', error);
-    return [];
-  }
-};
-
-// Create agent task
-export const createAgentTask = async (
-  agentId: string,
-  title: string,
-  description: string,
-  priority: 'low' | 'normal' | 'high' | 'critical' = 'normal'
-): Promise<AgentTask | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'create_agent_task',
-        agentId,
-        title,
-        description,
-        priority
-      }
-    });
-    
-    if (error) {
-      console.error('Error creating agent task:', error);
-      return null;
-    }
-    
-    return data?.task || null;
-  } catch (error) {
-    console.error('Exception creating agent task:', error);
-    return null;
-  }
-};
-
-// Sync agent messages
-export const syncAgentMessages = async (): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { action: 'sync_agent_messages' }
-    });
-    
-    if (error) {
-      console.error('Error syncing agent messages:', error);
-      return false;
-    }
-    
-    return data?.success || false;
-  } catch (error) {
-    console.error('Exception syncing agent messages:', error);
-    return false;
-  }
-};
-
-// Get collaboration sessions
-export const getCollaborationSessions = async (): Promise<CollaborationSession[]> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { action: 'get_collaboration_sessions' }
-    });
-    
-    if (error) {
-      console.error('Error fetching collaboration sessions:', error);
-      return [];
-    }
-    
-    return data?.sessions || [];
-  } catch (error) {
-    console.error('Exception fetching collaboration sessions:', error);
-    return [];
-  }
-};
-
-// Submit agent recommendation
-export const submitAgentRecommendation = async (recommendation: Omit<AgentRecommendation, 'id' | 'timestamp'>): Promise<AgentRecommendation | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'submit_recommendation',
-        recommendation
-      }
-    });
-    
-    if (error) {
-      console.error('Error submitting agent recommendation:', error);
-      return null;
-    }
-    
-    return data?.recommendation || null;
-  } catch (error) {
-    console.error('Exception submitting agent recommendation:', error);
-    return null;
-  }
-};
-
-// Get agent recommendations
-export const getAgentRecommendations = async (agentId?: string, limit: number = 10): Promise<AgentRecommendation[]> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'get_recommendations',
-        agentId,
-        limit
-      }
-    });
-    
-    if (error) {
-      console.error('Error fetching agent recommendations:', error);
-      return [];
-    }
-    
-    return data?.recommendations || [];
-  } catch (error) {
-    console.error('Exception fetching agent recommendations:', error);
-    return [];
-  }
-};
-
-// Get recent agent recommendations
-export const getRecentAgentRecommendations = async (limit: number = 5): Promise<AgentRecommendation[]> => {
-  return getAgentRecommendations(undefined, limit);
-};
-
-// Create portfolio decision
-export const createPortfolioDecision = async (
+/**
+ * Coordinate multiple agents to make a portfolio decision
+ */
+export async function generatePortfolioDecision(
+  agents: Agent[],
   ticker: string,
-  action: TradeAction,
-  confidence: number,
-  reasoning: string,
-  agentIds: string[],
-  price?: number
-): Promise<PortfolioDecision | null> => {
+  marketData: any
+): Promise<PortfolioDecision | null> {
   try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'create_portfolio_decision',
-        ticker,
-        tradeAction: action,
-        confidence,
-        reasoning,
-        agentIds,
-        price
-      }
-    });
+    console.log(`Coordinating ${agents.length} agents for portfolio decision on ${ticker}`);
     
-    if (error) {
-      console.error('Error creating portfolio decision:', error);
+    // Get recommendations from all active agents
+    const activeAgents = agents.filter(agent => agent.status === 'active');
+    
+    if (activeAgents.length === 0) {
+      console.warn('No active agents available for portfolio decision');
       return null;
     }
     
-    return data?.decision || null;
-  } catch (error) {
-    console.error('Exception creating portfolio decision:', error);
-    return null;
-  }
-};
-
-// Get portfolio decisions
-export const getPortfolioDecisions = async (limit: number = 10): Promise<PortfolioDecision[]> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'get_portfolio_decisions',
-        limit
-      }
-    });
+    // Get recommendations from each agent in parallel
+    const recommendationPromises = activeAgents.map(agent => 
+      generateAgentRecommendation(agent, ticker, marketData)
+    );
     
-    if (error) {
-      console.error('Error fetching portfolio decisions:', error);
-      return [];
+    const recommendations = (await Promise.all(recommendationPromises)).filter(
+      (rec): rec is AgentRecommendation => rec !== null
+    );
+    
+    if (recommendations.length === 0) {
+      console.warn('No recommendations received from agents');
+      return null;
     }
     
-    return data?.decisions || [];
+    // Try to use edge function first
+    const { data: edgeData, error: edgeError } = await supabase.functions.invoke('portfolio-decision', {
+      body: { recommendations, ticker }
+    });
+    
+    if (edgeError) {
+      console.error('Error from portfolio-decision edge function:', edgeError);
+      throw new Error(edgeError.message);
+    }
+    
+    if (edgeData && edgeData.decision) {
+      console.log('Received portfolio decision from edge function:', edgeData.decision);
+      return edgeData.decision as PortfolioDecision;
+    }
+    
+    // Fallback to simulated decision
+    console.log('No decision received, falling back to simulation');
+    return simulatePortfolioDecision(recommendations, ticker);
   } catch (error) {
-    console.error('Exception fetching portfolio decisions:', error);
-    return [];
+    console.error('Exception in generatePortfolioDecision:', error);
+    console.log('Falling back to simulated portfolio decision after error');
+    
+    // Try to still use the recommendations if we have them
+    try {
+      const activeAgents = agents.filter(agent => agent.status === 'active');
+      const recommendations = await Promise.all(
+        activeAgents.map(agent => simulateAgentRecommendation(agent, ticker))
+      );
+      const validRecommendations = recommendations.filter(
+        (rec): rec is AgentRecommendation => rec !== null
+      );
+      
+      return simulatePortfolioDecision(validRecommendations, ticker);
+    } catch (fallbackError) {
+      console.error('Even fallback simulation failed:', fallbackError);
+      return null;
+    }
   }
-};
+}
 
-// Get recent portfolio decisions
-export const getRecentPortfolioDecisions = async (limit: number = 5): Promise<PortfolioDecision[]> => {
-  return getPortfolioDecisions(limit);
-};
+// ---- Simulation Utilities ----
 
-// Generate agent recommendation based on market data
-export const generateAgentRecommendation = async (
-  agentId: string,
+/**
+ * Simulate a recommendation from an agent (for testing or when service is unavailable)
+ */
+function simulateAgentRecommendation(agent: Agent, ticker: string): AgentRecommendation {
+  console.log(`Simulating recommendation from ${agent.name} for ${ticker}`);
+  
+  // Base confidence on agent success rate
+  const baseConfidence = agent.performance?.successRate || 50;
+  
+  // Add some randomness
+  const confidence = Math.min(
+    Math.max(baseConfidence + Math.floor(Math.random() * 20) - 10, 30),
+    95
+  );
+  
+  // Determine action based on agent type and random factor
+  let actions: TradeAction[] = ["BUY", "SELL", "HOLD"];
+  
+  // Certain agent types have tendencies toward certain actions
+  if (agent.type === "value_investor") {
+    actions = confidence > 70 ? ["BUY", "BUY", "BUY", "HOLD"] : ["HOLD", "HOLD", "BUY", "SELL"];
+  } else if (agent.type === "technical_analyst") {
+    actions = Math.random() > 0.5 ? ["BUY", "SELL", "BUY"] : ["SELL", "HOLD", "SELL"];
+  } else if (agent.tradingStyle === "Momentum") {
+    actions = ["BUY", "BUY", "HOLD", "SELL"];
+  }
+  
+  const randomAction = actions[Math.floor(Math.random() * actions.length)];
+  
+  // Generate reasoning based on agent type and action
+  let reasoning = "";
+  switch (agent.type) {
+    case "trader":
+      reasoning = randomAction === "BUY" 
+        ? `${ticker} shows a promising entry point based on current momentum.` 
+        : randomAction === "SELL" 
+        ? `Technical indicators suggest ${ticker} is overbought.`
+        : `${ticker} is in a consolidation phase, holding is advised.`;
+      break;
+    case "analyst":
+      reasoning = randomAction === "BUY" 
+        ? `Recent financial reports for ${ticker} indicate strong growth potential.` 
+        : randomAction === "SELL" 
+        ? `Analysis shows declining fundamentals for ${ticker}.`
+        : `Current analysis of ${ticker} shows mixed signals; maintaining position is recommended.`;
+      break;
+    case "portfolio_manager":
+      reasoning = randomAction === "BUY" 
+        ? `${ticker} would strengthen portfolio diversification with its current performance.` 
+        : randomAction === "SELL" 
+        ? `Portfolio rebalancing suggests reducing exposure to ${ticker}.`
+        : `Current portfolio allocation for ${ticker} is optimal.`;
+      break;
+    case "value_investor":
+      reasoning = randomAction === "BUY" 
+        ? `${ticker} is trading below intrinsic value, presenting a buying opportunity.` 
+        : randomAction === "SELL" 
+        ? `${ticker} has reached fair value, consider taking profits.`
+        : `${ticker} is fairly valued currently, maintain position.`;
+      break;
+    default:
+      reasoning = randomAction === "BUY" 
+        ? `Based on my analysis, ${ticker} presents a buying opportunity.` 
+        : randomAction === "SELL" 
+        ? `I recommend selling ${ticker} at current levels.`
+        : `Current position in ${ticker} should be maintained.`;
+  }
+  
+  return {
+    agentId: agent.id,
+    action: randomAction,
+    ticker,
+    confidence,
+    reasoning,
+    timestamp: new Date().toISOString(),
+    price: Math.floor(Math.random() * 1000) + 50 // Random price for simulation
+  };
+}
+
+/**
+ * Simulate a portfolio decision based on multiple recommendations
+ */
+function simulatePortfolioDecision(
+  recommendations: AgentRecommendation[],
   ticker: string
-): Promise<AgentRecommendation | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'generate_recommendation',
-        agentId,
-        ticker
-      }
-    });
-    
-    if (error) {
-      console.error('Error generating agent recommendation:', error);
-      return null;
+): PortfolioDecision {
+  console.log(`Simulating portfolio decision for ${ticker} based on ${recommendations.length} recommendations`);
+  
+  // Count recommendations by action type
+  const actionCounts: Record<TradeAction, number> = {
+    "BUY": 0,
+    "SELL": 0,
+    "HOLD": 0,
+    "SHORT": 0,
+    "COVER": 0
+  };
+  
+  // Calculate weighted opinions
+  const weightedScores: Record<TradeAction, number> = {
+    "BUY": 0,
+    "SELL": 0,
+    "HOLD": 0,
+    "SHORT": 0,
+    "COVER": 0
+  };
+  
+  let totalConfidence = 0;
+  
+  // Process all recommendations
+  recommendations.forEach(rec => {
+    actionCounts[rec.action]++;
+    weightedScores[rec.action] += rec.confidence;
+    totalConfidence += rec.confidence;
+  });
+  
+  // Determine the final action based on weighted scores
+  let finalAction: TradeAction = "HOLD"; // Default
+  let maxScore = 0;
+  
+  Object.entries(weightedScores).forEach(([action, score]) => {
+    if (score > maxScore) {
+      maxScore = score;
+      finalAction = action as TradeAction;
     }
+  });
+  
+  // Calculate overall confidence
+  const averageConfidence = Math.round(totalConfidence / recommendations.length);
+  
+  // Generate reasoning
+  const majorityPercentage = Math.round((actionCounts[finalAction] / recommendations.length) * 100);
+  
+  let reasoning = `${majorityPercentage}% of agents recommended to ${finalAction} ${ticker}. `;
+  
+  if (recommendations.length > 1) {
+    reasoning += `Based on consensus among ${recommendations.length} agents, `;
     
-    return data?.recommendation || null;
-  } catch (error) {
-    console.error('Exception generating agent recommendation:', error);
-    return null;
-  }
-};
-
-// Generate portfolio decision from agent recommendations
-export const generatePortfolioDecision = async (
-  ticker: string,
-  timeout: number = 30000
-): Promise<PortfolioDecision | null> => {
-  try {
-    const { data, error } = await supabase.functions.invoke('agent-communication', {
-      body: { 
-        action: 'generate_portfolio_decision',
-        ticker,
-        timeout
-      }
-    });
-    
-    if (error) {
-      console.error('Error generating portfolio decision:', error);
-      return null;
+    if (majorityPercentage > 80) {
+      reasoning += `there is strong agreement to ${finalAction}.`;
+    } else if (majorityPercentage > 60) {
+      reasoning += `there is moderate agreement to ${finalAction}.`;
+    } else {
+      reasoning += `there is slight preference to ${finalAction}, though opinions are mixed.`;
     }
-    
-    return data?.decision || null;
-  } catch (error) {
-    console.error('Exception generating portfolio decision:', error);
-    return null;
+  } else {
+    reasoning += `Decision based on a single agent recommendation with ${averageConfidence}% confidence.`;
   }
-};
+  
+  // Add a sample of the reasoning from the top agent
+  const topRecommendation = recommendations.sort((a, b) => b.confidence - a.confidence)[0];
+  if (topRecommendation) {
+    reasoning += ` Top agent reasoning: ${topRecommendation.reasoning}`;
+  }
+  
+  return {
+    id: `pd-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    recommendedActions: recommendations,
+    finalDecision: finalAction,
+    confidence: averageConfidence,
+    reasoning,
+    ticker,
+    action: finalAction,
+    amount: Math.floor(Math.random() * 5) + 1,
+    price: recommendations[0]?.price || 100,
+    riskScore: Math.floor(Math.random() * 10) + 1,
+    stopLoss: finalAction === "BUY" ? Math.floor(Math.random() * 10) + 5 : undefined,
+    takeProfit: finalAction === "BUY" ? Math.floor(Math.random() * 20) + 15 : undefined
+  };
+}
 
-// Helper function to compute trend direction
-export const getTrendDirection = (
-  action: TradeAction, 
-  confidence: number
-): 'bullish' | 'bearish' | 'neutral' => {
-  // Fix the comparison issue with explicit type checking
-  if (action === "BUY" || action === "COVER") {
-    return confidence > 75 ? 'bullish' : 'neutral';
-  } else if (action === "SELL" || action === "SHORT") {
-    return confidence > 75 ? 'bearish' : 'neutral';
-  }
-  return 'neutral';
-};
+/**
+ * Get sample agents for testing and fallback
+ */
+function getSampleAgents(): Agent[] {
+  return [
+    {
+      id: "trader-alpha-1",
+      name: "Alpha Trader",
+      description: "Focuses on momentum trading with quick entries and exits",
+      type: "trader",
+      status: "active",
+      lastActive: new Date().toISOString(),
+      createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      tradingStyle: "Momentum",
+      performance: {
+        successRate: 72,
+        tradeCount: 145,
+        winLossRatio: 2.1
+      },
+      tasks: ["Market analysis completed", "Trading strategy updated", "Performance review pending"]
+    },
+    {
+      id: "analyst-beta-2",
+      name: "Beta Analyst",
+      description: "Specialized in fundamental analysis for long-term investments",
+      type: "analyst",
+      status: "active",
+      lastActive: new Date().toISOString(),
+      createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+      specialization: "Fundamental Analysis",
+      performance: {
+        successRate: 68,
+        tasksCompleted: 56
+      },
+      tasks: {
+        completed: 56,
+        pending: 3
+      }
+    },
+    {
+      id: "portfolio-gamma-3",
+      name: "Gamma Manager",
+      description: "Focuses on portfolio optimization and risk management",
+      type: "portfolio_manager",
+      status: "active",
+      lastActive: new Date().toISOString(),
+      createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+      tradingStyle: "Conservative",
+      performance: {
+        successRate: 81,
+        tasksCompleted: 112,
+        winLossRatio: 1.7
+      },
+      tasks: {
+        completed: 112,
+        pending: 5
+      }
+    },
+    {
+      id: "trader-delta-4",
+      name: "Delta Swinger",
+      description: "Specializes in swing trading based on market sentiment",
+      type: "trader",
+      status: "paused",
+      lastActive: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(),
+      tradingStyle: "Swing",
+      performance: {
+        successRate: 65,
+        tradeCount: 93,
+        winLossRatio: 1.9
+      },
+      tasks: ["Sentiment analysis complete", "Weekend market review pending", "Strategy adjustment required"]
+    },
+    {
+      id: "analyst-epsilon-5",
+      name: "Epsilon Technician",
+      description: "Expert in technical analysis using advanced chart patterns",
+      type: "technical_analyst",
+      status: "training",
+      lastActive: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      specialization: "Chart Patterns",
+      performance: {
+        successRate: 59,
+        tasksCompleted: 28
+      },
+      tasks: {
+        completed: 28,
+        pending: 12
+      }
+    },
+    {
+      id: "valuation-zeta-6",
+      name: "Zeta Valuator",
+      description: "Specializes in intrinsic value calculations and value investing",
+      type: "value_investor",
+      status: "active",
+      lastActive: new Date().toISOString(),
+      createdAt: new Date(Date.now() - 75 * 24 * 60 * 60 * 1000).toISOString(),
+      specialization: "Intrinsic Value",
+      performance: {
+        successRate: 77,
+        tasksCompleted: 64
+      },
+      tasks: {
+        completed: 64,
+        pending: 2
+      }
+    }
+  ];
+}

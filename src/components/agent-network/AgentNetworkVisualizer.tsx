@@ -1,190 +1,165 @@
 
-import { useEffect, useState, useRef } from 'react';
-import { Agent } from '@/types/agent';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Network } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Network, Users, MessageSquare, BarChart2 } from 'lucide-react';
+import { useAgentNetwork } from '@/hooks/use-agent-network';
+import { Agent } from '@/types/agent';
 import { AgentMessage, AgentTask } from '@/services/agentNetwork';
 
-interface AgentNetworkVisualizerProps {
-  agents: Agent[];
-  messages: AgentMessage[];
-  tasks: AgentTask[];
-  isLoading?: boolean;
+interface AgentCardProps {
+  agent: Agent;
+  onToggle: (agentId: string, isActive: boolean) => void;
 }
 
-export const AgentNetworkVisualizer = ({
-  agents,
-  messages,
-  tasks,
-  isLoading = false
-}: AgentNetworkVisualizerProps) => {
-  const { toast } = useToast();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [visualizationReady, setVisualizationReady] = useState(false);
+const AgentCard = ({ agent, onToggle }: AgentCardProps) => (
+  <div className="flex items-center justify-between p-4 border rounded-lg mb-3 bg-card hover:bg-accent/5 transition-colors">
+    <div className="flex items-center">
+      <div className={`w-3 h-3 rounded-full mr-3 ${agent.status === 'active' ? 'bg-green-500' : 'bg-gray-400'}`} />
+      <div>
+        <h3 className="font-medium">{agent.name}</h3>
+        <p className="text-xs text-muted-foreground">{agent.description}</p>
+      </div>
+    </div>
+    <div className="flex items-center gap-2">
+      <Badge variant={agent.type === 'advisor' ? 'default' : agent.type === 'analyst' ? 'outline' : 'secondary'}>
+        {agent.type}
+      </Badge>
+      <button
+        onClick={() => onToggle(agent.id, agent.status !== 'active')}
+        className={`px-2 py-1 text-xs rounded-md transition-colors ${
+          agent.status === 'active'
+            ? 'bg-red-500/10 text-red-600 hover:bg-red-500/20'
+            : 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
+        }`}
+      >
+        {agent.status === 'active' ? 'Deactivate' : 'Activate'}
+      </button>
+    </div>
+  </div>
+);
+
+const MessageList = ({ messages }: { messages: AgentMessage[] }) => (
+  <div className="space-y-3 max-h-[300px] overflow-y-auto">
+    {messages.length === 0 ? (
+      <p className="text-center text-muted-foreground p-4">No messages exchanged yet</p>
+    ) : (
+      messages.map((message) => (
+        <div key={message.id} className="p-3 border rounded-lg">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>From: <strong>{message.fromAgent}</strong> to <strong>{message.toAgent}</strong></span>
+            <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
+          </div>
+          <p className="text-sm">{message.content}</p>
+        </div>
+      ))
+    )}
+  </div>
+);
+
+const TaskList = ({ tasks }: { tasks: AgentTask[] }) => (
+  <div className="space-y-3 max-h-[300px] overflow-y-auto">
+    {tasks.length === 0 ? (
+      <p className="text-center text-muted-foreground p-4">No tasks created yet</p>
+    ) : (
+      tasks.map((task) => (
+        <div key={task.id} className="p-3 border rounded-lg">
+          <div className="flex justify-between items-center mb-1">
+            <span className="font-medium">{task.description}</span>
+            <Badge 
+              variant={
+                task.status === 'completed' ? 'default' :
+                task.status === 'in-progress' ? 'secondary' :
+                task.status === 'failed' ? 'destructive' : 'outline'
+              }
+            >
+              {task.status}
+            </Badge>
+          </div>
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>Agent: <strong>{task.agentId}</strong></span>
+            <span>Priority: <strong>{task.priority}</strong></span>
+          </div>
+          {task.result && (
+            <div className="mt-2 p-2 bg-muted rounded text-xs">
+              <strong>Result:</strong> {task.result.substring(0, 100)}...
+            </div>
+          )}
+        </div>
+      ))
+    )}
+  </div>
+);
+
+export function AgentNetworkVisualizer() {
+  const { 
+    isInitialized,
+    isLoading,
+    activeAgents,
+    agentMessages,
+    agentTasks,
+    toggleAgent,
+    refreshAgentState
+  } = useAgentNetwork();
   
-  // Initialize the visualization on component mount
+  const [activeTab, setActiveTab] = useState('agents');
+  
   useEffect(() => {
-    if (isLoading || !agents.length) return;
+    // Refresh the state periodically
+    const interval = setInterval(() => {
+      refreshAgentState();
+    }, 5000);
     
-    try {
-      if (canvasRef.current) {
-        initializeVisualization();
-      }
-    } catch (error) {
-      console.error('Error initializing agent network visualization:', error);
-      toast({
-        title: 'Visualization Error',
-        description: 'Failed to initialize the agent network visualization',
-        variant: 'destructive'
-      });
-    }
-  }, [agents, messages, tasks, isLoading]);
-  
-  const initializeVisualization = () => {
-    if (!canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Set canvas size
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-    
-    // Draw agents as nodes
-    drawAgentNodes(ctx, canvas);
-    
-    // Connect agents with message lines
-    drawMessageLines(ctx);
-    
-    // Draw task indicators
-    drawTaskIndicators(ctx);
-    
-    setVisualizationReady(true);
-  };
-  
-  const drawAgentNodes = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const radius = Math.min(centerX, centerY) * 0.7;
-    
-    agents.forEach((agent, i) => {
-      const angle = (i / agents.length) * Math.PI * 2;
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
-      
-      // Draw agent circle
-      ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
-      
-      // Choose color based on agent status
-      switch (agent.status) {
-        case 'active':
-          ctx.fillStyle = 'rgba(34, 197, 94, 0.8)'; // green
-          break;
-        case 'paused':
-          ctx.fillStyle = 'rgba(234, 179, 8, 0.8)'; // amber
-          break;
-        case 'offline':
-          ctx.fillStyle = 'rgba(100, 116, 139, 0.8)'; // slate
-          break;
-        case 'terminated':
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.8)'; // red
-          break;
-        default:
-          ctx.fillStyle = 'rgba(59, 130, 246, 0.8)'; // blue
-      }
-      
-      ctx.fill();
-      ctx.stroke();
-      
-      // Draw agent label
-      ctx.fillStyle = 'black';
-      ctx.font = '10px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(agent.name.slice(0, 15), x, y + 30);
-    });
-  };
-  
-  const drawMessageLines = (ctx: CanvasRenderingContext2D) => {
-    // This would draw lines between agents that have communicated
-    // Implementation would depend on how you want to visualize messages
-    // Simplified version:
-    messages.slice(0, 5).forEach(message => {
-      const sender = agents.find(a => a.id === message.senderId);
-      const receiver = agents.find(a => a.id === message.receiverId);
-      
-      if (sender && receiver) {
-        // Get positions (simplified)
-        // In a real implementation, you'd calculate positions based on the canvas
-        // This is just a placeholder
-        console.log(`Drawing message line from ${sender.name} to ${receiver.name}`);
-      }
-    });
-  };
-  
-  const drawTaskIndicators = (ctx: CanvasRenderingContext2D) => {
-    // This would draw indicators for active tasks
-    // Simplified version
-    tasks.slice(0, 5).forEach(task => {
-      const agent = agents.find(a => a.id === task.agentId);
-      
-      if (agent) {
-        // Draw task indicator (simplified)
-        // In a real implementation, you'd position this relative to the agent
-        console.log(`Drawing task indicator for ${agent.name}: ${task.title}`);
-      }
-    });
-  };
-  
-  if (isLoading) {
-    return (
-      <Card className="col-span-full h-[400px] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </Card>
-    );
-  }
-  
-  if (!agents.length) {
-    return (
-      <Card className="col-span-full">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Network className="mr-2 h-5 w-5" />
-            Agent Network
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="h-[300px] flex items-center justify-center">
-          <p className="text-muted-foreground">No active agents available in the network</p>
-        </CardContent>
-      </Card>
-    );
-  }
-  
+    return () => clearInterval(interval);
+  }, [refreshAgentState]);
+
   return (
-    <Card className="col-span-full">
+    <Card className="shadow-md">
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <Network className="mr-2 h-5 w-5" />
-          Agent Network ({agents.length} Agents)
+        <CardTitle className="flex items-center gap-2">
+          <Network className="h-5 w-5" /> Agent Network Status
         </CardTitle>
       </CardHeader>
-      <CardContent className="relative">
-        <canvas 
-          ref={canvasRef} 
-          className="w-full h-[350px] bg-slate-50/5 rounded-md"
-        />
-        
-        {!visualizationReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-md">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <CardContent>
+        {isLoading && !isInitialized ? (
+          <div className="flex justify-center p-8">
+            <div className="animate-spin h-6 w-6 border-2 border-primary rounded-full border-t-transparent"></div>
           </div>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="agents" className="flex items-center gap-1">
+                <Users className="h-4 w-4" /> Agents <Badge variant="outline">{activeAgents.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="flex items-center gap-1">
+                <MessageSquare className="h-4 w-4" /> Messages <Badge variant="outline">{agentMessages.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="flex items-center gap-1">
+                <BarChart2 className="h-4 w-4" /> Tasks <Badge variant="outline">{agentTasks.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="agents" className="mt-4">
+              {activeAgents.map(agent => (
+                <AgentCard 
+                  key={agent.id} 
+                  agent={agent} 
+                  onToggle={toggleAgent} 
+                />
+              ))}
+            </TabsContent>
+            
+            <TabsContent value="messages" className="mt-4">
+              <MessageList messages={agentMessages} />
+            </TabsContent>
+            
+            <TabsContent value="tasks" className="mt-4">
+              <TaskList tasks={agentTasks} />
+            </TabsContent>
+          </Tabs>
         )}
       </CardContent>
     </Card>
   );
-};
+}
