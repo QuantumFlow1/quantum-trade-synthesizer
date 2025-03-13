@@ -1,2 +1,27 @@
 
+# project_id is required for all functions
 project_id = "tfmlretexydslgowlkid"
+
+[functions.fetch-market-data]
+verify_jwt = false
+
+[functions.grok3-response]
+verify_jwt = false
+
+[functions.check-api-keys]
+verify_jwt = false
+no_hooks = true
+
+[functions.real-crypto-data]
+verify_jwt = false
+no_hooks = true
+
+[functions.market-data-collector]
+verify_jwt = false
+no_hooks = true
+
+[functions.portfolio-decision]
+verify_jwt = false
+
+[functions.agent-communication]
+verify_jwt = false

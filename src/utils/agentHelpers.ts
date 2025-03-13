@@ -17,7 +17,7 @@ export function getAgentTasks(agent: Agent): string[] {
   }
   
   // Handle object format with pending/completed
-  if (typeof agent.tasks === 'object' && 'pending' in agent.tasks) {
+  if (typeof agent.tasks === 'object' && 'pending' in agent.tasks && 'completed' in agent.tasks) {
     // Convert to array of numbered tasks
     const totalTasks = agent.tasks.pending + agent.tasks.completed;
     return Array.from({ length: totalTasks }, (_, i) => 

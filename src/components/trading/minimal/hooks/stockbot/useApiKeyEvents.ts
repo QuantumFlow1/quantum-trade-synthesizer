@@ -1,37 +1,42 @@
 
 import { useEffect } from 'react';
-import { broadcastApiKeyChange } from '@/utils/apiKeyManager';
+import { saveApiKey } from './storage';
 
-// Custom event names for API key updates
-const API_KEY_UPDATED_EVENT = 'apikey-updated';
-const LOCALSTORAGE_CHANGED_EVENT = 'storage';
-
-/**
- * Hook to listen for API key change events
- * @param callback Function to call when API key changes
- */
-export const useApiKeyEvents = (callback: () => void) => {
+export function useApiKeyEvents() {
   useEffect(() => {
-    // Handler for API key update events
-    const handleApiKeyUpdate = () => {
-      console.log('API key update detected');
-      callback();
+    // Handler for messages from content script
+    const handleKeyUpdate = (event: MessageEvent) => {
+      if (event?.data?.type === 'apiKeyUpdate' && event?.data?.key) {
+        // Save the API key sent from the extension
+        const { provider, key } = event.data;
+        
+        if (provider && key && typeof key === 'string') {
+          console.log(`Received ${provider} API key update from extension`);
+          saveApiKey(provider, key);
+        }
+      }
     };
     
-    // Listen for both custom apikey-updated event and storage event
-    window.addEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
-    window.addEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
+    // Listen for messages from content script
+    window.addEventListener('message', handleKeyUpdate);
     
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key?.includes('ApiKey') && e.newValue) {
+        const provider = e.key.replace('ApiKey', '').toLowerCase();
+        // Notify other components about the API key change
+        window.dispatchEvent(new CustomEvent('apikey-updated', {
+          detail: { provider, action: 'save' }
+        }));
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Clean up
     return () => {
-      window.removeEventListener(API_KEY_UPDATED_EVENT, handleApiKeyUpdate);
-      window.removeEventListener(LOCALSTORAGE_CHANGED_EVENT, handleApiKeyUpdate);
+      window.removeEventListener('message', handleKeyUpdate);
+      window.removeEventListener('storage', handleStorageChange);
     };
-  }, [callback]);
-  
-  // Function to manually trigger API key change events
-  const triggerApiKeyChange = () => {
-    broadcastApiKeyChange();
-  };
-
-  return { triggerApiKeyChange };
-};
+  }, []);
+}

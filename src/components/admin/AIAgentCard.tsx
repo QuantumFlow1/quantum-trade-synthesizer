@@ -1,202 +1,156 @@
 
-import React, { useState } from 'react';
-import { Agent } from '@/types/agent';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Bot, Database, Eye, RefreshCw, Trash } from 'lucide-react';
-import { getAgentTasks } from '@/utils/agentHelpers';
+import React from "react";
+import { Agent } from "@/types/agent";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { getAgentTasks, formatAgentId, getAgentSuccessRate } from "@/utils/agentHelpers";
+import { Bot, Zap, CheckCircle2, XCircle, PauseCircle, PlayCircle, Archive } from "lucide-react";
 
-interface AIAgentCardProps {
+export interface AIAgentCardProps {
   agent: Agent;
-  onDelete?: (agentId: string) => void;
-  onRefresh?: (agentId: string) => void;
-  onView?: (agent: Agent) => void;
+  onAction?: (agentId: string, action: "pause" | "terminate" | "activate") => void;
 }
 
-const AIAgentCard: React.FC<AIAgentCardProps> = ({
-  agent,
-  onDelete,
-  onRefresh,
-  onView
-}) => {
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Status badge color
-  const getStatusColor = (status: Agent['status']) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-500/20 text-green-700';
-      case 'offline':
-        return 'bg-gray-500/20 text-gray-700';
-      case 'training':
-        return 'bg-blue-500/20 text-blue-700';
-      case 'paused':
-        return 'bg-yellow-500/20 text-yellow-700';
-      case 'terminated':
-        return 'bg-red-500/20 text-red-700';
-      default:
-        return 'bg-gray-500/20 text-gray-700';
-    }
-  };
-  
-  // Type badge color
-  const getTypeColor = (type: Agent['type']) => {
-    switch (type) {
-      case 'trader':
-        return 'bg-indigo-500/20 text-indigo-700';
-      case 'analyst':
-        return 'bg-cyan-500/20 text-cyan-700';
-      case 'portfolio_manager':
-        return 'bg-amber-500/20 text-amber-700';
-      case 'advisor':
-        return 'bg-green-500/20 text-green-700';
-      case 'receptionist':
-        return 'bg-teal-500/20 text-teal-700';
-      case 'value_investor':
-        return 'bg-purple-500/20 text-purple-700';
-      case 'fundamentals_analyst':
-        return 'bg-blue-500/20 text-blue-700';
-      case 'technical_analyst':
-        return 'bg-orange-500/20 text-orange-700';
-      case 'valuation_expert':
-        return 'bg-rose-500/20 text-rose-700';
-      default:
-        return 'bg-gray-500/20 text-gray-700';
-    }
-  };
-  
-  // Format trade success rate
-  const formatSuccessRate = () => {
-    if (agent.performance?.successRate !== undefined) {
-      return `${agent.performance.successRate}%`;
-    }
-    return 'N/A';
-  };
-  
-  // Handle refresh click
-  const handleRefresh = () => {
-    if (onRefresh) {
-      setIsRefreshing(true);
-      onRefresh(agent.id);
-      setTimeout(() => setIsRefreshing(false), 1000);
-    }
-  };
-  
-  // Get tasks based on the agent format
+export function AIAgentCard({ agent, onAction }: AIAgentCardProps) {
+  // Format the agent's tasks for display
   const tasks = getAgentTasks(agent);
-  
-  // Calculate task completion (for display)
-  const getTaskCompletion = () => {
-    if (Array.isArray(agent.tasks)) {
-      const completedTasks = agent.tasks.filter(task => task.includes('Completed')).length;
-      return `${completedTasks}/${agent.tasks.length}`;
-    } else if (agent.tasks && typeof agent.tasks === 'object' && 'completed' in agent.tasks) {
-      const total = agent.tasks.completed + agent.tasks.pending;
-      return `${agent.tasks.completed}/${total}`;
+  const formattedId = formatAgentId(agent.id);
+  const successRate = getAgentSuccessRate(agent);
+
+  // Get status badge color
+  const getStatusBadgeColor = () => {
+    switch (agent.status) {
+      case "active": return "bg-green-100 text-green-800";
+      case "offline": return "bg-gray-100 text-gray-800";
+      case "paused": return "bg-yellow-100 text-yellow-800";
+      case "training": return "bg-blue-100 text-blue-800";
+      case "terminated": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
     }
-    return 'N/A';
+  };
+
+  // Get the icon for the agent type
+  const getAgentTypeIcon = () => {
+    switch (agent.type) {
+      case "trader": return <Zap className="h-4 w-4 text-amber-500" />;
+      case "analyst": return <CheckCircle2 className="h-4 w-4 text-blue-500" />;
+      case "portfolio_manager": return <Bot className="h-4 w-4 text-indigo-500" />;
+      case "receptionist": return <Bot className="h-4 w-4 text-pink-500" />;
+      case "advisor": return <Bot className="h-4 w-4 text-green-500" />;
+      default: return <Bot className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  // Get the action buttons based on current status
+  const renderActionButtons = () => {
+    if (!onAction) return null;
+    
+    switch (agent.status) {
+      case "active":
+        return (
+          <Button variant="outline" size="sm" onClick={() => onAction(agent.id, "pause")}>
+            <PauseCircle className="h-4 w-4 mr-1" />
+            Pause
+          </Button>
+        );
+      case "paused":
+        return (
+          <Button variant="outline" size="sm" onClick={() => onAction(agent.id, "activate")}>
+            <PlayCircle className="h-4 w-4 mr-1" />
+            Resume
+          </Button>
+        );
+      case "offline":
+      case "training":
+        return (
+          <Button variant="outline" size="sm" onClick={() => onAction(agent.id, "activate")}>
+            <PlayCircle className="h-4 w-4 mr-1" />
+            Activate
+          </Button>
+        );
+      case "terminated":
+        return null;
+      default:
+        return null;
+    }
   };
 
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow">
+    <Card className="overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <div className="flex flex-col">
-            <CardTitle className="text-lg font-semibold flex items-center">
-              <Bot className="h-5 w-5 mr-2 text-indigo-600" />
-              {agent.name}
-            </CardTitle>
-            <div className="flex flex-wrap gap-1 mt-1">
-              <Badge variant="outline" className={getStatusColor(agent.status)}>
-                {agent.status}
-              </Badge>
-              <Badge variant="outline" className={getTypeColor(agent.type)}>
-                {agent.type.replace('_', ' ')}
-              </Badge>
-            </div>
-          </div>
-          
-          <div className="text-xs text-gray-500">
-            ID: {agent.id.substring(0, 8)}
-          </div>
+          <CardTitle className="text-lg font-semibold">{agent.name}</CardTitle>
+          <Badge className={getStatusBadgeColor()}>
+            {agent.status}
+          </Badge>
         </div>
+        <CardDescription className="flex items-center text-sm">
+          {getAgentTypeIcon()}
+          <span className="ml-1 capitalize">{agent.type.replace('_', ' ')}</span>
+          {agent.specialization && (
+            <span className="ml-1 text-muted-foreground">• {agent.specialization}</span>
+          )}
+        </CardDescription>
       </CardHeader>
-      
       <CardContent className="pb-2">
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{agent.description}</p>
+        <p className="text-sm text-muted-foreground mb-2">{agent.description}</p>
         
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex flex-col">
-            <span className="font-medium text-gray-700">Success Rate</span>
-            <span>{formatSuccessRate()}</span>
+        {/* Performance metrics */}
+        {agent.performance && (
+          <div className="grid grid-cols-2 gap-2 my-2">
+            <div className="bg-slate-50 p-2 rounded text-center">
+              <div className="text-lg font-medium">{successRate}%</div>
+              <div className="text-xs text-muted-foreground">Success rate</div>
+            </div>
+            
+            {agent.performance.tradeCount && (
+              <div className="bg-slate-50 p-2 rounded text-center">
+                <div className="text-lg font-medium">{agent.performance.tradeCount}</div>
+                <div className="text-xs text-muted-foreground">Trades</div>
+              </div>
+            )}
+            
+            {agent.performance.tasksCompleted && (
+              <div className="bg-slate-50 p-2 rounded text-center">
+                <div className="text-lg font-medium">{agent.performance.tasksCompleted}</div>
+                <div className="text-xs text-muted-foreground">Tasks</div>
+              </div>
+            )}
+            
+            {agent.performance.winLossRatio && (
+              <div className="bg-slate-50 p-2 rounded text-center">
+                <div className="text-lg font-medium">{agent.performance.winLossRatio}x</div>
+                <div className="text-xs text-muted-foreground">Win/Loss</div>
+              </div>
+            )}
           </div>
-          <div className="flex flex-col">
-            <span className="font-medium text-gray-700">Tasks</span>
-            <span>{getTaskCompletion()}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-medium text-gray-700">Last Active</span>
-            <span>{new Date(agent.lastActive).toLocaleDateString()}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="font-medium text-gray-700">Created</span>
-            <span>{agent.createdAt ? new Date(agent.createdAt).toLocaleDateString() : 'N/A'}</span>
-          </div>
-        </div>
+        )}
         
-        {tasks.length > 0 && (
-          <div className="mt-3">
-            <h4 className="text-xs font-medium text-gray-700 mb-1">Recent Tasks</h4>
+        {/* Agent tasks */}
+        {tasks && tasks.length > 0 && (
+          <div className="mt-2">
+            <h4 className="text-xs font-medium mb-1">Recent tasks</h4>
             <ul className="text-xs space-y-1">
               {tasks.slice(0, 3).map((task, index) => (
                 <li key={index} className="flex items-center">
-                  <span className={`w-2 h-2 rounded-full mr-2 ${task.includes('Completed') ? 'bg-green-500' : 'bg-amber-500'}`}></span>
-                  <span className="truncate">{task}</span>
+                  {task.includes("Completed") ? (
+                    <CheckCircle2 className="h-3 w-3 text-green-500 mr-1" />
+                  ) : (
+                    <XCircle className="h-3 w-3 text-amber-500 mr-1" />
+                  )}
+                  {task}
                 </li>
               ))}
-              {tasks.length > 3 && (
-                <li className="text-gray-500">+{tasks.length - 3} more tasks</li>
-              )}
+              {tasks.length > 3 && <li className="text-xs text-muted-foreground">+{tasks.length - 3} more</li>}
             </ul>
           </div>
         )}
       </CardContent>
-      
-      <CardFooter className="pt-2">
-        <div className="flex space-x-2 w-full justify-between">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onView && onView(agent)}
-            className="flex-1"
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            View
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            className={`flex-1 ${isRefreshing ? 'opacity-50' : ''}`}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onDelete && onDelete(agent.id)}
-            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash className="h-4 w-4 mr-1" />
-            Delete
-          </Button>
-        </div>
+      <CardFooter className="flex justify-between pt-2">
+        <div className="text-xs text-muted-foreground">ID: {formattedId}</div>
+        {renderActionButtons()}
       </CardFooter>
     </Card>
   );
-};
-
-export default AIAgentCard;
+}
