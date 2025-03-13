@@ -12,7 +12,7 @@ export interface AIAgentCardProps {
   onAction?: (agentId: string, action: "pause" | "terminate" | "activate") => void;
 }
 
-export function AIAgentCard({ agent, onAction }: AIAgentCardProps) {
+const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
   // Format the agent's tasks for display
   const tasks = getAgentTasks(agent);
   const formattedId = formatAgentId(agent.id);
@@ -153,4 +153,6 @@ export function AIAgentCard({ agent, onAction }: AIAgentCardProps) {
       </CardFooter>
     </Card>
   );
-}
+};
+
+export default AIAgentCard;

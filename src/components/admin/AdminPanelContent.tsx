@@ -1,19 +1,36 @@
 
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { StatisticsPanel } from './StatisticsPanel';
-import { AccountManagementPanel } from './AccountManagementPanel';
-import { ModelManagement } from './ModelManagement';
-import { ApiKeyManagement } from './ApiKeyManagement';
-import { SystemAlerts } from './SystemAlerts';
+import StatisticsPanel from './StatisticsPanel';
+import AccountManagementPanel from './AccountManagementPanel';
+import ModelManagement from './ModelManagement';
+import ApiKeyManagement from './ApiKeyManagement';
+import SystemAlerts from './SystemAlerts';
 import { TransactionAuditLog } from './TransactionAuditLog';
 import { AgentNetworkDashboard } from './AgentNetworkDashboard';
-import { SuperAdminMonitor } from './SuperAdminMonitor';
-import { GuideResourcesTab } from './GuideResourcesTab';
-import { AIAgentsList } from './AIAgentsList';
+import SuperAdminMonitor from './SuperAdminMonitor';
+import GuideResourcesTab from './GuideResourcesTab';
+import AIAgentsList from './AIAgentsList';
 import { SuperAdminVoiceAssistant } from './SuperAdminVoiceAssistant';
+import { Agent } from '@/types/agent';
 
-export const AdminPanelContent = () => {
+interface AdminPanelContentProps {
+  userRole?: string;
+  agents?: Agent[];
+  setAgents?: React.Dispatch<React.SetStateAction<Agent[]>>;
+  userCount?: number;
+  systemLoad?: number;
+  errorRate?: number;
+}
+
+export const AdminPanelContent: React.FC<AdminPanelContentProps> = ({
+  userRole = 'admin',
+  agents = [],
+  setAgents,
+  userCount = 0,
+  systemLoad = 0,
+  errorRate = 0
+}) => {
   const [activeTab, setActiveTab] = useState('statistics');
 
   return (

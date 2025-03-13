@@ -18,10 +18,11 @@ export function getAgentTasks(agent: Agent): string[] {
   
   // Handle object format with pending/completed
   if (typeof agent.tasks === 'object' && 'pending' in agent.tasks && 'completed' in agent.tasks) {
+    const tasksObj = agent.tasks as { pending: number; completed: number };
     // Convert to array of numbered tasks
-    const totalTasks = agent.tasks.pending + agent.tasks.completed;
+    const totalTasks = tasksObj.pending + tasksObj.completed;
     return Array.from({ length: totalTasks }, (_, i) => 
-      i < agent.tasks.completed 
+      i < tasksObj.completed 
         ? `Task ${i+1}: Completed` 
         : `Task ${i+1}: Pending`
     );

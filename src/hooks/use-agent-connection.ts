@@ -1,72 +1,43 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from '@/hooks/use-toast';
-import agentConnectionService, { AgentConnectionStatus } from '@/services/agent-connection';
+import { useState, useCallback } from 'react';
 
-/**
- * Hook to interact with the agent connection service
- */
-export function useAgentConnection() {
-  const [status, setStatus] = useState<AgentConnectionStatus>(agentConnectionService.getStatus());
-  
-  // Subscribe to status changes
-  useEffect(() => {
-    const unsubscribe = agentConnectionService.subscribe(newStatus => {
-      setStatus(newStatus);
-    });
+export const useAgentConnection = () => {
+  const [isConnected, setIsConnected] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [activeAgents, setActiveAgents] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  const checkConnection = useCallback(async (forceCheck = false) => {
+    if (isVerifying && !forceCheck) return;
     
-    // Clean up on unmount
-    return unsubscribe;
-  }, []);
-  
-  // Function to manually check connection
-  const checkConnection = useCallback(async (showToast: boolean = true) => {
-    if (showToast) {
-      toast({
-        title: "Checking agent connection",
-        description: "Verifying connection to trading agent network...",
-      });
+    setIsVerifying(true);
+    
+    try {
+      // Simulate checking connection
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      setIsConnected(true);
+      setActiveAgents(5); // Mock active agents count
+      setError(null);
+    } catch (err) {
+      setIsConnected(false);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setIsVerifying(false);
     }
-    
-    const isConnected = await agentConnectionService.checkConnection();
-    
-    if (showToast) {
-      if (isConnected) {
-        toast({
-          title: "Agent network connected",
-          description: `Connected to agent network with ${status.activeAgents} active agents`,
-        });
-      } else {
-        toast({
-          title: "Agent network unavailable",
-          description: status.error || "Could not connect to agent network",
-          variant: "destructive",
-        });
-      }
-    }
-    
-    return isConnected;
-  }, [status.activeAgents, status.error]);
-  
-  // Simulate connection for development
-  const simulateConnection = useCallback((connected: boolean, activeAgents: number = connected ? 3 : 0) => {
-    agentConnectionService.resetStatus({
-      isConnected: connected,
-      activeAgents,
-      lastChecked: new Date()
-    });
-    
-    toast({
-      title: connected ? "Simulated connection active" : "Simulated connection inactive",
-      description: connected 
-        ? `Simulating ${activeAgents} active agents` 
-        : "Agent network simulation disabled",
-    });
+  }, [isVerifying]);
+
+  const simulateConnection = useCallback((connected: boolean) => {
+    setIsConnected(connected);
+    setActiveAgents(connected ? 5 : 0);
   }, []);
-  
+
   return {
-    ...status,
+    isConnected,
+    isVerifying,
+    activeAgents,
+    error,
     checkConnection,
     simulateConnection
   };
-}
+};
