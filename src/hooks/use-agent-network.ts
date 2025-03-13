@@ -1,7 +1,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
+import { Agent } from '@/types/agent';
 import { 
-  initializeAgentNetwork, 
+  initializeAgentNetwork,
   generateCollaborativeTradingAnalysis,
   getActiveAgents,
   getAgentMessages,
@@ -21,299 +22,151 @@ import {
   AgentTask,
   CollaborationSession
 } from '@/services/agentNetwork';
-import { Agent, AgentRecommendation, PortfolioDecision, TradeAction } from '@/types/agent';
-import { ModelId } from '@/components/chat/types/GrokSettings';
-import { useAgentConnection } from './use-agent-connection';
-import { logApiCall } from '@/utils/apiLogger';
+import { useToast } from '@/hooks/use-toast';
 
-export function useAgentNetwork() {
-  const [isInitialized, setIsInitialized] = useState(false);
+export const useAgentNetwork = () => {
+  const { toast } = useToast();
+  const [initialized, setInitialized] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [messages, setMessages] = useState<AgentMessage[]>([]);
+  const [tasks, setTasks] = useState<AgentTask[]>([]);
+  const [sessions, setSessions] = useState<CollaborationSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeAgents, setActiveAgents] = useState<Agent[]>([]);
-  const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([]);
-  const [agentTasks, setAgentTasks] = useState<AgentTask[]>([]);
-  const [collaborationSessions, setCollaborationSessions] = useState<CollaborationSession[]>([]);
-  const [recommendations, setRecommendations] = useState<AgentRecommendation[]>([]);
-  const [portfolioDecisions, setPortfolioDecisions] = useState<PortfolioDecision[]>([]);
-  const [lastAnalysis, setLastAnalysis] = useState<string | null>(null);
   
-  // Use the connection service instead of managing connection directly
-  const { isConnected } = useAgentConnection();
-
   // Initialize the agent network
-  useEffect(() => {
-    const initialize = async () => {
-      if (!isConnected) return;
-      
-      setIsLoading(true);
-      try {
-        await logApiCall('agent-network', 'useAgentNetwork.initialize', 'pending');
-        const success = await initializeAgentNetwork();
-        setIsInitialized(success);
-        
-        if (success) {
-          refreshAgentState();
-          await logApiCall('agent-network', 'useAgentNetwork.initialize', 'success');
-        } else {
-          await logApiCall('agent-network', 'useAgentNetwork.initialize', 'error', 'Failed to initialize agent network');
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        await logApiCall('agent-network', 'useAgentNetwork.initialize', 'error', errorMessage);
-        console.error('Error initializing agent network:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    if (isConnected && !isInitialized && !isLoading) {
-      initialize();
-    }
-  }, [isConnected, isInitialized, isLoading]);
-  
-  // Sync agent state from coordinator
-  const syncAgentState = useCallback(async () => {
-    if (!isInitialized || !isConnected) return;
+  const initialize = useCallback(async () => {
+    if (initialized || isInitializing) return true;
     
     try {
-      await logApiCall('agent-network', 'useAgentNetwork.syncAgentState', 'pending');
-      const success = await syncAgentMessages();
+      setIsInitializing(true);
+      const success = await initializeAgentNetwork();
       
       if (success) {
-        setAgentMessages(getAgentMessages());
-        const sessions = await getCollaborationSessions();
-        setCollaborationSessions(sessions);
-        await logApiCall('agent-network', 'useAgentNetwork.syncAgentState', 'success');
+        setInitialized(true);
+        toast({
+          title: "Agent Network Initialized",
+          description: "Successfully connected to the agent network"
+        });
       } else {
-        await logApiCall('agent-network', 'useAgentNetwork.syncAgentState', 'error', 'Failed to sync agent messages');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await logApiCall('agent-network', 'useAgentNetwork.syncAgentState', 'error', errorMessage);
-      console.error('Error syncing agent state:', error);
-    }
-  }, [isInitialized, isConnected]);
-  
-  // Refresh agent state from service
-  const refreshAgentState = useCallback(() => {
-    if (!isInitialized || !isConnected) return;
-    
-    setActiveAgents(getActiveAgents());
-    setAgentMessages(getAgentMessages());
-    setAgentTasks(getAgentTasks());
-    setRecommendations(getAgentRecommendations());
-    setPortfolioDecisions(getPortfolioDecisions());
-    
-    // Sync with coordinator
-    syncAgentState();
-  }, [syncAgentState, isInitialized, isConnected]);
-  
-  // Generate collaborative trading analysis
-  const generateAnalysis = useCallback(async (
-    marketData: any,
-    primaryModelId: ModelId = 'grok3'
-  ) => {
-    if (!isConnected) {
-      console.error('Cannot generate analysis: Agent network is not connected');
-      return null;
-    }
-    
-    setIsLoading(true);
-    
-    try {
-      await logApiCall('agent-network', 'useAgentNetwork.generateAnalysis', 'pending');
-      const analysis = await generateCollaborativeTradingAnalysis(marketData, primaryModelId);
-      setLastAnalysis(analysis);
-      refreshAgentState();
-      await logApiCall('agent-network', 'useAgentNetwork.generateAnalysis', 'success');
-      return analysis;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await logApiCall('agent-network', 'useAgentNetwork.generateAnalysis', 'error', errorMessage);
-      console.error('Error generating analysis:', error);
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [refreshAgentState, isConnected]);
-  
-  // Additional methods with network connection checking
-  
-  // Send a message between agents
-  const sendMessage = useCallback(async (
-    fromAgentId: string,
-    toAgentId: string,
-    content: string
-  ) => {
-    if (!isConnected) return false;
-    
-    try {
-      await logApiCall('agent-network', 'useAgentNetwork.sendMessage', 'pending');
-      const message = await sendAgentMessage(fromAgentId, toAgentId, content);
-      
-      if (message) {
-        refreshAgentState();
-        await logApiCall('agent-network', 'useAgentNetwork.sendMessage', 'success');
-        return true;
-      }
-      
-      await logApiCall('agent-network', 'useAgentNetwork.sendMessage', 'error', 'No message returned');
-      return false;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await logApiCall('agent-network', 'useAgentNetwork.sendMessage', 'error', errorMessage);
-      console.error('Error sending message:', error);
-      return false;
-    }
-  }, [refreshAgentState, isConnected]);
-  
-  // Create a task for an agent
-  const createTask = useCallback(async (
-    agentId: string,
-    description: string,
-    priority: 'low' | 'medium' | 'high' = 'medium'
-  ) => {
-    if (!isConnected) return null;
-    
-    try {
-      await logApiCall('agent-network', 'useAgentNetwork.createTask', 'pending');
-      const task = await createAgentTask(agentId, description, priority);
-      
-      if (task) {
-        refreshAgentState();
-        await logApiCall('agent-network', 'useAgentNetwork.createTask', 'success');
-        return task;
-      }
-      
-      await logApiCall('agent-network', 'useAgentNetwork.createTask', 'error', 'No task returned');
-      return null;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await logApiCall('agent-network', 'useAgentNetwork.createTask', 'error', errorMessage);
-      console.error('Error creating task:', error);
-      return null;
-    }
-  }, [refreshAgentState, isConnected]);
-  
-  // Toggle agent active status
-  const toggleAgent = useCallback((agentId: string, isActive: boolean) => {
-    if (!isConnected) return false;
-    
-    try {
-      const success = toggleAgentStatus(agentId, isActive);
-      
-      if (success) {
-        refreshAgentState();
+        toast({
+          title: "Initialization Failed",
+          description: "Could not initialize the agent network",
+          variant: "destructive"
+        });
       }
       
       return success;
     } catch (error) {
-      console.error('Error toggling agent status:', error);
+      console.error('Error initializing agent network:', error);
+      toast({
+        title: "Initialization Error",
+        description: "An unexpected error occurred while initializing the network",
+        variant: "destructive"
+      });
+      return false;
+    } finally {
+      setIsInitializing(false);
+    }
+  }, [initialized, isInitializing, toast]);
+  
+  // Load agents on component mount
+  useEffect(() => {
+    initialize().then(success => {
+      if (success) {
+        loadAgents();
+      }
+    });
+  }, [initialize]);
+  
+  // Load agents
+  const loadAgents = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const activeAgents = await getActiveAgents();
+      setAgents(activeAgents);
+    } catch (error) {
+      console.error('Error loading agents:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  // Toggle agent status
+  const changeAgentStatus = useCallback(async (
+    agentId: string, 
+    status: 'active' | 'offline' | 'paused' | 'terminated'
+  ) => {
+    try {
+      const success = await toggleAgentStatus(agentId, status);
+      
+      if (success) {
+        loadAgents();
+        toast({
+          title: "Agent Status Updated",
+          description: `Agent status changed to ${status}`,
+        });
+      } else {
+        toast({
+          title: "Update Failed",
+          description: "Failed to update agent status",
+          variant: "destructive"
+        });
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Error changing agent status:', error);
+      toast({
+        title: "Status Change Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
       return false;
     }
-  }, [refreshAgentState, isConnected]);
-
-  // Submit a recommendation from an agent
-  const submitRecommendation = useCallback(async (
-    agentId: string,
-    action: TradeAction,
-    confidence: number,
-    reasoning: string,
-    ticker?: string,
-    price?: number
-  ) => {
-    if (!isConnected) return null;
-    
-    try {
-      await logApiCall('agent-network', 'useAgentNetwork.submitRecommendation', 'pending');
-      const recommendation = await submitAgentRecommendation(
-        agentId,
-        action,
-        confidence,
-        reasoning,
-        ticker,
-        price
-      );
-      
-      if (recommendation) {
-        refreshAgentState();
-        await logApiCall('agent-network', 'useAgentNetwork.submitRecommendation', 'success');
-        return recommendation;
-      }
-      
-      await logApiCall('agent-network', 'useAgentNetwork.submitRecommendation', 'error', 'No recommendation returned');
-      return null;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await logApiCall('agent-network', 'useAgentNetwork.submitRecommendation', 'error', errorMessage);
-      console.error('Error submitting recommendation:', error);
-      return null;
-    }
-  }, [refreshAgentState, isConnected]);
-
-  // Create a portfolio decision
-  const makePortfolioDecision = useCallback(async (
-    action: TradeAction,
+  }, [loadAgents, toast]);
+  
+  // Generate collaborative analysis
+  const runCollaborativeAnalysis = useCallback(async (
     ticker: string,
-    amount: number,
-    price: number,
-    options: {
-      stopLoss?: number;
-      takeProfit?: number;
-      confidence?: number;
-      riskScore?: number;
-      contributors?: string[];
-      reasoning?: string;
-    } = {}
+    timeframe: string = '1d'
   ) => {
-    if (!isConnected) return null;
-    
     try {
-      await logApiCall('agent-network', 'useAgentNetwork.makePortfolioDecision', 'pending');
-      const decision = await createPortfolioDecision(
-        action,
-        ticker,
-        amount,
-        price,
-        options
-      );
+      toast({
+        title: "Analysis Started",
+        description: `Running collaborative analysis for ${ticker}...`
+      });
       
-      if (decision) {
-        refreshAgentState();
-        await logApiCall('agent-network', 'useAgentNetwork.makePortfolioDecision', 'success');
-        return decision;
-      }
+      const analysis = await generateCollaborativeTradingAnalysis(ticker, timeframe);
       
-      await logApiCall('agent-network', 'useAgentNetwork.makePortfolioDecision', 'error', 'No decision returned');
-      return null;
+      toast({
+        title: "Analysis Complete",
+        description: `Analysis for ${ticker} is ready`
+      });
+      
+      return analysis;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      await logApiCall('agent-network', 'useAgentNetwork.makePortfolioDecision', 'error', errorMessage);
-      console.error('Error creating portfolio decision:', error);
+      console.error('Error generating collaborative analysis:', error);
+      toast({
+        title: "Analysis Failed",
+        description: "Could not complete the collaborative analysis",
+        variant: "destructive"
+      });
       return null;
     }
-  }, [refreshAgentState, isConnected]);
-
+  }, [toast]);
+  
   return {
-    isInitialized,
+    initialized,
+    isInitializing,
     isLoading,
-    activeAgents,
-    agentMessages,
-    agentTasks,
-    collaborationSessions,
-    recommendations,
-    portfolioDecisions,
-    lastAnalysis,
-    isConnected,
-    generateAnalysis,
-    sendMessage,
-    createTask,
-    toggleAgent,
-    refreshAgentState,
-    syncAgentState,
-    submitAgentRecommendation: submitRecommendation,
-    createPortfolioDecision: makePortfolioDecision,
-    getRecentAgentRecommendations,
-    getRecentPortfolioDecisions
+    agents,
+    messages,
+    tasks,
+    sessions,
+    initialize,
+    loadAgents,
+    changeAgentStatus,
+    runCollaborativeAnalysis
   };
-}
+};
