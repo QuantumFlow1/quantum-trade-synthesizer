@@ -2,7 +2,7 @@
 import React, { useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import useGasPriceStore from "../stores/useGasPriceStore";
-import { LocalGasStation } from "lucide-react";
+import { Fuel } from "lucide-react";
 
 interface GasPriceInfoProps {
   showTooltip?: boolean;
@@ -38,7 +38,7 @@ const GasPriceInfo: React.FC<GasPriceInfoProps> = ({
   // Component displaying gas prices or loading state
   const gasInfo = (
     <div className="flex items-center cursor-pointer mr-4">
-      <LocalGasStation className="text-gray-600 mr-2 h-4 w-4" />
+      <Fuel className="text-gray-600 mr-2 h-4 w-4" />
       <span className="mr-2">ETH Gas:</span>
       <span className="font-bold">
         {standardGasPrice ? `${standardGasPrice} Gwei` : "Loading..."}
