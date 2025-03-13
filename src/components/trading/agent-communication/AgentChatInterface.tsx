@@ -1,11 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Bot, Send, ArrowDown } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { getApiKey } from '@/utils/apiKeyManager';
-import { Agent, AgentToolCall } from '@/types/agent';
+import { Agent } from '@/types/agent';
 import { supabase } from '@/lib/supabase';
 
 interface Message {
@@ -66,21 +65,18 @@ export function AgentChatInterface({ agent, onClose }: AgentChatInterfaceProps) 
       }
       
       // Create a system message that describes the agent's role and personality
-      const systemMessage = {
-        role: 'system',
-        content: `You are ${agent.name}, a ${agent.type} trading agent. 
-        ${agent.description}
-        ${agent.tradingStyle ? `Your trading style is ${agent.tradingStyle}.` : ''}
-        ${agent.performance ? `Your success rate is ${agent.performance.successRate}%.` : ''}
-        
-        When responding to the user:
-        1. Stay in character as a trading agent
-        2. Provide specific trading insights based on your type (${agent.type})
-        3. If asked about market conditions, stocks, or trading strategies, provide detailed responses
-        4. Include specific numbers and percentages when discussing performance or market analysis
-        
-        The current date is ${new Date().toLocaleDateString()}.`
-      };
+      const systemPrompt = `You are ${agent.name}, a ${agent.type} trading agent. 
+      ${agent.description}
+      ${agent.tradingStyle ? `Your trading style is ${agent.tradingStyle}.` : ''}
+      ${agent.performance ? `Your success rate is ${agent.performance.successRate}%.` : ''}
+      
+      When responding to the user:
+      1. Stay in character as a trading agent
+      2. Provide specific trading insights based on your type (${agent.type})
+      3. If asked about market conditions, stocks, or trading strategies, provide detailed responses
+      4. Include specific numbers and percentages when discussing performance or market analysis
+      
+      The current date is ${new Date().toLocaleDateString()}.`;
       
       // Prepare conversation history for the API
       const conversationHistory = messages
@@ -90,30 +86,24 @@ export function AgentChatInterface({ agent, onClose }: AgentChatInterfaceProps) 
           content: msg.content
         }));
       
-      // Add the latest user message
-      conversationHistory.push({
-        role: 'user',
-        content: userMessage.content
-      });
-      
-      // Decide which API to use (prefer Groq if available)
-      const apiToUse = groqKey ? 'groq' : 'openai';
-      const apiKey = groqKey || openaiKey;
-      
-      // Call the appropriate API via Supabase edge function
-      const { data, error } = await supabase.functions.invoke('groq-chat', {
+      // Call the new agent-communication edge function
+      const { data, error } = await supabase.functions.invoke('agent-communication', {
         body: {
-          messages: [systemMessage, ...conversationHistory],
-          model: apiToUse === 'groq' ? "llama-3.3-70b-versatile" : "gpt-4-turbo",
-          temperature: 0.8,
-          max_tokens: 750
+          agentId: agent.id,
+          agentType: agent.type,
+          message: userMessage.content,
+          systemPrompt: systemPrompt,
+          history: conversationHistory
         },
-        headers: apiKey ? { 'x-groq-api-key': apiKey } : undefined
+        headers: {
+          'x-groq-api-key': groqKey || '',
+          'x-openai-api-key': openaiKey || ''
+        }
       });
       
       if (error) {
-        console.error(`Error calling ${apiToUse}-chat function:`, error);
-        throw new Error(error.message || `Failed to get agent response from ${apiToUse}`);
+        console.error('Error calling agent-communication function:', error);
+        throw new Error(error.message || 'Failed to get agent response');
       }
       
       if (!data || data.status === 'error' || !data.response) {

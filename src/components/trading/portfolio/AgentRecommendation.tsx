@@ -1,65 +1,48 @@
 
 import React from 'react';
-import { AgentRecommendation as AgentRecommendationType } from "@/types/agent";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowUp, ArrowDown, AlertTriangle } from "lucide-react";
+import { AgentRecommendation as AgentRecommendationType } from '@/types/agent';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
-export const AgentRecommendation = ({ recommendation }: { recommendation: AgentRecommendationType }) => {
-  // Display only the agent type from the full ID (e.g., 'value-investor-001' -> 'value-investor')
-  const agentType = recommendation.agentId.split('-').slice(0, -1).join('-');
+interface AgentRecommendationProps {
+  recommendation: AgentRecommendationType;
+}
 
-  const getActionColor = (action: string) => {
-    if (action === "BUY" || action === "COVER") {
-      return "bg-green-500/80 text-white";
-    } else if (action === "SELL" || action === "SHORT") {
-      return "bg-red-500/80 text-white";
-    } else {
-      return "bg-blue-500/80 text-white";
-    }
-  };
+export function AgentRecommendation({ recommendation }: AgentRecommendationProps) {
+  // Format agent ID for display
+  const formattedAgentId = recommendation.agentId
+    .split('-')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
   
-  // Get confidence level styling
-  const getConfidenceColor = (confidence: number) => {
-    if (confidence > 75) return "text-green-500";
-    if (confidence > 50) return "text-yellow-500";
-    return "text-red-500";
+  // Determine badge color based on action
+  const getBadgeColor = () => {
+    if (recommendation.action === "BUY") return "bg-green-500/80";
+    if (recommendation.action === "SELL" || recommendation.action === "COVER") return "bg-red-500/80";
+    if (recommendation.action === "HOLD") return "bg-blue-500/80";
+    if (recommendation.action === "SHORT") return "bg-purple-500/80";
+    return "bg-gray-500/80";
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-card/50 backdrop-blur-sm p-3 pb-1">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-sm font-medium flex items-center gap-1.5">
-            {agentType}
-          </CardTitle>
-          <Badge variant="outline" className={`${getActionColor(recommendation.action)}`}>
-            {recommendation.action}
-          </Badge>
+    <Card className="border shadow-sm">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <h3 className="font-medium text-sm text-gray-900">{formattedAgentId}</h3>
+            <Badge variant="secondary" className={`${getBadgeColor()} text-white`}>
+              {recommendation.action}
+            </Badge>
+            <p className="text-xs text-gray-500 font-medium mt-1">
+              {recommendation.confidence}% confidence
+            </p>
+          </div>
         </div>
-        <CardDescription className="text-xs">
-          Ticker: {recommendation.ticker}
-          {recommendation.price && ` | Price: $${recommendation.price.toLocaleString()}`}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="p-3">
-        <div className="flex justify-between mb-2">
-          <span className="text-xs text-muted-foreground">Confidence:</span>
-          <span className={`text-xs font-medium ${getConfidenceColor(recommendation.confidence)}`}>
-            {recommendation.confidence}% confidence
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground">
+        
+        <p className="text-sm mt-2 text-gray-700">
           {recommendation.reasoning}
         </p>
       </CardContent>
     </Card>
   );
-};
+}

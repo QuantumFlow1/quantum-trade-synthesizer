@@ -6,7 +6,7 @@ export interface Agent {
   type: 'trader' | 'analyst' | 'portfolio_manager' | 'advisor' | 'receptionist' | 'value_investor' | 'fundamentals_analyst' | 'technical_analyst' | 'valuation_expert';
   status: 'active' | 'offline' | 'training' | 'paused' | 'terminated';
   lastActive: string;
-  createdAt?: string;
+  createdAt: string;
   tradingStyle?: string;
   specialization?: string;
   performance?: {
@@ -62,7 +62,7 @@ export interface PortfolioDecision {
 
 export type TradeAction = "BUY" | "SELL" | "HOLD" | "SHORT" | "COVER";
 
-// Type voor gebruik met de groqAgent
+// Type for Groq agent settings
 export interface GroqAgentSettings {
   model: string;
   temperature: number;

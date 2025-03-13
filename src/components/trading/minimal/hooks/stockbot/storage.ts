@@ -58,7 +58,7 @@ export const saveApiKey = (provider: string, key: string): boolean => {
     const validProvider = isValidProvider(provider) ? provider : 'groq';
     
     // Use the centralized API key manager
-    const result = saveApiKeyToManager(validProvider as any, key);
+    const result = saveApiKeyToManager(validProvider as 'openai' | 'claude' | 'gemini' | 'groq' | 'deepseek' | 'anthropic', key);
     
     // For backward compatibility
     if (!result) {
@@ -67,7 +67,7 @@ export const saveApiKey = (provider: string, key: string): boolean => {
       // Skip if key is empty
       if (!key || key.trim() === '') {
         localStorage.removeItem(`${provider}ApiKey`);
-        broadcastApiKeyChange(validProvider as any, 'remove');
+        broadcastApiKeyChange(validProvider as 'openai' | 'claude' | 'gemini' | 'groq' | 'deepseek' | 'anthropic', 'remove');
         return false;
       }
       
@@ -75,7 +75,7 @@ export const saveApiKey = (provider: string, key: string): boolean => {
       localStorage.setItem(`${provider}ApiKey`, key);
       
       // Dispatch events as fallback
-      broadcastApiKeyChange(validProvider as any, 'save');
+      broadcastApiKeyChange(validProvider as 'openai' | 'claude' | 'gemini' | 'groq' | 'deepseek' | 'anthropic', 'save');
     }
     
     return true;

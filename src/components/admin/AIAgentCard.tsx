@@ -1,189 +1,200 @@
 
-import { Agent } from "@/types/agent";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Play, Pause, XCircle, Activity, WifiOff, Wifi } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from 'react';
+import { Agent } from '@/types/agent';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Bot, Database, Eye, RefreshCw, Trash } from 'lucide-react';
+import { getAgentTasks } from '@/utils/agentHelpers';
 
 interface AIAgentCardProps {
   agent: Agent;
-  onAction: (agentId: string, action: "terminate" | "activate" | "pause") => void;
+  onDelete?: (agentId: string) => void;
+  onRefresh?: (agentId: string) => void;
+  onView?: (agent: Agent) => void;
 }
 
-const AIAgentCard = ({ agent, onAction }: AIAgentCardProps) => {
-  // Functie om een type-specifiek icoon te renderen
-  const renderTypeIcon = () => {
-    switch (agent.type) {
-      case "receptionist":
-        return "👋";
-      case "advisor":
-        return "💼";
-      case "trader":
-        return "📈";
-      case "analyst":
-        return "📊";
+const AIAgentCard: React.FC<AIAgentCardProps> = ({
+  agent,
+  onDelete,
+  onRefresh,
+  onView
+}) => {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Status badge color
+  const getStatusColor = (status: Agent['status']) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-500/20 text-green-700';
+      case 'offline':
+        return 'bg-gray-500/20 text-gray-700';
+      case 'training':
+        return 'bg-blue-500/20 text-blue-700';
+      case 'paused':
+        return 'bg-yellow-500/20 text-yellow-700';
+      case 'terminated':
+        return 'bg-red-500/20 text-red-700';
       default:
-        return "🤖";
+        return 'bg-gray-500/20 text-gray-700';
     }
   };
   
-  // Functie om status badge te renderen met juiste kleuren
-  const renderStatusBadge = () => {
-    switch (agent.status) {
-      case "active":
-        return (
-          <Badge variant="default" className="bg-green-500/20 text-green-500 border border-green-500/50">
-            <Activity className="h-3 w-3 mr-1" /> Actief
-          </Badge>
-        );
-      case "paused":
-        return (
-          <Badge variant="default" className="bg-amber-500/20 text-amber-500 border border-amber-500/50">
-            <Pause className="h-3 w-3 mr-1" /> Gepauzeerd
-          </Badge>
-        );
-      case "terminated":
-        return (
-          <Badge variant="default" className="bg-red-500/20 text-red-500 border border-red-500/50">
-            <WifiOff className="h-3 w-3 mr-1" /> Beëindigd
-          </Badge>
-        );
+  // Type badge color
+  const getTypeColor = (type: Agent['type']) => {
+    switch (type) {
+      case 'trader':
+        return 'bg-indigo-500/20 text-indigo-700';
+      case 'analyst':
+        return 'bg-cyan-500/20 text-cyan-700';
+      case 'portfolio_manager':
+        return 'bg-amber-500/20 text-amber-700';
+      case 'advisor':
+        return 'bg-green-500/20 text-green-700';
+      case 'receptionist':
+        return 'bg-teal-500/20 text-teal-700';
+      case 'value_investor':
+        return 'bg-purple-500/20 text-purple-700';
+      case 'fundamentals_analyst':
+        return 'bg-blue-500/20 text-blue-700';
+      case 'technical_analyst':
+        return 'bg-orange-500/20 text-orange-700';
+      case 'valuation_expert':
+        return 'bg-rose-500/20 text-rose-700';
       default:
-        return null;
+        return 'bg-gray-500/20 text-gray-700';
     }
   };
-
-  // Format date to a more readable format
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString('nl-NL', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (e) {
-      return 'Ongeldige datum';
+  
+  // Format trade success rate
+  const formatSuccessRate = () => {
+    if (agent.performance?.successRate !== undefined) {
+      return `${agent.performance.successRate}%`;
+    }
+    return 'N/A';
+  };
+  
+  // Handle refresh click
+  const handleRefresh = () => {
+    if (onRefresh) {
+      setIsRefreshing(true);
+      onRefresh(agent.id);
+      setTimeout(() => setIsRefreshing(false), 1000);
     }
   };
-
-  // Render agent tasks, handling both array and object formats
-  const renderTasks = () => {
-    if (!agent.tasks) return null;
-    
+  
+  // Get tasks based on the agent format
+  const tasks = getAgentTasks(agent);
+  
+  // Calculate task completion (for display)
+  const getTaskCompletion = () => {
     if (Array.isArray(agent.tasks)) {
-      return (
-        <div className="mt-2">
-          <p className="text-sm font-medium mb-1">Primaire taken:</p>
-          <ul className="text-xs text-muted-foreground space-y-1">
-            {agent.tasks.slice(0, 3).map((task, index) => (
-              <li key={index} className="flex items-start">
-                <span className="mr-1">•</span>
-                <span>{task}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      );
-    } else {
-      return (
-        <div className="mt-2">
-          <p className="text-sm font-medium mb-1">Taken status:</p>
-          <p className="text-xs text-muted-foreground">
-            Voltooid: {agent.tasks.completed} | Wachtend: {agent.tasks.pending}
-          </p>
-        </div>
-      );
+      const completedTasks = agent.tasks.filter(task => task.includes('Completed')).length;
+      return `${completedTasks}/${agent.tasks.length}`;
+    } else if (agent.tasks && typeof agent.tasks === 'object' && 'completed' in agent.tasks) {
+      const total = agent.tasks.completed + agent.tasks.pending;
+      return `${agent.tasks.completed}/${total}`;
     }
+    return 'N/A';
   };
 
   return (
-    <Card className={`bg-secondary/30 backdrop-blur-sm border-secondary/50 hover:border-secondary/80 transition-all duration-300 ${agent.status === "terminated" ? "opacity-70" : ""}`}>
-      <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          <span className="flex items-center gap-2">
-            <span className="text-xl">{renderTypeIcon()}</span>
-            {agent.name}
-          </span>
-          <div className="flex gap-2">
-            {renderStatusBadge()}
-            {agent.status !== "terminated" && (
-              <>
-                {agent.status === "paused" ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onAction(agent.id, "activate")}
-                  >
-                    <Play className="h-4 w-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onAction(agent.id, "pause")}
-                  >
-                    <Pause className="h-4 w-4" />
-                  </Button>
-                )}
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => onAction(agent.id, "terminate")}
-                >
-                  <XCircle className="h-4 w-4" />
-                </Button>
-              </>
-            )}
-          </div>
-        </CardTitle>
-        <CardDescription className="flex justify-between">
-          <span>Type: {agent.type}</span>
-          <span className="text-xs text-muted-foreground">
-            ID: {agent.id}
-          </span>
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <p className="text-sm">{agent.description}</p>
-          {agent.performance && (
-            <div className="flex justify-between mt-3">
-              <div className="text-sm text-muted-foreground">
-                <p>Succes ratio: {agent.performance.successRate}%</p>
-                <p>Voltooide taken: {agent.performance.tasksCompleted}</p>
-              </div>
-              <div className="text-sm">
-                <div className="h-2 w-24 bg-secondary rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full"
-                    style={{ width: `${agent.performance.successRate}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 text-right">
-                  Efficiency
-                </p>
-              </div>
+    <Card className="shadow-sm hover:shadow-md transition-shadow">
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-start">
+          <div className="flex flex-col">
+            <CardTitle className="text-lg font-semibold flex items-center">
+              <Bot className="h-5 w-5 mr-2 text-indigo-600" />
+              {agent.name}
+            </CardTitle>
+            <div className="flex flex-wrap gap-1 mt-1">
+              <Badge variant="outline" className={getStatusColor(agent.status)}>
+                {agent.status}
+              </Badge>
+              <Badge variant="outline" className={getTypeColor(agent.type)}>
+                {agent.type.replace('_', ' ')}
+              </Badge>
             </div>
-          )}
-          {renderTasks()}
-          <div className="text-xs text-muted-foreground mt-3 flex items-center justify-between">
-            <span>
-              Laatst actief: {formatDate(agent.lastActive)}
-            </span>
-            <span className="flex items-center">
-              {agent.status === "active" ? (
-                <Wifi className="h-3 w-3 text-green-500 mr-1" />
-              ) : (
-                <WifiOff className="h-3 w-3 text-red-500 mr-1" />
-              )}
-              {agent.status === "active" ? "Online" : "Offline"}
-            </span>
+          </div>
+          
+          <div className="text-xs text-gray-500">
+            ID: {agent.id.substring(0, 8)}
           </div>
         </div>
+      </CardHeader>
+      
+      <CardContent className="pb-2">
+        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{agent.description}</p>
+        
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="flex flex-col">
+            <span className="font-medium text-gray-700">Success Rate</span>
+            <span>{formatSuccessRate()}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-medium text-gray-700">Tasks</span>
+            <span>{getTaskCompletion()}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-medium text-gray-700">Last Active</span>
+            <span>{new Date(agent.lastActive).toLocaleDateString()}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-medium text-gray-700">Created</span>
+            <span>{agent.createdAt ? new Date(agent.createdAt).toLocaleDateString() : 'N/A'}</span>
+          </div>
+        </div>
+        
+        {tasks.length > 0 && (
+          <div className="mt-3">
+            <h4 className="text-xs font-medium text-gray-700 mb-1">Recent Tasks</h4>
+            <ul className="text-xs space-y-1">
+              {tasks.slice(0, 3).map((task, index) => (
+                <li key={index} className="flex items-center">
+                  <span className={`w-2 h-2 rounded-full mr-2 ${task.includes('Completed') ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                  <span className="truncate">{task}</span>
+                </li>
+              ))}
+              {tasks.length > 3 && (
+                <li className="text-gray-500">+{tasks.length - 3} more tasks</li>
+              )}
+            </ul>
+          </div>
+        )}
       </CardContent>
+      
+      <CardFooter className="pt-2">
+        <div className="flex space-x-2 w-full justify-between">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onView && onView(agent)}
+            className="flex-1"
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            View
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh}
+            className={`flex-1 ${isRefreshing ? 'opacity-50' : ''}`}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => onDelete && onDelete(agent.id)}
+            className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash className="h-4 w-4 mr-1" />
+            Delete
+          </Button>
+        </div>
+      </CardFooter>
     </Card>
   );
 };
