@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Table,
@@ -18,9 +17,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Filter, Search, Shield, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Download, Filter, Search, Shield, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
+import { logApiCall } from "@/utils/apiLogger";
 
 interface TransactionAudit {
   id: string;
@@ -57,6 +57,7 @@ export const TransactionAuditLog = () => {
     dateTo: "",
     search: ""
   });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadAuditLogs();
@@ -65,20 +66,31 @@ export const TransactionAuditLog = () => {
 
   const loadAuditLogs = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
+      await logApiCall('transaction_audits/fetch', 'TransactionAuditLog', 'pending');
+      
       const { data, error } = await supabase
         .from('transaction_audits')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
+      if (error) {
+        await logApiCall('transaction_audits/fetch', 'TransactionAuditLog', 'error', error.message);
+        setError(`Failed to load audit logs: ${error.message}`);
+        throw error;
+      }
+      
+      console.log("Loaded audit logs:", data?.length || 0);
       setAudits(data || []);
-    } catch (error) {
+      await logApiCall('transaction_audits/fetch', 'TransactionAuditLog', 'success');
+    } catch (error: any) {
       console.error("Error loading audit logs:", error);
       toast({
         title: "Error",
-        description: "Failed to load transaction audit logs",
+        description: "Failed to load transaction audit logs. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -88,20 +100,32 @@ export const TransactionAuditLog = () => {
 
   const loadUsers = async () => {
     try {
+      await logApiCall('profiles/fetch', 'TransactionAuditLog', 'pending');
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email');
 
-      if (error) throw error;
+      if (error) {
+        await logApiCall('profiles/fetch', 'TransactionAuditLog', 'error', error.message);
+        console.error("Error loading users:", error);
+        return;
+      }
+      
       setUsers(data || []);
-    } catch (error) {
+      await logApiCall('profiles/fetch', 'TransactionAuditLog', 'success');
+    } catch (error: any) {
       console.error("Error loading users:", error);
     }
   };
 
   const applyFilters = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
+      await logApiCall('transaction_audits/filter', 'TransactionAuditLog', 'pending');
+      
       let query = supabase
         .from('transaction_audits')
         .select('*')
@@ -146,9 +170,15 @@ export const TransactionAuditLog = () => {
 
       const { data, error } = await query.limit(100);
 
-      if (error) throw error;
+      if (error) {
+        await logApiCall('transaction_audits/filter', 'TransactionAuditLog', 'error', error.message);
+        setError(`Failed to filter logs: ${error.message}`);
+        throw error;
+      }
+      
       setAudits(data || []);
-    } catch (error) {
+      await logApiCall('transaction_audits/filter', 'TransactionAuditLog', 'success');
+    } catch (error: any) {
       console.error("Error applying filters:", error);
       toast({
         title: "Error",
@@ -233,7 +263,13 @@ export const TransactionAuditLog = () => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error) {
+      
+      toast({
+        title: "Export Complete",
+        description: "Audit logs have been exported to CSV",
+        variant: "default",
+      });
+    } catch (error: any) {
       console.error("Error exporting CSV:", error);
       toast({
         title: "Export Failed",
@@ -255,13 +291,26 @@ export const TransactionAuditLog = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Shield className="w-5 h-5" />
-          Transaction Audit Log
-        </CardTitle>
-        <CardDescription>
-          View and analyze all trading transactions for regulatory compliance and security monitoring
-        </CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Transaction Audit Log
+            </CardTitle>
+            <CardDescription>
+              View and analyze all trading transactions for regulatory compliance and security monitoring
+            </CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={loadAuditLogs} 
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       
       <CardContent>
@@ -369,6 +418,16 @@ export const TransactionAuditLog = () => {
             <Filter className="h-4 w-4 mr-2" />
             Apply Filters
           </Button>
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md flex items-start">
+              <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-medium">Error</h4>
+                <p className="text-sm">{error}</p>
+              </div>
+            </div>
+          )}
           
           {loading ? (
             <div className="flex justify-center py-8">
