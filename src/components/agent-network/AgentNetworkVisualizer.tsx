@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -53,7 +54,7 @@ const MessageList = ({ messages }: { messages: AgentMessage[] }) => (
       messages.map((message) => (
         <div key={message.id} className="p-3 border rounded-lg">
           <div className="flex justify-between text-xs text-muted-foreground mb-1">
-            <span>From: <strong>{message.fromAgent}</strong> to <strong>{message.toAgent}</strong></span>
+            <span>From: <strong>{message.fromAgentId}</strong> to <strong>{message.toAgentId}</strong></span>
             <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
           </div>
           <p className="text-sm">{message.content}</p>

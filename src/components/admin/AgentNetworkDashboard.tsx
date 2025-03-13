@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AgentNetworkVisualizer } from '@/components/agent-network/AgentNetworkVisualizer';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, TrendingUp, Users, FileBarChart } from 'lucide-react';
-import { AIAgentsList } from './AIAgentsList';
+import AIAgentsList from './AIAgentsList';
 import { agentNetwork, AgentMessage, AgentTask } from '@/services/agentNetwork';
 import { Agent } from '@/types/agent';
 

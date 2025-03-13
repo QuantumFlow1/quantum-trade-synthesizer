@@ -13,10 +13,11 @@ export interface AgentTask {
   id: string;
   agentId: string;
   description: string;
-  status: 'pending' | 'completed' | 'failed';
+  status: 'pending' | 'completed' | 'in-progress' | 'failed';
   priority: 'low' | 'medium' | 'high';
   createdAt: string;
   completedAt?: string;
+  result?: string;
 }
 
 export interface CollaborationSession {

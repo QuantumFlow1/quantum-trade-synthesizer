@@ -70,7 +70,7 @@ export const AdminPanelContent: React.FC<AdminPanelContentProps> = ({
           <AgentNetworkDashboard />
         </TabsContent>
         <TabsContent value="superAdmin">
-          <SuperAdminMonitor />
+          <SuperAdminMonitor userCount={userCount} systemLoad={systemLoad} errorRate={errorRate} />
         </TabsContent>
         <TabsContent value="voiceAssistant">
           <SuperAdminVoiceAssistant />
