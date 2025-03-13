@@ -1,7 +1,7 @@
 
-import { useTheme } from "@/hooks/use-theme";
+import { useThemeDetection } from "@/hooks/use-theme-detection";
 
 export const useThemeString = () => {
-  const { theme } = useTheme();
+  const { theme } = useThemeDetection();
   return theme;
 };

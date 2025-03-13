@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import AdminPanelHeader from "@/components/admin/AdminPanelHeader";
-import AdminPanelContent from "@/components/admin/AdminPanelContent";
+import { AdminPanelContent } from "@/components/admin/AdminPanelContent";
 import UserDashboard from "@/components/UserDashboard";
 import ApiKeyManagement from "@/components/admin/ApiKeyManagement";
 import { Agent } from "@/types/agent";
