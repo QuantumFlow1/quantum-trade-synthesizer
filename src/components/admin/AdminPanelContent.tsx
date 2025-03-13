@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatisticsPanel } from './StatisticsPanel';
@@ -12,11 +13,7 @@ import { GuideResourcesTab } from './GuideResourcesTab';
 import { AIAgentsList } from './AIAgentsList';
 import { SuperAdminVoiceAssistant } from './SuperAdminVoiceAssistant';
 
-interface AdminPanelContentProps {
-  
-}
-
-export const AdminPanelContent: React.FC<AdminPanelContentProps> = () => {
+export const AdminPanelContent = () => {
   const [activeTab, setActiveTab] = useState('statistics');
 
   return (
@@ -58,7 +55,7 @@ export const AdminPanelContent: React.FC<AdminPanelContentProps> = () => {
         <TabsContent value="superAdmin">
           <SuperAdminMonitor />
         </TabsContent>
-         <TabsContent value="voiceAssistant">
+        <TabsContent value="voiceAssistant">
           <SuperAdminVoiceAssistant />
         </TabsContent>
         <TabsContent value="guideResources">

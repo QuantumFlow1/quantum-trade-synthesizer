@@ -1,14 +1,7 @@
 
-import { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from "@/hooks/use-theme";
 
-export function useThemeString() {
-  const { theme, resolvedTheme } = useTheme();
-  const [themeString, setThemeString] = useState<'light' | 'dark'>('dark');
-
-  useEffect(() => {
-    setThemeString((theme || resolvedTheme || 'dark') as 'light' | 'dark');
-  }, [theme, resolvedTheme]);
-
-  return themeString;
-}
+export const useThemeString = () => {
+  const { theme } = useTheme();
+  return theme;
+};

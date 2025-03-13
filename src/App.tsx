@@ -16,6 +16,7 @@ import AdminPanel from "./components/AdminPanel";
 import ChatPage from "./pages/chat";
 import UserDashboard from "./components/UserDashboard";
 
+// Create a new QueryClient instance outside of component to prevent recreation on renders
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -39,13 +40,10 @@ const App = () => (
               <Route path="/admin" element={<AdminPanel />} />
               <Route path="/admin/dashboard/overview" element={<Overview />} />
               <Route path="/admin/dashboard/users" element={<Users />} />
-              <Route path="/admin/users" element={<Users />} /> {/* Added a direct route to Users */}
+              <Route path="/admin/users" element={<Users />} />
               <Route path="/admin/dashboard/system" element={<System />} />
               <Route path="/admin/dashboard/finance" element={<Finance />} />
               <Route path="/dashboard/*" element={<UserDashboard />} />
-              {/* This direct route has been removed because it creates a navigation problem */}
-              {/* <Route path="/dashboard/minimal-trading" element={<MinimalTradingPage />} /> */}
-              {/* Redirect all auth callback URLs to the main page */}
               <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

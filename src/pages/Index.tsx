@@ -60,6 +60,12 @@ const Index = () => {
     };
   }, []);
 
+  // Add some development console logs to help identify issues
+  useEffect(() => {
+    console.log("Auth state:", { user, userProfile });
+    console.log("Current render path:", userProfile?.role || "no user profile");
+  }, [user, userProfile]);
+
   // Show loading screen while fetching profile
   if (user && !userProfile) {
     return <LoadingProfile />;
@@ -131,6 +137,7 @@ const Index = () => {
               ) : (
                 <UserDashboard key="user-dashboard" />
               )}
+              
               {!isMobile && <ZoomControls
                 scale={scale}
                 onZoomIn={handleZoomIn}
