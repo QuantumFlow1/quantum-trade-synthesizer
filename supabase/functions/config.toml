@@ -25,3 +25,4 @@ verify_jwt = false
 
 [functions.agent-communication]
 verify_jwt = false
+

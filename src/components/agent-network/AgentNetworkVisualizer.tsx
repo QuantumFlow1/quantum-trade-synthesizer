@@ -1,12 +1,17 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Network, Users, MessageSquare, BarChart2 } from 'lucide-react';
-import { useAgentNetwork } from '@/hooks/use-agent-network';
 import { Agent } from '@/types/agent';
 import { AgentMessage, AgentTask } from '@/services/agentNetwork';
+
+interface AgentNetworkVisualizerProps {
+  agents: Agent[];
+  messages: AgentMessage[];
+  tasks: AgentTask[];
+  onToggle: (agentId: string, isActive: boolean) => void;
+}
 
 interface AgentCardProps {
   agent: Agent;
@@ -92,27 +97,8 @@ const TaskList = ({ tasks }: { tasks: AgentTask[] }) => (
   </div>
 );
 
-export function AgentNetworkVisualizer() {
-  const { 
-    isInitialized,
-    isLoading,
-    activeAgents,
-    agentMessages,
-    agentTasks,
-    toggleAgent,
-    refreshAgentState
-  } = useAgentNetwork();
-  
+export function AgentNetworkVisualizer({ agents, messages, tasks, onToggle }: AgentNetworkVisualizerProps) {
   const [activeTab, setActiveTab] = useState('agents');
-  
-  useEffect(() => {
-    // Refresh the state periodically
-    const interval = setInterval(() => {
-      refreshAgentState();
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [refreshAgentState]);
 
   return (
     <Card className="shadow-md">
@@ -122,43 +108,37 @@ export function AgentNetworkVisualizer() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading && !isInitialized ? (
-          <div className="flex justify-center p-8">
-            <div className="animate-spin h-6 w-6 border-2 border-primary rounded-full border-t-transparent"></div>
-          </div>
-        ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="agents" className="flex items-center gap-1">
-                <Users className="h-4 w-4" /> Agents <Badge variant="outline">{activeAgents.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="messages" className="flex items-center gap-1">
-                <MessageSquare className="h-4 w-4" /> Messages <Badge variant="outline">{agentMessages.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="tasks" className="flex items-center gap-1">
-                <BarChart2 className="h-4 w-4" /> Tasks <Badge variant="outline">{agentTasks.length}</Badge>
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="agents" className="mt-4">
-              {activeAgents.map(agent => (
-                <AgentCard 
-                  key={agent.id} 
-                  agent={agent} 
-                  onToggle={toggleAgent} 
-                />
-              ))}
-            </TabsContent>
-            
-            <TabsContent value="messages" className="mt-4">
-              <MessageList messages={agentMessages} />
-            </TabsContent>
-            
-            <TabsContent value="tasks" className="mt-4">
-              <TaskList tasks={agentTasks} />
-            </TabsContent>
-          </Tabs>
-        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="agents" className="flex items-center gap-1">
+              <Users className="h-4 w-4" /> Agents <Badge variant="outline">{agents.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="flex items-center gap-1">
+              <MessageSquare className="h-4 w-4" /> Messages <Badge variant="outline">{messages.length}</Badge>
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="flex items-center gap-1">
+              <BarChart2 className="h-4 w-4" /> Tasks <Badge variant="outline">{tasks.length}</Badge>
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="agents" className="mt-4">
+            {agents.map(agent => (
+              <AgentCard 
+                key={agent.id} 
+                agent={agent} 
+                onToggle={onToggle} 
+              />
+            ))}
+          </TabsContent>
+          
+          <TabsContent value="messages" className="mt-4">
+            <MessageList messages={messages} />
+          </TabsContent>
+          
+          <TabsContent value="tasks" className="mt-4">
+            <TaskList tasks={tasks} />
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
