@@ -3,13 +3,15 @@ import { Agent } from "@/types/agent";
 import AIAgentCard from "./AIAgentCard";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { Dispatch, SetStateAction } from "react";
 
 interface AIAgentsListProps {
   agents: Agent[];
+  setAgents: Dispatch<SetStateAction<Agent[]>>; // Add the missing prop
   onAction: (agentId: string, action: "terminate" | "activate" | "pause") => void;
 }
 
-const AIAgentsList = ({ agents, onAction }: AIAgentsListProps) => {
+const AIAgentsList = ({ agents, setAgents, onAction }: AIAgentsListProps) => {
   const activeAgents = agents.filter(agent => agent.status !== "terminated");
   
   // Sorteer agents in een specifieke volgorde:

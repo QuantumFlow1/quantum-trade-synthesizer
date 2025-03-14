@@ -11,20 +11,27 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardProvider } from "@/contexts/DashboardContext";
 
 interface DashboardViewProps {
+  userCount?: number; // Make userCount optional
   systemLoad: number;
   errorRate: number;
 }
 
 const DashboardViewContent = ({
+  userCount: initialUserCount,
   systemLoad,
   errorRate
 }: DashboardViewProps) => {
-  const [userCount, setUserCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [userCount, setUserCount] = useState(initialUserCount || 0);
+  const [isLoading, setIsLoading] = useState(!initialUserCount); // Only load if userCount not provided
   const [hasError, setHasError] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
+    // If userCount is provided as a prop, don't fetch
+    if (initialUserCount !== undefined) {
+      return;
+    }
+
     const fetchUserCount = async () => {
       try {
         setIsLoading(true);
@@ -62,7 +69,7 @@ const DashboardViewContent = ({
     };
 
     fetchUserCount();
-  }, [toast]);
+  }, [toast, initialUserCount]);
 
   // Debugging logs
   useEffect(() => {

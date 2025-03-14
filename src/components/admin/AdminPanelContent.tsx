@@ -59,9 +59,13 @@ export const AdminPanelContent = ({
       </TabsContent>
 
       <TabsContent value="agents">
-        <AIAgentsList agents={agents} setAgents={setAgents} onAction={(agentId, action) => {
-          console.log(`Agent ${agentId} action: ${action}`);
-        }} />
+        <AIAgentsList 
+          agents={agents} 
+          setAgents={setAgents} 
+          onAction={(agentId, action) => {
+            console.log(`Agent ${agentId} action: ${action}`);
+          }} 
+        />
       </TabsContent>
 
       <TabsContent value="models">
