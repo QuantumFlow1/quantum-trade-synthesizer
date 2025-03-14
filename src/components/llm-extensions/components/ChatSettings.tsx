@@ -1,34 +1,64 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ChatSettingsProps {
   apiKey: string;
   setApiKey: (key: string) => void;
-  saveApiKey: () => void;
+  saveApiKey: (key: string) => void;
+  type: 'openai' | 'claude' | 'grok' | 'deepseek' | 'ollama';
 }
 
-export const ChatSettings: React.FC<ChatSettingsProps> = ({
-  apiKey,
-  setApiKey,
-  saveApiKey
-}) => {
+export function ChatSettings({ 
+  apiKey, 
+  setApiKey, 
+  saveApiKey,
+  type 
+}: ChatSettingsProps) {
+  const [tempApiKey, setTempApiKey] = useState(apiKey);
+
+  const handleSave = () => {
+    saveApiKey(tempApiKey);
+  };
+
   return (
-    <div className="bg-gray-50 p-4 rounded-lg">
-      <h3 className="text-sm font-medium mb-2">OpenAI API Settings</h3>
-      <div className="space-y-4">
-        <div>
-          <label className="text-sm text-gray-700 block mb-1">API Key</label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="w-full p-2 border rounded"
-            placeholder="Enter your OpenAI API key"
-          />
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-lg">
+          {type === 'openai' && 'OpenAI Settings'}
+          {type === 'claude' && 'Claude Settings'}
+          {type === 'grok' && 'Grok Settings'}
+          {type === 'deepseek' && 'DeepSeek Settings'}
+          {type === 'ollama' && 'Ollama Settings'}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="api-key">API Key</Label>
+            <Input
+              id="api-key"
+              type="password"
+              value={tempApiKey}
+              onChange={(e) => setTempApiKey(e.target.value)}
+              placeholder={`Enter your ${type} API key`}
+            />
+            {type === 'openai' && (
+              <p className="text-xs text-muted-foreground">
+                You can get your API key from the OpenAI dashboard.
+              </p>
+            )}
+          </div>
         </div>
-        <Button onClick={saveApiKey} size="sm">Save Settings</Button>
-      </div>
-    </div>
+      </CardContent>
+      <CardFooter>
+        <Button onClick={handleSave} disabled={!tempApiKey.trim()}>
+          Save Settings
+        </Button>
+      </CardFooter>
+    </Card>
   );
-};
+}

@@ -1,40 +1,32 @@
 
-import React, { useRef, useEffect } from 'react';
-import { Message } from '../types/chatTypes';
-import { MessageItem } from './MessageItem';
-import { ChatEmpty } from './ChatEmpty';
+import React from 'react';
+import { type Message } from '../hooks/useOpenAIChat';
 import { ChatSettings } from './ChatSettings';
+import { ChatEmpty } from './ChatEmpty';
+import { MessageItem } from './MessageItem';
 
 interface MessageListProps {
   messages: Message[];
   showSettings: boolean;
   apiKey: string;
   setApiKey: (key: string) => void;
-  saveApiKey: () => void;
+  saveApiKey: (key: string) => void;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({
+export function MessageList({
   messages,
   showSettings,
   apiKey,
   setApiKey,
   saveApiKey
-}) => {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-
+}: MessageListProps) {
   if (showSettings) {
     return (
-      <ChatSettings 
+      <ChatSettings
         apiKey={apiKey}
         setApiKey={setApiKey}
         saveApiKey={saveApiKey}
+        type="openai"
       />
     );
   }
@@ -44,11 +36,10 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <>
+    <div className="space-y-4 w-full">
       {messages.map((message) => (
         <MessageItem key={message.id} message={message} />
       ))}
-      <div ref={messagesEndRef} />
-    </>
+    </div>
   );
-};
+}

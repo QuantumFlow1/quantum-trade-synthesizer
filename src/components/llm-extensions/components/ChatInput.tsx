@@ -1,41 +1,48 @@
 
 import React from 'react';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { SendIcon, Loader2 } from 'lucide-react';
 
 interface ChatInputProps {
   inputMessage: string;
-  setInputMessage: (message: string) => void;
+  setInputMessage: (value: string) => void;
   sendMessage: () => void;
   isLoading: boolean;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({
+export function ChatInput({
   inputMessage,
   setInputMessage,
   sendMessage,
   isLoading
-}) => {
+}: ChatInputProps) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   return (
-    <div className="flex w-full gap-2">
+    <form onSubmit={handleSubmit} className="flex w-full gap-2">
       <Textarea
         value={inputMessage}
         onChange={(e) => setInputMessage(e.target.value)}
         placeholder="Type your message..."
-        className="flex-1 resize-none"
+        className="flex-1 resize-none min-h-[40px] max-h-[120px]"
         disabled={isLoading}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-          }
-        }}
+        onKeyDown={handleKeyDown}
       />
       <Button 
-        onClick={sendMessage} 
-        disabled={!inputMessage.trim() || isLoading} 
-        className="h-full bg-orange-600 hover:bg-orange-700"
+        type="submit" 
+        disabled={isLoading || !inputMessage.trim()} 
+        className="h-10 self-end"
       >
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -43,6 +50,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <SendIcon className="h-4 w-4" />
         )}
       </Button>
-    </div>
+    </form>
   );
-};
+}
