@@ -35,7 +35,6 @@ export function LLMTabsList({
             <Switch
               checked={enabledLLMs[llm] || false}
               onCheckedChange={(checked) => toggleLLM(llm, checked)}
-              size="sm"
               className="data-[state=checked]:bg-primary"
             />
             <TabsTrigger 
