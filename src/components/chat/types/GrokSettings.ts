@@ -12,7 +12,9 @@ export type ModelId =
   | 'gemini'
   | 'claude'
   | 'deepseek'
-  | 'groq';
+  | 'groq'
+  | 'ollama-llama3'
+  | 'ollama';
 
 // Add this type alias for the messageService to use
 export type AIModelType = ModelId;
@@ -22,6 +24,7 @@ export interface ModelInfo {
   name: string;
   description?: string;
   needsApiKey?: boolean;
+  isLocal?: boolean;
 }
 
 export const AI_MODELS: ModelInfo[] = [
@@ -31,6 +34,8 @@ export const AI_MODELS: ModelInfo[] = [
   { id: 'gemini', name: 'Gemini Pro', description: 'Geavanceerde AI van Google', needsApiKey: true },
   { id: 'deepseek', name: 'DeepSeek Coder', description: 'Gespecialiseerd in code en technische analyses', needsApiKey: true },
   { id: 'groq', name: 'Groq LLM', description: 'Ultrasnelle LLM voor analyses en code', needsApiKey: true },
+  { id: 'ollama-llama3', name: 'Llama 3 (Local)', description: 'Lokaal draaiende Llama 3 via Ollama', isLocal: true },
+  { id: 'ollama', name: 'Ollama (Custom)', description: 'Custom lokale modellen via Ollama', isLocal: true },
 ];
 
 export interface ApiKeySettings {
@@ -39,6 +44,7 @@ export interface ApiKeySettings {
   geminiApiKey?: string;
   deepseekApiKey?: string;
   groqApiKey?: string;
+  ollamaHost?: string;
 }
 
 export interface GrokSettings {

@@ -69,6 +69,15 @@ export function LLMExtensions() {
             onRetryConnection={() => checkConnectionStatusForLLM('claude')}
             onConfigure={() => configureApiKey('claude')}
           />
+          
+          <LLMTabContent 
+            tabValue="ollama" 
+            isEnabled={enabledLLMs.ollama} 
+            toggleLLM={toggleLLM}
+            connectionStatus={connectionStatus.ollama}
+            onRetryConnection={() => checkConnectionStatusForLLM('ollama')}
+            onConfigure={() => configureApiKey('ollama')}
+          />
         </Tabs>
       </CardContent>
     </Card>

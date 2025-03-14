@@ -4,6 +4,7 @@ import { DeepSeekChat } from '../deepseek/DeepSeekChat';
 import { OpenAIChat } from '../openai/OpenAIChat';
 import { GrokChat } from '../grok/GrokChat';
 import { ClaudeChat } from '../claude/ClaudeChat';
+import { OllamaChat } from '../ollama/OllamaChat';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,6 +36,7 @@ export function LLMTabContent({
             {tabValue === 'openai' && <OpenAIChat />}
             {tabValue === 'grok' && <GrokChat />}
             {tabValue === 'claude' && <ClaudeChat />}
+            {tabValue === 'ollama' && <OllamaChat />}
           </>
         ) : connectionStatus === 'checking' ? (
           // Show loading state
