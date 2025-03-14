@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import { Filter, Search, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,19 +10,11 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { type User } from "./types";
+import { type AuditLogFilter } from "@/hooks/useAuditLogs";
 
 interface AuditLogFiltersProps {
-  filter: {
-    userId: string;
-    transactionType: string;
-    status: string;
-    highValueOnly: boolean;
-    required2faOnly: boolean;
-    dateFrom: string;
-    dateTo: string;
-    search: string;
-  };
-  setFilter: (filter: any) => void;
+  filter: AuditLogFilter;
+  setFilter: (filter: AuditLogFilter) => void;
   users: User[];
   applyFilters: () => void;
   resetFilters: () => void;
