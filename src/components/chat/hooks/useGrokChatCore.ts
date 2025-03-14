@@ -3,16 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { ChatMessage } from '../types/chat';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/components/ui/use-toast';
-import { GrokSettings } from '../types/GrokSettings';
-
-const DEFAULT_SETTINGS: GrokSettings = {
-  selectedModel: 'grok3',
-  temperature: 0.7,
-  maxTokens: 1000,
-  topP: 0.9,
-  frequencyPenalty: 0.0,
-  presencePenalty: 0.0,
-};
+import { GrokSettings, DEFAULT_SETTINGS } from '../types/GrokSettings';
 
 export function useGrokChatCore(skipInitialization = false) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);

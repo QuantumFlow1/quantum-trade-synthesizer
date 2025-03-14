@@ -62,6 +62,13 @@ export function AgentNetworkDashboard() {
     await agentNetwork.refreshAgentState();
     setLoading(false);
   };
+
+  // Create a handler for setAgents to satisfy the prop requirement
+  const handleSetAgents = (updatedAgents: Agent[]) => {
+    // In a real implementation, this would update the agents
+    console.log('Updating agents:', updatedAgents);
+    // We would need to implement this properly by connecting to the agent network service
+  };
   
   return (
     <div className="space-y-6">
@@ -109,6 +116,7 @@ export function AgentNetworkDashboard() {
         <TabsContent value="agents" className="mt-6">
           <AIAgentsList 
             agents={agentNetwork.agents} 
+            setAgents={handleSetAgents}
             onAction={handleAgentAction} 
           />
         </TabsContent>
