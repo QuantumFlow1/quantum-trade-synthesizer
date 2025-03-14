@@ -6,7 +6,7 @@ import { TransactionFilters } from '@/components/wallet/transactions/Transaction
 import { TransactionPagination } from '@/components/wallet/transactions/TransactionPagination';
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { logApiCall } from "@/utils/apiLogger";
+import { logApiCall, logApiCallLocal } from "@/utils/apiLogger";
 import { toast } from "@/components/ui/use-toast";
 
 interface TransactionsTabProps {
@@ -44,22 +44,30 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({
     const fetchTransactionCount = async () => {
       setIsLoading(true);
       try {
-        await logApiCall('transactions/count', 'TransactionsTab', 'pending');
+        // Use local logging to avoid failed API calls
+        logApiCallLocal('transactions/count', 'TransactionsTab', 'pending');
         
-        const { count, error } = await supabase
-          .from('trades')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id);
+        // Handle possible table not existing yet error by using a try-catch
+        try {
+          const { count, error } = await supabase
+            .from('trades')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+            
+          if (error) {
+            throw error;
+          }
           
-        if (error) {
-          throw error;
+          setTransactionCount(count || 0);
+          logApiCallLocal('transactions/count', 'TransactionsTab', 'success');
+        } catch (dbError: any) {
+          console.warn('Database access error (table might not exist):', dbError.message);
+          setTransactionCount(0);
+          logApiCallLocal('transactions/count', 'TransactionsTab', 'error', 'Database table might not exist yet');
         }
-        
-        setTransactionCount(count || 0);
-        await logApiCall('transactions/count', 'TransactionsTab', 'success');
       } catch (error: any) {
         console.error('Error fetching transaction count:', error.message);
-        await logApiCall('transactions/count', 'TransactionsTab', 'error', error.message);
+        logApiCallLocal('transactions/count', 'TransactionsTab', 'error', error.message);
         toast({
           title: 'Error',
           description: 'Failed to fetch transaction count',

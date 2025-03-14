@@ -25,43 +25,40 @@ export const logApiCall = async (
   try {
     console.log(`Logging API call: ${endpoint} from ${source} with status ${status}`);
     
-    // Try to use the log-api-call edge function
-    const { data, error } = await supabase.functions.invoke('log-api-call', {
-      body: {
-        endpoint,
-        source,
-        status,
-        error_message,
-        timestamp: new Date().toISOString()
-      }
-    });
-    
-    if (error) {
-      console.error('Error logging API call:', error.message);
-      
-      // Fallback to direct database insert when the edge function fails
-      const { error: insertError } = await supabase
-        .from('api_logs')
-        .insert({
+    // First try to use the edge function
+    try {
+      const { data, error } = await supabase.functions.invoke('log-api-call', {
+        body: {
           endpoint,
           source,
           status,
           error_message,
-          timestamp: new Date()
-        });
+          timestamp: new Date().toISOString()
+        }
+      });
       
-      if (insertError) {
-        console.error('Fallback logging also failed:', insertError.message);
-        return false;
+      if (!error) {
+        console.log('API call logged successfully via edge function');
+        return true;
       }
       
-      return true;
+      console.warn('Edge function logging failed, falling back to local logging:', error);
+    } catch (e) {
+      console.warn('Edge function call failed:', e);
     }
     
-    console.log('API call logged successfully');
+    // Create fallback logging to console if edge function fails
+    console.info('API Log Fallback:', {
+      endpoint,
+      source,
+      status,
+      error_message,
+      timestamp: new Date().toISOString()
+    });
+    
     return true;
   } catch (e) {
-    // If the function fails, log to console
+    // If all logging fails, at least log to console
     console.error('Failed to log API call:', e);
     
     // Create fallback logging to console
