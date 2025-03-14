@@ -2,6 +2,8 @@
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { logApiCall } from "@/utils/apiLogger";
+import { useTransactionAudit } from "@/hooks/useTransactionAudit";
 
 interface Transaction {
   id: string;
@@ -14,20 +16,55 @@ interface Transaction {
 
 const TransactionList = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { auditTransaction } = useTransactionAudit();
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
     const fetchTransactions = async () => {
-      const { data, error } = await supabase
-        .from("trades")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(5);
+      setIsLoading(true);
+      try {
+        await logApiCall('trades/fetch', 'TransactionList', 'pending');
+        
+        const { data, error } = await supabase
+          .from("trades")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(5);
 
-      if (!error && data) {
-        setTransactions(data);
+        if (error) {
+          throw error;
+        }
+
+        setTransactions(data || []);
+        await logApiCall('trades/fetch', 'TransactionList', 'success');
+        
+        // Audit all transactions that might not have been audited
+        if (data && data.length > 0) {
+          data.forEach(tx => {
+            if (tx.status === 'completed') {
+              // Only audit completed transactions
+              auditTransaction(
+                tx.type,
+                'Unknown',  // Asset symbol might be different in your schema
+                tx.amount,
+                tx.price,
+                tx.amount * tx.price > 10000,  // High value threshold
+                false  // Assuming 2FA info isn't available here
+              );
+            }
+          });
+        }
+      } catch (error: any) {
+        console.error("Error fetching transactions:", error);
+        await logApiCall('trades/fetch', 'TransactionList', 'error', error.message);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -45,7 +82,20 @@ const TransactionList = () => {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          setTransactions((current) => [payload.new as Transaction, ...current].slice(0, 5));
+          const newTrade = payload.new as Transaction;
+          setTransactions((current) => [newTrade, ...current].slice(0, 5));
+          
+          // Audit the new transaction
+          if (newTrade.status === 'completed') {
+            auditTransaction(
+              newTrade.type,
+              'Unknown',  // Asset symbol might be different in your schema
+              newTrade.amount,
+              newTrade.price,
+              newTrade.amount * newTrade.price > 10000,
+              false
+            );
+          }
         }
       )
       .subscribe();
@@ -53,7 +103,29 @@ const TransactionList = () => {
     return () => {
       tradesSubscription.unsubscribe();
     };
-  }, [user]);
+  }, [user, auditTransaction]);
+
+  if (isLoading) {
+    return (
+      <div className="mt-6">
+        <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
+        <div className="flex justify-center py-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (transactions.length === 0) {
+    return (
+      <div className="mt-6">
+        <h2 className="text-xl font-semibold mb-4">Recent Transactions</h2>
+        <div className="text-center py-8 text-muted-foreground">
+          No transactions found. Start trading to see your history here.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-6">

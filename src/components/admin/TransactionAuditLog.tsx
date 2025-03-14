@@ -1,12 +1,5 @@
+
 import { useState, useEffect } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Card,
   CardContent,
@@ -15,33 +8,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Filter, Search, Shield, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
+import { RefreshCw, Shield } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/components/ui/use-toast";
 import { logApiCall } from "@/utils/apiLogger";
-
-interface TransactionAudit {
-  id: string;
-  user_id: string;
-  transaction_type: string;
-  asset_symbol: string;
-  amount: number;
-  price: number;
-  value: number;
-  high_value: boolean;
-  required_2fa: boolean;
-  source_ip: string;
-  user_agent: string;
-  status: string;
-  created_at: string;
-}
-
-interface User {
-  id: string;
-  email: string;
-}
+import { AuditLogFilters } from "./audit/AuditLogFilters";
+import { AuditLogTable } from "./audit/AuditLogTable";
+import { EmptyOrErrorState } from "./audit/EmptyOrErrorState";
+import { type TransactionAudit, type User } from "./audit/types";
 
 export const TransactionAuditLog = () => {
   const [audits, setAudits] = useState<TransactionAudit[]>([]);
@@ -315,210 +289,32 @@ export const TransactionAuditLog = () => {
       
       <CardContent>
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center space-x-2">
-              <Input
-                placeholder="Search asset, IP..."
-                value={filter.search}
-                onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                className="w-full"
-              />
-              <Button size="icon" variant="outline" onClick={applyFilters}>
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-              <Select
-                value={filter.transactionType}
-                onValueChange={(value) => setFilter({ ...filter, transactionType: value })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Transaction Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
-                  <SelectItem value="buy">Buy</SelectItem>
-                  <SelectItem value="sell">Sell</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <Select
-                value={filter.status}
-                onValueChange={(value) => setFilter({ ...filter, status: value })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={resetFilters} className="flex-1">
-                Reset
-              </Button>
-              <Button onClick={exportToCSV} className="flex items-center gap-2 flex-1">
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
-            </div>
-          </div>
+          <AuditLogFilters 
+            filter={filter}
+            setFilter={setFilter}
+            users={users}
+            applyFilters={applyFilters}
+            resetFilters={resetFilters}
+            exportToCSV={exportToCSV}
+          />
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium">From Date</label>
-              <Input
-                type="date"
-                value={filter.dateFrom}
-                onChange={(e) => setFilter({ ...filter, dateFrom: e.target.value })}
-              />
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">To Date</label>
-              <Input
-                type="date"
-                value={filter.dateTo}
-                onChange={(e) => setFilter({ ...filter, dateTo: e.target.value })}
-              />
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="highValueOnly"
-                checked={filter.highValueOnly}
-                onChange={(e) => setFilter({ ...filter, highValueOnly: e.target.checked })}
-              />
-              <label htmlFor="highValueOnly" className="text-sm font-medium">
-                High Value Transactions Only
-              </label>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="required2faOnly"
-                checked={filter.required2faOnly}
-                onChange={(e) => setFilter({ ...filter, required2faOnly: e.target.checked })}
-              />
-              <label htmlFor="required2faOnly" className="text-sm font-medium">
-                2FA Required Transactions Only
-              </label>
-            </div>
-          </div>
-          
-          <Button variant="outline" onClick={applyFilters} className="w-full">
-            <Filter className="h-4 w-4 mr-2" />
-            Apply Filters
-          </Button>
-          
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md flex items-start">
-              <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="font-medium">Error</h4>
-                <p className="text-sm">{error}</p>
-              </div>
-            </div>
-          )}
+          <EmptyOrErrorState 
+            error={error} 
+            isEmpty={!loading && audits.length === 0} 
+          />
           
           {loading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <>
-              {audits.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <AlertTriangle className="h-12 w-12 text-muted-foreground mb-2" />
-                  <h3 className="text-lg font-medium">No Audit Logs Found</h3>
-                  <p className="text-sm text-muted-foreground">
-                    No transaction audit logs match your current filters
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-md border overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead>User</TableHead>
-                        <TableHead>Transaction</TableHead>
-                        <TableHead>Asset</TableHead>
-                        <TableHead className="text-right">Value</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Security</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {audits.map((audit) => (
-                        <TableRow key={audit.id}>
-                          <TableCell className="font-mono text-xs">
-                            {formatDate(audit.created_at)}
-                          </TableCell>
-                          <TableCell className="max-w-[180px] truncate" title={getUserEmail(audit.user_id)}>
-                            {getUserEmail(audit.user_id)}
-                          </TableCell>
-                          <TableCell>
-                            <span className={
-                              audit.transaction_type === 'buy' 
-                                ? 'text-green-600 font-medium' 
-                                : 'text-red-600 font-medium'
-                            }>
-                              {audit.transaction_type.toUpperCase()}
-                            </span>
-                          </TableCell>
-                          <TableCell>{audit.asset_symbol}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            ${audit.value.toFixed(2)}
-                          </TableCell>
-                          <TableCell>
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                              audit.status === 'completed' 
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                                : audit.status === 'rejected'
-                                ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                            }`}>
-                              {audit.status === 'completed' && (
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                              )}
-                              {audit.status === 'rejected' && (
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                              )}
-                              {audit.status.charAt(0).toUpperCase() + audit.status.slice(1)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col space-y-1">
-                              {audit.high_value && (
-                                <span className="inline-flex items-center text-xs text-yellow-600">
-                                  <AlertTriangle className="h-3 w-3 mr-1" />
-                                  High Value
-                                </span>
-                              )}
-                              {audit.required_2fa && (
-                                <span className="inline-flex items-center text-xs text-blue-600">
-                                  <Shield className="h-3 w-3 mr-1" />
-                                  2FA Verified
-                                </span>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </>
+            audits.length > 0 && (
+              <AuditLogTable 
+                audits={audits}
+                getUserEmail={getUserEmail}
+                formatDate={formatDate}
+              />
+            )
           )}
         </div>
       </CardContent>
