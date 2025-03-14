@@ -1,9 +1,8 @@
-
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { logApiCall } from "@/utils/apiLogger";
-import { useTransactionAudit } from "@/hooks/useTransactionAudit";
+import { useTransactionAuditWithRules } from "@/hooks/useTransactionAuditWithRules";
 
 interface Transaction {
   id: string;
@@ -18,7 +17,7 @@ const TransactionList = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { auditTransaction } = useTransactionAudit();
+  const { auditTransactionWithRules } = useTransactionAuditWithRules();
 
   useEffect(() => {
     if (!user) {
@@ -48,14 +47,12 @@ const TransactionList = () => {
         if (data && data.length > 0) {
           data.forEach(tx => {
             if (tx.status === 'completed') {
-              // Only audit completed transactions
-              auditTransaction(
+              // Only audit completed transactions using our new rule-based function
+              auditTransactionWithRules(
                 tx.type,
                 'Unknown',  // Asset symbol might be different in your schema
                 tx.amount,
-                tx.price,
-                tx.amount * tx.price > 10000,  // High value threshold
-                false  // Assuming 2FA info isn't available here
+                tx.price
               );
             }
           });
@@ -85,15 +82,13 @@ const TransactionList = () => {
           const newTrade = payload.new as Transaction;
           setTransactions((current) => [newTrade, ...current].slice(0, 5));
           
-          // Audit the new transaction
+          // Audit the new transaction with rules
           if (newTrade.status === 'completed') {
-            auditTransaction(
+            auditTransactionWithRules(
               newTrade.type,
               'Unknown',  // Asset symbol might be different in your schema
               newTrade.amount,
-              newTrade.price,
-              newTrade.amount * newTrade.price > 10000,
-              false
+              newTrade.price
             );
           }
         }
@@ -103,7 +98,7 @@ const TransactionList = () => {
     return () => {
       tradesSubscription.unsubscribe();
     };
-  }, [user, auditTransaction]);
+  }, [user, auditTransactionWithRules]);
 
   if (isLoading) {
     return (

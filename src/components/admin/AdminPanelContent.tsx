@@ -1,84 +1,86 @@
 
-import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import StatisticsPanel from './StatisticsPanel';
-import AccountManagementPanel from './AccountManagementPanel';
-import ModelManagement from './ModelManagement';
-import ApiKeyManagement from './ApiKeyManagement';
-import SystemAlerts from './SystemAlerts';
-import { TransactionAuditLog } from './TransactionAuditLog';
-import { AgentNetworkDashboard } from './AgentNetworkDashboard';
-import SuperAdminMonitor from './SuperAdminMonitor';
-import GuideResourcesTab from './GuideResourcesTab';
-import AIAgentsList from './AIAgentsList';
-import { SuperAdminVoiceAssistant } from './SuperAdminVoiceAssistant';
-import { Agent } from '@/types/agent';
+import { useState } from "react";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import StatisticsPanel from "./StatisticsPanel";
+import { AIAgentsList } from "./AIAgentsList";
+import SystemAlerts from "./SystemAlerts";
+import SuperAdminMonitor from "./SuperAdminMonitor";
+import { Agent } from "@/types/agent";
+import { DashboardView } from "./DashboardView";
+import { ModelManagement } from "./ModelManagement";
+import { TransactionAuditLog } from "./TransactionAuditLog";
+import { AuditRulesDemo } from "./audit/AuditRulesDemo";
 
 interface AdminPanelContentProps {
-  userRole?: string;
-  agents?: Agent[];
-  setAgents?: React.Dispatch<React.SetStateAction<Agent[]>>;
-  userCount?: number;
-  systemLoad?: number;
-  errorRate?: number;
+  userRole: string;
+  agents: Agent[];
+  setAgents: React.Dispatch<React.SetStateAction<Agent[]>>;
+  userCount: number;
+  systemLoad: number;
+  errorRate: number;
 }
 
-export const AdminPanelContent: React.FC<AdminPanelContentProps> = ({
-  userRole = 'admin',
-  agents = [],
+export const AdminPanelContent = ({
+  userRole,
+  agents,
   setAgents,
-  userCount = 0,
-  systemLoad = 0,
-  errorRate = 0
-}) => {
-  const [activeTab, setActiveTab] = useState('statistics');
+  userCount,
+  systemLoad,
+  errorRate,
+}: AdminPanelContentProps) => {
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+  };
 
   return (
-    <div>
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="statistics">Statistieken</TabsTrigger>
-          <TabsTrigger value="accounts">Accounts</TabsTrigger>
-          <TabsTrigger value="models">Modellen</TabsTrigger>
-          <TabsTrigger value="apiKeys">API Keys</TabsTrigger>
-          <TabsTrigger value="alerts">Systeem Alerts</TabsTrigger>
-          <TabsTrigger value="auditLog">Audit Log</TabsTrigger>
-          <TabsTrigger value="agentNetwork">Agent Network</TabsTrigger>
-          <TabsTrigger value="superAdmin">Super Admin Monitor</TabsTrigger>
-          <TabsTrigger value="voiceAssistant">Voice Assistant</TabsTrigger>
-          <TabsTrigger value="guideResources">Guide & Resources</TabsTrigger>
-        </TabsList>
-        <TabsContent value="statistics">
+    <Tabs defaultValue="dashboard" value={activeTab} onValueChange={handleTabChange}>
+      <TabsList className="grid grid-cols-6 mb-6">
+        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+        <TabsTrigger value="agents">AI Agents</TabsTrigger>
+        <TabsTrigger value="models">Models</TabsTrigger>
+        <TabsTrigger value="audit">Transaction Audit</TabsTrigger>
+        <TabsTrigger value="audit-rules">Audit Rules</TabsTrigger>
+        <TabsTrigger value="system">System</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="dashboard">
+        <DashboardView 
+          userCount={userCount}
+          systemLoad={systemLoad}
+          errorRate={errorRate}
+        />
+      </TabsContent>
+
+      <TabsContent value="agents">
+        <AIAgentsList agents={agents} setAgents={setAgents} />
+      </TabsContent>
+
+      <TabsContent value="models">
+        <ModelManagement />
+      </TabsContent>
+
+      <TabsContent value="audit">
+        <TransactionAuditLog />
+      </TabsContent>
+      
+      <TabsContent value="audit-rules">
+        <AuditRulesDemo />
+      </TabsContent>
+
+      <TabsContent value="system">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <StatisticsPanel />
-        </TabsContent>
-        <TabsContent value="accounts">
-          <AccountManagementPanel />
-        </TabsContent>
-        <TabsContent value="models">
-          <ModelManagement />
-        </TabsContent>
-        <TabsContent value="apiKeys">
-          <ApiKeyManagement />
-        </TabsContent>
-        <TabsContent value="alerts">
           <SystemAlerts />
-        </TabsContent>
-        <TabsContent value="auditLog">
-          <TransactionAuditLog />
-        </TabsContent>
-        <TabsContent value="agentNetwork">
-          <AgentNetworkDashboard />
-        </TabsContent>
-        <TabsContent value="superAdmin">
-          <SuperAdminMonitor userCount={userCount} systemLoad={systemLoad} errorRate={errorRate} />
-        </TabsContent>
-        <TabsContent value="voiceAssistant">
-          <SuperAdminVoiceAssistant />
-        </TabsContent>
-        <TabsContent value="guideResources">
-          <GuideResourcesTab />
-        </TabsContent>
-      </Tabs>
-    </div>
+          {userRole === "superadmin" && <SuperAdminMonitor />}
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 };
