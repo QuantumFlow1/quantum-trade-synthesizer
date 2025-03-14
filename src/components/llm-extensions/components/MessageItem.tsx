@@ -1,34 +1,34 @@
 
 import React from 'react';
-import { type Message } from '../hooks/useOpenAIChat';
-import { cn } from '@/lib/utils';
-import { Bot, User } from 'lucide-react';
+import { User, Bot } from 'lucide-react';
+import { Message } from '../types/chatTypes';
 
 interface MessageItemProps {
   message: Message;
 }
 
 export function MessageItem({ message }: MessageItemProps) {
-  const isUser = message.role === 'user';
-
+  // Make sure timestamp is a Date object
+  const timestamp = message.timestamp instanceof Date 
+    ? message.timestamp 
+    : new Date(message.timestamp);
+    
   return (
-    <div
-      className={cn(
-        'flex gap-2 p-2 rounded-lg',
-        isUser ? 'bg-primary/10' : 'bg-muted'
-      )}
+    <div 
+      className={`flex p-4 ${message.role === 'user' ? 'bg-muted/50' : 'bg-background'} rounded-lg`}
     >
-      <div className="h-8 w-8 rounded-full flex items-center justify-center bg-primary/20">
-        {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+      <div className="mr-3">
+        {message.role === 'user' ? (
+          <User className="h-6 w-6 text-muted-foreground" />
+        ) : (
+          <Bot className="h-6 w-6 text-primary" />
+        )}
       </div>
       <div className="flex-1">
-        <p className="text-sm font-medium mb-1">
-          {isUser ? 'You' : 'Assistant'}
+        <p className="whitespace-pre-line text-sm">{message.content}</p>
+        <p className="text-xs text-muted-foreground mt-2">
+          {timestamp.toLocaleTimeString()} - {timestamp.toLocaleDateString()}
         </p>
-        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
-        <div className="text-xs text-muted-foreground mt-1">
-          {new Date(message.timestamp).toLocaleTimeString()}
-        </div>
       </div>
     </div>
   );

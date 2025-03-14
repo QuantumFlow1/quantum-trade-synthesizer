@@ -1,130 +1,88 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Message } from '../types/chatTypes';
-import { toast } from '@/components/ui/use-toast';
-import { processMessageText } from '@/components/chat/services/utils/messageUtils';
 
-export const useOpenAIChat = () => {
+export function useOpenAIChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [edgeFunctionStatus, setEdgeFunctionStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+  const [apiKey, setApiKey] = useState('');
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
-  // Load saved API key from localStorage
-  useEffect(() => {
-    const savedApiKey = localStorage.getItem('openaiApiKey');
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    } else {
-      // Show settings on first load if no API key
-      setShowSettings(true);
-    }
+  const saveApiKey = useCallback((key: string) => {
+    localStorage.setItem('openai-api-key', key);
+    setApiKey(key);
+    setShowSettings(false);
   }, []);
 
-  // Save API key
-  const saveApiKey = () => {
-    localStorage.setItem('openaiApiKey', apiKey);
-    setShowSettings(false);
-    toast({
-      title: "API key saved",
-      description: "Your OpenAI API key has been saved.",
-      duration: 3000,
-    });
-  };
-
-  // Clear chat history
-  const clearChat = () => {
+  const clearChat = useCallback(() => {
     setMessages([]);
-    toast({
-      title: "Chat cleared",
-      description: "All messages have been removed.",
-      duration: 3000,
-    });
-  };
+  }, []);
 
-  // Generate a unique ID for messages
-  const generateId = () => {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2);
-  };
+  const sendMessage = useCallback(async () => {
+    if (!inputMessage.trim() || isLoading) return;
 
-  // Send message to OpenAI API
-  const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
-    if (!apiKey) {
-      toast({
-        title: "API key required",
-        description: "Please set your OpenAI API key in settings.",
-        variant: "destructive",
-      });
-      setShowSettings(true);
-      return;
-    }
-
-    // Add user message to chat
     const userMessage: Message = {
-      id: generateId(),
+      id: Date.now().toString(),
       role: 'user',
       content: inputMessage,
       timestamp: new Date(),
     };
-    
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+
+    setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
 
     try {
-      // Add assistant response indicating functionality is coming soon
+      // This is a placeholder. In a real implementation, you would call an API
+      // Simulating API response delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const assistantMessage: Message = {
-        id: generateId(),
+        id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "OpenAI integration is coming soon! This is a placeholder response. The actual API integration is under development.",
+        content: `This is a simulated response to: "${inputMessage}"`,
         timestamp: new Date(),
       };
-
-      // Process the message to ensure proper formatting
-      assistantMessage.content = processMessageText(assistantMessage.content);
-      setMessages([...newMessages, assistantMessage]);
-
+      
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
-      console.error('OpenAI chat error:', error);
+      console.error('Error sending message:', error);
       
-      // Add error message to chat
+      // Add error message
       const errorMessage: Message = {
-        id: generateId(),
+        id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: error instanceof Error 
-          ? `Error: ${error.message}` 
-          : 'An unknown error occurred. Please try again.',
+        content: 'Sorry, there was an error processing your request.',
         timestamp: new Date(),
       };
       
-      // Process the error message to ensure proper formatting
-      errorMessage.content = processMessageText(errorMessage.content);
-      setMessages([...newMessages, errorMessage]);
-      
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get response",
-        variant: "destructive",
-      });
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [inputMessage, isLoading]);
+
+  const toggleSettings = useCallback(() => {
+    setShowSettings(prev => !prev);
+  }, []);
 
   return {
     messages,
     inputMessage,
-    setInputMessage,
     isLoading,
-    apiKey,
-    setApiKey,
     showSettings,
+    edgeFunctionStatus,
+    apiKey,
+    lastChecked,
+    setInputMessage,
+    sendMessage,
+    clearChat,
+    toggleSettings,
     setShowSettings,
     saveApiKey,
-    clearChat,
-    sendMessage
+    setApiKey,
   };
-};
+}

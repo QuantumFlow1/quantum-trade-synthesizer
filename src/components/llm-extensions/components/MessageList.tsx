@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { type Message } from '../hooks/useOpenAIChat';
+import { Message } from '../types/chatTypes';
 import { ChatSettings } from './ChatSettings';
 import { ChatEmpty } from './ChatEmpty';
 import { MessageItem } from './MessageItem';
