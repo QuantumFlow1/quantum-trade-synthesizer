@@ -7,11 +7,11 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import StatisticsPanel from "./StatisticsPanel";
-import { AIAgentsList } from "./AIAgentsList";
+import AIAgentsList from "./AIAgentsList";
 import SystemAlerts from "./SystemAlerts";
 import SuperAdminMonitor from "./SuperAdminMonitor";
 import { Agent } from "@/types/agent";
-import { DashboardView } from "./DashboardView";
+import DashboardView from "./DashboardView";
 import { ModelManagement } from "./ModelManagement";
 import { TransactionAuditLog } from "./TransactionAuditLog";
 import { AuditRulesDemo } from "./audit/AuditRulesDemo";
@@ -59,7 +59,9 @@ export const AdminPanelContent = ({
       </TabsContent>
 
       <TabsContent value="agents">
-        <AIAgentsList agents={agents} setAgents={setAgents} />
+        <AIAgentsList agents={agents} setAgents={setAgents} onAction={(agentId, action) => {
+          console.log(`Agent ${agentId} action: ${action}`);
+        }} />
       </TabsContent>
 
       <TabsContent value="models">
@@ -78,7 +80,11 @@ export const AdminPanelContent = ({
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <StatisticsPanel />
           <SystemAlerts />
-          {userRole === "superadmin" && <SuperAdminMonitor />}
+          {userRole === "superadmin" && <SuperAdminMonitor 
+            userCount={userCount}
+            systemLoad={systemLoad}
+            errorRate={errorRate}
+          />}
         </div>
       </TabsContent>
     </Tabs>
