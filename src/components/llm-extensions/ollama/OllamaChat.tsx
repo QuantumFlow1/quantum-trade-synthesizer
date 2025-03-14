@@ -1,306 +1,229 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/hooks/use-toast';
+import { MessageCircle, Settings, Send } from 'lucide-react';
 import { useOllamaModels } from '@/hooks/useOllamaModels';
-import { ollamaApi } from '@/utils/ollamaApiClient';
-import { 
-  Zap, 
-  SendIcon, 
-  Loader2, 
-  Settings, 
-  Trash2, 
-  RefreshCw,
-  Server
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { toast } from '@/components/ui/use-toast';
+import { ollamaApi } from '@/utils/ollamaApiClient';
+import { ChatHeader } from '../components/ChatHeader';
 
 type Message = {
-  id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  timestamp: Date;
+  timestamp?: number;
 };
 
 export function OllamaChat() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [currentModel, setCurrentModel] = useState<string>('llama3');
-  
-  const { toast } = useToast();
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   
-  const {
-    models,
-    isLoading: isLoadingModels,
-    isConnected,
-    connectionError,
-    ollamaHost,
-    updateHost,
-    refreshModels
+  const { 
+    models, 
+    isConnected, 
+    connectionError, 
+    ollamaHost, 
+    updateHost, 
+    refreshModels 
   } = useOllamaModels();
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || isLoading || !isConnected) return;
+  // Set first model when models load
+  useEffect(() => {
+    if (models.length > 0 && !selectedModel) {
+      setSelectedModel(models[0].name);
+    }
+  }, [models, selectedModel]);
+
+  const handleSendMessage = async () => {
+    if (!input.trim() || !selectedModel) return;
     
-    // Add user message to chat
     const userMessage: Message = {
-      id: crypto.randomUUID(),
       role: 'user',
-      content: inputMessage,
-      timestamp: new Date()
+      content: input.trim(),
+      timestamp: Date.now(),
     };
     
     setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
+    setInput('');
     setIsLoading(true);
     
     try {
-      // Format conversation for Ollama
-      const formattedMessages = messages.map(msg => ({
-        role: msg.role as 'user' | 'assistant' | 'system',
-        content: msg.content
+      // Create message history from existing messages
+      const messageHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
       }));
       
-      // Add new user message
-      formattedMessages.push({
+      // Add the new user message
+      messageHistory.push({
         role: 'user',
-        content: userMessage.content
+        content: input.trim(),
       });
       
       // Call Ollama API
-      const responseContent = await ollamaApi.createChatCompletion(
-        formattedMessages,
-        currentModel,
-        {
-          temperature: 0.7,
-          max_tokens: 2048
-        }
+      const response = await ollamaApi.createChatCompletion(
+        messageHistory,
+        selectedModel
       );
       
-      // Add assistant response to chat
       const assistantMessage: Message = {
-        id: crypto.randomUUID(),
         role: 'assistant',
-        content: responseContent,
-        timestamp: new Date()
+        content: response,
+        timestamp: Date.now(),
       };
       
       setMessages(prev => [...prev, assistantMessage]);
-      
     } catch (error) {
-      console.error('Error sending message to Ollama:', error);
-      
+      console.error('Error calling Ollama:', error);
       toast({
-        title: "Ollama Error",
-        description: error instanceof Error ? error.message : "Could not get a response from Ollama",
-        variant: "destructive"
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to get response from Ollama",
+        variant: "destructive",
       });
-      
-      // Add error message to chat
-      const errorMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'system',
-        content: `Error: ${error instanceof Error ? error.message : "Could not get a response from Ollama"}`,
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      // Focus input for next message
+      setTimeout(() => inputRef.current?.focus(), 100);
     }
   };
 
-  const clearChat = () => {
-    setMessages([]);
-    toast({
-      title: "Chat Cleared",
-      description: "The conversation has been reset.",
-      duration: 2000,
-    });
-  };
-
-  const toggleSettings = () => {
-    setShowSettings(prev => !prev);
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   return (
-    <Card className="w-full h-[500px] flex flex-col shadow-lg">
-      <CardHeader className="border-b py-3 px-4 flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-medium flex items-center">
-          <Zap className="h-5 w-5 mr-2 text-green-500" />
-          Ollama Chat {isConnected && <span className="ml-2 text-xs text-gray-500">({models.length} models)</span>}
-        </CardTitle>
-        <div className="flex gap-2">
-          <Button 
-            variant="ghost" 
+    <div className="flex flex-col h-full">
+      <ChatHeader
+        title="Ollama Chat"
+        description="Chat with your local Ollama models"
+        icon={<MessageCircle className="h-5 w-5" />}
+        actions={
+          <Button
+            variant="outline"
             size="sm"
-            onClick={toggleSettings}
-            title="Settings"
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
           >
             <Settings className="h-4 w-4" />
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={clearChat}
-            title="Clear chat"
-            disabled={messages.length === 0}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardHeader>
+        }
+      />
       
-      <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4">
-        {showSettings ? (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Ollama Settings</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="ollama-host">Ollama Host</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="ollama-host"
-                  value={ollamaHost}
-                  onChange={(e) => updateHost(e.target.value)}
-                  placeholder="http://localhost:11434"
-                />
-                <Button 
-                  onClick={refreshModels}
-                  disabled={isLoadingModels}
-                  size="sm"
-                >
-                  {isLoadingModels ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-gray-500">The URL where your Ollama server is running</p>
+      {isSettingsOpen && (
+        <div className="p-4 border-b space-y-4">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-1 block">Ollama Host</label>
+              <Input 
+                value={ollamaHost} 
+                onChange={(e) => updateHost(e.target.value)}
+                placeholder="http://localhost:11434"
+              />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="model-select">Model</Label>
-              <Select
-                value={currentModel}
-                onValueChange={setCurrentModel}
-                disabled={!isConnected || models.length === 0}
-              >
-                <SelectTrigger id="model-select">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {models.map((model) => (
-                    <SelectItem key={model.name} value={model.name}>
-                      {model.name} ({model.details?.parameter_size || 'unknown'})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {!isConnected && (
-              <Alert variant="destructive">
-                <AlertTitle>Connection Error</AlertTitle>
-                <AlertDescription>
-                  {connectionError || "Could not connect to Ollama. Make sure it's running and the host is correct."}
-                </AlertDescription>
-              </Alert>
-            )}
-            
-            <Button onClick={() => setShowSettings(false)} className="w-full">
-              Close Settings
+            <Button onClick={refreshModels} disabled={isLoading}>
+              Refresh Models
             </Button>
           </div>
-        ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-4 text-gray-500">
-            <Server className="h-12 w-12 opacity-20" />
-            <h3 className="text-lg font-medium">Local AI with Ollama</h3>
-            <p className="max-w-md text-sm">
-              Chat directly with your locally running Llama 3 models through Ollama. 
-              No API keys or cloud services required.
-            </p>
-            {!isConnected && (
-              <Alert variant="destructive" className="mt-4">
-                <AlertTitle>Not Connected</AlertTitle>
-                <AlertDescription>
-                  {connectionError || "Could not connect to Ollama. Click the settings icon to configure."}
-                </AlertDescription>
-              </Alert>
-            )}
+          
+          <div>
+            <label className="text-sm font-medium mb-1 block">Model</label>
+            <Select value={selectedModel} onValueChange={setSelectedModel}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a model" />
+              </SelectTrigger>
+              <SelectContent>
+                {models.length > 0 ? (
+                  models.map((model) => (
+                    <SelectItem key={model.name} value={model.name}>
+                      {model.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>
+                    {connectionError || "No models available"}
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+      
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-center text-muted-foreground">
+            <div>
+              <MessageCircle className="mx-auto h-12 w-12 mb-3 opacity-50" />
+              <h3 className="text-lg font-medium">Start a conversation with Ollama</h3>
+              <p className="text-sm max-w-md mt-2">
+                Chat with your locally hosted models using Ollama
+              </p>
+            </div>
           </div>
         ) : (
-          <>
-            {messages.map((message) => (
-              <div 
-                key={message.id} 
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          messages.map((message, index) => (
+            <div
+              key={index}
+              className={`flex ${
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              <div
+                className={`max-w-[80%] rounded-lg p-3 ${
+                  message.role === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted'
+                }`}
               >
-                <div 
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.role === 'user' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : message.role === 'system'
-                      ? 'bg-destructive text-destructive-foreground'
-                      : 'bg-muted'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                  <div className="text-xs opacity-70 mt-1">
-                    {message.timestamp.toLocaleTimeString()}
+                <div className="whitespace-pre-wrap">{message.content}</div>
+                {message.timestamp && (
+                  <div className="text-xs opacity-50 mt-1">
+                    {new Date(message.timestamp).toLocaleTimeString()}
                   </div>
-                </div>
+                )}
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </>
+            </div>
+          ))
         )}
-      </CardContent>
+        <div ref={messagesEndRef} />
+      </div>
       
-      <CardFooter className="border-t p-3">
-        <div className="flex w-full gap-2">
-          <Textarea
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder={isConnected ? "Type your message..." : "Connect to Ollama in settings first..."}
-            className="flex-1 resize-none"
+      <div className="p-4 border-t">
+        <div className="flex gap-2">
+          <Input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
             disabled={isLoading || !isConnected}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
+            className="flex-1"
           />
           <Button 
-            onClick={sendMessage} 
-            disabled={!inputMessage.trim() || isLoading || !isConnected} 
-            className="h-full bg-green-600 hover:bg-green-700"
+            onClick={handleSendMessage} 
+            disabled={isLoading || !isConnected || !input.trim()}
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="animate-spin">⏳</span>
             ) : (
-              <SendIcon className="h-4 w-4" />
+              <Send className="h-4 w-4" />
             )}
           </Button>
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

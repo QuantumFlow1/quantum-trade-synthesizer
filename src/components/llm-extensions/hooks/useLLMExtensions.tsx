@@ -1,137 +1,134 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { testOllamaConnection } from '@/utils/ollamaApiClient';
 import { toast } from '@/components/ui/use-toast';
+import { ApiKeyDialogContent } from '@/components/chat/api-keys/ApiKeyDialogContent';
+import { Dialog } from '@/components/ui/dialog';
 
 export function useLLMExtensions() {
-  const [activeTab, setActiveTab] = useState('deepseek');
-  const [enabledLLMs, setEnabledLLMs] = useState({
-    deepseek: true,
-    openai: true,
-    grok: true,
-    claude: true
+  const [activeTab, setActiveTab] = useState('ollama');
+  const [enabledLLMs, setEnabledLLMs] = useState<Record<string, boolean>>({
+    deepseek: false,
+    openai: false,
+    grok: false,
+    claude: false,
+    ollama: true,  // Enable Ollama by default
   });
   
-  // Connection status tracking for each LLM
-  const [connectionStatus, setConnectionStatus] = useState({
+  const [connectionStatus, setConnectionStatus] = useState<
+    Record<string, 'connected' | 'disconnected' | 'unavailable' | 'checking'>
+  >({
     deepseek: 'disconnected',
     openai: 'disconnected',
-    grok: 'connected', // Grok is always available as it's our default model
-    claude: 'disconnected'
-  } as Record<string, 'connected' | 'connecting' | 'disconnected' | 'error'>);
+    grok: 'disconnected',
+    claude: 'disconnected',
+    ollama: 'checking',  // Start checking Ollama connection
+  });
   
-  // Load enabled states from localStorage on mount
+  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
+  const [currentLLM, setCurrentLLM] = useState<string | null>(null);
+  
+  // Load enabled LLMs from localStorage
   useEffect(() => {
-    const savedStates = localStorage.getItem('enabledLLMs');
-    if (savedStates) {
+    const savedEnabledLLMs = localStorage.getItem('enabledLLMs');
+    if (savedEnabledLLMs) {
       try {
-        setEnabledLLMs(JSON.parse(savedStates));
+        const parsed = JSON.parse(savedEnabledLLMs);
+        setEnabledLLMs(parsed);
       } catch (e) {
-        console.error('Error parsing saved LLM states:', e);
+        console.error('Failed to parse enabled LLMs from localStorage', e);
       }
     }
     
-    // Check for API keys to determine initial connection status
-    const deepseekKey = localStorage.getItem('deepseekApiKey');
-    const openaiKey = localStorage.getItem('openaiApiKey');
-    const claudeKey = localStorage.getItem('claudeApiKey');
-    
-    // Update connection status based on available keys
-    setConnectionStatus(prev => ({
-      ...prev,
-      deepseek: deepseekKey ? 'connected' : 'disconnected',
-      openai: openaiKey ? 'connected' : 'disconnected',
-      claude: claudeKey ? 'connected' : 'disconnected',
-      // Grok doesn't need an API key so it's always connected
-      grok: 'connected'
-    }));
+    // Check connection status for all enabled LLMs
+    Object.entries(enabledLLMs).forEach(([llm, enabled]) => {
+      if (enabled) {
+        checkConnectionStatusForLLM(llm);
+      }
+    });
   }, []);
   
-  // Listen for API key updates
-  useEffect(() => {
-    const handleApiKeyUpdate = () => {
-      // Check for API keys to determine connection status
-      const deepseekKey = localStorage.getItem('deepseekApiKey');
-      const openaiKey = localStorage.getItem('openaiApiKey');
-      const claudeKey = localStorage.getItem('claudeApiKey');
-      
-      // Update connection status based on available keys
-      setConnectionStatus(prev => ({
-        ...prev,
-        deepseek: deepseekKey ? 'connected' : 'disconnected',
-        openai: openaiKey ? 'connected' : 'disconnected',
-        claude: claudeKey ? 'connected' : 'disconnected'
-      }));
-    };
-    
-    // Listen for localStorage changes
-    window.addEventListener('apikey-updated', handleApiKeyUpdate);
-    window.addEventListener('localStorage-changed', handleApiKeyUpdate);
-    
-    // Listen for connection status changes from individual LLM components
-    const handleConnectionStatusChange = (event: CustomEvent) => {
-      const { provider, status } = event.detail;
-      setConnectionStatus(prev => ({
-        ...prev,
-        [provider]: status
-      }));
-    };
-    
-    window.addEventListener('connection-status-changed', 
-      handleConnectionStatusChange as EventListener);
-    
-    return () => {
-      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
-      window.removeEventListener('localStorage-changed', handleApiKeyUpdate);
-      window.removeEventListener('connection-status-changed', 
-        handleConnectionStatusChange as EventListener);
-    };
-  }, []);
-  
-  // Save enabled states to localStorage when they change
+  // Save enabled LLMs to localStorage when changed
   useEffect(() => {
     localStorage.setItem('enabledLLMs', JSON.stringify(enabledLLMs));
   }, [enabledLLMs]);
   
-  const toggleLLM = (llm: 'deepseek' | 'openai' | 'grok' | 'claude') => {
-    setEnabledLLMs(prev => {
-      const newState = { ...prev, [llm]: !prev[llm] };
-      
-      // Show toast notification
-      toast({
-        title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} ${newState[llm] ? 'Enabled' : 'Disabled'}`,
-        description: newState[llm] 
-          ? `${llm.charAt(0).toUpperCase() + llm.slice(1)} is now ready to use.` 
-          : `${llm.charAt(0).toUpperCase() + llm.slice(1)} has been turned off.`,
-        duration: 3000
-      });
-      
-      return newState;
-    });
-  };
+  // Check Ollama connection on initial load
+  useEffect(() => {
+    if (enabledLLMs.ollama) {
+      checkConnectionStatusForLLM('ollama');
+    }
+  }, []);
   
-  // Update connection status for a specific LLM
-  const updateConnectionStatus = (
-    llm: 'deepseek' | 'openai' | 'grok' | 'claude', 
-    status: 'connected' | 'connecting' | 'disconnected' | 'error'
-  ) => {
-    setConnectionStatus(prev => ({
-      ...prev,
-      [llm]: status
-    }));
-    
-    // Broadcast connection status change
-    const event = new CustomEvent('connection-status-changed', {
-      detail: { provider: llm, status }
+  const toggleLLM = useCallback((llm: string, enabled: boolean) => {
+    setEnabledLLMs(prev => {
+      const updated = { ...prev, [llm]: enabled };
+      return updated;
     });
-    window.dispatchEvent(event);
-  };
-
+    
+    if (enabled) {
+      // Check connection when enabling
+      checkConnectionStatusForLLM(llm);
+      // Switch to the tab if enabling
+      setActiveTab(llm);
+    }
+  }, []);
+  
+  const checkConnectionStatusForLLM = useCallback(async (llm: string) => {
+    setConnectionStatus(prev => ({ ...prev, [llm]: 'checking' }));
+    
+    // Add some delay to show the checking state
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    try {
+      if (llm === 'ollama') {
+        const ollamaStatus = await testOllamaConnection();
+        setConnectionStatus(prev => ({ 
+          ...prev, 
+          [llm]: ollamaStatus.success ? 'connected' : 'disconnected' 
+        }));
+        
+        if (!ollamaStatus.success) {
+          toast({
+            title: "Ollama Connection Failed",
+            description: ollamaStatus.message,
+            variant: "destructive",
+          });
+        }
+      } else {
+        // For other LLMs, we'd need to add API key checking logic here
+        // For now, mark them as disconnected
+        setConnectionStatus(prev => ({ ...prev, [llm]: 'disconnected' }));
+      }
+    } catch (error) {
+      console.error(`Error checking connection for ${llm}:`, error);
+      setConnectionStatus(prev => ({ ...prev, [llm]: 'disconnected' }));
+    }
+  }, []);
+  
+  const configureApiKey = useCallback((llm: string) => {
+    setCurrentLLM(llm);
+    setIsApiKeyDialogOpen(true);
+  }, []);
+  
+  const closeApiKeyDialog = useCallback(() => {
+    setIsApiKeyDialogOpen(false);
+    // Re-check connection after closing dialog
+    if (currentLLM) {
+      checkConnectionStatusForLLM(currentLLM);
+    }
+  }, [currentLLM, checkConnectionStatusForLLM]);
+  
   return {
     activeTab,
     setActiveTab,
     enabledLLMs,
     connectionStatus,
     toggleLLM,
-    updateConnectionStatus
+    checkConnectionStatusForLLM,
+    configureApiKey,
+    isApiKeyDialogOpen,
+    closeApiKeyDialog,
+    currentLLM
   };
 }

@@ -44,7 +44,7 @@ export function LLMTabContent({
             <Loader2 className="h-8 w-8 text-blue-500 animate-spin mb-4" />
             <h3 className="text-lg font-medium text-gray-700">Connecting to API</h3>
             <p className="text-gray-500 text-center mt-2 max-w-md px-4">
-              Checking administrator-configured API keys...
+              Checking connection to {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}...
             </p>
           </div>
         ) : (
@@ -57,7 +57,7 @@ export function LLMTabContent({
                 {connectionStatus === 'unavailable' ? (
                   <p>Could not connect to the {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} API. This may be due to a network issue or the API service being unavailable.</p>
                 ) : (
-                  <p>Administrator has not yet configured the {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} API key. This feature is currently unavailable.</p>
+                  <p>Could not connect to {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}. If this is Ollama, make sure it's running on your local machine.</p>
                 )}
                 <div className="mt-4 flex space-x-2">
                   <Button 
@@ -67,6 +67,14 @@ export function LLMTabContent({
                   >
                     Retry Connection
                   </Button>
+                  {tabValue !== 'ollama' && (
+                    <Button 
+                      size="sm" 
+                      onClick={onConfigure}
+                    >
+                      Configure API Key
+                    </Button>
+                  )}
                 </div>
               </AlertDescription>
             </Alert>
