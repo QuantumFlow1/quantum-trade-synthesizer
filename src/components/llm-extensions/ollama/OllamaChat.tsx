@@ -3,13 +3,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Terminal, Settings, Trash2, SendIcon, Loader2 } from 'lucide-react';
+import { Terminal, Settings, Trash2, SendIcon, Loader2, AlertTriangle, Download } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { ChatHeader } from '../components/ChatHeader';
 import { useOllamaModels } from '@/hooks/useOllamaModels';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { MessageList } from '../components/MessageList';
 
 // Define message type
 type OllamaMessage = {
@@ -169,6 +171,40 @@ export function OllamaChat() {
     </>
   );
 
+  // Render the no models alert
+  const renderNoModelsAlert = () => {
+    if (!isConnected) return null;
+    if (models.length > 0) return null;
+    if (isLoadingModels) return null;
+
+    return (
+      <Alert variant="warning" className="mb-4">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>No Ollama Models Found</AlertTitle>
+        <AlertDescription className="flex flex-col gap-2">
+          <p>Your Ollama instance is connected but doesn't have any models installed.</p>
+          <div className="mt-2">
+            <p className="text-sm mb-2">To install a model, run this command in your terminal:</p>
+            <code className="bg-slate-100 dark:bg-slate-800 p-2 rounded text-sm block">
+              ollama pull llama3
+            </code>
+          </div>
+          <p className="text-sm mt-2">
+            Or visit <a href="https://ollama.com/library" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ollama Library</a> for more models.
+          </p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-2 self-end" 
+            onClick={refreshModels}
+          >
+            <Download className="h-4 w-4 mr-2" /> Check for Models
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   return (
     <Card className="w-full h-[500px] flex flex-col shadow-lg">
       <CardHeader className="border-b py-3 px-4 flex flex-row items-center justify-between">
@@ -201,6 +237,25 @@ export function OllamaChat() {
                 </Button>
               </div>
             </div>
+            
+            {/* Display connection status */}
+            {!isConnected && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Connection Failed</AlertTitle>
+                <AlertDescription>
+                  <p>Could not connect to Ollama. Please make sure:</p>
+                  <ul className="list-disc list-inside mt-2 space-y-1">
+                    <li>Ollama is installed and running</li>
+                    <li>The host URL is correct (default: http://localhost:11434)</li>
+                    <li>No firewall is blocking the connection</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {/* No models warning */}
+            {renderNoModelsAlert()}
             
             <div className="space-y-2">
               <Label htmlFor="model-select">Select Model</Label>
@@ -236,6 +291,32 @@ export function OllamaChat() {
             <Terminal className="w-16 h-16 mb-6 opacity-20" />
             <p className="text-lg">Local AI with Ollama</p>
             <p className="text-sm mt-2">Chat with AI models running on your machine</p>
+            
+            {/* Connection status on the empty state */}
+            {isConnected ? (
+              <div className="mt-6 text-sm">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                Connected to Ollama
+                {models.length === 0 && !isLoadingModels && (
+                  <p className="mt-2 text-amber-500">
+                    No models found. Please install models to use Ollama.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="mt-6 text-sm">
+                <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                Not connected to Ollama
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={toggleSettings} 
+                  className="mt-2"
+                >
+                  Open Settings
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -272,7 +353,7 @@ export function OllamaChat() {
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder={isConnected ? "Type your message..." : "Connect to Ollama in settings first"}
             className="flex-1 resize-none min-h-[40px] max-h-[120px]"
-            disabled={isLoading || !isConnected || showSettings}
+            disabled={isLoading || !isConnected || showSettings || models.length === 0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -282,7 +363,7 @@ export function OllamaChat() {
           />
           <Button 
             onClick={sendMessage} 
-            disabled={isLoading || !inputMessage.trim() || !isConnected || showSettings}
+            disabled={isLoading || !inputMessage.trim() || !isConnected || showSettings || models.length === 0}
             className="h-10 self-end"
           >
             {isLoading ? (
