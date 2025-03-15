@@ -2,13 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from '@/components/ui/use-toast';
-
-export type Message = {
-  id: string;
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-};
+import { Message } from '../types/chatTypes';
 
 export function useOpenAIChat() {
   const [messages, setMessages] = useState<Message[]>([]);

@@ -7,6 +7,7 @@ import { ChatInput } from './components/ChatInput';
 import { useOpenAIChat } from './hooks/useOpenAIChat';
 import { Button } from '@/components/ui/button';
 import { Settings, Trash2, Sparkles } from 'lucide-react';
+import { Message } from './types/chatTypes';
 
 export function OpenAIChat() {
   const {
@@ -58,7 +59,7 @@ export function OpenAIChat() {
       
       <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4">
         <MessageList 
-          messages={messages}
+          messages={messages as Message[]}
           showSettings={showSettings}
           apiKey={apiKey}
           setApiKey={setApiKey}
