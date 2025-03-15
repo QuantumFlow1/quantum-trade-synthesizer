@@ -1,5 +1,5 @@
 
-import { Message } from '../types/deepseekChatTypes';
+import { Message } from '../../types/chatTypes';
 
 /**
  * Generates a unique ID for messages
