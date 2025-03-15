@@ -1,5 +1,5 @@
 import { User, Zap } from 'lucide-react';
-import { Message } from '../deepseek/types';
+import { Message } from '../types/chatTypes';
 
 interface GrokMessageProps {
   message: Message;
@@ -12,7 +12,7 @@ export function GrokMessage({ message }: GrokMessageProps) {
     : new Date(message.timestamp);
   
   // Add debugging information (keep these for when the feature is restored)
-  console.log(`Rendering disabled GrokMessage:`, message);
+  console.log(`Rendering GrokMessage:`, message);
   
   return (
     <div className="flex items-center justify-center p-4 text-gray-400 border rounded-lg">
