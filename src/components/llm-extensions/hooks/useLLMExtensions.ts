@@ -161,7 +161,7 @@ export function useLLMExtensions() {
     toggleLLM,
     checkConnectionStatusForLLM,
     configureApiKey,
-    // Add the missing properties to the return value
+    // Include these properties in the return value to fix the TypeScript errors
     isApiKeyDialogOpen,
     closeApiKeyDialog,
     currentLLM
