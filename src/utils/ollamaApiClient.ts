@@ -1,9 +1,23 @@
 
 // OllamaApiClient.ts
+export interface OllamaModel {
+  name: string;
+  modified_at: string;
+  size: number;
+  digest: string;
+  details?: {
+    format: string;
+    family: string;
+    families: string[];
+    parameter_size: string;
+    quantization_level: string;
+  };
+}
+
 interface OllamaConnectionStatus {
   success: boolean;
   message: string;
-  models?: any[];
+  models?: OllamaModel[];
 }
 
 class OllamaApiClient {
@@ -21,7 +35,12 @@ class OllamaApiClient {
     this.baseUrl = url;
   }
 
-  async listModels(): Promise<any[]> {
+  // Alias for backward compatibility
+  setHost(url: string) {
+    this.setBaseUrl(url);
+  }
+
+  async listModels(): Promise<OllamaModel[]> {
     try {
       console.log(`Fetching models from ${this.baseUrl}/api/tags`);
       const response = await fetch(`${this.baseUrl}/api/tags`);
@@ -72,13 +91,13 @@ class OllamaApiClient {
 }
 
 // Create a singleton instance with default Ollama URL
-const ollamaClient = new OllamaApiClient('http://localhost:11434');
+export const ollamaApi = new OllamaApiClient('http://localhost:11434');
 
 // Helper function to test connection and get models
 export const testOllamaConnection = async (): Promise<OllamaConnectionStatus> => {
   try {
     console.log('Testing Ollama connection...');
-    const connectionStatus = await ollamaClient.checkConnection();
+    const connectionStatus = await ollamaApi.checkConnection();
     console.log('Connection status:', connectionStatus);
     return connectionStatus;
   } catch (error) {
@@ -91,4 +110,4 @@ export const testOllamaConnection = async (): Promise<OllamaConnectionStatus> =>
 };
 
 // Export the client for use elsewhere
-export default ollamaClient;
+export default ollamaApi;

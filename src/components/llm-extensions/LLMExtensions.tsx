@@ -93,7 +93,7 @@ export function LLMExtensions() {
         <DialogContent className="sm:max-w-md">
           {currentLLM && (
             <ApiKeyDialogContent 
-              provider={currentLLM as any} 
+              initialTab={currentLLM as any} 
               onClose={closeApiKeyDialog} 
             />
           )}
