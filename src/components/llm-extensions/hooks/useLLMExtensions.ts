@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { testOllamaConnection } from '@/utils/ollamaApiClient';
@@ -22,6 +23,10 @@ export function useLLMExtensions() {
     claude: 'checking',
     ollama: 'checking'
   });
+  
+  // Add the missing properties for the API key dialog
+  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
+  const [currentLLM, setCurrentLLM] = useState<string | null>(null);
 
   const toggleLLM = useCallback((llm: string, enabled: boolean) => {
     setEnabledLLMs(prev => ({ ...prev, [llm]: enabled }));
@@ -97,6 +102,10 @@ export function useLLMExtensions() {
   }, []);
 
   const configureApiKey = useCallback((llm: string) => {
+    // Set the current LLM and open the dialog
+    setCurrentLLM(llm);
+    setIsApiKeyDialogOpen(true);
+    
     switch (llm) {
       case 'ollama':
         setActiveTab('ollama');
@@ -126,6 +135,15 @@ export function useLLMExtensions() {
         });
     }
   }, []);
+  
+  // Add close dialog handler
+  const closeApiKeyDialog = useCallback(() => {
+    setIsApiKeyDialogOpen(false);
+    if (currentLLM) {
+      // Re-check connection after closing the dialog
+      checkConnectionStatusForLLM(currentLLM);
+    }
+  }, [currentLLM, checkConnectionStatusForLLM]);
 
   useEffect(() => {
     Object.entries(enabledLLMs)
@@ -142,6 +160,10 @@ export function useLLMExtensions() {
     connectionStatus,
     toggleLLM,
     checkConnectionStatusForLLM,
-    configureApiKey
+    configureApiKey,
+    // Add the missing properties to the return value
+    isApiKeyDialogOpen,
+    closeApiKeyDialog,
+    currentLLM
   };
 }
