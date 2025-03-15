@@ -89,13 +89,20 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
       {data.map((item, index) => (
         <MarketCard
           key={item.name}
-          name={item.name}
-          price={item.price}
-          change={item.change}
-          volume={item.volume}
-          high={item.high}
-          low={item.low}
-          index={index}
+          market={{
+            symbol: item.name,
+            name: item.name,
+            price: item.price,
+            change24h: item.change || 0,
+            volume: item.volume,
+            high: item.high,
+            low: item.low
+          }}
+          isFavorite={false}
+          onToggleFavorite={(symbol, e) => {
+            e.stopPropagation();
+            console.log('Toggle favorite:', symbol);
+          }}
           onClick={() => {
             onMarketClick(item.name);
             handleAnalyzeMarket(item);

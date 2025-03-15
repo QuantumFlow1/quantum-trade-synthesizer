@@ -125,6 +125,30 @@ export const WalletOverview = ({ onDisconnect }: WalletOverviewProps) => {
     }
   };
 
+  // Generate mock balance history data based on wallet type
+  const getBalanceHistoryData = (type: WalletType) => {
+    const now = new Date();
+    const data = [];
+    const baseBalance = type === 'crypto' ? 12000 : 5500;
+    
+    // Generate data for the last 30 days
+    for (let i = 30; i >= 0; i--) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      
+      // Create some random fluctuation
+      const fluctuation = (Math.random() * 2 - 1) * (type === 'crypto' ? 500 : 100);
+      const dayBalance = baseBalance + fluctuation * (30 - i) / 10;
+      
+      data.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        balance: dayBalance
+      });
+    }
+    
+    return data;
+  };
+
   const currentWallet = walletData[activeWalletType];
   const isLoading = !walletData.crypto || !walletData.fiat;
 
@@ -192,8 +216,7 @@ export const WalletOverview = ({ onDisconnect }: WalletOverviewProps) => {
         />
         
         <WalletBalanceHistory 
-          currency={wallet.currency}
-          walletType={wallet.type}
+          data={getBalanceHistoryData(wallet.type)}
         />
         
         <WalletAssetAllocation walletType={wallet.type} />
