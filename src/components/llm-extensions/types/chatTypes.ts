@@ -7,4 +7,3 @@ export interface Message {
 }
 
 export type EdgeFunctionStatus = 'checking' | 'available' | 'unavailable';
-

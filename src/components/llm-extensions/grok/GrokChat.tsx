@@ -3,11 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { Brain, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { Message } from '../types/chatTypes';
 
 export function GrokChat() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   useEffect(() => {
     checkApiKey();

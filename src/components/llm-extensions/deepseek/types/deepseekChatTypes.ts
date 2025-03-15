@@ -1,12 +1,5 @@
 
-import { EdgeFunctionStatus } from '../../types/chatTypes';
-
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-}
+import { EdgeFunctionStatus, Message } from '../../types/chatTypes';
 
 export interface UseDeepSeekChatReturn {
   messages: Message[];

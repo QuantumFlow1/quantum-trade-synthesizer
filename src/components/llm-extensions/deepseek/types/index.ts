@@ -1,9 +1,4 @@
 
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-}
+import { Message, EdgeFunctionStatus } from '../types/chatTypes';
 
-export type EdgeFunctionStatus = 'checking' | 'available' | 'unavailable';
+export type { Message, EdgeFunctionStatus };

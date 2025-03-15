@@ -4,8 +4,7 @@ import { DeepSeekMessage } from '../DeepSeekMessage';
 import { DeepSeekEmptyState } from '../DeepSeekEmptyState';
 import { DeepSeekSettings } from '../DeepSeekSettings';
 import { DeepSeekStatusAlerts } from './DeepSeekStatusAlerts';
-import { Message } from '../../types/chatTypes';
-import { EdgeFunctionStatus } from '../../types/chatTypes';
+import { Message, EdgeFunctionStatus } from '../../types/chatTypes';
 
 interface DeepSeekContentProps {
   messages: Message[];
