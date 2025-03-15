@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Terminal, Settings, Trash2, SendIcon, Loader2, AlertTriangle, Download } from 'lucide-react';
+import { Terminal, Settings, Trash2, SendIcon, Loader2, AlertTriangle, Download, Info } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { ChatHeader } from '../components/ChatHeader';
 import { useOllamaModels } from '@/hooks/useOllamaModels';
@@ -27,6 +27,7 @@ export function OllamaChat() {
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showConnectionInfo, setShowConnectionInfo] = useState(false);
 
   // Ref for auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -36,6 +37,7 @@ export function OllamaChat() {
     models, 
     isLoading: isLoadingModels, 
     isConnected, 
+    connectionError,
     ollamaHost, 
     updateHost, 
     refreshModels 
@@ -89,6 +91,25 @@ export function OllamaChat() {
     setShowSettings(!showSettings);
   };
 
+  // Toggle connection troubleshooting info
+  const toggleConnectionInfo = () => {
+    setShowConnectionInfo(!showConnectionInfo);
+  };
+
+  // Attempt to connect to a specific port
+  const tryAlternativePort = (port: string) => {
+    const baseUrl = ollamaHost.split(':').slice(0, -1).join(':');
+    const newHost = `${baseUrl}:${port}`;
+    updateHost(newHost);
+    
+    toast({
+      title: 'Trying alternative port',
+      description: `Attempting to connect to Ollama at ${newHost}`,
+    });
+    
+    setTimeout(refreshModels, 500);
+  };
+
   // Send message to Ollama
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -126,19 +147,49 @@ export function OllamaChat() {
     setIsLoading(true);
 
     try {
-      // Simulated response for now - in a real implementation this would call the Ollama API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Make real API call to Ollama
+      const response = await fetch(`${ollamaHost}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: messages.concat(userMessage).map(m => ({
+            role: m.role,
+            content: m.content
+          })),
+          stream: false,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error from Ollama API: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
       
       const assistantMessage: OllamaMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `This is a simulated response from the ${selectedModel} model: I'm an AI assistant running locally through Ollama. In a real implementation, I would process your prompt: "${inputMessage}" and generate a response based on my training.`,
+        content: data.message?.content || 'No response from Ollama',
         timestamp: new Date(),
       };
       
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message to Ollama:', error);
+      
+      // Fallback for demonstration if server is unreachable
+      const assistantMessage: OllamaMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `Error connecting to Ollama: ${error.message}\n\nMake sure Ollama is running on your computer and properly configured.`,
+        timestamp: new Date(),
+      };
+      
+      setMessages(prev => [...prev, assistantMessage]);
+      
       toast({
         title: 'Error',
         description: 'Failed to get a response from Ollama.',
@@ -152,6 +203,14 @@ export function OllamaChat() {
   // Create header actions as React elements
   const headerActions = (
     <>
+      <Button 
+        variant="ghost" 
+        size="sm"
+        onClick={toggleConnectionInfo}
+        title="Connection Info"
+      >
+        <Info className="h-4 w-4" />
+      </Button>
       <Button 
         variant="ghost" 
         size="sm"
@@ -205,6 +264,56 @@ export function OllamaChat() {
     );
   };
 
+  // Render connection troubleshooting info
+  const renderConnectionInfo = () => {
+    if (!showConnectionInfo) return null;
+    
+    // Common ports used by Ollama
+    const commonOllamaPorts = ['11434', '24000', '41799', '33653'];
+    const currentPort = ollamaHost.split(':').pop() || '11434';
+    
+    return (
+      <Alert className="mb-4">
+        <Info className="h-4 w-4" />
+        <AlertTitle>Connection Troubleshooting</AlertTitle>
+        <AlertDescription className="space-y-3">
+          <p>Current Ollama host: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">{ollamaHost}</code></p>
+          
+          <div>
+            <p className="font-medium mb-1">Troubleshooting steps:</p>
+            <ol className="list-decimal list-inside text-sm space-y-1 pl-2">
+              <li>Make sure Ollama is installed and running on your computer</li>
+              <li>Check if Ollama is running on a different port</li>
+              <li>Verify there are no firewall restrictions blocking access</li>
+              <li>Try restarting the Ollama service</li>
+            </ol>
+          </div>
+          
+          <div>
+            <p className="font-medium mb-1">Try connecting to common Ollama ports:</p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {commonOllamaPorts.map(port => (
+                <Button 
+                  key={port}
+                  size="sm"
+                  variant={port === currentPort ? "default" : "outline"}
+                  onClick={() => tryAlternativePort(port)}
+                  disabled={port === currentPort && isConnected}
+                >
+                  {port === currentPort ? `${port} (current)` : port}
+                </Button>
+              ))}
+            </div>
+          </div>
+          
+          <p className="text-sm">
+            For detailed instructions, visit the <a href="https://github.com/ollama/ollama" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">Ollama GitHub repository</a>
+          </p>
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   return (
     <Card className="w-full h-[500px] flex flex-col shadow-lg">
       <CardHeader className="border-b py-3 px-4 flex flex-row items-center justify-between">
@@ -219,6 +328,8 @@ export function OllamaChat() {
       <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4">
         {showSettings ? (
           <div className="space-y-4">
+            {renderConnectionInfo()}
+            
             <div className="space-y-2">
               <Label htmlFor="ollama-host">Ollama Host</Label>
               <div className="flex gap-2">
@@ -250,6 +361,12 @@ export function OllamaChat() {
                     <li>The host URL is correct (default: http://localhost:11434)</li>
                     <li>No firewall is blocking the connection</li>
                   </ul>
+                  {connectionError && (
+                    <div className="mt-2 p-2 bg-red-50 dark:bg-red-950/50 rounded text-sm">
+                      <p className="font-semibold">Error details:</p>
+                      <p className="font-mono text-xs break-all">{connectionError}</p>
+                    </div>
+                  )}
                 </AlertDescription>
               </Alert>
             )}
@@ -295,18 +412,43 @@ export function OllamaChat() {
             {/* Connection status on the empty state */}
             {isConnected ? (
               <div className="mt-6 text-sm">
-                <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
-                Connected to Ollama
+                <div className="flex items-center justify-center">
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                  <span>Connected to Ollama</span>
+                </div>
                 {models.length === 0 && !isLoadingModels && (
-                  <p className="mt-2 text-amber-500">
-                    No models found. Please install models to use Ollama.
-                  </p>
+                  <div className="mt-4 p-3 border border-amber-200 rounded-md bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 max-w-md">
+                    <div className="flex items-start">
+                      <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 mr-2 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium text-amber-700 dark:text-amber-400">No models found</p>
+                        <p className="mt-1 text-xs">
+                          Install models using the terminal:
+                        </p>
+                        <code className="mt-1 text-xs block bg-white/50 dark:bg-black/20 p-2 rounded">
+                          ollama pull llama3
+                        </code>
+                        <p className="mt-2 text-xs">
+                          <a 
+                            href="https://ollama.com/library" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 dark:text-blue-400 hover:underline"
+                          >
+                            Browse Ollama library
+                          </a>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : (
               <div className="mt-6 text-sm">
-                <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>
-                Not connected to Ollama
+                <div className="flex items-center justify-center mb-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                  <span>Not connected to Ollama</span>
+                </div>
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -315,6 +457,19 @@ export function OllamaChat() {
                 >
                   Open Settings
                 </Button>
+                <div className="mt-4 flex flex-col items-center">
+                  <p className="text-xs text-muted-foreground">
+                    Need help setting up Ollama?
+                  </p>
+                  <Button 
+                    variant="link" 
+                    size="sm"
+                    className="text-xs h-auto p-0 mt-1"
+                    onClick={toggleConnectionInfo}
+                  >
+                    View troubleshooting guide
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -351,7 +506,7 @@ export function OllamaChat() {
           <Textarea
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            placeholder={isConnected ? "Type your message..." : "Connect to Ollama in settings first"}
+            placeholder={isConnected ? (models.length > 0 ? "Type your message..." : "Install models first") : "Connect to Ollama in settings first"}
             className="flex-1 resize-none min-h-[40px] max-h-[120px]"
             disabled={isLoading || !isConnected || showSettings || models.length === 0}
             onKeyDown={(e) => {
