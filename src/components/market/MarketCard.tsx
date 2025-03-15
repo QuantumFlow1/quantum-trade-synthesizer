@@ -22,7 +22,7 @@ export const MarketCard = ({ market, isFavorite, onToggleFavorite, onClick }: Ma
       <div className="flex justify-between items-center">
         <div>
           <h3 className="font-semibold">{symbol}</h3>
-          <p className="text-sm text-muted-foreground">{name}</p>
+          <p className="text-sm text-muted-foreground">{name || symbol}</p>
         </div>
         <Star 
           className={`w-5 h-5 cursor-pointer ${isFavorite ? 'fill-yellow-400 text-yellow-400' : 'text-muted-foreground'}`}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ import { OllamaNoModelsAlert } from './components/OllamaNoModelsAlert';
 import { OllamaMessageDisplay } from './components/OllamaMessageDisplay';
 import { OllamaChatInput } from './components/OllamaChatInput';
 
-// Define message type
 type OllamaMessage = {
   id: string;
   role: 'system' | 'user' | 'assistant';
@@ -22,14 +20,12 @@ type OllamaMessage = {
 };
 
 export function OllamaChat() {
-  // State
   const [messages, setMessages] = useState<OllamaMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showConnectionInfo, setShowConnectionInfo] = useState(false);
 
-  // Get Ollama models
   const { 
     models, 
     isLoading: isLoadingModels, 
@@ -40,10 +36,8 @@ export function OllamaChat() {
     refreshModels 
   } = useOllamaModels();
 
-  // Selected model state
   const [selectedModel, setSelectedModel] = useState('');
 
-  // Load saved messages from localStorage
   useEffect(() => {
     const savedMessages = localStorage.getItem('ollamaChatMessages');
     if (savedMessages) {
@@ -55,19 +49,16 @@ export function OllamaChat() {
     }
   }, []);
 
-  // Save messages to localStorage when they change
   useEffect(() => {
     localStorage.setItem('ollamaChatMessages', JSON.stringify(messages));
   }, [messages]);
 
-  // Set default model when models load
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
       setSelectedModel(models[0].name);
     }
   }, [models, selectedModel]);
 
-  // Clear chat messages
   const clearChat = () => {
     setMessages([]);
     toast({
@@ -76,17 +67,14 @@ export function OllamaChat() {
     });
   };
 
-  // Toggle settings panel
   const toggleSettings = () => {
     setShowSettings(!showSettings);
   };
 
-  // Toggle connection troubleshooting info
   const toggleConnectionInfo = () => {
     setShowConnectionInfo(!showConnectionInfo);
   };
 
-  // Attempt to connect to a specific port
   const tryAlternativePort = (port: string) => {
     const baseUrl = ollamaHost.split(':').slice(0, -1).join(':');
     const newHost = `${baseUrl}:${port}`;
@@ -100,7 +88,6 @@ export function OllamaChat() {
     setTimeout(refreshModels, 500);
   };
 
-  // Send message to Ollama
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
     if (!isConnected) {
@@ -123,7 +110,6 @@ export function OllamaChat() {
       return;
     }
 
-    // Create user message
     const userMessage: OllamaMessage = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -131,13 +117,11 @@ export function OllamaChat() {
       timestamp: new Date(),
     };
 
-    // Add user message to chat
     setMessages(prev => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
 
     try {
-      // Make real API call to Ollama
       const response = await fetch(`${ollamaHost}/api/chat`, {
         method: 'POST',
         headers: {
@@ -170,7 +154,6 @@ export function OllamaChat() {
     } catch (error) {
       console.error('Error sending message to Ollama:', error);
       
-      // Fallback for demonstration if server is unreachable
       const assistantMessage: OllamaMessage = {
         id: crypto.randomUUID(),
         role: 'assistant',
@@ -190,16 +173,51 @@ export function OllamaChat() {
     }
   };
 
-  // Render the no models alert
-  const renderNoModelsAlert = () => {
-    if (!isConnected) return null;
-    if (models.length > 0) return null;
-    if (isLoadingModels) return null;
+  if (models.length === 0) {
+    return (
+      <div className="flex flex-col h-full">
+        <OllamaEmptyState 
+          isConnected={isConnected} 
+          connectionError={connectionError}
+          onSettingsClick={() => setShowSettings(true)} 
+        />
+        {showSettings && (
+          <OllamaSettings 
+            ollamaHost={ollamaHost}
+            updateHost={updateHost}
+            refreshModels={refreshModels}
+            isLoadingModels={isLoadingModels}
+            isConnected={isConnected}
+            connectionError={connectionError}
+            models={models}
+            selectedModel={selectedModel}
+            setSelectedModel={setSelectedModel}
+            renderNoModelsAlert={() => (
+              <OllamaNoModelsAlert 
+                refreshModels={refreshModels}
+              />
+            )}
+            renderConnectionInfo={() => (
+              <OllamaConnectionInfo 
+                ollamaHost={ollamaHost}
+                tryAlternativePort={tryAlternativePort}
+                isConnected={isConnected}
+              />
+            )}
+            showConnectionInfo={showConnectionInfo}
+          />
+        )}
+        {showConnectionInfo && (
+          <OllamaConnectionInfo 
+            ollamaHost={ollamaHost}
+            tryAlternativePort={tryAlternativePort}
+            isConnected={isConnected}
+          />
+        )}
+      </div>
+    );
+  }
 
-    return <OllamaNoModelsAlert refreshModels={refreshModels} />;
-  };
-
-  // Create header actions as React elements
   const headerActions = (
     <>
       <Button 
@@ -252,7 +270,11 @@ export function OllamaChat() {
             models={models}
             selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
-            renderNoModelsAlert={renderNoModelsAlert}
+            renderNoModelsAlert={() => (
+              <OllamaNoModelsAlert 
+                refreshModels={refreshModels}
+              />
+            )}
             renderConnectionInfo={() => (
               <OllamaConnectionInfo 
                 ollamaHost={ollamaHost}

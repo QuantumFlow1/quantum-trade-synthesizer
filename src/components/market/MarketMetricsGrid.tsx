@@ -96,7 +96,8 @@ export const MarketMetricsGrid = ({ data, onMarketClick }: MarketMetricsGridProp
             change24h: item.change || 0,
             volume: item.volume,
             high: item.high,
-            low: item.low
+            low: item.low,
+            timestamp: Date.now() // Add timestamp property
           }}
           isFavorite={false}
           onToggleFavorite={(symbol, e) => {
