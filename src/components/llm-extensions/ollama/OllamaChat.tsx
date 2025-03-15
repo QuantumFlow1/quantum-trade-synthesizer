@@ -1,123 +1,112 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Terminal, Settings, Trash2, Info } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
-import { ChatHeader } from '../components/ChatHeader';
-import { useOllamaModels } from '@/hooks/useOllamaModels';
-import { OllamaEmptyState } from './components/OllamaEmptyState';
+import { Settings, MessageSquare } from 'lucide-react';
 import { OllamaSettings } from './components/OllamaSettings';
-import { OllamaConnectionInfo } from './components/OllamaConnectionInfo';
-import { OllamaNoModelsAlert } from './components/OllamaNoModelsAlert';
 import { OllamaMessageDisplay } from './components/OllamaMessageDisplay';
 import { OllamaChatInput } from './components/OllamaChatInput';
+import { OllamaEmptyState } from './components/OllamaEmptyState';
+import { OllamaNoModelsAlert } from './components/OllamaNoModelsAlert';
+import { OllamaConnectionInfo } from './components/OllamaConnectionInfo';
+import { OllamaModel } from '@/utils/ollamaApiClient';
+import { useOllamaModels } from '@/hooks/useOllamaModels';
 
-type OllamaMessage = {
+export interface OllamaMessage {
   id: string;
-  role: 'system' | 'user' | 'assistant';
   content: string;
+  role: 'user' | 'assistant' | 'system';
   timestamp: Date;
-};
+}
 
 export function OllamaChat() {
+  // Model and connection state
+  const [ollamaHost, setOllamaHost] = useState<string>('http://localhost:11434');
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [inputMessage, setInputMessage] = useState<string>('');
   const [messages, setMessages] = useState<OllamaMessage[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showConnectionInfo, setShowConnectionInfo] = useState(false);
-
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showConnectionInfo, setShowConnectionInfo] = useState<boolean>(false);
+  
+  // Get models from hook
   const { 
     models, 
     isLoading: isLoadingModels, 
     isConnected, 
-    connectionError,
-    ollamaHost, 
-    updateHost, 
-    refreshModels 
-  } = useOllamaModels();
+    connectionError, 
+    fetchModels 
+  } = useOllamaModels(ollamaHost);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [selectedModel, setSelectedModel] = useState('');
-
+  // Scroll to bottom of messages
   useEffect(() => {
-    const savedMessages = localStorage.getItem('ollamaChatMessages');
-    if (savedMessages) {
-      try {
-        setMessages(JSON.parse(savedMessages));
-      } catch (error) {
-        console.error('Failed to parse saved messages:', error);
-      }
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('ollamaChatMessages', JSON.stringify(messages));
   }, [messages]);
 
+  // Set default model when models are loaded
   useEffect(() => {
     if (models.length > 0 && !selectedModel) {
       setSelectedModel(models[0].name);
     }
   }, [models, selectedModel]);
 
+  // Load messages from localStorage
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('ollamaMessages');
+    if (savedMessages) {
+      try {
+        setMessages(JSON.parse(savedMessages));
+      } catch (e) {
+        console.error('Error parsing saved messages:', e);
+      }
+    }
+    
+    const savedHost = localStorage.getItem('ollamaHost');
+    if (savedHost) {
+      setOllamaHost(savedHost);
+    }
+  }, []);
+
+  // Save messages to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('ollamaMessages', JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  const updateHost = (host: string) => {
+    setOllamaHost(host);
+    localStorage.setItem('ollamaHost', host);
+  };
+  
   const clearChat = () => {
     setMessages([]);
-    toast({
-      title: 'Chat Cleared',
-      description: 'All messages have been removed.',
-    });
+    localStorage.removeItem('ollamaMessages');
   };
-
+  
   const toggleSettings = () => {
     setShowSettings(!showSettings);
   };
-
+  
   const toggleConnectionInfo = () => {
     setShowConnectionInfo(!showConnectionInfo);
   };
 
-  const tryAlternativePort = (port: string) => {
-    const baseUrl = ollamaHost.split(':').slice(0, -1).join(':');
-    const newHost = `${baseUrl}:${port}`;
-    updateHost(newHost);
-    
-    toast({
-      title: 'Trying alternative port',
-      description: `Attempting to connect to Ollama at ${newHost}`,
-    });
-    
-    setTimeout(refreshModels, 500);
-  };
-
   const sendMessage = async () => {
-    if (!inputMessage.trim()) return;
-    if (!isConnected) {
-      toast({
-        title: 'Ollama Not Connected',
-        description: 'Please ensure Ollama is running and check your connection settings.',
-        variant: 'destructive',
-      });
-      setShowSettings(true);
-      return;
-    }
-
-    if (!selectedModel) {
-      toast({
-        title: 'No Model Selected',
-        description: 'Please select an Ollama model first.',
-        variant: 'destructive',
-      });
-      setShowSettings(true);
-      return;
-    }
+    if (!inputMessage.trim() || !selectedModel || !isConnected) return;
 
     const userMessage: OllamaMessage = {
-      id: crypto.randomUUID(),
-      role: 'user',
+      id: Date.now().toString(),
       content: inputMessage,
-      timestamp: new Date(),
+      role: 'user',
+      timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputMessage('');
     setIsLoading(true);
 
@@ -129,179 +118,133 @@ export function OllamaChat() {
         },
         body: JSON.stringify({
           model: selectedModel,
-          messages: messages.concat(userMessage).map(m => ({
-            role: m.role,
-            content: m.content
-          })),
-          stream: false,
+          messages: [
+            ...messages.map(msg => ({
+              role: msg.role,
+              content: msg.content,
+            })),
+            { role: 'user', content: inputMessage },
+          ],
         }),
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Error from Ollama API: ${response.statusText}`);
+        throw new Error(`Error: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
       const assistantMessage: OllamaMessage = {
-        id: crypto.randomUUID(),
+        id: (Date.now() + 1).toString(),
+        content: data.message.content,
         role: 'assistant',
-        content: data.message?.content || 'No response from Ollama',
-        timestamp: new Date(),
+        timestamp: new Date()
       };
-      
-      setMessages(prev => [...prev, assistantMessage]);
+
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error sending message to Ollama:', error);
       
-      const assistantMessage: OllamaMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: `Error connecting to Ollama: ${error.message}\n\nMake sure Ollama is running on your computer and properly configured.`,
-        timestamp: new Date(),
+      const errorMessage: OllamaMessage = {
+        id: (Date.now() + 1).toString(),
+        content: `Error: Could not get a response from Ollama. Make sure the server is running and the model is available.\n\nDetails: ${error instanceof Error ? error.message : String(error)}`,
+        role: 'system',
+        timestamp: new Date()
       };
       
-      setMessages(prev => [...prev, assistantMessage]);
-      
-      toast({
-        title: 'Error',
-        description: 'Failed to get a response from Ollama.',
-        variant: 'destructive',
-      });
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (models.length === 0) {
+  const renderConnectionInfo = () => (
+    <OllamaConnectionInfo 
+      isConnected={isConnected}
+      modelsCount={models.length}
+      host={ollamaHost}
+      selectedModel={selectedModel}
+    />
+  );
+
+  const renderNoModelsAlert = () => {
+    if (isConnected && models.length === 0) {
+      return <OllamaNoModelsAlert refreshModels={fetchModels} />;
+    }
+    return null;
+  };
+
+  // Render empty state if not connected or no models
+  if (!isConnected || (isConnected && models.length === 0 && !showSettings)) {
     return (
-      <div className="flex flex-col h-full">
+      <div className="h-[500px] overflow-hidden">
         <OllamaEmptyState 
-          isConnected={isConnected} 
+          isConnected={isConnected}
           connectionError={connectionError}
-          onSettingsClick={() => setShowSettings(true)} 
+          models={models}
+          isLoadingModels={isLoadingModels}
+          toggleSettings={toggleSettings}
+          toggleConnectionInfo={toggleConnectionInfo}
         />
-        {showSettings && (
-          <OllamaSettings 
-            ollamaHost={ollamaHost}
-            updateHost={updateHost}
-            refreshModels={refreshModels}
-            isLoadingModels={isLoadingModels}
-            isConnected={isConnected}
-            connectionError={connectionError}
-            models={models}
-            selectedModel={selectedModel}
-            setSelectedModel={setSelectedModel}
-            renderNoModelsAlert={() => (
-              <OllamaNoModelsAlert 
-                refreshModels={refreshModels}
-              />
-            )}
-            renderConnectionInfo={() => (
-              <OllamaConnectionInfo 
-                ollamaHost={ollamaHost}
-                tryAlternativePort={tryAlternativePort}
-                isConnected={isConnected}
-              />
-            )}
-            showConnectionInfo={showConnectionInfo}
-          />
-        )}
-        {showConnectionInfo && (
-          <OllamaConnectionInfo 
-            ollamaHost={ollamaHost}
-            tryAlternativePort={tryAlternativePort}
-            isConnected={isConnected}
-          />
-        )}
       </div>
     );
   }
 
-  const headerActions = (
-    <>
-      <Button 
-        variant="ghost" 
-        size="sm"
-        onClick={toggleConnectionInfo}
-        title="Connection Info"
-      >
-        <Info className="h-4 w-4" />
-      </Button>
-      <Button 
-        variant="ghost" 
-        size="sm"
-        onClick={toggleSettings}
-        title="Settings"
-      >
-        <Settings className="h-4 w-4" />
-      </Button>
-      <Button 
-        variant="ghost" 
-        size="sm"
-        onClick={clearChat}
-        title="Clear chat"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </>
-  );
-
   return (
-    <Card className="w-full h-[500px] flex flex-col shadow-lg">
-      <CardHeader className="border-b py-3 px-4 flex flex-row items-center justify-between">
-        <ChatHeader 
-          title="Ollama Chat"
-          description="Chat with your local Ollama models"
-          icon={<Terminal className="h-5 w-5 mr-2 text-teal-500" />}
-          actions={headerActions}
-        />
-      </CardHeader>
-      
-      <CardContent className="flex-grow overflow-y-auto p-4 flex flex-col gap-4">
+    <div className="h-[500px] flex flex-col">
+      <div className="flex justify-between items-center p-3 border-b">
+        <div className="flex items-center">
+          <MessageSquare className="h-5 w-5 mr-2 text-gray-600" />
+          <h3 className="font-medium">
+            {selectedModel ? `Model: ${selectedModel}` : 'Ollama Chat'}
+          </h3>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleSettings}
+          className="h-8 w-8 p-0"
+        >
+          <Settings className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="flex-grow overflow-auto p-4">
         {showSettings ? (
-          <OllamaSettings 
+          <OllamaSettings
             ollamaHost={ollamaHost}
             updateHost={updateHost}
-            refreshModels={refreshModels}
+            refreshModels={fetchModels}
             isLoadingModels={isLoadingModels}
             isConnected={isConnected}
             connectionError={connectionError}
             models={models}
             selectedModel={selectedModel}
             setSelectedModel={setSelectedModel}
-            renderNoModelsAlert={() => (
-              <OllamaNoModelsAlert 
-                refreshModels={refreshModels}
-              />
-            )}
-            renderConnectionInfo={() => (
-              <OllamaConnectionInfo 
-                ollamaHost={ollamaHost}
-                tryAlternativePort={tryAlternativePort}
-                isConnected={isConnected}
-              />
-            )}
+            renderNoModelsAlert={renderNoModelsAlert}
+            renderConnectionInfo={renderConnectionInfo}
             showConnectionInfo={showConnectionInfo}
           />
-        ) : messages.length === 0 ? (
-          <OllamaEmptyState 
-            isConnected={isConnected}
-            models={models}
-            isLoadingModels={isLoadingModels}
-            toggleSettings={toggleSettings}
-            toggleConnectionInfo={toggleConnectionInfo}
-          />
+        ) : messages.length > 0 ? (
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <OllamaMessageDisplay key={message.id} message={message} />
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
         ) : (
-          <OllamaMessageDisplay 
-            messages={messages}
-            selectedModel={selectedModel}
-          />
+          <div className="h-full flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-muted-foreground mb-2">Start chatting with {selectedModel}</p>
+              <Button variant="outline" size="sm" onClick={toggleSettings}>
+                Change Settings
+              </Button>
+            </div>
+          </div>
         )}
-      </CardContent>
-      
-      <CardFooter className="border-t p-3">
-        <OllamaChatInput 
+      </div>
+
+      <div className="p-3 border-t mt-auto">
+        <OllamaChatInput
           inputMessage={inputMessage}
           setInputMessage={setInputMessage}
           sendMessage={sendMessage}
@@ -310,7 +253,7 @@ export function OllamaChat() {
           showSettings={showSettings}
           models={models}
         />
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
