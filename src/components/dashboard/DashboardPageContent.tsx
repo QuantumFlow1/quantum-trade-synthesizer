@@ -11,7 +11,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { VisualizationPage } from "./pages/VisualizationPage";
 import { VirtualEnvironmentDemo } from "../visualization/VirtualEnvironmentDemo";
-import { LLMExtensions } from "../llm-extensions/LLMExtensions";
+import { OllamaChat } from "../llm-extensions/ollama/OllamaChat";
 
 interface DashboardPageContentProps {
   activePage: string;
@@ -58,7 +58,7 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
         openTradingAgents={openTradingAgentsTab}
       />;
     case "llm":
-      return <LLMExtensions />;
+      return <OllamaChat />;
     case "gamification":
       return <GamificationPage />;
     case "visualization":
