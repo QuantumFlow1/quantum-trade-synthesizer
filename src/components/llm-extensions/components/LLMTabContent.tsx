@@ -8,6 +8,7 @@ import { OllamaChat } from '../ollama/OllamaChat';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DisabledTabContent } from './DisabledTabContent';
 
 interface LLMTabContentProps {
   tabValue: string;
@@ -26,77 +27,68 @@ export function LLMTabContent({
   onRetryConnection,
   onConfigure
 }: LLMTabContentProps) {
+  if (!isEnabled) {
+    return (
+      <TabsContent value={tabValue} className="border rounded-md p-0 h-[400px]">
+        <DisabledTabContent 
+          modelName={tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} 
+          onEnable={() => toggleLLM(tabValue, true)} 
+        />
+      </TabsContent>
+    );
+  }
+
   return (
     <TabsContent value={tabValue} className="border rounded-md p-0 h-[400px]">
-      {isEnabled ? (
-        connectionStatus === 'connected' ? (
-          // Show the appropriate chat component
-          <>
-            {tabValue === 'deepseek' && <DeepSeekChat />}
-            {tabValue === 'openai' && <OpenAIChat />}
-            {tabValue === 'grok' && <GrokChat />}
-            {tabValue === 'claude' && <ClaudeChat />}
-            {tabValue === 'ollama' && <OllamaChat />}
-          </>
-        ) : connectionStatus === 'checking' ? (
-          // Show loading state
-          <div className="h-full flex flex-col items-center justify-center">
-            <Loader2 className="h-8 w-8 text-blue-500 animate-spin mb-4" />
-            <h3 className="text-lg font-medium text-gray-700">Connecting to API</h3>
-            <p className="text-gray-500 text-center mt-2 max-w-md px-4">
-              Checking connection to {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}...
-            </p>
-          </div>
-        ) : (
-          // Show disconnected state with retry button
-          <div className="h-full flex flex-col items-center justify-center p-6">
-            <Alert className="max-w-lg">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>API Connection Required</AlertTitle>
-              <AlertDescription>
-                {connectionStatus === 'unavailable' ? (
-                  <p>Could not connect to the {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} API. This may be due to a network issue or the API service being unavailable.</p>
-                ) : (
-                  <p>Could not connect to {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}. If this is Ollama, make sure it's running on your local machine.</p>
-                )}
-                <div className="mt-4 flex space-x-2">
+      {connectionStatus === 'connected' ? (
+        // Show the appropriate chat component
+        <>
+          {tabValue === 'deepseek' && <DeepSeekChat />}
+          {tabValue === 'openai' && <OpenAIChat />}
+          {tabValue === 'grok' && <GrokChat />}
+          {tabValue === 'claude' && <ClaudeChat />}
+          {tabValue === 'ollama' && <OllamaChat />}
+        </>
+      ) : connectionStatus === 'checking' ? (
+        // Show loading state
+        <div className="h-full flex flex-col items-center justify-center">
+          <Loader2 className="h-8 w-8 text-blue-500 animate-spin mb-4" />
+          <h3 className="text-lg font-medium text-gray-700">Connecting to API</h3>
+          <p className="text-gray-500 text-center mt-2 max-w-md px-4">
+            Checking connection to {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}...
+          </p>
+        </div>
+      ) : (
+        // Show disconnected state with retry button
+        <div className="h-full flex flex-col items-center justify-center p-6">
+          <Alert className="max-w-lg">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>API Connection Required</AlertTitle>
+            <AlertDescription>
+              {connectionStatus === 'unavailable' ? (
+                <p>Could not connect to the {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} API. This may be due to a network issue or the API service being unavailable.</p>
+              ) : (
+                <p>Could not connect to {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}. If this is Ollama, make sure it's running on your local machine.</p>
+              )}
+              <div className="mt-4 flex space-x-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={onRetryConnection}
+                >
+                  Retry Connection
+                </Button>
+                {tabValue !== 'ollama' && (
                   <Button 
                     size="sm" 
-                    variant="outline" 
-                    onClick={onRetryConnection}
+                    onClick={onConfigure}
                   >
-                    Retry Connection
+                    Configure API Key
                   </Button>
-                  {tabValue !== 'ollama' && (
-                    <Button 
-                      size="sm" 
-                      onClick={onConfigure}
-                    >
-                      Configure API Key
-                    </Button>
-                  )}
-                </div>
-              </AlertDescription>
-            </Alert>
-          </div>
-        )
-      ) : (
-        // Show disabled state
-        <div className="h-full flex flex-col items-center justify-center p-6">
-          <h3 className="text-lg font-medium text-gray-500">
-            {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} is currently disabled
-          </h3>
-          <p className="text-gray-400 text-center mt-2">
-            Enable this extension using the toggle above to use it.
-          </p>
-          <Button 
-            size="sm" 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => toggleLLM(tabValue, true)}
-          >
-            Enable {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}
-          </Button>
+                )}
+              </div>
+            </AlertDescription>
+          </Alert>
         </div>
       )}
     </TabsContent>

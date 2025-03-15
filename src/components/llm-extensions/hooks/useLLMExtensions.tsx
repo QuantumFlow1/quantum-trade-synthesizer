@@ -2,8 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { testOllamaConnection } from '@/utils/ollamaApiClient';
 import { toast } from '@/components/ui/use-toast';
-import { ApiKeyDialogContent } from '@/components/chat/api-keys/ApiKeyDialogContent';
-import { Dialog } from '@/components/ui/dialog';
 
 export function useLLMExtensions() {
   const [activeTab, setActiveTab] = useState('ollama');
@@ -83,12 +81,15 @@ export function useLLMExtensions() {
     try {
       if (llm === 'ollama') {
         const ollamaStatus = await testOllamaConnection();
+        console.log('Ollama connection status:', ollamaStatus);
+        
         setConnectionStatus(prev => ({ 
           ...prev, 
           [llm]: ollamaStatus.success ? 'connected' : 'disconnected' 
         }));
         
         if (!ollamaStatus.success) {
+          console.error('Ollama connection failed:', ollamaStatus.message);
           toast({
             title: "Ollama Connection Failed",
             description: ollamaStatus.message,

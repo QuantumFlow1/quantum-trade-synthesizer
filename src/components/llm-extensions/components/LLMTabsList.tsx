@@ -21,7 +21,7 @@ export function LLMTabsList({
   checkConnectionStatusForLLM
 }: LLMTabsListProps) {
   return (
-    <TabsList className="flex justify-start w-full h-auto p-0 bg-transparent space-x-1 mb-4 border-b">
+    <TabsList className="flex flex-wrap justify-start w-full h-auto p-0 bg-transparent space-x-1 mb-4 border-b">
       {['deepseek', 'openai', 'grok', 'claude', 'ollama'].map((llm) => (
         <div 
           key={llm} 

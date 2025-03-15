@@ -1,171 +1,94 @@
 
-/**
- * A client for interacting with the locally hosted Ollama API
- */
-import { toast } from "@/components/ui/use-toast";
-import { logApiCall } from "./apiLogger";
+// OllamaApiClient.ts
+interface OllamaConnectionStatus {
+  success: boolean;
+  message: string;
+  models?: any[];
+}
 
-// Default Ollama host - should be configured based on where Ollama is running
-const DEFAULT_OLLAMA_HOST = "http://localhost:11434";
+class OllamaApiClient {
+  private baseUrl: string;
 
-export type OllamaModel = {
-  name: string;
-  modified_at: string;
-  size: number;
-  digest: string;
-  details: {
-    format: string;
-    family: string;
-    families: string[];
-    parameter_size: string;
-    quantization_level: string;
-  };
-};
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
 
-export class OllamaApiClient {
-  private host: string;
-  
-  constructor(host?: string) {
-    this.host = host || DEFAULT_OLLAMA_HOST;
+  getBaseUrl(): string {
+    return this.baseUrl;
   }
-  
-  /**
-   * Set the host for the Ollama API
-   */
-  setHost(host: string) {
-    this.host = host;
+
+  setBaseUrl(url: string) {
+    this.baseUrl = url;
   }
-  
-  /**
-   * Get the configured host
-   */
-  getHost(): string {
-    return this.host;
-  }
-  
-  /**
-   * Check if Ollama is available
-   */
-  async checkConnection(): Promise<boolean> {
+
+  async listModels(): Promise<any[]> {
     try {
-      const response = await fetch(`${this.host}/api/tags`, {
-        method: 'GET',
-      });
-      
-      if (!response.ok) {
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Error checking Ollama connection:', error);
-      return false;
-    }
-  }
-  
-  /**
-   * List all available models from Ollama
-   */
-  async listModels(): Promise<OllamaModel[]> {
-    try {
-      await logApiCall('ollama/list-models', 'OllamaApiClient', 'pending');
-      
-      const response = await fetch(`${this.host}/api/tags`, {
-        method: 'GET',
-      });
+      console.log(`Fetching models from ${this.baseUrl}/api/tags`);
+      const response = await fetch(`${this.baseUrl}/api/tags`);
       
       if (!response.ok) {
         throw new Error(`Failed to list models: ${response.statusText}`);
       }
       
       const data = await response.json();
-      
-      await logApiCall('ollama/list-models', 'OllamaApiClient', 'success');
-      
+      console.log('Models fetched successfully:', data);
       return data.models || [];
     } catch (error) {
-      console.error('Error listing Ollama models:', error);
-      await logApiCall('ollama/list-models', 'OllamaApiClient', 'error', error.message);
+      console.error('Error listing models:', error);
       throw error;
     }
   }
-  
-  /**
-   * Generate chat completions using Ollama
-   */
-  async createChatCompletion(
-    messages: Array<{ role: 'system' | 'user' | 'assistant', content: string }>,
-    model: string,
-    options?: {
-      temperature?: number;
-      top_p?: number;
-      max_tokens?: number;
-    }
-  ): Promise<string> {
+
+  async checkConnection(): Promise<OllamaConnectionStatus> {
     try {
-      await logApiCall('ollama/chat', 'OllamaApiClient', 'pending');
-      
-      const response = await fetch(`${this.host}/api/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: messages,
-          options: {
-            temperature: options?.temperature || 0.7,
-            top_p: options?.top_p || 0.9,
-            num_predict: options?.max_tokens || 1024,
-          },
-          stream: false,
-        }),
-      });
+      console.log(`Checking connection to Ollama at ${this.baseUrl}`);
+      const response = await fetch(`${this.baseUrl}/api/tags`);
       
       if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.statusText}`);
+        console.error(`Connection failed with status: ${response.status} ${response.statusText}`);
+        return {
+          success: false,
+          message: `Ollama server responded with an error: ${response.statusText}`,
+        };
       }
       
       const data = await response.json();
+      console.log('Connection successful, models:', data.models);
       
-      await logApiCall('ollama/chat', 'OllamaApiClient', 'success');
-      
-      return data.message?.content || '';
+      return {
+        success: true,
+        message: 'Connected to Ollama successfully',
+        models: data.models || [],
+      };
     } catch (error) {
-      console.error('Error calling Ollama chat API:', error);
-      await logApiCall('ollama/chat', 'OllamaApiClient', 'error', error.message);
-      throw error;
+      console.error('Error checking Ollama connection:', error);
+      
+      return {
+        success: false,
+        message: `Could not connect to Ollama: ${error instanceof Error ? error.message : 'Unknown error'}. Make sure Ollama is running.`,
+      };
     }
   }
 }
 
-// Create a singleton instance for easy imports
-export const ollamaApi = new OllamaApiClient();
+// Create a singleton instance with default Ollama URL
+const ollamaClient = new OllamaApiClient('http://localhost:11434');
 
-// Function to test if Ollama is available
-export async function testOllamaConnection(host?: string): Promise<{ success: boolean; message: string }> {
+// Helper function to test connection and get models
+export const testOllamaConnection = async (): Promise<OllamaConnectionStatus> => {
   try {
-    if (host) {
-      ollamaApi.setHost(host);
-    }
-    
-    const isAvailable = await ollamaApi.checkConnection();
-    
-    if (isAvailable) {
-      return { 
-        success: true, 
-        message: 'Successfully connected to Ollama' 
-      };
-    } else {
-      return { 
-        success: false, 
-        message: 'Could not connect to Ollama API. Make sure Ollama is running.' 
-      };
-    }
+    console.log('Testing Ollama connection...');
+    const connectionStatus = await ollamaClient.checkConnection();
+    console.log('Connection status:', connectionStatus);
+    return connectionStatus;
   } catch (error) {
-    return { 
-      success: false, 
-      message: error instanceof Error ? error.message : 'Failed to connect to Ollama' 
+    console.error('Error in testOllamaConnection:', error);
+    return {
+      success: false,
+      message: `Failed to test Ollama connection: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
-}
+};
+
+// Export the client for use elsewhere
+export default ollamaClient;
