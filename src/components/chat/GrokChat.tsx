@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from '@/components/ui/card'
 import { GrokChatHeader } from './GrokChatHeader'
 import { ChatMessages } from './ChatMessages'
@@ -31,7 +30,6 @@ export function GrokChat() {
     setGrokSettings
   } = useGrokChat();
 
-  // For Ollama integration
   const { 
     connectionStatus: ollamaConnectionStatus,
     connectToDocker,
@@ -40,23 +38,17 @@ export function GrokChat() {
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  // Use the advanced interface instead of the standard chat interface
   const [useAdvancedInterface, setUseAdvancedInterface] = useState(false);
   
-  // Settings default visible
   const [showSettings, setShowSettings] = useState(false);
   
-  // Track offline status
   const [isOffline, setIsOffline] = useState<boolean>(isOfflineMode());
   
-  // Get the full name of the selected model
   const selectedModel = AI_MODELS.find(m => m.id === grokSettings.selectedModel);
   const selectedModelName = selectedModel?.name || 'AI';
   
-  // Check if current model is Ollama
   const isOllamaModel = grokSettings.selectedModel.includes('ollama');
 
-  // Add online/offline event listeners
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
@@ -86,15 +78,12 @@ export function GrokChat() {
     };
   }, []);
 
-  // Auto connect to Ollama if using an Ollama model
   useEffect(() => {
     if (isOllamaModel && (!ollamaConnectionStatus?.connected)) {
-      // Try to connect to Ollama automatically
       connectToDocker('http://localhost:11434');
     }
   }, [isOllamaModel, ollamaConnectionStatus, connectToDocker]);
 
-  // Display an info message when component mounts
   useEffect(() => {
     toast({
       title: "Multi-Model AI Interface",
@@ -102,11 +91,9 @@ export function GrokChat() {
       duration: 5000,
     });
     
-    // Log the current state of messages for debugging
     console.log('Initial messages in GrokChat:', messages);
   }, [selectedModelName, messages]);
 
-  // Auto-scroll to bottom when messages update
   useEffect(() => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
@@ -116,10 +103,8 @@ export function GrokChat() {
 
   const handleRetryConnection = async () => {
     if (isOllamaModel) {
-      // For Ollama models, retry connecting to Docker
       await connectToDocker('http://localhost:11434');
     } else {
-      // For other models
       await retryApiConnection();
     }
   };
@@ -138,10 +123,8 @@ export function GrokChat() {
   };
   
   const handleExit = () => {
-    // Navigate back to main page
     navigate('/');
     
-    // Show confirmation message
     toast({
       title: "Chat exited",
       description: "You've left the chat.",
@@ -149,7 +132,6 @@ export function GrokChat() {
     });
   };
 
-  // Properly handle the send message function
   const handleSendMessage = () => {
     console.log('handleSendMessage called with message:', inputMessage);
     if (inputMessage.trim()) {
@@ -157,13 +139,12 @@ export function GrokChat() {
     }
   };
 
-  // Display connection status for Ollama models
   const renderOllamaStatus = () => {
     if (!isOllamaModel) return null;
     
     if (isConnecting) {
       return (
-        <Alert variant="info" className="m-4">
+        <Alert variant="default" className="m-4">
           <Loader2 className="h-4 w-4 animate-spin" />
           <AlertTitle>Connecting to Ollama</AlertTitle>
           <AlertDescription>
@@ -204,12 +185,10 @@ export function GrokChat() {
     return null;
   };
 
-  // Render the advanced interface if enabled
   if (useAdvancedInterface) {
     return <AdvancedLLMInterface />;
   }
 
-  // Otherwise render the standard chat interface
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-lg bg-white">
       <GrokChatHeader 
@@ -221,7 +200,6 @@ export function GrokChat() {
       />
       
       <CardContent className="p-0 flex flex-col h-[600px]">
-        {/* Offline Mode Alert */}
         {isOffline && (
           <Alert variant="warning" className="m-4">
             <WifiOff className="h-4 w-4" />
@@ -240,10 +218,8 @@ export function GrokChat() {
           </Alert>
         )}
         
-        {/* Ollama Connection Status */}
         {renderOllamaStatus()}
         
-        {/* API Status Alert for non-Ollama models */}
         {!isOllamaModel && apiAvailable === false && grokSettings.selectedModel === 'grok3' && !isOffline && (
           <Alert variant="warning" className="m-4">
             <AlertTriangle className="h-4 w-4" />
@@ -270,7 +246,6 @@ export function GrokChat() {
           </Alert>
         )}
         
-        {/* Settings Panel - show only if showSettings is true */}
         {showSettings && (
           <div className="mx-4 mt-4">
             <GrokChatSettings 
@@ -280,12 +255,10 @@ export function GrokChat() {
           </div>
         )}
         
-        {/* Debug info - display message count */}
         <div className="mx-4 mt-2 text-xs text-gray-500">
           Messages in state: {messages.length} | {isOffline ? "Offline Mode" : "Online Mode"} | Model: {selectedModelName}
         </div>
         
-        {/* Chat Messages */}
         <div 
           ref={messagesContainerRef} 
           className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50 pt-3"
@@ -293,7 +266,6 @@ export function GrokChat() {
           <ChatMessages messages={messages} />
         </div>
         
-        {/* Chat Input */}
         <ChatInput 
           inputMessage={inputMessage}
           setInputMessage={setInputMessage}
