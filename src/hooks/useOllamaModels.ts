@@ -12,6 +12,7 @@ export function useOllamaModels() {
   const [ollamaHost, setOllamaHost] = useState<string>(
     localStorage.getItem('ollamaHost') || 'http://localhost:11434'
   );
+  const [hasNotifiedOnInitialConnection, setHasNotifiedOnInitialConnection] = useState(false);
 
   // Function to refresh the connection and model list
   const refreshModels = useCallback(async () => {
@@ -46,11 +47,21 @@ export function useOllamaModels() {
       // Save the host to localStorage
       localStorage.setItem('ollamaHost', ollamaHost);
       
-      toast({
-        title: "Ollama Connected",
-        description: `Found ${modelList.length} models`,
-        duration: 3000,
-      });
+      // Show notification on initial successful connection with models
+      if (modelList.length > 0 && !hasNotifiedOnInitialConnection) {
+        toast({
+          title: "Ollama Models Found",
+          description: `Found ${modelList.length} local Ollama models. You can start chatting now!`,
+          duration: 5000,
+        });
+        setHasNotifiedOnInitialConnection(true);
+      } else if (modelList.length === 0 && connectionTest.success) {
+        toast({
+          title: "Ollama Connected",
+          description: "Connected to Ollama, but no models found. Install models to start chatting.",
+          duration: 5000,
+        });
+      }
     } catch (error) {
       console.error('Error refreshing Ollama models:', error);
       setConnectionError(error instanceof Error ? error.message : 'Unknown error connecting to Ollama');
@@ -64,7 +75,7 @@ export function useOllamaModels() {
     } finally {
       setIsLoading(false);
     }
-  }, [ollamaHost]);
+  }, [ollamaHost, hasNotifiedOnInitialConnection]);
 
   // Try to connect on initial load
   useEffect(() => {

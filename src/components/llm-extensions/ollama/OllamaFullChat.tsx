@@ -36,6 +36,7 @@ export function OllamaFullChat() {
   const [autoRetryEnabled, setAutoRetryEnabled] = useState(true);
   const [currentOrigin, setCurrentOrigin] = useState('');
   const [isLocalhost, setIsLocalhost] = useState(false);
+  const [notifiedAboutLocalModels, setNotifiedAboutLocalModels] = useState(false);
   
   // Check if running on localhost
   useEffect(() => {
@@ -44,6 +45,18 @@ export function OllamaFullChat() {
       setIsLocalhost(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     }
   }, []);
+
+  // Show notification when models are loaded successfully
+  useEffect(() => {
+    if (isConnected && models.length > 0 && !notifiedAboutLocalModels) {
+      toast({
+        title: "Local Ollama Models Available",
+        description: `Found ${models.length} local Ollama models that you can use directly.`,
+        duration: 5000,
+      });
+      setNotifiedAboutLocalModels(true);
+    }
+  }, [isConnected, models, notifiedAboutLocalModels]);
 
   // Scroll to bottom when messages change
   useEffect(() => {

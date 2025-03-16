@@ -1,14 +1,14 @@
 
-import React, { useRef } from 'react';
-import { MessageSquare, Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { OllamaSettings } from './components/OllamaSettings';
-import { OllamaMessageList } from './components/OllamaMessageList';
+import React from 'react';
+import { useOllamaChat } from './hooks/useOllamaChat';
+import { OllamaChatHeader } from './components/OllamaChatHeader';
 import { OllamaChatInput } from './components/OllamaChatInput';
 import { OllamaEmptyState } from './components/OllamaEmptyState';
-import { OllamaNoModelsAlert } from './components/OllamaNoModelsAlert';
+import { OllamaMessageList } from './components/OllamaMessageList';
 import { OllamaConnectionInfo } from './components/OllamaConnectionInfo';
-import { useOllamaChat } from './hooks/useOllamaChat';
+import { OllamaSettings } from './components/OllamaSettings';
+import { toast } from '@/components/ui/use-toast';
+import { OllamaNoModelsAlert } from './components/OllamaNoModelsAlert';
 
 export function OllamaChat() {
   const {
@@ -17,106 +17,101 @@ export function OllamaChat() {
     inputMessage,
     messages,
     isLoading,
-    showSettings,
-    showConnectionInfo,
     models,
     isLoadingModels,
     isConnected,
     connectionError,
+    showSettings,
+    showConnectionInfo,
+    toggleSettings,
+    toggleConnectionInfo,
     updateHost,
     setSelectedModel,
     setInputMessage,
-    toggleSettings,
-    toggleConnectionInfo,
+    clearChat,
     sendMessage,
     refreshModels
   } = useOllamaChat();
-  
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const renderConnectionInfo = () => (
-    <OllamaConnectionInfo 
-      isConnected={isConnected}
-      host={ollamaHost}
-      selectedModel={selectedModel}
-      modelsAvailable={models.length}
-    />
-  );
-
-  const renderNoModelsAlert = () => {
-    if (isConnected && models.length === 0) {
-      return <OllamaNoModelsAlert refreshModels={refreshModels} />;
+  // Notification for available models on component mount
+  React.useEffect(() => {
+    if (isConnected && models.length > 0) {
+      const storedNotification = localStorage.getItem('ollamaModelsNotificationShown');
+      if (!storedNotification) {
+        toast({
+          title: "Local Ollama Models Available",
+          description: `Found ${models.length} models. You can chat with your local Ollama models!`,
+        });
+        localStorage.setItem('ollamaModelsNotificationShown', 'true');
+      }
     }
-    return null;
-  };
+  }, [isConnected, models]);
 
-  // Render empty state if not connected or no models
-  if (!isConnected || (isConnected && models.length === 0 && !showSettings)) {
+  // When settings are shown
+  if (showSettings) {
     return (
-      <div className="h-[500px] overflow-hidden">
-        <OllamaEmptyState 
-          isConnected={isConnected}
-          connectionError={connectionError}
-          models={models}
-          isLoadingModels={isLoadingModels}
-          toggleSettings={toggleSettings}
-          toggleConnectionInfo={toggleConnectionInfo}
-        />
-      </div>
+      <OllamaSettings
+        isConnected={isConnected}
+        isLoadingModels={isLoadingModels}
+        connectionError={connectionError}
+        models={models}
+        selectedModel={selectedModel}
+        setSelectedModel={setSelectedModel}
+        refreshModels={refreshModels}
+        toggleSettings={toggleSettings}
+      />
     );
   }
 
-  return (
-    <div className="h-[500px] flex flex-col">
-      <div className="flex justify-between items-center p-3 border-b">
-        <div className="flex items-center">
-          <MessageSquare className="h-5 w-5 mr-2 text-gray-600" />
-          <h3 className="font-medium">
-            {selectedModel ? `Model: ${selectedModel}` : 'Ollama Chat'}
-          </h3>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleSettings}
-          className="h-8 w-8 p-0"
-        >
-          <Settings className="h-4 w-4" />
-        </Button>
-      </div>
+  // When connection info is shown
+  if (showConnectionInfo) {
+    return (
+      <OllamaConnectionInfo
+        ollamaHost={ollamaHost}
+        updateHost={updateHost}
+        toggleConnectionInfo={toggleConnectionInfo}
+        isConnected={isConnected}
+        connectionError={connectionError}
+        refreshModels={refreshModels}
+      />
+    );
+  }
 
-      <div className="flex-grow overflow-auto p-4">
-        {showSettings ? (
-          <OllamaSettings
-            ollamaHost={ollamaHost}
-            updateHost={updateHost}
-            refreshModels={refreshModels}
-            isLoadingModels={isLoadingModels}
+  // Main chat layout
+  return (
+    <div className="flex flex-col h-full">
+      <OllamaChatHeader
+        isConnected={isConnected}
+        models={models}
+        selectedModel={selectedModel}
+        setSelectedModel={setSelectedModel}
+        toggleSettings={toggleSettings}
+        toggleConnectionInfo={toggleConnectionInfo}
+        clearChat={clearChat}
+      />
+
+      <div className="flex-1 overflow-auto p-4">
+        {isConnected && models.length === 0 && !isLoadingModels ? (
+          <OllamaNoModelsAlert refreshModels={refreshModels} />
+        ) : isConnected && models.length > 0 ? (
+          <OllamaMessageList messages={messages} selectedModel={selectedModel} />
+        ) : (
+          <OllamaEmptyState
             isConnected={isConnected}
             connectionError={connectionError}
-            models={models}
-            selectedModel={selectedModel}
-            setSelectedModel={setSelectedModel}
-            renderNoModelsAlert={renderNoModelsAlert}
-            renderConnectionInfo={renderConnectionInfo}
-            showConnectionInfo={showConnectionInfo}
-          />
-        ) : (
-          <OllamaMessageList 
-            messages={messages} 
-            selectedModel={selectedModel} 
+            toggleSettings={toggleSettings}
+            toggleConnectionInfo={toggleConnectionInfo}
           />
         )}
       </div>
 
-      <div className="p-3 border-t mt-auto">
+      <div className="p-4 border-t">
         <OllamaChatInput
           inputMessage={inputMessage}
           setInputMessage={setInputMessage}
           sendMessage={sendMessage}
           isLoading={isLoading}
-          isConnected={isConnected}
-          showSettings={showSettings}
+          isConnected={isConnected && models.length > 0}
           models={models}
         />
       </div>
