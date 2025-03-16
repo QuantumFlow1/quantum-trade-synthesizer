@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { EnvironmentProvider } from "./contexts/EnvironmentContext";
-import Index from "./pages/Index";
+import index from "./pages/index";
 import NotFound from "./pages/NotFound";
 import Overview from "./pages/admin/dashboard/Overview";
 import Users from "./pages/admin/dashboard/Users";
@@ -37,7 +37,7 @@ function App() {
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<index />} />
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/ollama-chat" element={<OllamaChatPage />} />
                 <Route path="/admin" element={<AdminPanel />} />

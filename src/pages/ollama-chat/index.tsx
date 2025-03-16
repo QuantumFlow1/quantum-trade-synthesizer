@@ -1,4 +1,5 @@
 
+import React from "react";
 import { OllamaFullChat } from "@/components/llm-extensions/ollama/OllamaFullChat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Terminal } from "lucide-react";
@@ -20,8 +21,8 @@ export default function OllamaChatPage() {
           </CardContent>
         </Card>
         <div className="mt-4 text-sm text-muted-foreground">
-          <p>Available models: llama3.1, llama3.2, llama3.3, qwq, deepseek-r1, gemma3, llama2</p>
-          <p>Connected to: http://localhost:11434</p>
+          <p>Available models: llama3, gemma, phi3, mistral, mixtral, and more</p>
+          <p>Connect to your local Ollama instance to get started</p>
         </div>
       </div>
     </div>

@@ -15,7 +15,6 @@ export function OllamaFullChat() {
     inputMessage,
     messages,
     isLoading,
-    showSettings,
     models,
     isLoadingModels,
     isConnected,
@@ -24,7 +23,6 @@ export function OllamaFullChat() {
     setSelectedModel,
     setInputMessage,
     clearChat,
-    toggleSettings,
     sendMessage,
     refreshModels
   } = useOllamaChat();
