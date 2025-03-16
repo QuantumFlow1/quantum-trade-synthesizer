@@ -6,37 +6,47 @@ import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Play, Pause } from "lucide-react";
 
 interface ModelCardProps {
-  id: string;
+  id?: string;
   name: string;
   description?: string;
   isActive?: boolean;
+  isEnabled?: boolean; // Added this property to match usage in LLMModelsList
   type?: string;
+  apiProvider?: string; // Added this property to match usage in LLMModelsList
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onToggleActive?: (id: string, active: boolean) => void;
 }
 
 export const ModelCard: React.FC<ModelCardProps> = ({
-  id,
+  id = "",
   name,
   description,
   isActive = true,
+  isEnabled, // Added this property
+  apiProvider, // Added this property
   type,
   onEdit,
   onDelete,
   onToggleActive,
 }) => {
+  // Use isEnabled if it's provided, otherwise fall back to isActive
+  const active = isEnabled !== undefined ? isEnabled : isActive;
+  
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">{name}</CardTitle>
           <div className="flex items-center gap-2">
+            {apiProvider && (
+              <Badge variant="outline" className="capitalize">{apiProvider}</Badge>
+            )}
             {type && (
               <Badge variant="outline">{type}</Badge>
             )}
-            <Badge variant={isActive ? "success" : "secondary"}>
-              {isActive ? "Actief" : "Inactief"}
+            <Badge variant={active ? "success" : "secondary"}>
+              {active ? "Actief" : "Inactief"}
             </Badge>
           </div>
         </div>
@@ -51,10 +61,10 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onToggleActive(id, !isActive)}
+            onClick={() => onToggleActive(id, !active)}
           >
-            {isActive ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
-            {isActive ? "Deactiveer" : "Activeer"}
+            {active ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
+            {active ? "Deactiveer" : "Activeer"}
           </Button>
         )}
         

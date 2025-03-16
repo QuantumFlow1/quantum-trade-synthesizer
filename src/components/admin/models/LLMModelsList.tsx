@@ -117,6 +117,7 @@ export const LLMModelsList = () => {
         {models.map((model) => (
           <ModelCard
             key={model.id}
+            id={model.id}
             name={model.name}
             description={model.description}
             isEnabled={model.isEnabled}
