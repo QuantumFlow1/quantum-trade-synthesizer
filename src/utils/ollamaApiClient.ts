@@ -1,3 +1,4 @@
+
 // OllamaApiClient.ts
 import { OllamaModel } from '@/components/llm-extensions/ollama/types/ollamaTypes';
 
@@ -75,16 +76,31 @@ class OllamaApiClient {
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch(`${this.baseUrl}/api/tags`, {
-        signal: controller.signal
+        signal: controller.signal,
+        // Add CORS mode to help debug issues
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       }).finally(() => {
         clearTimeout(timeoutId);
       });
       
       if (!response.ok) {
-        console.error(`Connection failed with status: ${response.status} ${response.statusText}`);
+        const statusCode = response.status;
+        console.error(`Connection failed with status: ${statusCode} ${response.statusText}`);
+        
+        if (statusCode === 403) {
+          return {
+            success: false,
+            message: `CORS error (403 Forbidden): The Ollama server is rejecting cross-origin requests. Check that your Ollama server has the correct ORIGINS settings. The current application origin might not be in the allowed list.`,
+          };
+        }
+        
         return {
           success: false,
-          message: `Ollama server responded with an error: ${response.statusText}`,
+          message: `Ollama server responded with an error: ${response.status} ${response.statusText}`,
         };
       }
       
