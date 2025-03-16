@@ -3,7 +3,7 @@ import React from 'react';
 import { AlertTriangle, Server } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { OllamaModel } from '@/utils/ollamaApiClient';
+import { OllamaModel } from '../types/ollamaTypes';
 
 interface OllamaEmptyStateProps {
   isConnected: boolean;
