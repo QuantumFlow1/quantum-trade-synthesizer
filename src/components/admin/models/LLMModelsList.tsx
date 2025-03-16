@@ -1,109 +1,136 @@
 
-import React, { useState } from "react";
-import { ModelList, ModelItem } from "./ModelList";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModelCard } from "./ModelCard";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { LLMModelForm } from "./LLMModelForm";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-
-// Mock data for demonstration purposes
-const initialModels: ModelItem[] = [
-  {
-    id: "1",
-    name: "GPT-4",
-    description: "OpenAI's GPT-4 model voor geavanceerde tekstgeneratie",
-    isActive: true,
-    type: "openai"
-  },
-  {
-    id: "2",
-    name: "Claude 3 Opus",
-    description: "Anthropic's Claude 3 Opus model voor nauwkeurige tekstgeneratie",
-    isActive: true,
-    type: "anthropic"
-  },
-  {
-    id: "3",
-    name: "Llama 3 70B",
-    description: "Meta's Llama 3 70B model geïntegreerd via Ollama",
-    isActive: false,
-    type: "ollama"
-  }
-];
+import { PlusCircle, RefreshCw, Server } from "lucide-react";
+import { useOllamaDockerConnect } from "@/hooks/useOllamaDockerConnect";
+import { OllamaConnectionStatus } from "./ollama/OllamaConnectionStatus";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const LLMModelsList = () => {
-  const [models, setModels] = useState<ModelItem[]>(initialModels);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentModel, setCurrentModel] = useState<ModelItem | null>(null);
-
-  const handleEdit = (id: string) => {
-    const modelToEdit = models.find(model => model.id === id);
-    if (modelToEdit) {
-      setCurrentModel(modelToEdit);
-      setIsDialogOpen(true);
+  const [isAddingModel, setIsAddingModel] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Get Ollama connection state
+  const { connectionStatus, connectToDocker } = useOllamaDockerConnect();
+  
+  // Models data (This would typically come from an API or state)
+  const models = [
+    {
+      id: "1",
+      name: "OpenAI GPT-4",
+      description: "Advanced language model with reasoning capabilities",
+      isEnabled: true,
+      apiProvider: "openai"
+    },
+    {
+      id: "2",
+      name: "Claude 3 Opus",
+      description: "Anthropic's most capable model for complex tasks",
+      isEnabled: true,
+      apiProvider: "anthropic"
+    },
+    {
+      id: "3",
+      name: "DeepSeek Coder",
+      description: "Specialized model for code generation and analysis",
+      isEnabled: false,
+      apiProvider: "deepseek"
+    },
+    {
+      id: "4",
+      name: "Grok-1",
+      description: "xAI's conversational AI model",
+      isEnabled: true,
+      apiProvider: "xai"
     }
-  };
-
-  const handleDelete = (id: string) => {
-    setModels(models.filter(model => model.id !== id));
-  };
-
-  const handleToggleActive = (id: string, active: boolean) => {
-    setModels(models.map(model => 
-      model.id === id ? { ...model, isActive: active } : model
-    ));
-  };
-
-  const handleAddNew = () => {
-    setCurrentModel(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleSaveModel = (model: ModelItem) => {
-    if (currentModel) {
-      // Update existing model
-      setModels(models.map(m => 
-        m.id === model.id ? model : m
-      ));
-    } else {
-      // Add new model
-      const newModel = {
-        ...model,
-        id: Date.now().toString(), // Simple ID generation
-      };
-      setModels([...models, newModel]);
-    }
-    setIsDialogOpen(false);
+  ];
+  
+  // Simulate refreshing models
+  const refreshModels = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1500);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">LLM Modellen</h3>
-        <Button onClick={handleAddNew} size="sm">
-          <Plus className="h-4 w-4 mr-1" /> Nieuw Model
-        </Button>
+        <div>
+          <h3 className="text-lg font-medium">AI Chat Models</h3>
+          <p className="text-muted-foreground text-sm">
+            Manage models used for AI chat features
+          </p>
+        </div>
+        <div className="flex space-x-2">
+          <Button
+            variant="outline" 
+            size="sm"
+            onClick={refreshModels}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button size="sm" onClick={() => setIsAddingModel(true)}>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Add Model
+          </Button>
+        </div>
       </div>
-      
-      <ModelList 
-        models={models}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onToggleActive={handleToggleActive}
-      />
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogTitle>
-            {currentModel ? "Model Bewerken" : "Nieuw Model"}
-          </DialogTitle>
-          <LLMModelForm 
-            model={currentModel}
-            onSave={handleSaveModel}
-            onCancel={() => setIsDialogOpen(false)}
+      {/* Always show Ollama connection status */}
+      <Card className="border-l-4 border-l-blue-500">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Server className="h-5 w-5 text-blue-500 mr-2" />
+              <CardTitle className="text-base">Ollama Local Models</CardTitle>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => connectToDocker('http://localhost:11434')}
+              className="h-8"
+            >
+              Connect
+            </Button>
+          </div>
+          <CardDescription>
+            Connect to your local Ollama instance for open-source models
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {connectionStatus && <OllamaConnectionStatus connectionStatus={connectionStatus} />}
+          
+          {!connectionStatus && (
+            <div className="text-center py-3 text-sm text-muted-foreground">
+              Checking Ollama connection status...
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {models.map((model) => (
+          <ModelCard
+            key={model.id}
+            name={model.name}
+            description={model.description}
+            isEnabled={model.isEnabled}
+            apiProvider={model.apiProvider}
           />
-        </DialogContent>
-      </Dialog>
+        ))}
+        
+        {isRefreshing && (
+          <>
+            <Skeleton className="h-[148px] w-full rounded-md" />
+            <Skeleton className="h-[148px] w-full rounded-md" />
+          </>
+        )}
+      </div>
     </div>
   );
 };

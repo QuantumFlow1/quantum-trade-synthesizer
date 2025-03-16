@@ -72,19 +72,19 @@ export const normalizeOllamaUrl = (url: string): string => {
  */
 export const getConnectionErrorMessage = (error: unknown): string => {
   if (error instanceof DOMException && error.name === 'AbortError') {
-    return 'Verbinding time-out. De server reageerde niet binnen 5 seconden.';
+    return 'Connection timeout. Server did not respond within 5 seconds.';
   }
   
-  let errorMessage = 'Onbekende fout';
+  let errorMessage = 'Unknown error';
   if (error instanceof Error) {
     errorMessage = error.message;
     // Special handling for CORS errors
     if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin') || error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      errorMessage = 'Cross-origin (CORS) fout. Zorg ervoor dat de Ollama server is geconfigureerd om verzoeken van deze oorsprong toe te staan.';
+      errorMessage = 'Cross-origin (CORS) error. Make sure the Ollama server is configured to allow requests from this origin.';
     } else if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
-      errorMessage = 'Netwerkfout. Zorg ervoor dat de Docker-container toegankelijk is en de poort correct is blootgesteld.';
+      errorMessage = 'Network error. Make sure the Docker container is accessible and the port is correctly exposed.';
     }
   }
   
-  return `Kon geen verbinding maken met Ollama: ${errorMessage}. Zorg ervoor dat Ollama draait en bereikbaar is.`;
+  return `Could not connect to Ollama: ${errorMessage}. Ensure Ollama is running and accessible.`;
 }

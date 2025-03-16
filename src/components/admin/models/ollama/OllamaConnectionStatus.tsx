@@ -25,19 +25,19 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
       {connectionStatus.connected ? (
         <>
           <CheckCircle className="h-4 w-4" />
-          <AlertTitle>Succesvol verbonden</AlertTitle>
+          <AlertTitle>Successfully connected</AlertTitle>
           <AlertDescription>
-            Verbonden met Ollama op {ollamaApi.getBaseUrl()}
+            Connected to Ollama at {ollamaApi.getBaseUrl()}
             {connectionStatus.modelsCount !== undefined && (
-              <p className="mt-1">{connectionStatus.modelsCount} modellen gevonden</p>
+              <p className="mt-1">{connectionStatus.modelsCount} models found</p>
             )}
             {connectionStatus.modelsCount === 0 && (
               <div className="mt-2 space-y-2">
                 <p className="text-sm text-amber-600 dark:text-amber-400">
-                  Geen modellen gevonden. Je moet een model pullen om Ollama te gebruiken.
+                  No models found. You need to pull a model to use Ollama.
                 </p>
                 <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
-                  <p className="font-medium mb-1">Pull een model door uit te voeren:</p>
+                  <p className="font-medium mb-1">Pull a model by running:</p>
                   {isGitpod ? (
                     <code className="block">
                       docker exec -it ollama ollama pull llama3
@@ -48,7 +48,7 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
                     </code>
                   )}
                   <p className="mt-2 text-xs text-muted-foreground">
-                    Vernieuw na het pullen om de beschikbare modellen te zien
+                    Refresh after pulling to see available models
                   </p>
                 </div>
               </div>
@@ -58,25 +58,25 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
       ) : (
         <>
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Verbinding mislukt</AlertTitle>
+          <AlertTitle>Connection failed</AlertTitle>
           <AlertDescription>
             {connectionStatus.error}
             
             {connectionStatus.error?.includes('CORS') || connectionStatus.error?.includes('403 Forbidden') ? (
               <div className="mt-2 text-sm">
-                <p className="font-medium">CORS probleem:</p>
-                <p>Ollama moet geconfigureerd zijn om verzoeken van {currentOrigin} toe te staan</p>
+                <p className="font-medium">CORS issue:</p>
+                <p>Ollama needs to be configured to allow requests from {currentOrigin}</p>
                 
                 {isGitpod ? (
                   <div className="mt-2">
-                    <p className="font-medium">In Gitpod, probeer:</p>
+                    <p className="font-medium">In Gitpod, try:</p>
                     <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs overflow-x-auto">
                       docker stop ollama && docker rm ollama<br/>
                       docker run -d --name ollama -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
                     </pre>
                     <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-                      <strong>Gitpod Tip:</strong> Het kan zijn dat je poort 11434 moet openstellen in je Gitpod-configuratie.
-                      Controleer of poort 11434 is vermeld in het tabblad Ports in de Gitpod UI.
+                      <strong>Gitpod Tip:</strong> You may need to expose port 11434 in your Gitpod configuration.
+                      Check if port 11434 is listed in the Ports tab in the Gitpod UI.
                     </p>
                   </div>
                 ) : isLovablePreview ? (
@@ -92,24 +92,24 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
                 
                 {isLovablePreview && (
                   <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-                    <strong>Lovable Preview:</strong> Wanneer je verbinding maakt vanaf een preview-URL, 
-                    moet je ervoor zorgen dat je Ollama-instantie openbaar toegankelijk is en geconfigureerd is met de preview-URL 
-                    in OLLAMA_ORIGINS. Overweeg een backend-proxy of serverless-functie te gebruiken voor productiegebruik.
+                    <strong>Lovable Preview:</strong> When connecting from a preview URL, 
+                    you need to ensure your Ollama instance is publicly accessible and configured with the preview URL 
+                    in OLLAMA_ORIGINS. Consider using a backend proxy or serverless function for production use.
                   </p>
                 )}
               </div>
             ) : (
               <div className="mt-2 text-sm">
-                <p className="font-medium">Verbindingsfout:</p>
-                <p>Zorg ervoor dat Ollama draait en het adres correct is.</p>
+                <p className="font-medium">Connection error:</p>
+                <p>Make sure Ollama is running and the address is correct.</p>
                 
                 {isGitpod && (
                   <div className="mt-2">
-                    <p className="font-medium">In Gitpod, controleer:</p>
+                    <p className="font-medium">In Gitpod, check:</p>
                     <ul className="list-disc list-inside pl-2 mt-1 text-xs">
-                      <li>Draait de Ollama-container? Voer uit: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">docker ps | grep ollama</code></li>
-                      <li>Probeer verbinding te maken met <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">http://ollama:11434</code> of <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">http://172.17.0.1:11434</code></li>
-                      <li>Is poort 11434 opengesteld in Gitpod?</li>
+                      <li>Is the Ollama container running? Run: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">docker ps | grep ollama</code></li>
+                      <li>Try connecting to <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">http://ollama:11434</code> or <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">http://172.17.0.1:11434</code></li>
+                      <li>Is port 11434 exposed in Gitpod?</li>
                     </ul>
                   </div>
                 )}
@@ -118,12 +118,12 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
 
             {/* Alternative ports suggestion */}
             <div className="mt-3 p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
-              <p className="text-xs font-medium">Alternatieve oplossingen:</p>
+              <p className="text-xs font-medium">Alternative solutions:</p>
               <ul className="list-disc list-inside pl-2 mt-1 text-xs">
-                <li>Probeer andere poorten zoals 11435 of 37321</li>
-                <li>Controleer of Docker draait en toegankelijk is</li>
-                <li>Probeer de container te herstarten: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">docker restart ollama</code></li>
-                <li>Zorg ervoor dat CORS correct is ingesteld voor je huidige oorsprong</li>
+                <li>Try alternative ports like 11435 or 37321</li>
+                <li>Check if Docker is running and accessible</li>
+                <li>Try restarting the container: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">docker restart ollama</code></li>
+                <li>Make sure CORS is properly set for your current origin</li>
               </ul>
             </div>
           </AlertDescription>
