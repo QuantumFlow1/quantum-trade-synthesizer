@@ -17,6 +17,8 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
   const isGitpod = typeof window !== 'undefined' && 
     (window.location.hostname.includes('gitpod.io') || 
      window.location.hostname.includes('lovableproject.com'));
+  const isLovablePreview = typeof window !== 'undefined' && 
+    window.location.hostname.includes('lovable.app');
 
   return (
     <Alert variant={connectionStatus.connected ? "default" : "destructive"}>
@@ -52,11 +54,20 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
                 <p>Ollama needs to be configured to allow requests from {currentOrigin}</p>
                 <p className="mt-1">Try restarting Ollama with:</p>
                 <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 text-xs overflow-x-auto">
-                  {isGitpod 
+                  {isLovablePreview 
                     ? `docker run -e OLLAMA_ORIGINS=${currentOrigin} -p 11434:11434 ollama/ollama`
-                    : `docker run -e OLLAMA_ORIGINS=${currentOrigin} -p 11434:11434 ollama/ollama`
+                    : isGitpod 
+                      ? `docker run -e OLLAMA_ORIGINS=${currentOrigin} -p 11434:11434 ollama/ollama`
+                      : `docker run -e OLLAMA_ORIGINS=${currentOrigin} -p 11434:11434 ollama/ollama`
                   }
                 </pre>
+                {isLovablePreview && (
+                  <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                    <strong>Lovable Preview:</strong> When connecting from a preview URL, you'll need to 
+                    make sure your Ollama instance is publicly accessible and configured with the preview URL 
+                    in OLLAMA_ORIGINS. Consider using a backend proxy or serverless function for production use.
+                  </p>
+                )}
                 {isGitpod && (
                   <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
                     <strong>Gitpod Tip:</strong> In Gitpod, make sure you've started the container and try connecting 

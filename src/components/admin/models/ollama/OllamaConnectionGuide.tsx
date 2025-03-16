@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, ExternalLink, AlertTriangle, Info, Server } from "lucide-react";
@@ -8,10 +9,13 @@ interface OllamaConnectionGuideProps {
 }
 
 export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuideProps) => {
-  // Detect if we're in Gitpod environment
+  // Detect if we're in Gitpod environment or Lovable preview
   const isGitpod = typeof window !== 'undefined' && 
     (window.location.hostname.includes('gitpod.io') || 
      window.location.hostname.includes('lovableproject.com'));
+  
+  const isLovablePreview = typeof window !== 'undefined' && 
+    window.location.hostname.includes('lovable.app');
   
   // Get the current origin for display purposes
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -26,11 +30,50 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
         </AlertDescription>
       </Alert>
       
+      {isLovablePreview && (
+        <Alert variant="default" className="bg-blue-50 dark:bg-blue-950/20">
+          <Info className="h-4 w-4 text-blue-500" />
+          <AlertDescription className="text-sm">
+            <strong>Lovable Preview Environment:</strong> When connecting from a Lovable preview URL, 
+            you need to configure your Ollama server to accept cross-origin requests from this preview URL.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
         <h4 className="text-sm font-medium mb-2 flex items-center">
           <Info className="h-4 w-4 mr-1 text-primary" />
-          {isGitpod ? "Gitpod Environment Detected - Connection Guide:" : "Docker Connection Guide:"}
+          {isGitpod 
+            ? "Gitpod Environment Detected - Connection Guide:" 
+            : isLovablePreview 
+              ? "Lovable Preview - CORS Configuration Guide:" 
+              : "Docker Connection Guide:"}
         </h4>
+        
+        {isLovablePreview && (
+          <ol className="list-decimal list-inside text-sm space-y-2">
+            <li>
+              <span className="font-medium">Start Ollama with your preview URL in OLLAMA_ORIGINS:</span>
+              <div className="bg-gray-200 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs font-mono overflow-x-auto">
+                docker run -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
+              </div>
+            </li>
+            <li>
+              <span className="font-medium">Make sure your Ollama instance is accessible from the internet if you're running locally</span>
+              <p className="text-xs mt-1">
+                Consider using a service like ngrok to expose your local Ollama instance, or host it on a public server
+              </p>
+            </li>
+            <li>
+              <span className="font-medium">For production use, consider:</span>
+              <ul className="list-disc list-inside pl-5 mt-1 text-xs">
+                <li>Self-hosting Ollama on a server with proper CORS configuration</li>
+                <li>Using a backend proxy service to handle requests to Ollama</li>
+                <li>Implementing a serverless function to proxy requests</li>
+              </ul>
+            </li>
+          </ol>
+        )}
         
         {isGitpod && (
           <ol className="list-decimal list-inside text-sm space-y-2">
@@ -57,7 +100,7 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
           </ol>
         )}
         
-        {!isGitpod && (
+        {!isGitpod && !isLovablePreview && (
           <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
             <h4 className="text-sm font-medium mb-2">Docker Container Connection Guide:</h4>
             <ol className="list-decimal list-inside text-sm space-y-2">
@@ -120,11 +163,9 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
         <p className="flex items-center">
           <ExternalLink className="h-3 w-3 mr-1" /> 
           <span>
-            <strong>Current Configuration:</strong> Your Ollama container is set up with:{" "}
+            <strong>Current CORS Configuration:</strong> Your Ollama container needs to be set up with:{" "}
             <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded break-all">
-              OLLAMA_ORIGINS={currentOrigin.includes('gitpod') || currentOrigin.includes('lovableproject') 
-                ? currentOrigin 
-                : 'http://localhost:5173,http://localhost:3000'}
+              OLLAMA_ORIGINS={currentOrigin}
             </code>
           </span>
         </p>
