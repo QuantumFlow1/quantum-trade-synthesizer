@@ -13,7 +13,8 @@ export async function handleConnectionFailure({
   autoRetryEnabled,
   connectToDocker,
   setConnectionAttempts,
-  setAlternativePortsAttempted
+  setAlternativePortsAttempted,
+  suppressToast = false
 }: {
   error: unknown;
   address: string;
@@ -23,13 +24,16 @@ export async function handleConnectionFailure({
   connectToDocker: (address: string) => Promise<void>;
   setConnectionAttempts: (updater: (prev: number) => number) => void;
   setAlternativePortsAttempted: (value: boolean) => void;
+  suppressToast?: boolean;
 }) {
-  // Display error toast
-  toast({
-    title: "Connection failed",
-    description: error instanceof Error ? error.message : "Unknown error",
-    variant: "destructive",
-  });
+  // Display error toast only if not suppressed
+  if (!suppressToast) {
+    toast({
+      title: "Connection failed",
+      description: error instanceof Error ? error.message : "Unknown error",
+      variant: "destructive",
+    });
+  }
 
   // Skip auto-retry if disabled
   if (!autoRetryEnabled) {

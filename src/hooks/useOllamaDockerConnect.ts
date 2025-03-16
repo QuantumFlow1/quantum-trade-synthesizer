@@ -23,6 +23,7 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
   const [lastConnected, setLastConnected] = useState<number | null>(
     parseInt(localStorage.getItem('ollamaLastConnected') || '0') || null
   );
+  const [corsErrorShown, setCorsErrorShown] = useState(false);
   
   // Get saved connection status
   const { connectionStatus, updateConnectionStatus } = useConnectionPersistence();
@@ -130,6 +131,7 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
         // Reset attempts counter on successful connection
         setConnectionAttempts(0);
         setAlternativePortsAttempted(false);
+        setCorsErrorShown(false);
         
         // Only show the toast if we're explicitly connecting (not auto-reconnecting)
         if (isConnecting) {
@@ -149,16 +151,30 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
         
         updateConnectionStatus(newStatus);
         
-        await handleConnectionFailure({
-          error: new Error(result.message),
-          address,
-          connectionAttempts,
-          alternativePortsAttempted,
-          autoRetryEnabled,
-          connectToDocker,
-          setConnectionAttempts,
-          setAlternativePortsAttempted
-        });
+        // Only show toast for CORS errors if we haven't already shown one
+        const isCorsError = result.message.includes('CORS');
+        if (isCorsError && !corsErrorShown) {
+          setCorsErrorShown(true);
+          // Show a more concise error message
+          toast({
+            title: "CORS Error",
+            description: "Please configure Ollama with CORS permissions for this origin.",
+            variant: "destructive",
+          });
+        } else if (!isCorsError) {
+          // For non-CORS errors, show the toast
+          await handleConnectionFailure({
+            error: new Error(result.message),
+            address,
+            connectionAttempts,
+            alternativePortsAttempted,
+            autoRetryEnabled,
+            connectToDocker,
+            setConnectionAttempts,
+            setAlternativePortsAttempted,
+            suppressToast: corsErrorShown && isCorsError
+          });
+        }
         
         return false;
       }
@@ -173,16 +189,31 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
       
       updateConnectionStatus(newStatus);
       
-      await handleConnectionFailure({
-        error,
-        address,
-        connectionAttempts,
-        alternativePortsAttempted,
-        autoRetryEnabled,
-        connectToDocker,
-        setConnectionAttempts,
-        setAlternativePortsAttempted
-      });
+      // Check if this is a CORS error
+      const isCorsError = errorMessage.includes('CORS') || 
+                          errorMessage.includes('Failed to fetch') || 
+                          errorMessage.includes('cross-origin');
+      
+      if (isCorsError && !corsErrorShown) {
+        setCorsErrorShown(true);
+        toast({
+          title: "CORS Error",
+          description: "Please configure Ollama with CORS permissions for this origin.",
+          variant: "destructive",
+        });
+      } else if (!isCorsError) {
+        await handleConnectionFailure({
+          error,
+          address,
+          connectionAttempts,
+          alternativePortsAttempted,
+          autoRetryEnabled,
+          connectToDocker,
+          setConnectionAttempts,
+          setAlternativePortsAttempted,
+          suppressToast: corsErrorShown && isCorsError
+        });
+      }
       
       return false;
     } finally {
@@ -200,6 +231,7 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
     updateConnectionStatus({ connected: false });
     localStorage.removeItem('ollamaLastConnected');
     setLastConnected(null);
+    setCorsErrorShown(false);
     console.log("Disconnected from Ollama");
   }, [updateConnectionStatus]);
 
