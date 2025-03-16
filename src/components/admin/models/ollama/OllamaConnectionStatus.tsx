@@ -2,7 +2,7 @@
 import React from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle, AlertTriangle, Server, InfoIcon } from "lucide-react";
-import { ConnectionStatus } from "@/hooks/useOllamaDockerConnect";
+import { ConnectionStatus } from "@/hooks/ollama/types";
 import { ollamaApi } from "@/utils/ollamaApiClient";
 
 interface OllamaConnectionStatusProps {
