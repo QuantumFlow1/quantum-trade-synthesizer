@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { OllamaModel } from '@/components/llm-extensions/ollama/types/ollamaTypes';
+import { OllamaModel } from '@/utils/ollama/types';
 import { ollamaApi, testOllamaConnection } from '@/utils/ollamaApiClient';
 import { toast } from '@/components/ui/use-toast';
 
