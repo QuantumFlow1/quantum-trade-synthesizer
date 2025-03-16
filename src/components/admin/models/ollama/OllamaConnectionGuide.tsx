@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, ExternalLink, AlertTriangle, Info, Server } from "lucide-react";
+import { RefreshCw, ExternalLink, AlertTriangle, Info, Server, Play } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface OllamaConnectionGuideProps {
@@ -19,6 +19,7 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
   
   // Get the current origin for display purposes
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const gitpodWorkspaceUrl = isGitpod && typeof window !== 'undefined' ? window.location.origin : '';
 
   return (
     <div className="space-y-4">
@@ -29,6 +30,16 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
           not accepting requests from this application's origin: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">{currentOrigin}</code>
         </AlertDescription>
       </Alert>
+      
+      {isGitpod && (
+        <Alert variant="default" className="bg-blue-50 dark:bg-blue-950/20">
+          <Info className="h-4 w-4 text-blue-500" />
+          <AlertDescription className="text-sm">
+            <strong>Gitpod Environment Detected:</strong> Make sure your Ollama container is running and 
+            configured to accept requests from your Gitpod workspace URL: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">{gitpodWorkspaceUrl}</code>
+          </AlertDescription>
+        </Alert>
+      )}
       
       {isLovablePreview && (
         <Alert variant="default" className="bg-blue-50 dark:bg-blue-950/20">
@@ -44,11 +55,43 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
         <h4 className="text-sm font-medium mb-2 flex items-center">
           <Info className="h-4 w-4 mr-1 text-primary" />
           {isGitpod 
-            ? "Gitpod Environment Detected - Connection Guide:" 
+            ? "Gitpod Environment - Connection Guide:" 
             : isLovablePreview 
               ? "Lovable Preview - CORS Configuration Guide:" 
               : "Docker Connection Guide:"}
         </h4>
+        
+        {isGitpod && (
+          <ol className="list-decimal list-inside text-sm space-y-2">
+            <li>
+              <span className="font-medium">Check if your Ollama container is running:</span>
+              <div className="bg-gray-200 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs font-mono overflow-x-auto">
+                docker ps | grep ollama
+              </div>
+            </li>
+            <li>
+              <span className="font-medium">If it's not running, start it with the correct OLLAMA_ORIGINS:</span>
+              <div className="bg-gray-200 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs font-mono overflow-x-auto">
+                docker run -d --name ollama -e OLLAMA_ORIGINS={gitpodWorkspaceUrl} -p 11434:11434 ollama/ollama
+              </div>
+            </li>
+            <li>
+              <span className="font-medium">Or if it's already running, restart with updated settings:</span>
+              <div className="bg-gray-200 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs font-mono overflow-x-auto">
+                docker stop ollama && docker rm ollama<br/>
+                docker run -d --name ollama -e OLLAMA_ORIGINS={gitpodWorkspaceUrl} -p 11434:11434 ollama/ollama
+              </div>
+            </li>
+            <li>
+              <span className="font-medium">In Gitpod, try these connection options:</span>
+              <ul className="list-disc list-inside pl-5 mt-1 text-xs">
+                <li>Container name: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://ollama:11434</code></li>
+                <li>Local address: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://localhost:11434</code></li>
+                <li>Docker internal IP: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://172.17.0.1:11434</code></li>
+              </ul>
+            </li>
+          </ol>
+        )}
         
         {isLovablePreview && (
           <ol className="list-decimal list-inside text-sm space-y-2">
@@ -75,31 +118,6 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
           </ol>
         )}
         
-        {isGitpod && (
-          <ol className="list-decimal list-inside text-sm space-y-2">
-            <li>
-              <span className="font-medium">Make sure your Ollama container has the correct ORIGINS setting:</span>
-              <div className="bg-gray-200 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs font-mono overflow-x-auto">
-                docker run -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
-              </div>
-            </li>
-            <li>
-              <span className="font-medium">In Gitpod, try these connection options:</span>
-              <ul className="list-disc list-inside pl-5 mt-1 text-xs">
-                <li>Container name: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">ollama:11434</code></li>
-                <li>Local address: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">localhost:11434</code></li>
-                <li>Host address: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">host.docker.internal:11434</code></li>
-              </ul>
-            </li>
-            <li>
-              <span className="font-medium">Check that the container is running:</span>
-              <div className="bg-gray-200 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs font-mono">
-                docker ps | grep ollama
-              </div>
-            </li>
-          </ol>
-        )}
-        
         {!isGitpod && !isLovablePreview && (
           <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
             <h4 className="text-sm font-medium mb-2">Docker Container Connection Guide:</h4>
@@ -121,43 +139,53 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
         )}
       </div>
       
-      <div className="grid grid-cols-2 gap-2 mt-3">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => connectToDocker('ollama:11434')}
-        >
-          <Server className="h-4 w-4 mr-2" />
-          Try Container Name
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => connectToDocker('localhost:11434')}
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try Localhost
-        </Button>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-2 mt-2">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => connectToDocker('host.docker.internal:11434')}
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try Docker Host
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={() => connectToDocker('172.17.0.1:11434')}
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Try Bridge Network
-        </Button>
-      </div>
+      {isGitpod && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => connectToDocker('http://ollama:11434')}
+            className="flex items-center justify-center"
+          >
+            <Server className="h-4 w-4 mr-2" />
+            Try Container Name
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => connectToDocker('http://localhost:11434')}
+            className="flex items-center justify-center"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Localhost
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => connectToDocker('http://172.17.0.1:11434')}
+            className="flex items-center justify-center"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Bridge Network
+          </Button>
+          
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={() => {
+              // Open a new tab to view port 11434 in Gitpod
+              if (gitpodWorkspaceUrl) {
+                window.open(gitpodWorkspaceUrl.replace('https://', 'https://11434-'), '_blank');
+              }
+            }}
+            className="flex items-center justify-center"
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Preview Port 11434
+          </Button>
+        </div>
+      )}
       
       <div className="mt-4 text-xs text-muted-foreground">
         <p className="flex items-center">

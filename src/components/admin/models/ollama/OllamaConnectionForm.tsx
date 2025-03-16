@@ -31,10 +31,12 @@ export const OllamaConnectionForm = ({
     window.location.hostname.includes('lovable.app');
   
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const gitpodWorkspaceUrl = isGitpod && typeof window !== 'undefined' ? window.location.origin : '';
 
   // Auto-set the default address based on environment
   useEffect(() => {
     if (isGitpod && dockerAddress === 'http://localhost:11434') {
+      // In Gitpod, default to the container name
       setDockerAddress('http://ollama:11434');
     }
   }, [isGitpod, dockerAddress, setDockerAddress]);
@@ -52,8 +54,28 @@ export const OllamaConnectionForm = ({
     setCustomAddress(e.target.value);
   };
 
+  const handleGitpodWorkspaceConnect = () => {
+    // Use the Gitpod workspace URL for connection
+    if (gitpodWorkspaceUrl) {
+      // Assuming the ollama service is exposed on port 11434 in the Gitpod workspace
+      const ollamaUrl = gitpodWorkspaceUrl.replace('https://', 'https://11434-');
+      connectToDocker(ollamaUrl);
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {isGitpod && (
+        <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border-l-4 border-blue-500">
+          <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+            Gitpod Environment Detected
+          </p>
+          <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+            For Gitpod, you can connect to Ollama using the container name: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">ollama:11434</code>
+          </p>
+        </div>
+      )}
+
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
           {isGitpod 
@@ -86,6 +108,27 @@ export const OllamaConnectionForm = ({
           </p>
         )}
       </div>
+
+      {isGitpod && (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Try connecting using your Gitpod workspace URL:
+          </p>
+          <Button
+            onClick={handleGitpodWorkspaceConnect}
+            disabled={isConnecting || !gitpodWorkspaceUrl}
+            variant="secondary"
+            className="w-full"
+          >
+            {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Connect via Gitpod Workspace URL
+          </Button>
+          <p className="text-xs text-muted-foreground mt-1">
+            This will attempt to connect using your Gitpod workspace URL with port 11434 exposed.
+            Make sure you've set <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">OLLAMA_ORIGINS={gitpodWorkspaceUrl}</code> in your Ollama container.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
