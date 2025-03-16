@@ -21,7 +21,7 @@ interface OllamaSettingsTabContentProps {
   customAddress: string;
   setCustomAddress: (address: string) => void;
   isConnecting: boolean;
-  connectToDocker: (address: string) => void;
+  connectToDocker: (address: string) => Promise<boolean | void>;
   currentOrigin: string;
   useServerSideProxy: boolean;
   setUseServerSideProxy: (enabled: boolean) => void;

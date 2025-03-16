@@ -43,6 +43,8 @@ export async function handleConnectionFailure({
   
   // Local development specific retry sequence
   if (isLocalhostEnvironment()) {
+    console.log('Environment detected as localhost');
+    
     if (address.includes('localhost') && connectionAttempts <= 1) {
       console.log('localhost connection failed, trying 127.0.0.1...');
       setTimeout(() => {
@@ -99,13 +101,22 @@ export async function handleConnectionFailure({
  * Determines the initial address to try based on environment
  */
 export function getInitialConnectionAddress(): string {
+  // Add more informative logging
+  console.log('Determining initial connection address...');
+  console.log('Is localhost environment?', isLocalhostEnvironment());
+  console.log('Is Gitpod environment?', isGitpodEnvironment());
+  console.log('Current hostname:', typeof window !== 'undefined' ? window.location.hostname : 'unknown');
+  
   if (isLocalhostEnvironment()) {
+    console.log('Using localhost:11434 as initial address');
     return 'http://localhost:11434';
   } else if (isGitpodEnvironment()) {
     // Try container name first since that's most likely to work in Gitpod
+    console.log('Using ollama:11434 as initial address (Gitpod environment)');
     return 'http://ollama:11434';
   } else {
     // Default connection attempt
+    console.log('Using localhost:11434 as default initial address');
     return 'http://localhost:11434';
   }
 }
