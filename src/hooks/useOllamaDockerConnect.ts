@@ -7,7 +7,8 @@ import { isLocalhostEnvironment, getCurrentOrigin } from "./ollama/connectionUti
 import { handleConnectionFailure, getInitialConnectionAddress } from "./ollama/connectionStrategy";
 import { useConnectionPersistence } from "./ollama/useConnectionPersistence";
 
-export { ConnectionStatus } from "./ollama/types";
+// Using 'export type' syntax explicitly for type re-export
+export type { ConnectionStatus } from "./ollama/types";
 
 export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
   const [dockerAddress, setDockerAddress] = useState<string>(
