@@ -1,56 +1,51 @@
 
-import React, { useState } from 'react';
-import { useOllamaChat } from './hooks/useOllamaChat';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React from 'react';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { OllamaSettingsTabContent } from './components/OllamaSettingsTabContent';
 import { OllamaChatHeader } from './components/OllamaChatHeader';
-import { OllamaChatTabContent } from './components/OllamaChatTabContent';
-import { useOllamaDockerConnect } from '@/hooks/useOllamaDockerConnect';
-import { OllamaMessageList } from './components/OllamaMessageList';
 import { OllamaChatInput } from './components/OllamaChatInput';
-import { OllamaNoModelsAlert } from './components/OllamaNoModelsAlert';
-import { OllamaEmptyState } from './components/OllamaEmptyState';
+import { OllamaChatTabContent } from './components/OllamaChatTabContent';
+import { useOllamaFullChat } from './hooks/useOllmaFullChat';
 
 export function OllamaFullChat() {
   const {
-    ollamaHost,
+    // Chat state
     selectedModel,
     inputMessage,
     messages,
     isLoading,
-    showSettings,
-    showConnectionInfo,
     models,
     isLoadingModels,
     isConnected,
     connectionError,
-    updateHost,
+    
+    // Chat actions
     setSelectedModel,
     setInputMessage,
     clearChat,
     toggleSettings,
     toggleConnectionInfo,
     sendMessage,
-    refreshModels
-  } = useOllamaChat();
-
-  const {
+    refreshModels,
+    
+    // Docker connection
     dockerAddress,
     setDockerAddress,
     customAddress,
     setCustomAddress,
     isConnecting,
-    connectionStatus,
     connectToDocker,
     currentOrigin,
     useServerSideProxy,
     setUseServerSideProxy,
     autoRetryEnabled,
     toggleAutoRetry,
-    isLocalhost
-  } = useOllamaDockerConnect();
-
-  const [activeTab, setActiveTab] = useState('chat');
+    isLocalhost,
+    
+    // Tab state
+    activeTab,
+    setActiveTab
+  } = useOllamaFullChat();
 
   return (
     <div className="flex flex-col h-full max-h-full">
@@ -69,27 +64,17 @@ export function OllamaFullChat() {
           value="chat" 
           className="flex-1 flex flex-col overflow-hidden mt-0 pt-0 border-0"
         >
-          <div className="flex-1 overflow-y-auto">
-            {messages.length === 0 ? (
-              <OllamaEmptyState
-                isConnected={isConnected}
-                connectionError={connectionError}
-                models={models}
-                isLoadingModels={isLoadingModels}
-                toggleSettings={toggleSettings}
-                toggleConnectionInfo={toggleConnectionInfo}
-              />
-            ) : (
-              <OllamaMessageList 
-                messages={messages} 
-                selectedModel={selectedModel} 
-              />
-            )}
-          </div>
-
-          {models.length === 0 && isConnected && (
-            <OllamaNoModelsAlert refreshModels={refreshModels} />
-          )}
+          <OllamaChatTabContent
+            messages={messages}
+            isConnected={isConnected}
+            connectionError={connectionError}
+            models={models}
+            isLoadingModels={isLoadingModels}
+            toggleSettings={toggleSettings}
+            toggleConnectionInfo={toggleConnectionInfo}
+            selectedModel={selectedModel}
+            refreshModels={refreshModels}
+          />
 
           <div className="p-4 border-t">
             <OllamaChatInput
@@ -98,7 +83,7 @@ export function OllamaFullChat() {
               sendMessage={sendMessage}
               isLoading={isLoading}
               isConnected={isConnected}
-              showSettings={showSettings}
+              showSettings={false}
               models={models}
             />
           </div>

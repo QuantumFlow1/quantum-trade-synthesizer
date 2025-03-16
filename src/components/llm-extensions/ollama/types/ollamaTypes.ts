@@ -14,8 +14,9 @@ export interface OllamaModel {
   details?: {
     format: string;
     family: string;
-    families: string[];
+    families?: string[];
     parameter_size: string;
-    quantization_level: string;
+    quantization_level?: string;
   };
 }
+
