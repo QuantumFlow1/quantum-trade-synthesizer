@@ -6,7 +6,10 @@ import { LLMModelsTab } from "./models/LLMModelsTab";
 import { ModelManagementHeader } from "./models/ModelManagementHeader";
 
 export const ModelManagement = () => {
-  const [activeTab, setActiveTab] = useState<string>("advice_models");
+  const [activeTab, setActiveTab] = useState<string>("llm_models"); // Default to LLM models tab
+
+  // Log active tab state to debug
+  console.log("ModelManagement active tab:", activeTab);
 
   return (
     <div className="space-y-6">
@@ -15,7 +18,7 @@ export const ModelManagement = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="advice_models">Advies Modellen</TabsTrigger>
-          <TabsTrigger value="llm_models">AI Chat Modellen</TabsTrigger>
+          <TabsTrigger value="llm_models" className="font-medium">AI Chat Modellen</TabsTrigger>
         </TabsList>
         
         <TabsContent value="advice_models" className="space-y-6">

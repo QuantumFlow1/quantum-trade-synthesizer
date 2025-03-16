@@ -37,6 +37,9 @@ export const AdminPanelContent = ({
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    
+    // Log the tab change to help with debugging
+    console.log(`Tab changed to: ${value}`);
   };
 
   return (
@@ -44,7 +47,7 @@ export const AdminPanelContent = ({
       <TabsList className="grid grid-cols-6 mb-6">
         <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         <TabsTrigger value="agents">AI Agents</TabsTrigger>
-        <TabsTrigger value="models">Models</TabsTrigger>
+        <TabsTrigger value="models" className="font-medium">Models</TabsTrigger>
         <TabsTrigger value="audit">Transaction Audit</TabsTrigger>
         <TabsTrigger value="audit-rules">Audit Rules</TabsTrigger>
         <TabsTrigger value="system">System</TabsTrigger>
