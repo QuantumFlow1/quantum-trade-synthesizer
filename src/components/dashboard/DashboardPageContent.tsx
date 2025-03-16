@@ -11,9 +11,9 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { VisualizationPage } from "./pages/VisualizationPage";
 import { VirtualEnvironmentDemo } from "../visualization/VirtualEnvironmentDemo";
-import { GrokChat } from "../chat/GrokChat";
+import { OllamaChat } from "../llm-extensions/ollama/OllamaChat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bot } from "lucide-react";
+import { Terminal } from "lucide-react";
 
 interface DashboardPageContentProps {
   activePage: string;
@@ -65,17 +65,17 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
           <Card className="shadow-lg border-slate-200">
             <CardHeader className="bg-slate-50 border-b">
               <CardTitle className="flex items-center">
-                <Bot className="mr-2 h-5 w-5 text-blue-600" />
-                Multi-Model AI Chat
+                <Terminal className="mr-2 h-5 w-5 text-teal-600" />
+                Local Ollama Models
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <GrokChat />
+              <OllamaChat />
             </CardContent>
           </Card>
           <div className="mt-4 text-sm text-muted-foreground">
-            <p>Chat with various AI models including Grok, OpenAI, Claude, and more.</p>
-            <p>Use the settings panel to configure your API keys and preferences.</p>
+            <p>To use Ollama, make sure you have it installed and running on your local machine.</p>
+            <p>Use the settings panel to connect to your Ollama instance (default: http://localhost:11434).</p>
           </div>
         </div>
       );

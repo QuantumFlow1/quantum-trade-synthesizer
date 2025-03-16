@@ -1,4 +1,3 @@
-
 import { Card, CardContent } from '@/components/ui/card'
 import { GrokChatHeader } from './GrokChatHeader'
 import { ChatMessages } from './ChatMessages'

@@ -1,133 +1,148 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { ConnectionStatus } from './ollama/types';
-import { useConnectionPersistence } from './ollama/useConnectionPersistence';
-import { isLocalhostEnvironment, getCurrentOrigin } from './ollama/connectionUtils';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useState, useEffect } from "react";
+import { ollamaApi, testOllamaConnection } from "@/utils/ollamaApiClient";
+import { toast } from "@/components/ui/use-toast";
+import { ConnectionStatus, UseOllamaDockerConnectReturn } from "./ollama/types";
+import { isLocalhostEnvironment, getCurrentOrigin } from "./ollama/connectionUtils";
+import { handleConnectionFailure, getInitialConnectionAddress } from "./ollama/connectionStrategy";
+import { useConnectionPersistence } from "./ollama/useConnectionPersistence";
 
-export function useOllamaDockerConnect() {
-  const [dockerAddress, setDockerAddress] = useState<string>('http://localhost:11434');
-  const [customAddress, setCustomAddress] = useState<string>('');
-  const [isConnecting, setIsConnecting] = useState<boolean>(false);
-  const [useServerSideProxy, setUseServerSideProxy] = useState<boolean>(false);
-  const [autoRetryEnabled, setAutoRetryEnabled] = useState<boolean>(true);
-  const [lastConnectedTimestamp, setLastConnectedTimestamp] = useState<number>(
-    parseInt(localStorage.getItem('ollamaLastConnected') || '0')
+// Using 'export type' syntax explicitly for type re-export
+export type { ConnectionStatus } from "./ollama/types";
+
+export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
+  const [dockerAddress, setDockerAddress] = useState<string>(
+    localStorage.getItem('ollamaDockerAddress') || 'http://localhost:11434'
   );
+  const [customAddress, setCustomAddress] = useState<string>('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const [alternativePortsAttempted, setAlternativePortsAttempted] = useState(false);
+  const [useServerSideProxy, setUseServerSideProxy] = useState(false);
+  // Enable auto-retry by default for better local connections
+  const [autoRetryEnabled, setAutoRetryEnabled] = useState(true);
   
+  // Get saved connection status
   const { connectionStatus, updateConnectionStatus } = useConnectionPersistence();
-  const { isAdmin } = useAuth();
   
+  // Environment flags
   const isLocalhost = isLocalhostEnvironment();
   const currentOrigin = getCurrentOrigin();
+  
+  useEffect(() => {
+    // If running locally and auto-retry is enabled, try connecting automatically
+    if (isLocalhost && autoRetryEnabled && connectionAttempts === 0) {
+      console.log("Running locally with auto-retry enabled, attempting to connect to localhost");
+      setTimeout(() => {
+        connectToDocker('http://localhost:11434');
+      }, 500);
+    }
+  }, [isLocalhost, autoRetryEnabled]);
 
-  // Connect to Ollama API endpoint
-  const connectToDocker = useCallback(async (address: string) => {
+  // Connection auto-retry strategy
+  useEffect(() => {
+    // Only proceed if auto retry is enabled
+    if (!autoRetryEnabled) {
+      console.log("Automatic connection retry is disabled");
+      return;
+    }
+
+    // Only try automatically if we haven't already attempted a connection
+    if (connectionAttempts === 0) {
+      console.log("Starting automatic connection sequence");
+      connectToDocker(getInitialConnectionAddress());
+      setConnectionAttempts(prev => prev + 1);
+    }
+  }, [autoRetryEnabled]);
+
+  const connectToDocker = async (address: string) => {
     setIsConnecting(true);
+    updateConnectionStatus({ connected: false });
     
     try {
-      console.log(`Connecting to Ollama at ${address}...`);
+      console.log(`Attempting to connect to Ollama at: ${address}`);
       
-      // Try to fetch the list of models to verify connection
-      const response = await fetch(`${address}/api/tags`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      // Update the address in the API client
+      ollamaApi.setBaseUrl(address);
       
-      if (response.ok) {
-        const data = await response.json();
-        const modelsCount = data.models?.length || 0;
+      // Get the normalized URL for displaying to the user
+      const formattedAddress = ollamaApi.getBaseUrl();
+      console.log(`Formatted address: ${formattedAddress}`);
+      
+      // Test the connection
+      const result = await testOllamaConnection();
+      console.log('Connection test result:', result);
+      
+      if (result.success) {
+        // Save to localStorage if successful
+        localStorage.setItem('ollamaHost', formattedAddress);
+        localStorage.setItem('ollamaDockerAddress', formattedAddress);
         
-        console.log(`Successfully connected to Ollama. Found ${modelsCount} models.`);
-        
-        // Update connection status
-        updateConnectionStatus({
+        const newStatus = {
           connected: true,
-          modelsCount
+          modelsCount: result.models?.length || 0
+        };
+        
+        updateConnectionStatus(newStatus);
+        
+        // Reset attempts counter on successful connection
+        setConnectionAttempts(0);
+        setAlternativePortsAttempted(false);
+        
+        toast({
+          title: "Connected to Ollama",
+          description: `Successfully connected to ${formattedAddress}`,
+          variant: "default",
         });
-        
-        // Save the successful address and timestamp
-        setDockerAddress(address);
-        localStorage.setItem('ollamaDockerAddress', address);
-        
-        const now = Date.now();
-        setLastConnectedTimestamp(now);
-        localStorage.setItem('ollamaLastConnected', now.toString());
-        
-        return true;
       } else {
-        const errorData = await response.text();
-        throw new Error(`API error: ${response.status} - ${errorData}`);
+        const newStatus = {
+          connected: false,
+          error: result.message
+        };
+        
+        updateConnectionStatus(newStatus);
+        
+        await handleConnectionFailure({
+          error: new Error(result.message),
+          address,
+          connectionAttempts,
+          alternativePortsAttempted,
+          autoRetryEnabled,
+          connectToDocker,
+          setConnectionAttempts,
+          setAlternativePortsAttempted
+        });
       }
     } catch (error) {
-      console.error('Failed to connect to Ollama:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Docker connection error:', errorMessage);
       
-      // Update connection status with error
-      updateConnectionStatus({
+      const newStatus = {
         connected: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+        error: errorMessage
+      };
       
-      return false;
+      updateConnectionStatus(newStatus);
+      
+      await handleConnectionFailure({
+        error,
+        address,
+        connectionAttempts,
+        alternativePortsAttempted,
+        autoRetryEnabled,
+        connectToDocker,
+        setConnectionAttempts,
+        setAlternativePortsAttempted
+      });
     } finally {
       setIsConnecting(false);
     }
-  }, [updateConnectionStatus]);
+  };
 
-  // Toggle auto-retry functionality
-  const toggleAutoRetry = useCallback(() => {
-    setAutoRetryEnabled(prev => {
-      const newValue = !prev;
-      localStorage.setItem('ollamaAutoRetryEnabled', String(newValue));
-      return newValue;
-    });
-  }, []);
-
-  // Load saved settings on mount
-  useEffect(() => {
-    const savedAddress = localStorage.getItem('ollamaDockerAddress');
-    if (savedAddress) {
-      setDockerAddress(savedAddress);
-    }
-
-    const savedAutoRetry = localStorage.getItem('ollamaAutoRetryEnabled');
-    if (savedAutoRetry !== null) {
-      setAutoRetryEnabled(savedAutoRetry === 'true');
-    }
-  }, []);
-
-  // Try to reconnect if conditions are met:
-  // 1. Admin user (special persistence for admins)
-  // 2. Auto-retry is enabled
-  // 3. We're not already connected
-  // 4. Last connection was recent enough (less than 1 hour ago) or connection status is unknown
-  useEffect(() => {
-    const shouldAutoConnect = 
-      (isAdmin || autoRetryEnabled) && 
-      (!connectionStatus?.connected) &&
-      (Date.now() - lastConnectedTimestamp < 3600000 || !connectionStatus);
-    
-    if (shouldAutoConnect) {
-      console.log('Auto-reconnecting to Ollama...');
-      const savedAddress = localStorage.getItem('ollamaDockerAddress') || 'http://localhost:11434';
-      connectToDocker(savedAddress);
-    }
-  }, [isAdmin, autoRetryEnabled, connectionStatus, lastConnectedTimestamp, connectToDocker]);
-
-  // Reconnect on window focus, especially for admin users
-  useEffect(() => {
-    const handleFocus = () => {
-      if (isAdmin && !connectionStatus?.connected) {
-        const savedAddress = localStorage.getItem('ollamaDockerAddress') || 'http://localhost:11434';
-        connectToDocker(savedAddress);
-      }
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [isAdmin, connectionStatus, connectToDocker]);
+  // Function to toggle auto retry
+  const toggleAutoRetry = () => {
+    setAutoRetryEnabled(prev => !prev);
+  };
 
   return {
     dockerAddress,
