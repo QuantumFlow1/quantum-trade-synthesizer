@@ -19,6 +19,8 @@ export function useOllamaDockerConnect() {
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [alternativePortsAttempted, setAlternativePortsAttempted] = useState(false);
   const [useServerSideProxy, setUseServerSideProxy] = useState(false);
+  // Flag to control automatic connection attempts
+  const [autoRetryEnabled, setAutoRetryEnabled] = useState(false);
   
   // Get current origin for CORS suggestions
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -39,8 +41,14 @@ export function useOllamaDockerConnect() {
     }
   }, []);
 
-  // Connection auto-retry strategy
+  // Connection auto-retry strategy - now with a guard
   useEffect(() => {
+    // Only proceed if auto retry is enabled
+    if (!autoRetryEnabled) {
+      console.log("Automatic connection retry is disabled");
+      return;
+    }
+
     // Only try automatically if we haven't already attempted a connection
     if (connectionAttempts === 0) {
       console.log("Starting automatic connection sequence");
@@ -51,7 +59,7 @@ export function useOllamaDockerConnect() {
       connectToDocker(`http://${containerId}:11434`);
       setConnectionAttempts(prev => prev + 1);
     }
-  }, [connectionAttempts]);
+  }, [connectionAttempts, autoRetryEnabled]);
 
   const connectToDocker = async (address: string) => {
     setIsConnecting(true);
@@ -108,7 +116,12 @@ export function useOllamaDockerConnect() {
           variant: "destructive",
         });
 
-        // Auto-retry strategy
+        // Auto-retry strategy - disabled if autoRetryEnabled is false
+        if (!autoRetryEnabled) {
+          console.log("Auto-retry is disabled, skipping automatic retry attempts");
+          return;
+        }
+        
         // If this was a CORS error, automatically try the container name
         if (result.message?.includes('CORS') && connectionAttempts <= 1) {
           console.log('CORS error detected, trying container name as fallback...');
@@ -155,6 +168,11 @@ export function useOllamaDockerConnect() {
     }
   };
 
+  // Function to toggle auto retry
+  const toggleAutoRetry = () => {
+    setAutoRetryEnabled(prev => !prev);
+  };
+
   return {
     dockerAddress,
     setDockerAddress,
@@ -165,6 +183,8 @@ export function useOllamaDockerConnect() {
     connectToDocker,
     useServerSideProxy,
     setUseServerSideProxy,
-    currentOrigin
+    currentOrigin,
+    autoRetryEnabled,
+    toggleAutoRetry
   };
 }

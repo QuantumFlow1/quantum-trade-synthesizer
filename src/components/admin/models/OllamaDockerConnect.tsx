@@ -18,7 +18,9 @@ export const OllamaDockerConnect = () => {
     connectToDocker,
     currentOrigin,
     useServerSideProxy,
-    setUseServerSideProxy
+    setUseServerSideProxy,
+    autoRetryEnabled,
+    toggleAutoRetry
   } = useOllamaDockerConnect();
 
   return (
@@ -40,6 +42,8 @@ export const OllamaDockerConnect = () => {
           currentOrigin={currentOrigin}
           useServerSideProxy={useServerSideProxy}
           setUseServerSideProxy={setUseServerSideProxy}
+          autoRetryEnabled={autoRetryEnabled}
+          toggleAutoRetry={toggleAutoRetry}
         />
 
         {connectionStatus && (
