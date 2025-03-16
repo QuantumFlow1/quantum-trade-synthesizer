@@ -51,6 +51,8 @@ export function OllamaChat() {
   if (showSettings) {
     return (
       <OllamaSettings
+        ollamaHost={ollamaHost}
+        updateHost={updateHost}
         isConnected={isConnected}
         isLoadingModels={isLoadingModels}
         connectionError={connectionError}
@@ -111,7 +113,8 @@ export function OllamaChat() {
           setInputMessage={setInputMessage}
           sendMessage={sendMessage}
           isLoading={isLoading}
-          isConnected={isConnected && models.length > 0}
+          isConnected={isConnected}
+          showSettings={showSettings}
           models={models}
         />
       </div>

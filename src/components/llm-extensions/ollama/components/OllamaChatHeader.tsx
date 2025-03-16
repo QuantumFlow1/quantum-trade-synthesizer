@@ -8,38 +8,49 @@ import { Badge } from '@/components/ui/badge';
 import { OllamaModel } from '../types/ollamaTypes';
 
 interface OllamaChatHeaderProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   isConnected: boolean;
   models: OllamaModel[];
   selectedModel: string;
   setSelectedModel: (model: string) => void;
   clearChat: () => void;
+  toggleSettings: () => void;
+  toggleConnectionInfo: () => void;
 }
 
 export function OllamaChatHeader({
-  activeTab,
-  setActiveTab,
   isConnected,
   models,
   selectedModel,
   setSelectedModel,
+  toggleSettings,
+  toggleConnectionInfo,
   clearChat
 }: OllamaChatHeaderProps) {
   return (
     <div className="flex p-3 border-b bg-muted/30">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <div className="w-full">
         <div className="flex justify-between items-center">
-          <TabsList>
-            <TabsTrigger value="chat" className="flex items-center">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Chat
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center">
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={toggleSettings}
+              className="flex items-center"
+            >
               <Settings className="h-4 w-4 mr-2" />
               Settings
-            </TabsTrigger>
-          </TabsList>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={toggleConnectionInfo}
+              className="flex items-center"
+            >
+              <Server className="h-4 w-4 mr-2" />
+              Connection
+            </Button>
+          </div>
           
           <div className="flex items-center space-x-2">
             {isConnected && models.length > 0 && (
@@ -71,8 +82,8 @@ export function OllamaChatHeader({
             
             {isConnected && (
               <Badge 
-                variant="success" 
-                className="flex items-center gap-1"
+                variant="outline" 
+                className="flex items-center gap-1 bg-green-50 text-green-700 border-green-200"
               >
                 <Server className="h-3 w-3" />
                 Connected
@@ -80,7 +91,7 @@ export function OllamaChatHeader({
             )}
           </div>
         </div>
-      </Tabs>
+      </div>
     </div>
   );
 }

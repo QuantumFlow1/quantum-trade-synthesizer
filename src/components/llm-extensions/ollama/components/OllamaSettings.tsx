@@ -1,11 +1,12 @@
 
 import React from 'react';
-import { Loader2, AlertTriangle, Download } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { OllamaModel } from '../types/ollamaTypes';
 
 interface OllamaSettingsProps {
   ollamaHost: string;
@@ -14,12 +15,10 @@ interface OllamaSettingsProps {
   isLoadingModels: boolean;
   isConnected: boolean;
   connectionError: string | null;
-  models: any[];
+  models: OllamaModel[];
   selectedModel: string;
   setSelectedModel: (model: string) => void;
-  renderNoModelsAlert: () => React.ReactNode;
-  renderConnectionInfo: () => React.ReactNode;
-  showConnectionInfo: boolean;
+  toggleSettings: () => void;
 }
 
 export function OllamaSettings({
@@ -32,13 +31,16 @@ export function OllamaSettings({
   models,
   selectedModel,
   setSelectedModel,
-  renderNoModelsAlert,
-  renderConnectionInfo,
-  showConnectionInfo
+  toggleSettings
 }: OllamaSettingsProps) {
   return (
     <div className="space-y-4">
-      {renderConnectionInfo && showConnectionInfo && renderConnectionInfo()}
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-medium">Ollama Settings</h2>
+        <Button variant="ghost" size="sm" onClick={toggleSettings}>
+          Back to Chat
+        </Button>
+      </div>
       
       <div className="space-y-2">
         <Label htmlFor="ollama-host">Ollama Host</Label>
@@ -82,7 +84,21 @@ export function OllamaSettings({
       )}
       
       {/* No models warning */}
-      {renderNoModelsAlert && renderNoModelsAlert()}
+      {isConnected && models.length === 0 && (
+        <Alert variant="warning" className="mt-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>No Models Found</AlertTitle>
+          <AlertDescription>
+            <p>Your Ollama instance is connected but doesn't have any models installed.</p>
+            <div className="mt-2">
+              <p className="text-sm mb-2">To install a model, run this command in your terminal:</p>
+              <code className="bg-slate-100 dark:bg-slate-800 p-2 rounded text-sm block">
+                ollama pull llama3
+              </code>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="space-y-2">
         <Label htmlFor="model-select">Select Model</Label>

@@ -3,6 +3,7 @@ import React from 'react';
 import { SendIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { OllamaModel } from '../types/ollamaTypes';
 
 interface OllamaChatInputProps {
   inputMessage: string;
@@ -11,7 +12,7 @@ interface OllamaChatInputProps {
   isLoading: boolean;
   isConnected: boolean;
   showSettings: boolean;
-  models: any[];
+  models: OllamaModel[];
 }
 
 export function OllamaChatInput({
