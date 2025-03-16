@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { OverviewPage } from "./pages/OverviewPage";
 import { MarketPage } from "./pages/MarketPage";
 import { MinimalTradingPage } from "./pages/MinimalTradingPage";
@@ -11,9 +11,10 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { VisualizationPage } from "./pages/VisualizationPage";
 import { VirtualEnvironmentDemo } from "../visualization/VirtualEnvironmentDemo";
-import { OllamaChat } from "../llm-extensions/ollama/OllamaChat";
+import { GrokChat } from "../chat/GrokChat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Terminal } from "lucide-react";
+import { useOllamaDockerConnect } from "@/hooks/useOllamaDockerConnect";
 
 interface DashboardPageContentProps {
   activePage: string;
@@ -35,6 +36,15 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
   openAgentsTab,
   openTradingAgentsTab
 }) => {
+  const { connectionStatus, connectToDocker, isConnecting } = useOllamaDockerConnect();
+  
+  // Attempt to connect to Ollama when the LLM tab is active and not already connected
+  useEffect(() => {
+    if (activePage === 'llm' && !connectionStatus?.connected && !isConnecting) {
+      connectToDocker('http://localhost:11434');
+    }
+  }, [activePage, connectionStatus, connectToDocker, isConnecting]);
+
   switch (activePage) {
     case "overview":
       return (
@@ -70,7 +80,7 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <OllamaChat />
+              <GrokChat />
             </CardContent>
           </Card>
           <div className="mt-4 text-sm text-muted-foreground">

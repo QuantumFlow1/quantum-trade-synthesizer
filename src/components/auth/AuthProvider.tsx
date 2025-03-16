@@ -1,5 +1,5 @@
 
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useEffect } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { UserProfile, UserRole } from '@/types/auth'
 import { useAuthState } from '@/hooks/use-auth-state'
@@ -7,6 +7,7 @@ import { useAuthSession } from '@/hooks/use-auth-session'
 import { useUserProfile } from '@/hooks/use-user-profile'
 import { useAuthActions } from '@/hooks/use-auth-actions'
 import { checkPermission, getUserRoleInfo } from '@/utils/auth-utils'
+import { useOllamaDockerConnect } from '@/hooks/useOllamaDockerConnect'
 
 type AuthContextType = {
   session: Session | null
@@ -40,11 +41,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Fetch user profile
   useUserProfile(user, setUserProfile)
   
+  // Get Ollama connection functions (for logout handling)
+  const { disconnectFromDocker } = useOllamaDockerConnect()
+  
   // Auth actions (sign in/out)
-  const { signIn, signOut } = useAuthActions()
+  const { signIn, signOut: baseSignOut } = useAuthActions()
+  
+  // Extended sign out function that also disconnects from Ollama
+  const signOut = async () => {
+    // Disconnect from Ollama
+    disconnectFromDocker()
+    
+    // Call the original sign out function
+    await baseSignOut()
+  }
   
   // Role info
   const { isAdmin, isTrader, isLovTrader } = getUserRoleInfo(userProfile)
+  
+  // Auto-disconnect Ollama when user logs out or session expires
+  useEffect(() => {
+    if (session === null && user === null) {
+      disconnectFromDocker()
+    }
+  }, [session, user, disconnectFromDocker])
   
   // Permission checker
   const handleCheckPermission = (requiredRole: UserRole | UserRole[]): boolean => {

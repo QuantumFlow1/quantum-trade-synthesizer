@@ -1,10 +1,12 @@
 
+// Types for Ollama connection status
 export interface ConnectionStatus {
   connected: boolean;
-  error?: string;
   modelsCount?: number;
+  error?: string;
 }
 
+// Return type for useOllamaDockerConnect hook
 export interface UseOllamaDockerConnectReturn {
   dockerAddress: string;
   setDockerAddress: (address: string) => void;
@@ -12,9 +14,10 @@ export interface UseOllamaDockerConnectReturn {
   setCustomAddress: (address: string) => void;
   isConnecting: boolean;
   connectionStatus: ConnectionStatus | null;
-  connectToDocker: (address: string) => Promise<void>;
+  connectToDocker: (address: string) => Promise<boolean | void>;
+  disconnectFromDocker: () => void;
   useServerSideProxy: boolean;
-  setUseServerSideProxy: (enabled: boolean) => void;
+  setUseServerSideProxy: (value: boolean) => void;
   currentOrigin: string;
   autoRetryEnabled: boolean;
   toggleAutoRetry: () => void;
