@@ -1,8 +1,8 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Server } from "lucide-react";
 import { ConnectionStatus } from "@/hooks/useOllamaDockerConnect";
 
 interface OllamaConnectionFormProps {
@@ -22,6 +22,17 @@ export const OllamaConnectionForm = ({
   isConnecting,
   connectToDocker
 }: OllamaConnectionFormProps) => {
+  const isGitpod = typeof window !== 'undefined' && 
+    (window.location.hostname.includes('gitpod.io') || 
+     window.location.hostname.includes('lovableproject.com'));
+
+  // Auto-set the default address based on environment
+  useEffect(() => {
+    if (isGitpod && dockerAddress === 'http://localhost:11434') {
+      setDockerAddress('http://ollama:11434');
+    }
+  }, [isGitpod, dockerAddress, setDockerAddress]);
+
   const handleDockerIdConnect = () => {
     if (!customAddress) return;
     connectToDocker(customAddress);
@@ -39,21 +50,23 @@ export const OllamaConnectionForm = ({
     <div className="space-y-4">
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Connect to an Ollama instance running in a Docker container using the full address:
+          {isGitpod 
+            ? "Connect to the Ollama container in your Gitpod workspace:"
+            : "Connect to an Ollama instance running in a Docker container:"}
         </p>
         
         <div className="flex gap-2">
           <Input
             value={dockerAddress}
             onChange={(e) => setDockerAddress(e.target.value)}
-            placeholder="http://localhost:11434"
+            placeholder={isGitpod ? "http://ollama:11434" : "http://localhost:11434"}
             className="flex-grow"
           />
           <Button
             onClick={handlePreconfiguredConnect}
             disabled={isConnecting}
           >
-            {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Server className="h-4 w-4 mr-2" />}
             Connect
           </Button>
         </div>
@@ -61,14 +74,14 @@ export const OllamaConnectionForm = ({
 
       <div className="space-y-2">
         <p className="text-sm text-muted-foreground">
-          Or connect using Docker container ID or name:
+          Or try a different connection method:
         </p>
         
         <div className="flex gap-2">
           <Input
             value={customAddress}
             onChange={handleCustomAddressChange}
-            placeholder="ollama or de67d12500e8..."
+            placeholder={isGitpod ? "localhost:11434 or 172.17.0.1:11434" : "ollama or container-id..."}
             className="flex-grow"
           />
           <Button
@@ -77,7 +90,7 @@ export const OllamaConnectionForm = ({
             variant="outline"
           >
             {isConnecting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-            Connect to Container
+            Try Alternative
           </Button>
         </div>
       </div>

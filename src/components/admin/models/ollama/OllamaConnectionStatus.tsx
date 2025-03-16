@@ -14,6 +14,9 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
 
   // Extract origin for display purposes
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
+  const isGitpod = typeof window !== 'undefined' && 
+    (window.location.hostname.includes('gitpod.io') || 
+     window.location.hostname.includes('lovableproject.com'));
 
   return (
     <Alert variant={connectionStatus.connected ? "default" : "destructive"}>
@@ -25,6 +28,14 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
             Connected to Ollama at {ollamaApi.getBaseUrl()}
             {connectionStatus.modelsCount !== undefined && (
               <p className="mt-1">Found {connectionStatus.modelsCount} models</p>
+            )}
+            {connectionStatus.modelsCount === 0 && (
+              <p className="mt-1 text-sm text-amber-600 dark:text-amber-400">
+                No models found. You may need to pull a model by running: <br/>
+                <code className="bg-gray-100 dark:bg-gray-800 p-1 rounded mt-1 text-xs block">
+                  docker exec -it ollama ollama pull llama3
+                </code>
+              </p>
             )}
           </AlertDescription>
         </>
@@ -41,12 +52,22 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
                 <p>Ollama needs to be configured to allow requests from {currentOrigin}</p>
                 <p className="mt-1">Try restarting Ollama with:</p>
                 <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 text-xs overflow-x-auto">
-                  docker run -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
+                  {isGitpod 
+                    ? `docker run -e OLLAMA_ORIGINS=${currentOrigin} -p 11434:11434 ollama/ollama`
+                    : `docker run -e OLLAMA_ORIGINS=${currentOrigin} -p 11434:11434 ollama/ollama`
+                  }
                 </pre>
+                {isGitpod && (
+                  <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                    <strong>Gitpod Tip:</strong> In Gitpod, make sure you've started the container and try connecting 
+                    with "ollama:11434" or "localhost:11434" first.
+                  </p>
+                )}
               </div>
             ) : (
               <p className="mt-2 text-sm">
                 Make sure Ollama is running in the Docker container and the address is correct.
+                {isGitpod && " In Gitpod, double check that your Ollama container is running with 'docker ps'."}
               </p>
             )}
           </AlertDescription>
