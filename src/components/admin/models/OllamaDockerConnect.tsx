@@ -15,7 +15,10 @@ export const OllamaDockerConnect = () => {
     setCustomAddress,
     isConnecting,
     connectionStatus,
-    connectToDocker
+    connectToDocker,
+    currentOrigin,
+    useServerSideProxy,
+    setUseServerSideProxy
   } = useOllamaDockerConnect();
 
   return (
@@ -34,6 +37,9 @@ export const OllamaDockerConnect = () => {
           setCustomAddress={setCustomAddress}
           isConnecting={isConnecting}
           connectToDocker={connectToDocker}
+          currentOrigin={currentOrigin}
+          useServerSideProxy={useServerSideProxy}
+          setUseServerSideProxy={setUseServerSideProxy}
         />
 
         {connectionStatus && (
