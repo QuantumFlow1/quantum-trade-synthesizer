@@ -7,6 +7,9 @@ import { isLocalhostEnvironment, getCurrentOrigin } from "./ollama/connectionUti
 import { handleConnectionFailure, getInitialConnectionAddress } from "./ollama/connectionStrategy";
 import { useConnectionPersistence } from "./ollama/useConnectionPersistence";
 
+// Global connection status to maintain across component unmounts
+let globalConnectionStatus: ConnectionStatus | null = null;
+
 // Using 'export type' syntax explicitly for type re-export
 export type { ConnectionStatus } from "./ollama/types";
 
@@ -27,6 +30,20 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
   
   // Get saved connection status
   const { connectionStatus, updateConnectionStatus } = useConnectionPersistence();
+  
+  // Initialize connectionStatus from global value if available
+  useEffect(() => {
+    if (globalConnectionStatus && !connectionStatus) {
+      updateConnectionStatus(globalConnectionStatus);
+    }
+  }, []);
+  
+  // Update global connection status when local one changes
+  useEffect(() => {
+    if (connectionStatus) {
+      globalConnectionStatus = connectionStatus;
+    }
+  }, [connectionStatus]);
   
   // Get auth state (if available)
   let auth = { isAdmin: false, user: null };
@@ -56,6 +73,16 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
       const lastConnectedTime = lastConnected || 0;
       const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
       const wasRecentlyConnected = lastConnectedTime > twentyFourHoursAgo;
+      
+      // If we have a saved connection status that says we're connected, ensure the API client has the correct URL
+      if (globalConnectionStatus?.connected) {
+        const savedHost = localStorage.getItem('ollamaHost');
+        if (savedHost) {
+          ollamaApi.setBaseUrl(savedHost);
+          console.log("Restored Ollama connection to:", savedHost);
+        }
+        return;
+      }
       
       // If we're an admin or we were recently connected, and we have a saved host, try to reconnect
       if ((auth.isAdmin || wasRecentlyConnected) && 
@@ -127,6 +154,7 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
         };
         
         updateConnectionStatus(newStatus);
+        globalConnectionStatus = newStatus;
         
         // Reset attempts counter on successful connection
         setConnectionAttempts(0);
@@ -150,6 +178,7 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
         };
         
         updateConnectionStatus(newStatus);
+        globalConnectionStatus = newStatus;
         
         // Only show toast for CORS errors if we haven't already shown one
         const isCorsError = result.message.includes('CORS');
@@ -188,6 +217,7 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
       };
       
       updateConnectionStatus(newStatus);
+      globalConnectionStatus = newStatus;
       
       // Check if this is a CORS error
       const isCorsError = errorMessage.includes('CORS') || 
@@ -229,6 +259,7 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
   // Function to disconnect - typically called during logout
   const disconnectFromDocker = useCallback(() => {
     updateConnectionStatus({ connected: false });
+    globalConnectionStatus = { connected: false };
     localStorage.removeItem('ollamaLastConnected');
     setLastConnected(null);
     setCorsErrorShown(false);
