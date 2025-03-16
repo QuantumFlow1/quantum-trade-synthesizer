@@ -22,14 +22,14 @@ export function OllamaMessageList({ messages, selectedModel }: OllamaMessageList
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground mb-2">Start chatting with {selectedModel}</p>
+          <p className="text-muted-foreground mb-2">Start chatting with {selectedModel || 'Ollama'}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4">
       {messages.map((message) => (
         <OllamaMessageDisplay 
           key={message.id} 

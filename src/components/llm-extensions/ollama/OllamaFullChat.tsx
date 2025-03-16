@@ -73,10 +73,17 @@ export function OllamaFullChat() {
             {messages.length === 0 ? (
               <OllamaEmptyState
                 isConnected={isConnected}
-                hasModels={models.length > 0}
+                connectionError={connectionError}
+                models={models}
+                isLoadingModels={isLoadingModels}
+                toggleSettings={toggleSettings}
+                toggleConnectionInfo={toggleConnectionInfo}
               />
             ) : (
-              <OllamaMessageList messages={messages} />
+              <OllamaMessageList 
+                messages={messages} 
+                selectedModel={selectedModel} 
+              />
             )}
           </div>
 

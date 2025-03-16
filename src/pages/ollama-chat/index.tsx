@@ -16,7 +16,7 @@ export default function OllamaChatPage() {
               Local Ollama Models
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0 h-[70vh]">
             <OllamaFullChat />
           </CardContent>
         </Card>
