@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Server } from "lucide-react";
+import { Loader2, Server, RefreshCw, ExternalLink } from "lucide-react";
 import { ConnectionStatus } from "@/hooks/useOllamaDockerConnect";
 
 interface OllamaConnectionFormProps {
@@ -63,6 +63,11 @@ export const OllamaConnectionForm = ({
     }
   };
 
+  // Add direct container connection options
+  const handleDirectContainerConnect = (containerId: string) => {
+    connectToDocker(`http://${containerId}:11434`);
+  };
+
   return (
     <div className="space-y-4">
       {isGitpod && (
@@ -109,6 +114,33 @@ export const OllamaConnectionForm = ({
         )}
       </div>
 
+      {/* Container ID quick connect buttons */}
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Quick connect to Docker container:
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleDirectContainerConnect('de67d12500e8')}
+            className="text-xs"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Container ID: de67d12500e8
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleDirectContainerConnect('ollama')}
+            className="text-xs"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Container Name: ollama
+          </Button>
+        </div>
+      </div>
+
       {isGitpod && (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
@@ -151,6 +183,18 @@ export const OllamaConnectionForm = ({
             Try Alternative
           </Button>
         </div>
+      </div>
+
+      <div className="mt-4 border-t pt-4 text-xs text-muted-foreground">
+        <p className="flex items-center">
+          <ExternalLink className="h-3 w-3 mr-1" /> 
+          <span>
+            <strong>Troubleshooting:</strong> Try restarting your container with:{" "}
+            <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded break-all">
+              docker restart ollama
+            </code>
+          </span>
+        </p>
       </div>
     </div>
   );

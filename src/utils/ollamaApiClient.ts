@@ -10,6 +10,8 @@ interface OllamaConnectionStatus {
 
 class OllamaApiClient {
   private baseUrl: string;
+  private maxRetries: number = 2;
+  private retryDelay: number = 1000;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -67,9 +69,13 @@ class OllamaApiClient {
     }
   }
 
-  async checkConnection(): Promise<OllamaConnectionStatus> {
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async checkConnection(retryCount = 0): Promise<OllamaConnectionStatus> {
     try {
-      console.log(`Checking connection to Ollama at ${this.baseUrl}`);
+      console.log(`Checking connection to Ollama at ${this.baseUrl} (attempt ${retryCount + 1}/${this.maxRetries + 1})`);
       
       // Add timeout to the fetch request
       const controller = new AbortController();
@@ -114,6 +120,13 @@ class OllamaApiClient {
       };
     } catch (error) {
       console.error('Error checking Ollama connection:', error);
+      
+      // Retry logic
+      if (retryCount < this.maxRetries) {
+        console.log(`Retrying connection after ${this.retryDelay}ms...`);
+        await this.delay(this.retryDelay);
+        return this.checkConnection(retryCount + 1);
+      }
       
       // Handle the different types of errors
       if (error instanceof DOMException && error.name === 'AbortError') {

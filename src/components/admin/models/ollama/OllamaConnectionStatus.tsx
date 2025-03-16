@@ -70,7 +70,7 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
                 {isGitpod ? (
                   <div className="mt-2">
                     <p className="font-medium">In Gitpod, try:</p>
-                    <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 text-xs overflow-x-auto">
+                    <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs overflow-x-auto">
                       docker stop ollama && docker rm ollama<br/>
                       docker run -d --name ollama -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
                     </pre>
@@ -80,11 +80,12 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
                     </p>
                   </div>
                 ) : isLovablePreview ? (
-                  <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 text-xs overflow-x-auto">
-                    docker run -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
+                  <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs overflow-x-auto">
+                    docker stop ollama && docker rm ollama<br/>
+                    docker run -d --name ollama -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
                   </pre>
                 ) : (
-                  <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 text-xs overflow-x-auto">
+                  <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs overflow-x-auto">
                     docker run -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
                   </pre>
                 )}
