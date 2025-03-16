@@ -1,4 +1,3 @@
-
 // OllamaApiClient.ts
 import { OllamaModel } from '@/components/llm-extensions/ollama/types/ollamaTypes';
 
@@ -23,15 +22,19 @@ class OllamaApiClient {
     // Normalize URL
     let normalizedUrl = url;
     
-    // Add protocol if missing
-    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-      normalizedUrl = `http://${normalizedUrl}`;
-    }
-    
-    // Add port if missing
-    if (!normalizedUrl.includes(':11434')) {
-      // Only add port if there's no other port
-      if (!normalizedUrl.match(/:\d+/)) {
+    // Check if this might be a Docker container ID/name
+    if (url.match(/^[a-zA-Z0-9_-]+$/) && !url.includes('.') && !url.includes(':')) {
+      console.log(`Detected Docker container ID/name format: ${url}`);
+      normalizedUrl = `http://${url}:11434`;
+    } else {
+      // Otherwise, use standard URL normalization
+      // Add protocol if missing
+      if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+        normalizedUrl = `http://${normalizedUrl}`;
+      }
+      
+      // Add port if missing
+      if (!normalizedUrl.includes(':')) {
         normalizedUrl = `${normalizedUrl}:11434`;
       }
     }
@@ -110,6 +113,8 @@ class OllamaApiClient {
         // Special handling for CORS errors
         if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin')) {
           errorMessage = 'Cross-origin (CORS) error. Make sure the Ollama server is configured to allow requests from this origin.';
+        } else if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+          errorMessage = 'Network error. Make sure the Docker container is accessible and the port is correctly exposed.';
         }
       }
       

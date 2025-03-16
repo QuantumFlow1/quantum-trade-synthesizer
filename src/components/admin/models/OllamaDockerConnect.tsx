@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Server, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
+import { Loader2, Server, AlertTriangle, CheckCircle, RefreshCw, ExternalLink } from "lucide-react";
 import { ollamaApi, testOllamaConnection } from "@/utils/ollamaApiClient";
 import { toast } from "@/components/ui/use-toast";
 
@@ -40,21 +40,12 @@ export const OllamaDockerConnect = () => {
     try {
       console.log(`Attempting to connect to Ollama at: ${address}`);
       
-      // Format the address correctly
-      let formattedAddress = address;
-      if (!address.startsWith('http://') && !address.startsWith('https://')) {
-        formattedAddress = `http://${address}`;
-      }
+      // Update the address in the API client (this method handles normalization)
+      ollamaApi.setBaseUrl(address);
       
-      // Ensure we have the port
-      if (!formattedAddress.includes(':')) {
-        formattedAddress = `${formattedAddress}:11434`;
-      }
-      
+      // Get the normalized URL for displaying to the user
+      const formattedAddress = ollamaApi.getBaseUrl();
       console.log(`Formatted address: ${formattedAddress}`);
-      
-      // Update the address in the API client
-      ollamaApi.setBaseUrl(formattedAddress);
       
       // Test the connection
       const result = await testOllamaConnection();
@@ -117,11 +108,7 @@ export const OllamaDockerConnect = () => {
 
   const handleDockerIdConnect = () => {
     if (!customAddress) return;
-    
-    // Format Docker container ID into a proper URL
-    // This now accepts a container ID without any formatting
-    const containerIdOrName = customAddress.trim();
-    connectToDocker(containerIdOrName);
+    connectToDocker(customAddress);
   };
 
   const handlePreconfiguredConnect = () => {
@@ -172,7 +159,7 @@ export const OllamaDockerConnect = () => {
             <Input
               value={customAddress}
               onChange={handleCustomAddressChange}
-              placeholder="de67d12500e8..."
+              placeholder="ollama or de67d12500e8..."
               className="flex-grow"
             />
             <Button
@@ -193,7 +180,7 @@ export const OllamaDockerConnect = () => {
                 <CheckCircle className="h-4 w-4" />
                 <AlertTitle>Connected Successfully</AlertTitle>
                 <AlertDescription>
-                  Connected to Ollama{dockerAddress && ` at ${dockerAddress}`}
+                  Connected to Ollama{dockerAddress && ` at ${ollamaApi.getBaseUrl()}`}
                   {connectionStatus.modelsCount !== undefined && (
                     <p className="mt-1">Found {connectionStatus.modelsCount} models</p>
                   )}
@@ -215,27 +202,66 @@ export const OllamaDockerConnect = () => {
         )}
 
         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md mt-2">
-          <h4 className="text-sm font-medium mb-2">Connecting to your Docker container:</h4>
+          <h4 className="text-sm font-medium mb-2">Docker Container Connection Guide:</h4>
           <ol className="list-decimal list-inside text-sm space-y-2">
-            <li>For the container ID you provided (<code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">de67d12500e8...</code>), try these formats:
+            <li>Make sure port 11434 is exposed in your Docker container</li>
+            <li>Try these connection formats:
               <ul className="list-disc list-inside pl-5 mt-1 text-xs">
-                <li><code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">de67d12500e8:11434</code></li>
-                <li><code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://de67d12500e8:11434</code></li>
+                <li>Container ID: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">de67d12500e8</code></li>
+                <li>Container name: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">ollama</code></li>
+                <li>With port: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">de67d12500e8:11434</code></li>
+                <li>Full URL: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://de67d12500e8:11434</code></li>
+                <li>Docker host IP: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://host.docker.internal:11434</code></li>
               </ul>
             </li>
             <li>If using host networking in Docker, try <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">localhost:11434</code></li>
-            <li>Make sure port 11434 is exposed in your Docker container</li>
-            <li>Check that the Docker container can be reached from your browser</li>
+            <li>Check that there are no firewall rules blocking access to the container</li>
           </ol>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-3 w-full"
-            onClick={() => connectToDocker('de67d12500e8:11434')}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Try Connect to de67d12500e8:11434
-          </Button>
+          
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => connectToDocker('de67d12500e8')}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Container ID
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => connectToDocker('ollama')}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Container Name
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => connectToDocker('host.docker.internal:11434')}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try host.docker.internal
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => connectToDocker('172.17.0.1:11434')}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Docker Bridge IP
+            </Button>
+          </div>
+          
+          <div className="mt-4 text-xs text-muted-foreground">
+            <p className="flex items-center">
+              <ExternalLink className="h-3 w-3 mr-1" /> 
+              Tip: For Docker Desktop, make sure port 11434 is properly published in your container settings.
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
