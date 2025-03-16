@@ -1,3 +1,4 @@
+
 // OllamaApiClient.ts
 import { OllamaModel } from '@/components/llm-extensions/ollama/types/ollamaTypes';
 
@@ -11,6 +12,7 @@ class OllamaApiClient {
   private baseUrl: string;
   private maxRetries: number = 2;
   private retryDelay: number = 1000;
+  private corsError: boolean = false;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -18,6 +20,10 @@ class OllamaApiClient {
 
   getBaseUrl(): string {
     return this.baseUrl;
+  }
+
+  hasCorsError(): boolean {
+    return this.corsError;
   }
 
   setBaseUrl(url: string) {
@@ -43,6 +49,7 @@ class OllamaApiClient {
     
     console.log(`Setting Ollama API base URL to: ${normalizedUrl}`);
     this.baseUrl = normalizedUrl;
+    this.corsError = false; // Reset CORS error status when changing URL
   }
 
   // Alias for backward compatibility
@@ -64,6 +71,13 @@ class OllamaApiClient {
       return data.models || [];
     } catch (error) {
       console.error('Error listing models:', error);
+      
+      // Check if this is likely a CORS error
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        this.corsError = true;
+        console.warn('Possible CORS error detected');
+      }
+      
       throw error;
     }
   }
@@ -97,24 +111,26 @@ class OllamaApiClient {
         console.error(`Connection failed with status: ${statusCode} ${response.statusText}`);
         
         if (statusCode === 403) {
+          this.corsError = true;
           return {
             success: false,
-            message: `CORS error (403 Forbidden): The Ollama server is rejecting cross-origin requests. Check that your Ollama server has the correct ORIGINS settings. The current application origin might not be in the allowed list.`,
+            message: `CORS error (403 Forbidden): De Ollama server blokkeert cross-origin verzoeken. Controleer of je Ollama server de juiste ORIGINS instellingen heeft. De huidige applicatie-oorsprong staat mogelijk niet in de toegestane lijst.`,
           };
         }
         
         return {
           success: false,
-          message: `Ollama server responded with an error: ${response.status} ${response.statusText}`,
+          message: `Ollama server reageerde met een fout: ${response.status} ${response.statusText}`,
         };
       }
       
       const data = await response.json();
       console.log('Connection successful, models:', data.models);
+      this.corsError = false;
       
       return {
         success: true,
-        message: 'Connected to Ollama successfully',
+        message: 'Succesvol verbonden met Ollama',
         models: data.models || [],
       };
     } catch (error) {
@@ -131,25 +147,57 @@ class OllamaApiClient {
       if (error instanceof DOMException && error.name === 'AbortError') {
         return {
           success: false,
-          message: 'Connection timed out. The server did not respond within 5 seconds.',
+          message: 'Verbinding time-out. De server reageerde niet binnen 5 seconden.',
         };
       }
       
-      let errorMessage = 'Unknown error';
+      let errorMessage = 'Onbekende fout';
       if (error instanceof Error) {
         errorMessage = error.message;
         // Special handling for CORS errors
-        if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin')) {
-          errorMessage = 'Cross-origin (CORS) error. Make sure the Ollama server is configured to allow requests from this origin.';
+        if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin') || error instanceof TypeError && error.message.includes('Failed to fetch')) {
+          this.corsError = true;
+          errorMessage = 'Cross-origin (CORS) fout. Zorg ervoor dat de Ollama server is geconfigureerd om verzoeken van deze oorsprong toe te staan.';
         } else if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
-          errorMessage = 'Network error. Make sure the Docker container is accessible and the port is correctly exposed.';
+          errorMessage = 'Netwerkfout. Zorg ervoor dat de Docker-container toegankelijk is en de poort correct is blootgesteld.';
         }
       }
       
       return {
         success: false,
-        message: `Could not connect to Ollama: ${errorMessage}. Make sure Ollama is running and reachable.`,
+        message: `Kon geen verbinding maken met Ollama: ${errorMessage}. Zorg ervoor dat Ollama draait en bereikbaar is.`,
       };
+    }
+  }
+
+  // Try to determine if Ollama is available but blocked by CORS
+  async probeCorsError(): Promise<boolean> {
+    try {
+      // This will intentionally cause a CORS error if Ollama is running but not configured for CORS
+      const img = new Image();
+      img.src = `${this.baseUrl}/favicon.ico?_=${Date.now()}`;
+      
+      return new Promise(resolve => {
+        // If the image loads, Ollama is probably running with CORS headers
+        img.onload = () => {
+          console.log('Image loaded successfully, CORS might be configured correctly');
+          resolve(false);
+        };
+        
+        // If there's an error, it could be due to CORS or Ollama not running
+        img.onerror = () => {
+          console.log('Image failed to load, possible CORS issue');
+          // We can't really differentiate between CORS and service unavailable just from the image load
+          // But we'll assume CORS might be the issue
+          resolve(true);
+        };
+        
+        // Set a timeout to ensure we get a response one way or another
+        setTimeout(() => resolve(false), 2000);
+      });
+    } catch (e) {
+      console.error('Error in CORS probe:', e);
+      return false;
     }
   }
 }
@@ -163,12 +211,25 @@ export const testOllamaConnection = async (): Promise<OllamaConnectionStatus> =>
     console.log('Testing Ollama connection...');
     const connectionStatus = await ollamaApi.checkConnection();
     console.log('Connection status:', connectionStatus);
+    
+    // If we failed and a CORS error is suspected, run the probe to confirm
+    if (!connectionStatus.success && connectionStatus.message.includes('CORS')) {
+      const possibleCorsIssue = await ollamaApi.probeCorsError();
+      if (possibleCorsIssue) {
+        console.log('CORS issue confirmed through probe');
+        return {
+          success: false,
+          message: 'CORS fout bevestigd: Je Ollama server accepteert geen verzoeken van deze oorsprong. Probeer Ollama te starten met de OLLAMA_ORIGINS omgevingsvariabele ingesteld op je huidige oorsprong.',
+        };
+      }
+    }
+    
     return connectionStatus;
   } catch (error) {
     console.error('Error in testOllamaConnection:', error);
     return {
       success: false,
-      message: `Failed to test Ollama connection: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      message: `Fout bij testen van Ollama-verbinding: ${error instanceof Error ? error.message : 'Onbekende fout'}`,
     };
   }
 };

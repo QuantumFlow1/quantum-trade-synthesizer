@@ -18,7 +18,14 @@ export function useOllamaDockerConnect() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [alternativePortsAttempted, setAlternativePortsAttempted] = useState(false);
-
+  const [useServerSideProxy, setUseServerSideProxy] = useState(false);
+  
+  // Get current origin for CORS suggestions
+  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const isGitpod = typeof window !== 'undefined' && 
+    (window.location.hostname.includes('gitpod.io') || 
+     window.location.hostname.includes('lovableproject.com'));
+  
   useEffect(() => {
     // Check if there's a connection status in localStorage
     const savedConnection = localStorage.getItem('ollamaConnectionStatus');
@@ -32,10 +39,13 @@ export function useOllamaDockerConnect() {
     }
   }, []);
 
-  // Automatically retry connecting to container ID after the component mounts
+  // Connection auto-retry strategy
   useEffect(() => {
-    // Only try once automatically, and only if we haven't already attempted a connection
+    // Only try automatically if we haven't already attempted a connection
     if (connectionAttempts === 0) {
+      console.log("Starting automatic connection sequence");
+      
+      // Try container ID first since that's most likely to work in Docker environments
       const containerId = 'de67d12500e8'; // The container ID from your Docker
       console.log(`Automatically trying to connect to container ID: ${containerId}`);
       connectToDocker(`http://${containerId}:11434`);
@@ -50,7 +60,7 @@ export function useOllamaDockerConnect() {
     try {
       console.log(`Attempting to connect to Ollama at: ${address}`);
       
-      // Update the address in the API client (this method handles normalization)
+      // Update the address in the API client
       ollamaApi.setBaseUrl(address);
       
       // Get the normalized URL for displaying to the user
@@ -79,8 +89,8 @@ export function useOllamaDockerConnect() {
         setAlternativePortsAttempted(false);
         
         toast({
-          title: "Connected to Ollama Docker",
-          description: `Successfully connected to ${formattedAddress}`,
+          title: "Verbonden met Ollama Docker",
+          description: `Succesvol verbonden met ${formattedAddress}`,
           variant: "default",
         });
       } else {
@@ -93,11 +103,12 @@ export function useOllamaDockerConnect() {
         localStorage.setItem('ollamaConnectionStatus', JSON.stringify(newStatus));
         
         toast({
-          title: "Connection Failed",
+          title: "Verbinding mislukt",
           description: result.message,
           variant: "destructive",
         });
 
+        // Auto-retry strategy
         // If this was a CORS error, automatically try the container name
         if (result.message?.includes('CORS') && connectionAttempts <= 1) {
           console.log('CORS error detected, trying container name as fallback...');
@@ -123,7 +134,7 @@ export function useOllamaDockerConnect() {
         }
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
       console.error('Docker connection error:', errorMessage);
       
       const newStatus = {
@@ -135,7 +146,7 @@ export function useOllamaDockerConnect() {
       localStorage.setItem('ollamaConnectionStatus', JSON.stringify(newStatus));
       
       toast({
-        title: "Connection Error",
+        title: "Verbindingsfout",
         description: errorMessage,
         variant: "destructive",
       });
@@ -151,6 +162,9 @@ export function useOllamaDockerConnect() {
     setCustomAddress,
     isConnecting,
     connectionStatus,
-    connectToDocker
+    connectToDocker,
+    useServerSideProxy,
+    setUseServerSideProxy,
+    currentOrigin
   };
 }
