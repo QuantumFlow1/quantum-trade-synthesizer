@@ -7,16 +7,43 @@ import { PlusCircle, RefreshCw, Server } from "lucide-react";
 import { useOllamaDockerConnect } from "@/hooks/useOllamaDockerConnect";
 import { OllamaConnectionStatus } from "./ollama/OllamaConnectionStatus";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ollamaApi } from "@/utils/ollamaApiClient";
+import { toast } from "@/components/ui/use-toast";
 
 export const LLMModelsList = () => {
   const [isAddingModel, setIsAddingModel] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [ollamaModels, setOllamaModels] = useState<any[]>([]);
   
-  // Get Ollama connection state
+  // Get Ollama connection state - use the singleton instance across the app
   const { connectionStatus, connectToDocker } = useOllamaDockerConnect();
   
-  // Models data (This would typically come from an API or state)
-  const models = [
+  // Load Ollama models if connected
+  useEffect(() => {
+    const loadOllamaModels = async () => {
+      if (connectionStatus?.connected) {
+        try {
+          const models = await ollamaApi.listModels();
+          setOllamaModels(models.map(model => ({
+            id: model.name,
+            name: model.name,
+            description: `${model.details?.parameter_size || 'Unknown size'} - ${model.details?.family || 'Unknown family'}`,
+            isEnabled: true,
+            apiProvider: "ollama"
+          })));
+        } catch (error) {
+          console.error("Failed to load Ollama models:", error);
+        }
+      } else {
+        setOllamaModels([]);
+      }
+    };
+    
+    loadOllamaModels();
+  }, [connectionStatus]);
+  
+  // Standard models data (API-based models)
+  const standardModels = [
     {
       id: "1",
       name: "OpenAI GPT-4",
@@ -47,12 +74,42 @@ export const LLMModelsList = () => {
     }
   ];
   
+  // Combine standard models with Ollama models
+  const allModels = [...standardModels, ...ollamaModels];
+
   // Simulate refreshing models
-  const refreshModels = () => {
+  const refreshModels = async () => {
     setIsRefreshing(true);
+    
+    // If Ollama is connected, refresh Ollama models
+    if (connectionStatus?.connected) {
+      try {
+        await ollamaApi.checkConnection();
+        const models = await ollamaApi.listModels();
+        setOllamaModels(models.map(model => ({
+          id: model.name,
+          name: model.name,
+          description: `${model.details?.parameter_size || 'Unknown size'} - ${model.details?.family || 'Unknown family'}`,
+          isEnabled: true,
+          apiProvider: "ollama"
+        })));
+        toast({
+          title: "Models refreshed",
+          description: `Found ${models.length} Ollama models`,
+        });
+      } catch (error) {
+        console.error("Failed to refresh Ollama models:", error);
+        toast({
+          title: "Refresh failed",
+          description: "Could not refresh Ollama models",
+          variant: "destructive"
+        });
+      }
+    }
+    
     setTimeout(() => {
       setIsRefreshing(false);
-    }, 1500);
+    }, 1000);
   };
 
   return (
@@ -114,7 +171,7 @@ export const LLMModelsList = () => {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {models.map((model) => (
+        {allModels.map((model) => (
           <ModelCard
             key={model.id}
             id={model.id}

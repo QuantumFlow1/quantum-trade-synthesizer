@@ -19,6 +19,11 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
      window.location.hostname.includes('lovableproject.com'));
   const isLovablePreview = typeof window !== 'undefined' && 
     window.location.hostname.includes('lovable.app');
+  
+  // Check if this is likely a CORS error
+  const isCorsError = connectionStatus.error?.includes('CORS') || 
+                      connectionStatus.error?.includes('Failed to fetch') ||
+                      ollamaApi.hasCorsError();
 
   return (
     <Alert variant={connectionStatus.connected ? "default" : "destructive"}>
@@ -60,72 +65,51 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Connection failed</AlertTitle>
           <AlertDescription>
-            {connectionStatus.error}
-            
-            {connectionStatus.error?.includes('CORS') || connectionStatus.error?.includes('403 Forbidden') ? (
-              <div className="mt-2 text-sm">
-                <p className="font-medium">CORS issue:</p>
-                <p>Ollama needs to be configured to allow requests from {currentOrigin}</p>
+            {isCorsError ? (
+              <div>
+                <p className="font-semibold text-red-600 dark:text-red-400 mb-1">
+                  CORS Error: Browser security is blocking the connection
+                </p>
+                <p>{connectionStatus.error}</p>
                 
-                {isGitpod ? (
-                  <div className="mt-2">
-                    <p className="font-medium">In Gitpod, try:</p>
-                    <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs overflow-x-auto">
-                      docker stop ollama && docker rm ollama<br/>
-                      docker run -d --name ollama -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
-                    </pre>
-                    <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-                      <strong>Gitpod Tip:</strong> You may need to expose port 11434 in your Gitpod configuration.
-                      Check if port 11434 is listed in the Ports tab in the Gitpod UI.
-                    </p>
+                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-md space-y-2">
+                  <p className="font-medium">To fix this CORS issue, start Ollama with:</p>
+                  
+                  <div className="bg-black text-white p-2 rounded overflow-x-auto">
+                    <code>OLLAMA_ORIGINS={currentOrigin} ollama serve</code>
                   </div>
-                ) : isLovablePreview ? (
-                  <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs overflow-x-auto">
-                    docker stop ollama && docker rm ollama<br/>
-                    docker run -d --name ollama -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
-                  </pre>
-                ) : (
-                  <pre className="bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 mb-1 text-xs overflow-x-auto">
-                    docker run -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama
-                  </pre>
-                )}
-                
-                {isLovablePreview && (
-                  <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-                    <strong>Lovable Preview:</strong> When connecting from a preview URL, 
-                    you need to ensure your Ollama instance is publicly accessible and configured with the preview URL 
-                    in OLLAMA_ORIGINS. Consider using a backend proxy or serverless function for production use.
-                  </p>
-                )}
+                  
+                  <p className="font-medium mt-2">Or using Docker:</p>
+                  
+                  <div className="bg-black text-white p-2 rounded overflow-x-auto">
+                    <code>docker run -d --name ollama -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama</code>
+                  </div>
+                  
+                  {isGitpod && (
+                    <>
+                      <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
+                        <strong>Note for Gitpod/Cloud environments:</strong> Make sure port 11434 is exposed 
+                        and publicly accessible. For Gitpod, check the Ports tab in the terminal panel.
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             ) : (
-              <div className="mt-2 text-sm">
-                <p className="font-medium">Connection error:</p>
-                <p>Make sure Ollama is running and the address is correct.</p>
+              <div>
+                <p>{connectionStatus.error}</p>
                 
-                {isGitpod && (
-                  <div className="mt-2">
-                    <p className="font-medium">In Gitpod, check:</p>
-                    <ul className="list-disc list-inside pl-2 mt-1 text-xs">
-                      <li>Is the Ollama container running? Run: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">docker ps | grep ollama</code></li>
-                      <li>Try connecting to <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">http://ollama:11434</code> or <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">http://172.17.0.1:11434</code></li>
-                      <li>Is port 11434 exposed in Gitpod?</li>
-                    </ul>
-                  </div>
-                )}
+                <div className="mt-3 p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
+                  <p className="text-xs font-medium">Troubleshooting suggestions:</p>
+                  <ul className="list-disc list-inside pl-2 mt-1 text-xs">
+                    <li>Try alternative ports like 11435 or 37321</li>
+                    <li>Check if Docker is running and accessible</li>
+                    <li>Try restarting the container: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">docker restart ollama</code></li>
+                    <li>Make sure CORS is properly set for your current origin</li>
+                  </ul>
+                </div>
               </div>
             )}
-
-            {/* Alternative ports suggestion */}
-            <div className="mt-3 p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
-              <p className="text-xs font-medium">Alternative solutions:</p>
-              <ul className="list-disc list-inside pl-2 mt-1 text-xs">
-                <li>Try alternative ports like 11435 or 37321</li>
-                <li>Check if Docker is running and accessible</li>
-                <li>Try restarting the container: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">docker restart ollama</code></li>
-                <li>Make sure CORS is properly set for your current origin</li>
-              </ul>
-            </div>
           </AlertDescription>
         </>
       )}

@@ -7,6 +7,9 @@ class OllamaApiClient {
   private maxRetries: number = 2;
   private retryDelay: number = 1000;
   private corsError: boolean = false;
+  
+  // Track the connection status to avoid multiple simultaneous connection attempts
+  private connectionInProgress: boolean = false;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
@@ -21,7 +24,9 @@ class OllamaApiClient {
   }
 
   setBaseUrl(url: string) {
-    this.baseUrl = normalizeOllamaUrl(url);
+    const normalizedUrl = normalizeOllamaUrl(url);
+    console.log(`Setting Ollama base URL to: ${normalizedUrl} (from: ${url})`);
+    this.baseUrl = normalizedUrl;
     this.corsError = false; // Reset CORS error status when changing URL
   }
 
@@ -33,7 +38,14 @@ class OllamaApiClient {
   async listModels(): Promise<OllamaModel[]> {
     try {
       console.log(`Fetching models from ${this.baseUrl}/api/tags`);
-      const response = await fetch(`${this.baseUrl}/api/tags`);
+      const response = await fetch(`${this.baseUrl}/api/tags`, {
+        // Add CORS mode to help debug issues
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to list models: ${response.statusText}`);
@@ -48,7 +60,7 @@ class OllamaApiClient {
       // Check if this is likely a CORS error
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         this.corsError = true;
-        console.warn('Possible CORS error detected');
+        console.warn('Possible CORS error detected when listing models');
       }
       
       throw error;
@@ -56,6 +68,17 @@ class OllamaApiClient {
   }
 
   async checkConnection(retryCount = 0): Promise<OllamaConnectionStatus> {
+    // Prevent multiple simultaneous connection attempts
+    if (this.connectionInProgress) {
+      console.log('Connection check already in progress, skipping duplicate request');
+      return {
+        success: false,
+        message: 'Connection check already in progress',
+      };
+    }
+    
+    this.connectionInProgress = true;
+    
     try {
       console.log(`Checking connection to Ollama at ${this.baseUrl} (attempt ${retryCount + 1}/${this.maxRetries + 1})`);
       
@@ -109,7 +132,19 @@ class OllamaApiClient {
       if (retryCount < this.maxRetries) {
         console.log(`Retrying connection after ${this.retryDelay}ms...`);
         await delay(this.retryDelay);
+        this.connectionInProgress = false;
         return this.checkConnection(retryCount + 1);
+      }
+      
+      // Detect CORS errors
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        this.corsError = true;
+        console.warn('CORS error detected during connection check');
+        
+        return {
+          success: false,
+          message: `CORS Error: Your browser blocked the connection to Ollama. Start Ollama with OLLAMA_ORIGINS=${typeof window !== 'undefined' ? window.location.origin : '*'} to fix this issue.`,
+        };
       }
       
       // Handle different types of errors
@@ -117,6 +152,8 @@ class OllamaApiClient {
         success: false,
         message: getConnectionErrorMessage(error),
       };
+    } finally {
+      this.connectionInProgress = false;
     }
   }
 }
