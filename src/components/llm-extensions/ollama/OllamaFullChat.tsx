@@ -198,7 +198,7 @@ export function OllamaFullChat() {
             </div>
             
             {connectionError && (
-              <OllamaConnectionStatus connectionStatus={{ success: false, message: connectionError }} />
+              <OllamaConnectionStatus connectionStatus={{ connected: false, error: connectionError }} />
             )}
             
             {isConnected && (

@@ -1,11 +1,12 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/auth/AuthProvider";
 import { EnvironmentProvider } from "./contexts/EnvironmentContext";
-import Index from "./pages/Index";
+import Index from "./pages/index";
 import NotFound from "./pages/NotFound";
 import Overview from "./pages/admin/dashboard/Overview";
 import Users from "./pages/admin/dashboard/Users";
@@ -15,7 +16,7 @@ import AdminPanel from "./components/AdminPanel";
 import ChatPage from "./pages/chat";
 import UserDashboard from "./components/UserDashboard";
 import ResearchPage from "./pages/ResearchPage";
-import OllamaChatPage from "./pages/OllamaChatPage";
+import OllamaChatPage from "./pages/ollama-chat";
 
 const queryClient = new QueryClient({
   defaultOptions: {
