@@ -21,7 +21,7 @@ export async function handleConnectionFailure({
   connectionAttempts: number;
   alternativePortsAttempted: boolean;
   autoRetryEnabled: boolean;
-  connectToDocker: (address: string) => Promise<void>;
+  connectToDocker: (address: string) => Promise<boolean | void>;
   setConnectionAttempts: (updater: (prev: number) => number) => void;
   setAlternativePortsAttempted: (value: boolean) => void;
   suppressToast?: boolean;
