@@ -1,15 +1,13 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
+import { MessageSquare, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Settings, MessageSquare } from 'lucide-react';
 import { OllamaSettings } from './components/OllamaSettings';
 import { OllamaMessageDisplay } from './components/OllamaMessageDisplay';
 import { OllamaChatInput } from './components/OllamaChatInput';
 import { OllamaEmptyState } from './components/OllamaEmptyState';
 import { OllamaNoModelsAlert } from './components/OllamaNoModelsAlert';
 import { OllamaConnectionInfo } from './components/OllamaConnectionInfo';
-import { OllamaModel } from '@/utils/ollamaApiClient';
 import { useOllamaModels } from '@/hooks/useOllamaModels';
 
 export interface OllamaMessage {
@@ -35,7 +33,7 @@ export function OllamaChat() {
     isLoading: isLoadingModels, 
     isConnected, 
     connectionError, 
-    fetchModels 
+    refreshModels
   } = useOllamaModels(ollamaHost);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -160,15 +158,15 @@ export function OllamaChat() {
   const renderConnectionInfo = () => (
     <OllamaConnectionInfo 
       isConnected={isConnected}
-      modelsCount={models.length}
       host={ollamaHost}
       selectedModel={selectedModel}
+      modelsAvailable={models.length}
     />
   );
 
   const renderNoModelsAlert = () => {
     if (isConnected && models.length === 0) {
-      return <OllamaNoModelsAlert refreshModels={fetchModels} />;
+      return <OllamaNoModelsAlert refreshModels={() => refreshModels()} />;
     }
     return null;
   };
@@ -213,7 +211,7 @@ export function OllamaChat() {
           <OllamaSettings
             ollamaHost={ollamaHost}
             updateHost={updateHost}
-            refreshModels={fetchModels}
+            refreshModels={() => refreshModels()}
             isLoadingModels={isLoadingModels}
             isConnected={isConnected}
             connectionError={connectionError}
