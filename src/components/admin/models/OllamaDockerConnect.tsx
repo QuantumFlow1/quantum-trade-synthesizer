@@ -1,10 +1,10 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Server, AlertTriangle, CheckCircle } from "lucide-react";
+import { Loader2, Server, AlertTriangle, CheckCircle, RefreshCw } from "lucide-react";
 import { ollamaApi, testOllamaConnection } from "@/utils/ollamaApiClient";
 import { toast } from "@/components/ui/use-toast";
 
@@ -20,37 +20,72 @@ export const OllamaDockerConnect = () => {
     modelsCount?: number;
   } | null>(null);
 
+  useEffect(() => {
+    // Check if there's a connection status in localStorage
+    const savedConnection = localStorage.getItem('ollamaConnectionStatus');
+    if (savedConnection) {
+      try {
+        const parsedStatus = JSON.parse(savedConnection);
+        setConnectionStatus(parsedStatus);
+      } catch (e) {
+        console.error('Error parsing saved connection status:', e);
+      }
+    }
+  }, []);
+
   const connectToDocker = async (address: string) => {
     setIsConnecting(true);
     setConnectionStatus(null);
     
     try {
+      console.log(`Attempting to connect to Ollama at: ${address}`);
+      
+      // Format the address correctly
+      let formattedAddress = address;
+      if (!address.startsWith('http://') && !address.startsWith('https://')) {
+        formattedAddress = `http://${address}`;
+      }
+      
+      // Ensure we have the port
+      if (!formattedAddress.includes(':')) {
+        formattedAddress = `${formattedAddress}:11434`;
+      }
+      
+      console.log(`Formatted address: ${formattedAddress}`);
+      
       // Update the address in the API client
-      ollamaApi.setBaseUrl(address);
+      ollamaApi.setBaseUrl(formattedAddress);
       
       // Test the connection
       const result = await testOllamaConnection();
+      console.log('Connection test result:', result);
       
       if (result.success) {
         // Save to localStorage if successful
-        localStorage.setItem('ollamaHost', address);
-        localStorage.setItem('ollamaDockerAddress', address);
+        localStorage.setItem('ollamaHost', formattedAddress);
+        localStorage.setItem('ollamaDockerAddress', formattedAddress);
         
-        setConnectionStatus({
+        const newStatus = {
           connected: true,
           modelsCount: result.models?.length || 0
-        });
+        };
+        
+        setConnectionStatus(newStatus);
+        localStorage.setItem('ollamaConnectionStatus', JSON.stringify(newStatus));
         
         toast({
           title: "Connected to Ollama Docker",
-          description: `Successfully connected to ${address}`,
+          description: `Successfully connected to ${formattedAddress}`,
           variant: "default",
         });
       } else {
-        setConnectionStatus({
+        const newStatus = {
           connected: false,
           error: result.message
-        });
+        };
+        
+        setConnectionStatus(newStatus);
+        localStorage.setItem('ollamaConnectionStatus', JSON.stringify(newStatus));
         
         toast({
           title: "Connection Failed",
@@ -60,10 +95,15 @@ export const OllamaDockerConnect = () => {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setConnectionStatus({
+      console.error('Docker connection error:', errorMessage);
+      
+      const newStatus = {
         connected: false,
         error: errorMessage
-      });
+      };
+      
+      setConnectionStatus(newStatus);
+      localStorage.setItem('ollamaConnectionStatus', JSON.stringify(newStatus));
       
       toast({
         title: "Connection Error",
@@ -76,10 +116,12 @@ export const OllamaDockerConnect = () => {
   };
 
   const handleDockerIdConnect = () => {
+    if (!customAddress) return;
+    
     // Format Docker container ID into a proper URL
-    const formattedAddress = `http://${customAddress.trim()}:11434`;
-    setDockerAddress(formattedAddress);
-    connectToDocker(formattedAddress);
+    // This now accepts a container ID without any formatting
+    const containerIdOrName = customAddress.trim();
+    connectToDocker(containerIdOrName);
   };
 
   const handlePreconfiguredConnect = () => {
@@ -101,7 +143,7 @@ export const OllamaDockerConnect = () => {
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            Connect to an Ollama instance running in a Docker container:
+            Connect to an Ollama instance running in a Docker container using the full address:
           </p>
           
           <div className="flex gap-2">
@@ -123,7 +165,7 @@ export const OllamaDockerConnect = () => {
 
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            Or connect using Docker container ID:
+            Or connect using Docker container ID or name:
           </p>
           
           <div className="flex gap-2">
@@ -151,7 +193,7 @@ export const OllamaDockerConnect = () => {
                 <CheckCircle className="h-4 w-4" />
                 <AlertTitle>Connected Successfully</AlertTitle>
                 <AlertDescription>
-                  Connected to Ollama at {dockerAddress}
+                  Connected to Ollama{dockerAddress && ` at ${dockerAddress}`}
                   {connectionStatus.modelsCount !== undefined && (
                     <p className="mt-1">Found {connectionStatus.modelsCount} models</p>
                   )}
@@ -172,13 +214,28 @@ export const OllamaDockerConnect = () => {
           </Alert>
         )}
 
-        <div className="text-sm text-muted-foreground mt-4">
-          <p className="font-medium">Tips:</p>
-          <ul className="list-disc list-inside mt-1 space-y-1">
-            <li>For Docker containers, make sure port 11434 is exposed</li>
-            <li>You can use Docker container ID or name as the host</li>
-            <li>Format: http://container-id:11434 or http://container-name:11434</li>
-          </ul>
+        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md mt-2">
+          <h4 className="text-sm font-medium mb-2">Connecting to your Docker container:</h4>
+          <ol className="list-decimal list-inside text-sm space-y-2">
+            <li>For the container ID you provided (<code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">de67d12500e8...</code>), try these formats:
+              <ul className="list-disc list-inside pl-5 mt-1 text-xs">
+                <li><code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">de67d12500e8:11434</code></li>
+                <li><code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://de67d12500e8:11434</code></li>
+              </ul>
+            </li>
+            <li>If using host networking in Docker, try <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">localhost:11434</code></li>
+            <li>Make sure port 11434 is exposed in your Docker container</li>
+            <li>Check that the Docker container can be reached from your browser</li>
+          </ol>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-3 w-full"
+            onClick={() => connectToDocker('de67d12500e8:11434')}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Connect to de67d12500e8:11434
+          </Button>
         </div>
       </CardContent>
     </Card>

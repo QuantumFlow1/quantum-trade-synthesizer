@@ -20,7 +20,24 @@ class OllamaApiClient {
   }
 
   setBaseUrl(url: string) {
-    this.baseUrl = url;
+    // Normalize URL
+    let normalizedUrl = url;
+    
+    // Add protocol if missing
+    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+      normalizedUrl = `http://${normalizedUrl}`;
+    }
+    
+    // Add port if missing
+    if (!normalizedUrl.includes(':11434')) {
+      // Only add port if there's no other port
+      if (!normalizedUrl.match(/:\d+/)) {
+        normalizedUrl = `${normalizedUrl}:11434`;
+      }
+    }
+    
+    console.log(`Setting Ollama API base URL to: ${normalizedUrl}`);
+    this.baseUrl = normalizedUrl;
   }
 
   // Alias for backward compatibility
@@ -49,7 +66,16 @@ class OllamaApiClient {
   async checkConnection(): Promise<OllamaConnectionStatus> {
     try {
       console.log(`Checking connection to Ollama at ${this.baseUrl}`);
-      const response = await fetch(`${this.baseUrl}/api/tags`);
+      
+      // Add timeout to the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch(`${this.baseUrl}/api/tags`, {
+        signal: controller.signal
+      }).finally(() => {
+        clearTimeout(timeoutId);
+      });
       
       if (!response.ok) {
         console.error(`Connection failed with status: ${response.status} ${response.statusText}`);
@@ -70,9 +96,26 @@ class OllamaApiClient {
     } catch (error) {
       console.error('Error checking Ollama connection:', error);
       
+      // Handle the different types of errors
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return {
+          success: false,
+          message: 'Connection timed out. The server did not respond within 5 seconds.',
+        };
+      }
+      
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        // Special handling for CORS errors
+        if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin')) {
+          errorMessage = 'Cross-origin (CORS) error. Make sure the Ollama server is configured to allow requests from this origin.';
+        }
+      }
+      
       return {
         success: false,
-        message: `Could not connect to Ollama: ${error instanceof Error ? error.message : 'Unknown error'}. Make sure Ollama is running.`,
+        message: `Could not connect to Ollama: ${errorMessage}. Make sure Ollama is running and reachable.`,
       };
     }
   }
