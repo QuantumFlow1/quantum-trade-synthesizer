@@ -6,7 +6,6 @@ import { ConnectionStatus, UseOllamaDockerConnectReturn } from "./ollama/types";
 import { isLocalhostEnvironment, getCurrentOrigin } from "./ollama/connectionUtils";
 import { handleConnectionFailure, getInitialConnectionAddress } from "./ollama/connectionStrategy";
 import { useConnectionPersistence } from "./ollama/useConnectionPersistence";
-import { useAuth } from "@/components/auth/AuthProvider";
 
 // Using 'export type' syntax explicitly for type re-export
 export type { ConnectionStatus } from "./ollama/types";
@@ -29,7 +28,21 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
   const { connectionStatus, updateConnectionStatus } = useConnectionPersistence();
   
   // Get auth state (if available)
-  const auth = useAuth ? useAuth() : { isAdmin: false, user: null };
+  let auth = { isAdmin: false, user: null };
+  try {
+    // Safely try to use auth, but don't fail if it's not available
+    const authModule = require('@/components/auth/AuthProvider');
+    if (authModule && typeof authModule.useAuth === 'function') {
+      try {
+        auth = authModule.useAuth();
+      } catch (e) {
+        // Silent fail if auth context is not available
+        console.log('Auth context not available, using default values');
+      }
+    }
+  } catch (e) {
+    // Module not found or other error, just continue with default auth
+  }
   
   // Environment flags
   const isLocalhost = isLocalhostEnvironment();
@@ -83,7 +96,7 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
     }
   }, [autoRetryEnabled, connectionAttempts, connectionStatus?.connected]);
 
-  const connectToDocker = async (address: string) => {
+  const connectToDocker = async (address: string): Promise<boolean | void> => {
     setIsConnecting(true);
     
     try {

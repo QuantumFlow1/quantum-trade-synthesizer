@@ -7,7 +7,14 @@ import { useAuthSession } from '@/hooks/use-auth-session'
 import { useUserProfile } from '@/hooks/use-user-profile'
 import { useAuthActions } from '@/hooks/use-auth-actions'
 import { checkPermission, getUserRoleInfo } from '@/utils/auth-utils'
-import { useOllamaDockerConnect } from '@/hooks/useOllamaDockerConnect'
+
+// Import the disconnectFromDocker function directly to avoid circular dependencies
+let disconnectOllamaFn: (() => void) | null = null;
+
+// Function to register the disconnect function from outside
+export const registerOllamaDisconnectFn = (fn: () => void) => {
+  disconnectOllamaFn = fn;
+};
 
 type AuthContextType = {
   session: Session | null
@@ -41,16 +48,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Fetch user profile
   useUserProfile(user, setUserProfile)
   
-  // Get Ollama connection functions (for logout handling)
-  const { disconnectFromDocker } = useOllamaDockerConnect()
-  
   // Auth actions (sign in/out)
   const { signIn, signOut: baseSignOut } = useAuthActions()
   
   // Extended sign out function that also disconnects from Ollama
   const signOut = async () => {
-    // Disconnect from Ollama
-    disconnectFromDocker()
+    // Disconnect from Ollama using the registered function if available
+    if (disconnectOllamaFn) {
+      disconnectOllamaFn();
+    }
     
     // Call the original sign out function
     await baseSignOut()
@@ -62,9 +68,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Auto-disconnect Ollama when user logs out or session expires
   useEffect(() => {
     if (session === null && user === null) {
-      disconnectFromDocker()
+      // Disconnect from Ollama using the registered function if available
+      if (disconnectOllamaFn) {
+        disconnectOllamaFn();
+      }
     }
-  }, [session, user, disconnectFromDocker])
+  }, [session, user])
   
   // Permission checker
   const handleCheckPermission = (requiredRole: UserRole | UserRole[]): boolean => {
