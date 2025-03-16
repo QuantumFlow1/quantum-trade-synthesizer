@@ -13,8 +13,10 @@ interface OllamaChatHeaderProps {
   selectedModel: string;
   setSelectedModel: (model: string) => void;
   clearChat: () => void;
-  toggleSettings: () => void;
-  toggleConnectionInfo: () => void;
+  toggleSettings?: () => void;
+  toggleConnectionInfo?: () => void;
+  activeTab?: string;
+  setActiveTab?: (tab: string) => void;
 }
 
 export function OllamaChatHeader({
@@ -24,32 +26,49 @@ export function OllamaChatHeader({
   setSelectedModel,
   toggleSettings,
   toggleConnectionInfo,
-  clearChat
+  clearChat,
+  activeTab,
+  setActiveTab
 }: OllamaChatHeaderProps) {
   return (
     <div className="flex p-3 border-b bg-muted/30">
       <div className="w-full">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleSettings}
-              className="flex items-center"
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
+            {toggleSettings && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={toggleSettings}
+                className="flex items-center"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
+            )}
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleConnectionInfo}
-              className="flex items-center"
-            >
-              <Server className="h-4 w-4 mr-2" />
-              Connection
-            </Button>
+            {toggleConnectionInfo && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={toggleConnectionInfo}
+                className="flex items-center"
+              >
+                <Server className="h-4 w-4 mr-2" />
+                Connection
+              </Button>
+            )}
+            
+            {activeTab && setActiveTab && (
+              <div className="border rounded-md">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList>
+                    <TabsTrigger value="chat">Chat</TabsTrigger>
+                    <TabsTrigger value="settings">Settings</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            )}
           </div>
           
           <div className="flex items-center space-x-2">

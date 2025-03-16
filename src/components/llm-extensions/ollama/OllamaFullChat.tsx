@@ -1,12 +1,15 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import React, { useState } from 'react';
 import { useOllamaChat } from './hooks/useOllamaChat';
-import { OllamaChatInput } from './components/OllamaChatInput';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OllamaSettingsTabContent } from './components/OllamaSettingsTabContent';
 import { OllamaChatHeader } from './components/OllamaChatHeader';
 import { OllamaChatTabContent } from './components/OllamaChatTabContent';
-import { OllamaSettingsTabContent } from './components/OllamaSettingsTabContent';
-import { toast } from '@/components/ui/use-toast';
+import { useOllamaDockerConnect } from '@/hooks/useOllamaDockerConnect';
+import { OllamaMessageList } from './components/OllamaMessageList';
+import { OllamaChatInput } from './components/OllamaChatInput';
+import { OllamaNoModelsAlert } from './components/OllamaNoModelsAlert';
+import { OllamaEmptyState } from './components/OllamaEmptyState';
 
 export function OllamaFullChat() {
   const {
@@ -15,6 +18,8 @@ export function OllamaFullChat() {
     inputMessage,
     messages,
     isLoading,
+    showSettings,
+    showConnectionInfo,
     models,
     isLoadingModels,
     isConnected,
@@ -23,133 +28,102 @@ export function OllamaFullChat() {
     setSelectedModel,
     setInputMessage,
     clearChat,
+    toggleSettings,
+    toggleConnectionInfo,
     sendMessage,
     refreshModels
   } = useOllamaChat();
-  
-  const [activeTab, setActiveTab] = useState<string>("chat");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [dockerAddress, setDockerAddress] = useState('http://localhost:11434');
-  const [customAddress, setCustomAddress] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [useServerSideProxy, setUseServerSideProxy] = useState(false);
-  const [autoRetryEnabled, setAutoRetryEnabled] = useState(true);
-  const [currentOrigin, setCurrentOrigin] = useState('');
-  const [isLocalhost, setIsLocalhost] = useState(false);
-  const [notifiedAboutLocalModels, setNotifiedAboutLocalModels] = useState(false);
-  
-  // Check if running on localhost
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setCurrentOrigin(window.location.origin);
-      setIsLocalhost(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    }
-  }, []);
 
-  // Show notification when models are loaded successfully
-  useEffect(() => {
-    if (isConnected && models.length > 0 && !notifiedAboutLocalModels) {
-      toast({
-        title: "Local Ollama Models Available",
-        description: `Found ${models.length} local Ollama models that you can use directly.`,
-        duration: 5000,
-      });
-      setNotifiedAboutLocalModels(true);
-    }
-  }, [isConnected, models, notifiedAboutLocalModels]);
+  const {
+    dockerAddress,
+    setDockerAddress,
+    customAddress,
+    setCustomAddress,
+    isConnecting,
+    connectionStatus,
+    connectToDocker,
+    currentOrigin,
+    useServerSideProxy,
+    setUseServerSideProxy,
+    autoRetryEnabled,
+    toggleAutoRetry,
+    isLocalhost
+  } = useOllamaDockerConnect();
 
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-
-  const connectToDocker = async (address: string) => {
-    setIsConnecting(true);
-    try {
-      updateHost(address);
-      await refreshModels();
-      setActiveTab("chat");
-      toast({
-        title: "Connection successful",
-        description: `Connected to Ollama at ${address}`,
-      });
-    } catch (error) {
-      console.error('Error connecting to Ollama:', error);
-      toast({
-        title: "Connection failed",
-        description: error instanceof Error ? error.message : "Failed to connect to Ollama",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConnecting(false);
-    }
-  };
-
-  const toggleAutoRetry = () => setAutoRetryEnabled(!autoRetryEnabled);
+  const [activeTab, setActiveTab] = useState('chat');
 
   return (
-    <div className="h-[600px] flex flex-col">
-      <OllamaChatHeader 
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
+    <div className="flex flex-col h-full max-h-full">
+      <OllamaChatHeader
         isConnected={isConnected}
         models={models}
         selectedModel={selectedModel}
         setSelectedModel={setSelectedModel}
         clearChat={clearChat}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
 
-      <div className="flex-grow overflow-auto">
-        <TabsContent value="chat" className="p-4 m-0 h-full overflow-auto">
-          <OllamaChatTabContent 
-            isConnected={isConnected}
-            models={models}
-            messages={messages}
-            selectedModel={selectedModel}
-            setActiveTab={setActiveTab}
-            messagesEndRef={messagesEndRef}
-          />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+        <TabsContent 
+          value="chat" 
+          className="flex-1 flex flex-col overflow-hidden mt-0 pt-0 border-0"
+        >
+          <div className="flex-1 overflow-y-auto">
+            {messages.length === 0 ? (
+              <OllamaEmptyState
+                isConnected={isConnected}
+                hasModels={models.length > 0}
+              />
+            ) : (
+              <OllamaMessageList messages={messages} />
+            )}
+          </div>
+
+          {models.length === 0 && isConnected && (
+            <OllamaNoModelsAlert refreshModels={refreshModels} />
+          )}
+
+          <div className="p-4 border-t">
+            <OllamaChatInput
+              inputMessage={inputMessage}
+              setInputMessage={setInputMessage}
+              sendMessage={sendMessage}
+              isLoading={isLoading}
+              isConnected={isConnected}
+              showSettings={showSettings}
+              models={models}
+            />
+          </div>
         </TabsContent>
 
-        <TabsContent value="settings" className="m-0 p-4">
-          <OllamaSettingsTabContent 
-            isConnected={isConnected}
-            isLoadingModels={isLoadingModels}
-            models={models}
-            selectedModel={selectedModel}
-            setSelectedModel={setSelectedModel}
-            setActiveTab={setActiveTab}
-            refreshModels={refreshModels}
-            dockerAddress={dockerAddress}
-            setDockerAddress={setDockerAddress}
-            customAddress={customAddress}
-            setCustomAddress={setCustomAddress}
-            isConnecting={isConnecting}
-            connectToDocker={connectToDocker}
-            currentOrigin={currentOrigin}
-            useServerSideProxy={useServerSideProxy}
-            setUseServerSideProxy={setUseServerSideProxy}
-            autoRetryEnabled={autoRetryEnabled}
-            toggleAutoRetry={toggleAutoRetry}
-            isLocalhost={isLocalhost}
-            connectionError={connectionError}
-          />
+        <TabsContent value="settings" className="mt-0 overflow-y-auto">
+          <div className="p-4">
+            <OllamaSettingsTabContent
+              isConnected={isConnected}
+              isLoadingModels={isLoadingModels}
+              models={models}
+              selectedModel={selectedModel}
+              setSelectedModel={setSelectedModel}
+              setActiveTab={setActiveTab}
+              refreshModels={refreshModels}
+              dockerAddress={dockerAddress}
+              setDockerAddress={setDockerAddress}
+              customAddress={customAddress}
+              setCustomAddress={setCustomAddress}
+              isConnecting={isConnecting}
+              connectToDocker={connectToDocker}
+              currentOrigin={currentOrigin}
+              useServerSideProxy={useServerSideProxy}
+              setUseServerSideProxy={setUseServerSideProxy}
+              autoRetryEnabled={autoRetryEnabled}
+              toggleAutoRetry={toggleAutoRetry}
+              isLocalhost={isLocalhost}
+              connectionError={connectionError}
+            />
+          </div>
         </TabsContent>
-      </div>
-
-      <div className="p-3 border-t mt-auto">
-        <OllamaChatInput
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          sendMessage={sendMessage}
-          isLoading={isLoading}
-          isConnected={isConnected}
-          showSettings={activeTab === "settings"}
-          models={models}
-        />
-      </div>
+      </Tabs>
     </div>
   );
 }
