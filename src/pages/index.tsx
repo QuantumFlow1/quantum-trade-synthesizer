@@ -18,7 +18,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { setupFirebaseErrorHandling } from "@/utils/firebase-error-handler";
 
-const Index = () => {
+const IndexPage = () => {
   const { user, userProfile } = useAuth();
   const { scale, handleZoomIn, handleZoomOut, handleResetZoom } = useZoomControls();
   const isMobile = useIsMobile();
@@ -152,4 +152,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default IndexPage;
