@@ -19,7 +19,7 @@ export function useOllamaDockerConnect() {
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [alternativePortsAttempted, setAlternativePortsAttempted] = useState(false);
   const [useServerSideProxy, setUseServerSideProxy] = useState(false);
-  // Flag to control automatic connection attempts
+  // Flag to control automatic connection attempts - OFF by default
   const [autoRetryEnabled, setAutoRetryEnabled] = useState(false);
   
   // Get current origin for CORS suggestions
