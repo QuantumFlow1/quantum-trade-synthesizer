@@ -3,9 +3,8 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ModelCard } from "./ModelCard";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, RefreshCw, Server } from "lucide-react";
+import { PlusCircle, RefreshCw } from "lucide-react";
 import { useOllamaDockerConnect } from "@/hooks/useOllamaDockerConnect";
-import { OllamaConnectionStatus } from "./ollama/OllamaConnectionStatus";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ollamaApi } from "@/utils/ollamaApiClient";
 import { toast } from "@/components/ui/use-toast";
@@ -137,38 +136,6 @@ export const LLMModelsList = () => {
           </Button>
         </div>
       </div>
-
-      {/* Always show Ollama connection status */}
-      <Card className="border-l-4 border-l-blue-500">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Server className="h-5 w-5 text-blue-500 mr-2" />
-              <CardTitle className="text-base">Ollama Local Models</CardTitle>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => connectToDocker('http://localhost:11434')}
-              className="h-8"
-            >
-              Connect
-            </Button>
-          </div>
-          <CardDescription>
-            Connect to your local Ollama instance for open-source models
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {connectionStatus && <OllamaConnectionStatus connectionStatus={connectionStatus} />}
-          
-          {!connectionStatus && (
-            <div className="text-center py-3 text-sm text-muted-foreground">
-              Checking Ollama connection status...
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {allModels.map((model) => (
