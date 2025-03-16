@@ -1,8 +1,8 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, SendHorizonal, WifiOff } from "lucide-react";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { SendIcon, Loader2 } from 'lucide-react';
 
 interface ChatInputProps {
   inputMessage: string;
@@ -10,99 +10,66 @@ interface ChatInputProps {
   sendMessage: () => void;
   isLoading: boolean;
   isOffline?: boolean;
+  disabled?: boolean;
 }
 
-export function ChatInput({ 
-  inputMessage, 
-  setInputMessage, 
-  sendMessage, 
+export function ChatInput({
+  inputMessage,
+  setInputMessage,
+  sendMessage,
   isLoading,
-  isOffline = false
+  isOffline = false,
+  disabled = false
 }: ChatInputProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [isComposing, setIsComposing] = useState(false);
-
-  // Focus the textarea on component mount
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.focus();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputMessage.trim() && !isLoading && !disabled) {
+      sendMessage();
     }
-  }, []);
-
-  // Auto-resize textarea as user types
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
-    }
-  }, [inputMessage]);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Skip if IME composition is in progress (for languages like Chinese, Japanese, Korean)
-    if (isComposing) return;
-    
-    // Send message if Enter is pressed without Shift
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault(); // Prevent new line
-      if (inputMessage.trim() && !isLoading) {
+    if (e.key === 'Enter' && !e.shiftKey && !isLoading && !disabled) {
+      e.preventDefault();
+      if (inputMessage.trim()) {
         sendMessage();
       }
     }
   };
 
-  const handleCompositionStart = () => {
-    setIsComposing(true);
-  };
-
-  const handleCompositionEnd = () => {
-    setIsComposing(false);
+  // Get placeholder text based on state
+  const getPlaceholderText = () => {
+    if (disabled) return "Connection required to send messages...";
+    if (isOffline) return "Offline mode - limited functionality available";
+    return "Type a message...";
   };
 
   return (
-    <div className="p-4 border-t border-gray-200 bg-white">
-      <div className="relative">
+    <form onSubmit={handleSubmit} className="p-4 border-t bg-white">
+      <div className="flex gap-2">
         <Textarea
-          ref={textareaRef}
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
+          placeholder={getPlaceholderText()}
+          className="flex-1 min-h-[60px] max-h-[120px] resize-none"
+          disabled={isLoading || disabled}
           onKeyDown={handleKeyDown}
-          onCompositionStart={handleCompositionStart}
-          onCompositionEnd={handleCompositionEnd}
-          placeholder={isOffline ? "Typ uw bericht (offline modus actief)..." : "Type your message..."}
-          className="resize-none pr-14 min-h-[60px] max-h-[200px]"
-          maxLength={2000}
-          disabled={isLoading}
         />
-        <Button
-          className="absolute bottom-2 right-2"
-          size="icon"
-          disabled={!inputMessage.trim() || isLoading}
-          onClick={() => {
-            if (inputMessage.trim()) {
-              sendMessage();
-            }
-          }}
+        <Button 
+          type="submit" 
+          disabled={!inputMessage.trim() || isLoading || disabled} 
+          className="h-[60px]"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-          ) : isOffline ? (
-            <WifiOff className="h-4 w-4" />
           ) : (
-            <SendHorizonal className="h-4 w-4" />
+            <SendIcon className="h-4 w-4" />
           )}
         </Button>
       </div>
-      <div className="mt-2 text-xs text-gray-500 flex justify-between">
-        <span>
-          {inputMessage.length}/2000
-        </span>
-        {isOffline && (
-          <span className="text-amber-600 flex items-center">
-            <WifiOff className="h-3 w-3 mr-1" /> Offline modus actief
-          </span>
-        )}
+      <div className="text-xs text-gray-500 mt-1">
+        Press Enter to send, Shift+Enter for new line
       </div>
-    </div>
+    </form>
   );
 }

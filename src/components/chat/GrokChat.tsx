@@ -7,13 +7,14 @@ import { useGrokChat } from './useGrokChat'
 import { useEffect, useState, useRef } from 'react'
 import { toast } from '@/components/ui/use-toast'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { AlertTriangle, Loader2, WifiOff } from 'lucide-react'
+import { AlertTriangle, Loader2, WifiOff, Server } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GrokChatSettings } from './GrokChatSettings'
 import { AI_MODELS } from './types/GrokSettings'
 import { useNavigate } from 'react-router-dom'
 import AdvancedLLMInterface from './advanced/AdvancedLLMInterface'
 import { isOfflineMode } from './services/utils/apiHelpers'
+import { useOllamaDockerConnect } from '@/hooks/useOllamaDockerConnect'
 
 export function GrokChat() {
   const navigate = useNavigate();
@@ -30,6 +31,13 @@ export function GrokChat() {
     setGrokSettings
   } = useGrokChat();
 
+  // For Ollama integration
+  const { 
+    connectionStatus: ollamaConnectionStatus,
+    connectToDocker,
+    isConnecting
+  } = useOllamaDockerConnect();
+
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Use the advanced interface instead of the standard chat interface
@@ -44,14 +52,17 @@ export function GrokChat() {
   // Get the full name of the selected model
   const selectedModel = AI_MODELS.find(m => m.id === grokSettings.selectedModel);
   const selectedModelName = selectedModel?.name || 'AI';
+  
+  // Check if current model is Ollama
+  const isOllamaModel = grokSettings.selectedModel.includes('ollama');
 
   // Add online/offline event listeners
   useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
       toast({
-        title: "Online modus geactiveerd",
-        description: "Uw systeem is nu verbonden met het internet.",
+        title: "Online mode activated",
+        description: "Your system is now connected to the internet.",
         duration: 3000,
       });
     };
@@ -59,8 +70,8 @@ export function GrokChat() {
     const handleOffline = () => {
       setIsOffline(true);
       toast({
-        title: "Offline modus geactiveerd",
-        description: "Uw systeem werkt nu in offline modus met beperkte functionaliteit.",
+        title: "Offline mode activated",
+        description: "Your system is now in offline mode with limited functionality.",
         variant: "warning",
         duration: 4000,
       });
@@ -75,17 +86,25 @@ export function GrokChat() {
     };
   }, []);
 
+  // Auto connect to Ollama if using an Ollama model
+  useEffect(() => {
+    if (isOllamaModel && (!ollamaConnectionStatus?.connected)) {
+      // Try to connect to Ollama automatically
+      connectToDocker('http://localhost:11434');
+    }
+  }, [isOllamaModel, ollamaConnectionStatus, connectToDocker]);
+
   // Display an info message when component mounts
   useEffect(() => {
     toast({
       title: "Multi-Model AI Interface",
-      description: `Chat with various AI models. The default model is ${selectedModelName}.`,
+      description: `Chat with various AI models. The current model is ${selectedModelName}.`,
       duration: 5000,
     });
     
     // Log the current state of messages for debugging
     console.log('Initial messages in GrokChat:', messages);
-  }, [selectedModelName]);
+  }, [selectedModelName, messages]);
 
   // Auto-scroll to bottom when messages update
   useEffect(() => {
@@ -96,7 +115,13 @@ export function GrokChat() {
   }, [messages]);
 
   const handleRetryConnection = async () => {
-    await retryApiConnection();
+    if (isOllamaModel) {
+      // For Ollama models, retry connecting to Docker
+      await connectToDocker('http://localhost:11434');
+    } else {
+      // For other models
+      await retryApiConnection();
+    }
   };
 
   const toggleSettings = () => {
@@ -132,6 +157,53 @@ export function GrokChat() {
     }
   };
 
+  // Display connection status for Ollama models
+  const renderOllamaStatus = () => {
+    if (!isOllamaModel) return null;
+    
+    if (isConnecting) {
+      return (
+        <Alert variant="info" className="m-4">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <AlertTitle>Connecting to Ollama</AlertTitle>
+          <AlertDescription>
+            Attempting to connect to your local Ollama instance...
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    
+    if (!ollamaConnectionStatus?.connected) {
+      return (
+        <Alert variant="warning" className="m-4">
+          <Server className="h-4 w-4" />
+          <AlertTitle>Ollama Connection Required</AlertTitle>
+          <AlertDescription className="flex flex-col gap-2">
+            <p>Cannot connect to Ollama. Make sure Ollama is running on your machine.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="self-end hover:bg-yellow-100" 
+              onClick={handleRetryConnection}
+              disabled={isConnecting}
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                'Connect to Ollama'
+              )}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      );
+    }
+    
+    return null;
+  };
+
   // Render the advanced interface if enabled
   if (useAdvancedInterface) {
     return <AdvancedLLMInterface />;
@@ -153,23 +225,26 @@ export function GrokChat() {
         {isOffline && (
           <Alert variant="warning" className="m-4">
             <WifiOff className="h-4 w-4" />
-            <AlertTitle>Offline Modus Actief</AlertTitle>
+            <AlertTitle>Offline Mode Active</AlertTitle>
             <AlertDescription className="flex flex-col gap-2">
-              <p>U werkt momenteel offline. Sommige functies zijn beperkt beschikbaar, maar u kunt nog steeds uw handelssysteem gebruiken met lokale data.</p>
+              <p>You are currently offline. Some features are limited, but you can still use your system with local data.</p>
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="self-end hover:bg-yellow-100" 
                 onClick={() => window.location.reload()}
               >
-                Verbinding opnieuw proberen
+                Try to reconnect
               </Button>
             </AlertDescription>
           </Alert>
         )}
         
-        {/* API Status Alert */}
-        {apiAvailable === false && grokSettings.selectedModel === 'grok3' && !isOffline && (
+        {/* Ollama Connection Status */}
+        {renderOllamaStatus()}
+        
+        {/* API Status Alert for non-Ollama models */}
+        {!isOllamaModel && apiAvailable === false && grokSettings.selectedModel === 'grok3' && !isOffline && (
           <Alert variant="warning" className="m-4">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>AI Service Status</AlertTitle>
@@ -207,7 +282,7 @@ export function GrokChat() {
         
         {/* Debug info - display message count */}
         <div className="mx-4 mt-2 text-xs text-gray-500">
-          Messages in state: {messages.length} | {isOffline ? "Offline Modus" : "Online Modus"}
+          Messages in state: {messages.length} | {isOffline ? "Offline Mode" : "Online Mode"} | Model: {selectedModelName}
         </div>
         
         {/* Chat Messages */}
@@ -225,6 +300,7 @@ export function GrokChat() {
           sendMessage={handleSendMessage}
           isLoading={isLoading}
           isOffline={isOffline}
+          disabled={isOllamaModel && !ollamaConnectionStatus?.connected}
         />
       </CardContent>
     </Card>
