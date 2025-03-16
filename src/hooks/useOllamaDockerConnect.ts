@@ -19,8 +19,12 @@ export function useOllamaDockerConnect() {
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [alternativePortsAttempted, setAlternativePortsAttempted] = useState(false);
   const [useServerSideProxy, setUseServerSideProxy] = useState(false);
-  // Flag to control automatic connection attempts - OFF by default
-  const [autoRetryEnabled, setAutoRetryEnabled] = useState(false);
+  // Enable auto-retry by default for better local connections
+  const [autoRetryEnabled, setAutoRetryEnabled] = useState(true);
+  
+  // Check if we're running locally
+  const isLocalhost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   
   // Get current origin for CORS suggestions
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -39,9 +43,17 @@ export function useOllamaDockerConnect() {
         console.error('Error parsing saved connection status:', e);
       }
     }
-  }, []);
+    
+    // If running locally and auto-retry is enabled, try connecting automatically
+    if (isLocalhost && autoRetryEnabled && connectionAttempts === 0) {
+      console.log("Running locally with auto-retry enabled, attempting to connect to localhost");
+      setTimeout(() => {
+        connectToDocker('http://localhost:11434');
+      }, 500);
+    }
+  }, [isLocalhost, autoRetryEnabled]);
 
-  // Connection auto-retry strategy - now with a guard
+  // Connection auto-retry strategy
   useEffect(() => {
     // Only proceed if auto retry is enabled
     if (!autoRetryEnabled) {
@@ -53,13 +65,21 @@ export function useOllamaDockerConnect() {
     if (connectionAttempts === 0) {
       console.log("Starting automatic connection sequence");
       
-      // Try container ID first since that's most likely to work in Docker environments
-      const containerId = 'de67d12500e8'; // The container ID from your Docker
-      console.log(`Automatically trying to connect to container ID: ${containerId}`);
-      connectToDocker(`http://${containerId}:11434`);
+      if (isLocalhost) {
+        console.log("Local environment detected, connecting to localhost:11434");
+        connectToDocker('http://localhost:11434');
+      } else if (isGitpod) {
+        // Try container name first since that's most likely to work in Gitpod
+        console.log("Gitpod environment detected, trying ollama container");
+        connectToDocker('http://ollama:11434');
+      } else {
+        // Default connection attempt
+        console.log("Trying default connection");
+        connectToDocker('http://localhost:11434');
+      }
       setConnectionAttempts(prev => prev + 1);
     }
-  }, [connectionAttempts, autoRetryEnabled]);
+  }, [autoRetryEnabled, isLocalhost, isGitpod]);
 
   const connectToDocker = async (address: string) => {
     setIsConnecting(true);
@@ -97,8 +117,8 @@ export function useOllamaDockerConnect() {
         setAlternativePortsAttempted(false);
         
         toast({
-          title: "Verbonden met Ollama Docker",
-          description: `Succesvol verbonden met ${formattedAddress}`,
+          title: "Connected to Ollama",
+          description: `Successfully connected to ${formattedAddress}`,
           variant: "default",
         });
       } else {
@@ -111,7 +131,7 @@ export function useOllamaDockerConnect() {
         localStorage.setItem('ollamaConnectionStatus', JSON.stringify(newStatus));
         
         toast({
-          title: "Verbinding mislukt",
+          title: "Connection failed",
           description: result.message,
           variant: "destructive",
         });
@@ -122,32 +142,59 @@ export function useOllamaDockerConnect() {
           return;
         }
         
-        // If this was a CORS error, automatically try the container name
-        if (result.message?.includes('CORS') && connectionAttempts <= 1) {
-          console.log('CORS error detected, trying container name as fallback...');
-          setTimeout(() => {
-            connectToDocker('http://ollama:11434');
-          }, 1000);
-          setConnectionAttempts(prev => prev + 1);
-        } 
-        // If we've tried multiple attempts but still no connection, try alternative ports
-        else if (connectionAttempts > 1 && !alternativePortsAttempted) {
-          console.log('Multiple connection attempts failed, trying alternative ports...');
-          setTimeout(() => {
-            connectToDocker('http://localhost:11435');
-          }, 1000);
-          setAlternativePortsAttempted(true);
+        // Local development specific retry sequence
+        if (isLocalhost) {
+          if (address.includes('localhost') && connectionAttempts <= 1) {
+            console.log('localhost connection failed, trying 127.0.0.1...');
+            setTimeout(() => {
+              connectToDocker('http://127.0.0.1:11434');
+            }, 1000);
+            setConnectionAttempts(prev => prev + 1);
+          } 
+          else if (address.includes('127.0.0.1') && connectionAttempts <= 2) {
+            console.log('127.0.0.1 connection failed, trying host.docker.internal...');
+            setTimeout(() => {
+              connectToDocker('http://host.docker.internal:11434');
+            }, 1000);
+            setConnectionAttempts(prev => prev + 1);
+          }
+          else if (!alternativePortsAttempted) {
+            console.log('Standard addresses failed, trying alternative port 11435...');
+            setTimeout(() => {
+              connectToDocker('http://localhost:11435');
+            }, 1000);
+            setAlternativePortsAttempted(true);
+          }
         }
-        // If we already tried the first alternative port, try the second one
-        else if (alternativePortsAttempted && address.includes('11435')) {
-          console.log('Port 11435 failed, trying port 37321...');
-          setTimeout(() => {
-            connectToDocker('http://localhost:37321');
-          }, 1000);
+        // Non-local retry strategy
+        else {
+          // If this was a CORS error, automatically try the container name
+          if (result.message?.includes('CORS') && connectionAttempts <= 1) {
+            console.log('CORS error detected, trying container name as fallback...');
+            setTimeout(() => {
+              connectToDocker('http://ollama:11434');
+            }, 1000);
+            setConnectionAttempts(prev => prev + 1);
+          } 
+          // If we've tried multiple attempts but still no connection, try alternative ports
+          else if (connectionAttempts > 1 && !alternativePortsAttempted) {
+            console.log('Multiple connection attempts failed, trying alternative ports...');
+            setTimeout(() => {
+              connectToDocker('http://localhost:11435');
+            }, 1000);
+            setAlternativePortsAttempted(true);
+          }
+          // If we already tried the first alternative port, try the second one
+          else if (alternativePortsAttempted && address.includes('11435')) {
+            console.log('Port 11435 failed, trying port 37321...');
+            setTimeout(() => {
+              connectToDocker('http://localhost:37321');
+            }, 1000);
+          }
         }
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Onbekende fout';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('Docker connection error:', errorMessage);
       
       const newStatus = {
@@ -159,7 +206,7 @@ export function useOllamaDockerConnect() {
       localStorage.setItem('ollamaConnectionStatus', JSON.stringify(newStatus));
       
       toast({
-        title: "Verbindingsfout",
+        title: "Connection error",
         description: errorMessage,
         variant: "destructive",
       });
@@ -185,6 +232,7 @@ export function useOllamaDockerConnect() {
     setUseServerSideProxy,
     currentOrigin,
     autoRetryEnabled,
-    toggleAutoRetry
+    toggleAutoRetry,
+    isLocalhost
   };
 }

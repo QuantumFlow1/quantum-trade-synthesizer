@@ -20,7 +20,8 @@ export const OllamaDockerConnect = () => {
     useServerSideProxy,
     setUseServerSideProxy,
     autoRetryEnabled,
-    toggleAutoRetry
+    toggleAutoRetry,
+    isLocalhost
   } = useOllamaDockerConnect();
 
   return (
@@ -28,7 +29,7 @@ export const OllamaDockerConnect = () => {
       <CardHeader>
         <CardTitle className="flex items-center">
           <Server className="h-5 w-5 text-primary mr-2" />
-          Ollama Docker Connection
+          Ollama Connection
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -44,6 +45,7 @@ export const OllamaDockerConnect = () => {
           setUseServerSideProxy={setUseServerSideProxy}
           autoRetryEnabled={autoRetryEnabled}
           toggleAutoRetry={toggleAutoRetry}
+          isLocalhost={isLocalhost}
         />
 
         {connectionStatus && (
