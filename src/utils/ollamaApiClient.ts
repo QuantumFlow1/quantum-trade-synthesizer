@@ -1,4 +1,3 @@
-
 // OllamaApiClient.ts
 import { OllamaModel } from '@/components/llm-extensions/ollama/types/ollamaTypes';
 
@@ -36,7 +35,7 @@ class OllamaApiClient {
         normalizedUrl = `http://${normalizedUrl}`;
       }
       
-      // Add port if missing
+      // Add port if missing (unless it's a specific alternative port like 11435 or 37321)
       if (!normalizedUrl.includes(':')) {
         normalizedUrl = `${normalizedUrl}:11434`;
       }

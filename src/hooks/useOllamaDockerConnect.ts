@@ -17,6 +17,7 @@ export function useOllamaDockerConnect() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
+  const [alternativePortsAttempted, setAlternativePortsAttempted] = useState(false);
 
   useEffect(() => {
     // Check if there's a connection status in localStorage
@@ -73,6 +74,10 @@ export function useOllamaDockerConnect() {
         setConnectionStatus(newStatus);
         localStorage.setItem('ollamaConnectionStatus', JSON.stringify(newStatus));
         
+        // Reset attempts counter on successful connection
+        setConnectionAttempts(0);
+        setAlternativePortsAttempted(false);
+        
         toast({
           title: "Connected to Ollama Docker",
           description: `Successfully connected to ${formattedAddress}`,
@@ -100,6 +105,21 @@ export function useOllamaDockerConnect() {
             connectToDocker('http://ollama:11434');
           }, 1000);
           setConnectionAttempts(prev => prev + 1);
+        } 
+        // If we've tried multiple attempts but still no connection, try alternative ports
+        else if (connectionAttempts > 1 && !alternativePortsAttempted) {
+          console.log('Multiple connection attempts failed, trying alternative ports...');
+          setTimeout(() => {
+            connectToDocker('http://localhost:11435');
+          }, 1000);
+          setAlternativePortsAttempted(true);
+        }
+        // If we already tried the first alternative port, try the second one
+        else if (alternativePortsAttempted && address.includes('11435')) {
+          console.log('Port 11435 failed, trying port 37321...');
+          setTimeout(() => {
+            connectToDocker('http://localhost:37321');
+          }, 1000);
         }
       }
     } catch (error) {

@@ -87,6 +87,7 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
               <ul className="list-disc list-inside pl-5 mt-1 text-xs">
                 <li>Container name: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://ollama:11434</code></li>
                 <li>Local address: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://localhost:11434</code></li>
+                <li>Alternative ports: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://localhost:11435</code> or <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://localhost:37321</code></li>
                 <li>Docker internal IP: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://172.17.0.1:11434</code></li>
               </ul>
             </li>
@@ -127,6 +128,7 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
                 <ul className="list-disc list-inside pl-5 mt-1 text-xs">
                   <li>Container ID: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">de67d12500e8</code></li>
                   <li>Container name: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">ollama</code></li>
+                  <li>Alternative ports: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">localhost:11435</code> or <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">localhost:37321</code></li>
                   <li>With port: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">de67d12500e8:11434</code></li>
                   <li>Full URL: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://de67d12500e8:11434</code></li>
                   <li>Docker host IP: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">http://host.docker.internal:11434</code></li>
@@ -158,6 +160,26 @@ export const OllamaConnectionGuide = ({ connectToDocker }: OllamaConnectionGuide
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Try Localhost
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => connectToDocker('http://localhost:11435')}
+            className="flex items-center justify-center"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Port 11435
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => connectToDocker('http://localhost:37321')}
+            className="flex items-center justify-center"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Try Port 37321
           </Button>
           
           <Button 

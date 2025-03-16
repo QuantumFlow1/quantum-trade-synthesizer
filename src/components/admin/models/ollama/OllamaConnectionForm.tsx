@@ -141,6 +141,33 @@ export const OllamaConnectionForm = ({
         </div>
       </div>
 
+      {/* Alternative local ports */}
+      <div className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Try alternative localhost ports:
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => connectToDocker('http://localhost:11435')}
+            className="text-xs"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            localhost:11435
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => connectToDocker('http://localhost:37321')}
+            className="text-xs"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            localhost:37321
+          </Button>
+        </div>
+      </div>
+
       {isGitpod && (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
