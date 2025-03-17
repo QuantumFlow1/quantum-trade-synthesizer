@@ -39,6 +39,18 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     return () => clearTimeout(timer);
   }, [reloadApiKeys]);
   
+  // Auto-show API key dialog if we don't have a key
+  useEffect(() => {
+    if (!isCheckingAdminKey && !hasGroqKey) {
+      // Wait a bit before showing the dialog to avoid immediate popup
+      const timer = setTimeout(() => {
+        showApiKeyDialog();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasGroqKey, isCheckingAdminKey, showApiKeyDialog]);
+  
   // Return the interface to maintain compatibility
   return {
     messages,

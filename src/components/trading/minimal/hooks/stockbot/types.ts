@@ -33,3 +33,29 @@ export interface StockbotChatHook {
   reloadApiKeys: () => Promise<void>;
   isCheckingAdminKey: boolean;
 }
+
+export interface MarketAssetData {
+  symbol: string;
+  name?: string;
+  market?: string;
+  price: number;
+  volume: number;
+  change24h?: number;
+  high24h?: number;
+  low24h?: number;
+  marketCap?: number;
+  totalVolume24h?: number;
+  circulatingSupply?: number;
+  totalSupply?: number;
+  rank?: number;
+  ath?: number;
+  athDate?: string;
+  atl?: number;
+  atlDate?: string;
+  lastUpdated?: string;
+  priceChange7d?: number;
+  priceChange30d?: number;
+  change7d?: number;
+  change30d?: number;
+  timestamp?: number;
+}

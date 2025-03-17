@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "@/hooks/use-toast";
 
 export const useApiKeyMonitor = () => {
@@ -23,6 +23,11 @@ export const useApiKeyMonitor = () => {
       if (!groqKey.startsWith('gsk_') || groqKey.length < 20) {
         console.log('Invalid Groq API key format');
         setHasGroqKey(false);
+        toast({
+          title: "Invalid API Key",
+          description: "Your Groq API key appears to be invalid. Please check the format.",
+          variant: "destructive"
+        });
         return false;
       }
       
