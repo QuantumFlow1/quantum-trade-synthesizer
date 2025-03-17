@@ -7,6 +7,13 @@ export const saveApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'g
       return false;
     }
     
+    // Validate key format based on type
+    const isValid = validateKeyFormat(type, key.trim());
+    if (!isValid) {
+      console.error(`Invalid format for ${type} API key`);
+      return false;
+    }
+    
     const storageKey = `${type}ApiKey`;
     localStorage.setItem(storageKey, key.trim());
     
@@ -34,10 +41,29 @@ export const getApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'ge
   }
 };
 
-// Function to check if API key exists
+// Function to check if API key exists and is valid
 export const hasApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): boolean => {
   const key = getApiKey(type);
-  return !!key && key.length > 10;
+  return !!key && key.length > 10 && validateKeyFormat(type, key);
+};
+
+// Function to validate key format based on provider
+const validateKeyFormat = (type: string, key: string): boolean => {
+  switch (type) {
+    case 'openai':
+      return key.startsWith('sk-');
+    case 'groq':
+      return key.startsWith('gsk_');
+    case 'claude':
+    case 'anthropic':
+      return key.startsWith('sk-ant-');
+    case 'gemini':
+      return key.startsWith('AIza');
+    case 'deepseek':
+      return key.startsWith('sk-'); // DeepSeek also uses 'sk-' prefix
+    default:
+      return true; // Default to accepting any format for unknown types
+  }
 };
 
 // Function to remove API key
@@ -103,4 +129,17 @@ export const getAvailableProviders = (): { id: string, name: string }[] => {
   }
   
   return providers;
+};
+
+// Function to test if API key works with the provider
+export const testApiKeyConnection = async (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): Promise<boolean> => {
+  try {
+    // For now, just check if the key exists and has valid format
+    return hasApiKey(type);
+    
+    // Future: Actually test the connection by making a lightweight API call
+  } catch (error) {
+    console.error(`Error testing ${type} API key connection:`, error);
+    return false;
+  }
 };

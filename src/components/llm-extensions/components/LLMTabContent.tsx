@@ -6,7 +6,7 @@ import { GrokChat } from '@/components/chat/GrokChat';
 import { ClaudeChat } from '../claude/ClaudeChat';
 import { OllamaChat } from '../ollama/OllamaChat';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DisabledTabContent } from './DisabledTabContent';
 
@@ -47,7 +47,7 @@ export function LLMTabContent({
           {tabValue === 'openai' && <OpenAIChat />}
           {tabValue === 'grok' && <GrokChat />}
           {tabValue === 'claude' && <ClaudeChat />}
-          {tabValue === 'ollama' && <GrokChat />}
+          {tabValue === 'ollama' && <OllamaChat />}
         </>
       ) : connectionStatus === 'checking' ? (
         // Show loading state
@@ -68,7 +68,24 @@ export function LLMTabContent({
               {connectionStatus === 'unavailable' ? (
                 <p>Could not connect to the {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} API. This may be due to a network issue or the API service being unavailable.</p>
               ) : (
-                <p>Could not connect to {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}. If this is Ollama, make sure it's running on your local machine.</p>
+                <>
+                  <p>
+                    {tabValue === 'ollama' ? 
+                      "Could not connect to Ollama. Make sure it's running on your local machine." :
+                      `Could not connect to ${tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}. You need to configure a valid API key.`}
+                  </p>
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium">To use this model you need to:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-sm">
+                      <li>{tabValue === 'ollama' ? 
+                          "Install and run Ollama on your computer" : 
+                          `Get an API key from the ${tabValue.charAt(0).toUpperCase() + tabValue.slice(1)} website`}</li>
+                      <li>{tabValue === 'ollama' ? 
+                          "Make sure it's running on http://localhost:11434" : 
+                          "Configure the API key below"}</li>
+                    </ol>
+                  </div>
+                </>
               )}
               <div className="mt-4 flex space-x-2">
                 <Button 
@@ -83,6 +100,7 @@ export function LLMTabContent({
                     size="sm" 
                     onClick={onConfigure}
                   >
+                    <Key className="w-4 h-4 mr-2" />
                     Configure API Key
                   </Button>
                 )}

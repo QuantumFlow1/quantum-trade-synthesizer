@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { testOllamaConnection } from '@/utils/ollamaApiClient';
 import { toast } from '@/components/ui/use-toast';
+import { testApiKeyConnection } from '@/utils/apiKeyManager';
+import { testGroqApiConnection } from '@/utils/groqApiClient';
 
 export function useLLMExtensions() {
   const [activeTab, setActiveTab] = useState('ollama');
@@ -33,30 +35,71 @@ export function useLLMExtensions() {
       try {
         const parsed = JSON.parse(savedEnabledLLMs);
         setEnabledLLMs(parsed);
+        
+        // If we have any enabled LLMs, use the first one as the active tab
+        const enabledKeys = Object.keys(parsed).filter(key => parsed[key]);
+        if (enabledKeys.length > 0) {
+          setActiveTab(enabledKeys[0]);
+        }
       } catch (e) {
         console.error('Failed to parse enabled LLMs from localStorage', e);
       }
     }
     
-    // Check connection status for all enabled LLMs
-    Object.entries(enabledLLMs).forEach(([llm, enabled]) => {
-      if (enabled) {
-        checkConnectionStatusForLLM(llm);
-      }
-    });
+    // Check API keys for all LLMs
+    checkAllApiKeys();
+    
+    // Listen for API key updates
+    const handleApiKeyUpdate = () => {
+      console.log('API key updated, rechecking connections...');
+      checkAllApiKeys();
+    };
+    
+    window.addEventListener('apikey-updated', handleApiKeyUpdate);
+    
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate);
+    };
+  }, []);
+  
+  // Check all API keys
+  const checkAllApiKeys = useCallback(async () => {
+    // Check OpenAI API key
+    const openaiConnected = await testApiKeyConnection('openai');
+    setConnectionStatus(prev => ({
+      ...prev,
+      openai: openaiConnected ? 'connected' : 'disconnected'
+    }));
+    
+    // Check Claude API key
+    const claudeConnected = await testApiKeyConnection('claude');
+    setConnectionStatus(prev => ({
+      ...prev,
+      claude: claudeConnected ? 'connected' : 'disconnected'
+    }));
+    
+    // Check DeepSeek API key
+    const deepseekConnected = await testApiKeyConnection('deepseek');
+    setConnectionStatus(prev => ({
+      ...prev,
+      deepseek: deepseekConnected ? 'connected' : 'disconnected'
+    }));
+    
+    // Check Groq API key (using specific test function)
+    const groqTest = await testGroqApiConnection();
+    setConnectionStatus(prev => ({
+      ...prev,
+      grok: groqTest.success ? 'connected' : 'disconnected'
+    }));
+    
+    // Check Ollama connection
+    checkConnectionStatusForLLM('ollama');
   }, []);
   
   // Save enabled LLMs to localStorage when changed
   useEffect(() => {
     localStorage.setItem('enabledLLMs', JSON.stringify(enabledLLMs));
   }, [enabledLLMs]);
-  
-  // Check Ollama connection on initial load
-  useEffect(() => {
-    if (enabledLLMs.ollama) {
-      checkConnectionStatusForLLM('ollama');
-    }
-  }, []);
   
   const toggleLLM = useCallback((llm: string, enabled: boolean) => {
     setEnabledLLMs(prev => {
@@ -90,16 +133,29 @@ export function useLLMExtensions() {
         
         if (!ollamaStatus.success) {
           console.error('Ollama connection failed:', ollamaStatus.message);
-          toast({
-            title: "Ollama Connection Failed",
-            description: ollamaStatus.message,
-            variant: "destructive",
-          });
+        }
+      } else if (llm === 'grok') {
+        // Use the specific Groq test
+        const groqTest = await testGroqApiConnection();
+        setConnectionStatus(prev => ({ 
+          ...prev, 
+          [llm]: groqTest.success ? 'connected' : 'disconnected' 
+        }));
+        
+        if (!groqTest.success) {
+          console.error('Groq connection failed:', groqTest.message);
         }
       } else {
-        // For other LLMs, we'd need to add API key checking logic here
-        // For now, mark them as disconnected
-        setConnectionStatus(prev => ({ ...prev, [llm]: 'disconnected' }));
+        // For other LLMs, use the generic API key test
+        const connected = await testApiKeyConnection(llm as any);
+        setConnectionStatus(prev => ({ 
+          ...prev, 
+          [llm]: connected ? 'connected' : 'disconnected' 
+        }));
+        
+        if (!connected) {
+          console.log(`${llm} API key not found or invalid`);
+        }
       }
     } catch (error) {
       console.error(`Error checking connection for ${llm}:`, error);

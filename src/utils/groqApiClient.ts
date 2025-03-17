@@ -70,6 +70,15 @@ export class GroqApiClient {
   hasApiKey(): boolean {
     return !!(this.apiKey || localStorage.getItem('groqApiKey'));
   }
+  
+  /**
+   * Validates if the provided or stored API key is in the correct format
+   * @returns Boolean indicating if the API key is valid
+   */
+  hasValidApiKey(): boolean {
+    const key = this.apiKey || localStorage.getItem('groqApiKey');
+    return !!key && key.length > 10 && key.startsWith('gsk_');
+  }
 }
 
 // Export a singleton instance for easy import
@@ -78,6 +87,13 @@ export const groqApi = new GroqApiClient();
 // Export a testing function to check if the Groq API is working
 export async function testGroqApiConnection(): Promise<{ success: boolean, message: string }> {
   try {
+    if (!groqApi.hasValidApiKey()) {
+      return { 
+        success: false, 
+        message: 'No valid Groq API key found. API keys should start with "gsk_"'
+      };
+    }
+    
     const response = await groqApi.createChatCompletion([
       { role: 'user', content: 'Hello, are you working? Please respond with a single word: "Working"' }
     ]);
