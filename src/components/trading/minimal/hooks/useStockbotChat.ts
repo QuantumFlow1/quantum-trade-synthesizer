@@ -1,22 +1,18 @@
 
 import { useEffect } from "react";
 import { StockbotChatHook } from "./stockbot/types";
-import { useStockbotSettings } from "./stockbot/useStockbotSettings";
 import { useApiKeyMonitor } from "./stockbot/useApiKeyMonitor";
 import { useStockbotMessages } from "./stockbot/useStockbotMessages";
 import { useDialogState } from "./stockbot/useDialogState";
 
 export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
   // Use our refactored hooks
-  const { isSimulationMode, setIsSimulationMode, manuallySetMode } = useStockbotSettings();
-  
   const { 
     hasGroqKey, 
     checkGroqApiKey, 
     isCheckingAdminKey,
-    reloadApiKeys,
-    setManuallySetMode
-  } = useApiKeyMonitor(isSimulationMode, setIsSimulationMode);
+    reloadApiKeys
+  } = useApiKeyMonitor();
   
   const {
     messages,
@@ -25,18 +21,13 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     isLoading,
     handleSendMessage,
     clearChat
-  } = useStockbotMessages(marketData, hasGroqKey, isSimulationMode, checkGroqApiKey);
+  } = useStockbotMessages(marketData, hasGroqKey, checkGroqApiKey);
   
   const {
     isKeyDialogOpen,
     setIsKeyDialogOpen,
     showApiKeyDialog
   } = useDialogState();
-  
-  // Keep manuallySetMode in sync between hooks
-  useEffect(() => {
-    setManuallySetMode(manuallySetMode.current);
-  }, [manuallySetMode, setManuallySetMode]);
   
   // Perform a key check when component mounts
   useEffect(() => {
@@ -48,15 +39,13 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     return () => clearTimeout(timer);
   }, [reloadApiKeys]);
   
-  // Return the same interface as before to maintain compatibility
+  // Return the interface to maintain compatibility
   return {
     messages,
     inputMessage,
     setInputMessage,
     isLoading,
     hasApiKey: hasGroqKey,
-    isSimulationMode,
-    setIsSimulationMode,
     handleSendMessage,
     clearChat,
     showApiKeyDialog,

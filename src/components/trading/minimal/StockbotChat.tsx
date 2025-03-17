@@ -6,7 +6,6 @@ import { StockbotHeader } from "./components/StockbotHeader";
 import { StockbotMessages } from "./components/StockbotMessages";
 import { StockbotInput } from "./components/StockbotInput";
 import { toast } from "@/hooks/use-toast";
-import { StockbotAlerts } from "./components/stockbot/StockbotAlerts";
 import { StockbotKeyDialog } from "./components/stockbot/StockbotKeyDialog";
 import { hasApiKey } from "@/utils/apiKeyManager";
 import { Button } from "@/components/ui/button";
@@ -24,8 +23,6 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
     inputMessage, 
     setInputMessage, 
     isLoading, 
-    isSimulationMode, 
-    setIsSimulationMode, 
     handleSendMessage, 
     clearChat,
     showApiKeyDialog,
@@ -172,23 +169,6 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
         });
         
         setApiKeyStatus({ exists: keyExists });
-        
-        if (keyExists && isSimulationMode) {
-          toast({
-            title: "API Key Configured",
-            description: "Switch to AI mode to use your Groq API key",
-            duration: 5000,
-            action: (
-              <Button 
-                onClick={() => setIsSimulationMode(false)}
-                variant="default"
-                size="sm"
-              >
-                Switch Now
-              </Button>
-            )
-          });
-        }
       }, 800);
     } catch (err) {
       console.error("Error in API key success handler:", err);
@@ -203,8 +183,6 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   return (
     <Card className="flex flex-col h-[500px] shadow-md overflow-hidden">
       <StockbotHeader 
-        isSimulationMode={isSimulationMode}
-        setIsSimulationMode={setIsSimulationMode}
         clearChat={clearChat}
         showApiKeyDialog={showApiKeyDialog}
         hasApiKey={apiKeyStatus.exists}
@@ -213,14 +191,28 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
       />
 
       <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">
-        <StockbotAlerts
-          hasApiKey={apiKeyStatus.exists}
-          isSimulationMode={isSimulationMode}
-          isCheckingAdminKey={isCheckingAdminKey}
-          showApiKeyDialog={showApiKeyDialog}
-          setIsSimulationMode={setIsSimulationMode}
-          handleForceReload={reloadApiKeys}
-        />
+        {!apiKeyStatus.exists && (
+          <div className="p-3 bg-amber-50 border-b border-amber-200 text-sm text-amber-700 flex justify-between items-center">
+            <div className="flex items-center">
+              <span>API key required for Stockbot to function</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs bg-white"
+              onClick={showApiKeyDialog}
+            >
+              Configure API Key
+            </Button>
+          </div>
+        )}
+        
+        {isCheckingAdminKey && (
+          <div className="p-3 bg-blue-50 border-b border-blue-200 text-sm text-blue-700 flex items-center">
+            <div className="w-4 h-4 mr-2 border-2 border-blue-700 border-t-transparent rounded-full animate-spin"></div>
+            <span>Checking Groq API connection...</span>
+          </div>
+        )}
         
         <StockbotMessages 
           messages={messages}
