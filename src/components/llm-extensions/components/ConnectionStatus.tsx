@@ -20,11 +20,13 @@ export function ConnectionStatus({ status, llm, onRetryConnection, onConfigure }
       case 'openai':
         return 'OpenAI';
       case 'grok':
-        return 'Grok';
+        return 'Groq (Llama)';
       case 'claude':
         return 'Claude';
+      case 'ollama':
+        return 'Ollama';
       default:
-        return value;
+        return value.charAt(0).toUpperCase() + value.slice(1);
     }
   };
 
@@ -54,7 +56,7 @@ export function ConnectionStatus({ status, llm, onRetryConnection, onConfigure }
   const config = statusConfig[status];
 
   return (
-    <div className={`p-2 px-4 text-sm flex items-center justify-between ${config.className}`}>
+    <div className={`p-2 px-4 text-sm flex items-center justify-between rounded-t-md ${config.className}`}>
       <div className="flex items-center">
         {config.icon}
         {config.text}

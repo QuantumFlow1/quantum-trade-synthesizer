@@ -1,17 +1,20 @@
-
 // Function to save API key to local storage
 export const saveApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek', key: string): boolean => {
   try {
-    if (!key || key.trim().length < 10) {
-      console.error(`Invalid ${type} API key`);
+    if (!key || key.trim().length < 5) {
+      console.error(`Invalid ${type} API key - too short`);
       return false;
     }
     
-    // Validate key format based on type
-    const isValid = validateKeyFormat(type, key.trim());
-    if (!isValid) {
-      console.error(`Invalid format for ${type} API key`);
-      return false;
+    // More lenient validation - just log warnings but accept keys anyway
+    if (type === 'openai' && !key.startsWith('sk-')) {
+      console.warn(`Warning: OpenAI API key doesn't start with 'sk-' but will try anyway`);
+    }
+    if (type === 'groq' && !key.startsWith('gsk_')) {
+      console.warn(`Warning: Groq API key doesn't start with 'gsk_' but will try anyway`);
+    }
+    if (type === 'claude' && !key.startsWith('sk-ant-')) {
+      console.warn(`Warning: Claude API key doesn't start with 'sk-ant-' but will try anyway`);
     }
     
     const storageKey = `${type}ApiKey`;
@@ -47,22 +50,41 @@ export const hasApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'ge
   return !!key && key.length > 10 && validateKeyFormat(type, key);
 };
 
-// Function to validate key format based on provider
+// Function to validate key format based on provider - more lenient validation
 const validateKeyFormat = (type: string, key: string): boolean => {
+  // For any key type, at least check for a minimum length
+  if (!key || key.length < 8) return false;
+  
+  // Be more lenient with format requirements - just log warnings but return true
   switch (type) {
     case 'openai':
-      return key.startsWith('sk-');
+      if (!key.startsWith('sk-')) {
+        console.warn("Warning: OpenAI API key doesn't match expected format, but allowing");
+      }
+      return true;
     case 'groq':
-      return key.startsWith('gsk_');
+      if (!key.startsWith('gsk_')) {
+        console.warn("Warning: Groq API key doesn't match expected format, but allowing");
+      }
+      return true;
     case 'claude':
     case 'anthropic':
-      return key.startsWith('sk-ant-');
+      if (!key.startsWith('sk-ant-')) {
+        console.warn("Warning: Claude API key doesn't match expected format, but allowing");
+      }
+      return true;
     case 'gemini':
-      return key.startsWith('AIza');
+      if (!key.startsWith('AIza')) {
+        console.warn("Warning: Gemini API key doesn't match expected format, but allowing");
+      }
+      return true;
     case 'deepseek':
-      return key.startsWith('sk-'); // DeepSeek also uses 'sk-' prefix
+      if (!key.startsWith('sk-')) {
+        console.warn("Warning: DeepSeek API key doesn't match expected format, but allowing");
+      }
+      return true;
     default:
-      return true; // Default to accepting any format for unknown types
+      return true;
   }
 };
 
@@ -131,13 +153,30 @@ export const getAvailableProviders = (): { id: string, name: string }[] => {
   return providers;
 };
 
-// Function to test if API key works with the provider
+// Function to test if API key works with the provider - more robust testing
 export const testApiKeyConnection = async (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek'): Promise<boolean> => {
   try {
-    // For now, just check if the key exists and has valid format
-    return hasApiKey(type);
+    const key = getApiKey(type);
     
-    // Future: Actually test the connection by making a lightweight API call
+    // First, just check if the key exists and has reasonable length
+    if (!key || key.length < 8) {
+      console.log(`API key for ${type} is missing or too short`);
+      return false;
+    }
+    
+    console.log(`Testing ${type} API key connection, key length: ${key.length}`);
+    
+    // For groq, use the specific test function from groqApiClient
+    if (type === 'groq') {
+      const { groqApi } = await import('./groqApiClient');
+      const testResult = await groqApi.hasValidApiKey();
+      console.log(`Groq API key validation result: ${testResult}`);
+      return testResult;
+    }
+    
+    // For now, if we have a key of reasonable length, assume it's valid
+    // In a real implementation, you would make a test call to the respective API
+    return true;
   } catch (error) {
     console.error(`Error testing ${type} API key connection:`, error);
     return false;

@@ -37,12 +37,9 @@ export class GroqApiClient {
         };
       }
       
+      // Be more lenient with API key format validation - only warn but don't block
       if (!apiKey.startsWith('gsk_')) {
-        console.error('Invalid Groq API key format');
-        return {
-          status: 'error',
-          error: 'Invalid API key format. Groq API keys should start with "gsk_".'
-        };
+        console.warn('Groq API key does not start with "gsk_", but proceeding anyway');
       }
       
       // Create headers object
@@ -50,6 +47,8 @@ export class GroqApiClient {
       if (apiKey) {
         headers['x-groq-api-key'] = apiKey;
       }
+      
+      console.log('Calling Groq API edge function with headers set:', !!headers['x-groq-api-key']);
       
       // Call our edge function which will handle the API request
       const { data, error } = await supabase.functions.invoke('groq-chat', {
@@ -116,7 +115,8 @@ export class GroqApiClient {
    */
   hasValidApiKey(): boolean {
     const key = this.apiKey || localStorage.getItem('groqApiKey');
-    return !!key && key.length > 10 && key.startsWith('gsk_');
+    // Be more lenient with validation - just check if it exists and has reasonable length
+    return !!key && key.length > 10;
   }
 }
 
@@ -129,7 +129,7 @@ export async function testGroqApiConnection(): Promise<{ success: boolean, messa
     if (!groqApi.hasValidApiKey()) {
       return { 
         success: false, 
-        message: 'No valid Groq API key found. API keys should start with "gsk_"'
+        message: 'No valid Groq API key found. Please ensure your API key is at least 10 characters.'
       };
     }
     
