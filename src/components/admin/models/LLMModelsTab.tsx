@@ -20,9 +20,9 @@ export const LLMModelsTab = () => {
             AI Chat Modellen Beheer
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-4">
+        <CardContent className="p-0 pb-4"> {/* Added pb-4 for better spacing */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-4 px-6 pt-4"> {/* Added padding for better spacing */}
               <TabsTrigger value="llm_models">Modellen</TabsTrigger>
               <TabsTrigger value="ai_agents">
                 <Bot className="h-4 w-4 mr-1" /> 
@@ -42,27 +42,29 @@ export const LLMModelsTab = () => {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="llm_models">
-              <LLMModelsList />
-            </TabsContent>
-            
-            <TabsContent value="ai_agents">
-              <AIAgentsChatTab />
-            </TabsContent>
-            
-            <TabsContent value="docker_connect">
-              <OllamaDockerConnect />
-            </TabsContent>
-            
-            <TabsContent value="api_keys">
-              <APIKeysTab />
-            </TabsContent>
-            
-            <TabsContent value="settings">
-              <div className="p-4 text-center text-muted-foreground">
-                Model instellingen functionaliteit komt binnenkort beschikbaar.
-              </div>
-            </TabsContent>
+            <div className="px-6"> {/* Added padding wrapper for consistent content spacing */}
+              <TabsContent value="llm_models">
+                <LLMModelsList />
+              </TabsContent>
+              
+              <TabsContent value="ai_agents">
+                <AIAgentsChatTab />
+              </TabsContent>
+              
+              <TabsContent value="docker_connect">
+                <OllamaDockerConnect />
+              </TabsContent>
+              
+              <TabsContent value="api_keys">
+                <APIKeysTab />
+              </TabsContent>
+              
+              <TabsContent value="settings">
+                <div className="p-4 text-center text-muted-foreground">
+                  Model instellingen functionaliteit komt binnenkort beschikbaar.
+                </div>
+              </TabsContent>
+            </div>
           </Tabs>
         </CardContent>
       </Card>

@@ -12,6 +12,7 @@ import { hasApiKey } from "@/utils/apiKeyManager";
 import { supabase } from "@/lib/supabase";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { UnifiedAISelector } from "@/components/ai/UnifiedAISelector";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const AGENTS = [
   { id: "advisor", name: "Financial Advisor", description: "Helps with investment advice and financial planning", systemPrompt: "You are a financial advisor specializing in investment advice. Provide detailed, professional financial planning guidance based on user queries. Include specific investment strategies, risk assessments, and portfolio diversification advice when appropriate." },
@@ -41,7 +42,9 @@ export const AIAgentsChatTab: React.FC = () => {
   
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [chatHistory]);
   
   // Check if we have any API keys available
@@ -299,8 +302,8 @@ export const AIAgentsChatTab: React.FC = () => {
 
       <Card className="border rounded-lg">
         <CardContent className="p-4 space-y-4">
-          {/* Chat history section */}
-          <div className="h-[350px] overflow-y-auto border rounded-md bg-background p-4">
+          {/* Chat history section - Now using ScrollArea for better scrolling */}
+          <ScrollArea className="h-[350px] border rounded-md bg-background p-4">
             {chatHistory.map((message) => (
               <div 
                 key={message.id} 
@@ -340,7 +343,7 @@ export const AIAgentsChatTab: React.FC = () => {
               </div>
             )}
             <div ref={messagesEndRef} />
-          </div>
+          </ScrollArea>
           
           {/* Input section */}
           <div className="flex space-x-2">
