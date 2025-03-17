@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -188,7 +187,10 @@ export function TradingDataMonitor() {
             data.map(d => ({ 
               price: d.close, 
               symbol: 'BTC', 
-              timestamp: new Date().getTime()
+              timestamp: d.timestamp,
+              volume: d.volume || 0,
+              high: d.high || d.close,
+              low: d.low || d.close
             })), 
             10
           );

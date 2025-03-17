@@ -10,6 +10,8 @@ interface StockbotHeaderProps {
   hasApiKey: boolean;
   isUsingRealData: boolean;
   toggleRealData: () => void;
+  isSimulationMode?: boolean;
+  setIsSimulationMode?: (mode: boolean) => void;
 }
 
 export const StockbotHeader = ({
@@ -17,7 +19,9 @@ export const StockbotHeader = ({
   showApiKeyDialog,
   hasApiKey,
   isUsingRealData,
-  toggleRealData
+  toggleRealData,
+  isSimulationMode = false,
+  setIsSimulationMode = () => {}
 }: StockbotHeaderProps) => {
   return (
     <CardHeader className="p-3 border-b flex flex-row items-center justify-between">

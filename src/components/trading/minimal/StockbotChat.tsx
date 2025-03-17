@@ -1,4 +1,3 @@
-
 import { useRef, useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStockbotChat } from "./hooks/useStockbotChat";
@@ -39,14 +38,12 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
   const keyCheckInProgress = useRef(false);
   const lastKeyUpdateTime = useRef(0);
   
-  // Scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Check for API key changes
   useEffect(() => {
     const checkKey = () => {
       const now = Date.now();
@@ -175,7 +172,6 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
     }
   };
 
-  // Toggle real data state
   const toggleRealData = () => {
     setIsUsingRealData(prev => !prev);
   };
@@ -188,6 +184,8 @@ export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData =
         hasApiKey={apiKeyStatus.exists}
         isUsingRealData={isUsingRealData}
         toggleRealData={toggleRealData}
+        isSimulationMode={false}
+        setIsSimulationMode={() => {}}
       />
 
       <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">

@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -332,8 +331,6 @@ export function PerformanceMetricsViewer() {
                     <Bar 
                       dataKey="return" 
                       name="Return %" 
-                      fill={(entry) => entry.return >= 0 ? "#4ade80" : "#ef4444"}
-                      // Fix: Use Cell components instead of a function for fill
                     >
                       {performanceData.tradingPerformance.monthlyReturns.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.return >= 0 ? "#4ade80" : "#ef4444"} />
