@@ -21,19 +21,23 @@ export function useToolCallsProcessor() {
       for (const toolCall of toolCalls) {
         console.log('Processing tool call:', toolCall);
         
-        if (toolCall.type !== 'function') continue;
-        
-        const { name, arguments: argsString } = toolCall.function;
+        // Check if we're dealing with a function-style tool call (with function property)
+        // or direct-style tool call (with name and arguments properties)
+        const funcName = toolCall.function ? toolCall.function.name : toolCall.name;
         let args;
         
         try {
-          args = JSON.parse(argsString);
+          if (toolCall.function) {
+            args = JSON.parse(toolCall.function.arguments);
+          } else {
+            args = toolCall.arguments;
+          }
         } catch (e) {
           console.error('Failed to parse tool call arguments:', e);
           continue;
         }
         
-        const toolResponse = await executeToolCall(name, args);
+        const toolResponse = await executeToolCall(funcName, args);
         
         // Create message for the tool execution result
         const resultMessage: CryptoMessage = {
@@ -42,7 +46,7 @@ export function useToolCallsProcessor() {
           content: JSON.stringify(toolResponse),
           timestamp: new Date(),
           functionCalls: [{ 
-            name: name,
+            name: funcName,
             arguments: args 
           }]
         };

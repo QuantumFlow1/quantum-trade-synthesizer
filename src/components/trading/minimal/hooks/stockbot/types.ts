@@ -15,6 +15,18 @@ export interface StockbotMessage extends ChatMessage {
 export interface StockbotToolCall {
   name: string;
   arguments: any;
+  // Added fields to match the structure used in the code
+  type?: string;
+  function?: {
+    name: string;
+    arguments: string;
+  };
+}
+
+export interface StockbotApiResponse {
+  success: boolean;
+  response?: string;
+  error?: string;
 }
 
 export type CheckApiKeyFunction = () => Promise<boolean>;

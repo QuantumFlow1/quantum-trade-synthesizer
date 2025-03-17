@@ -12,8 +12,7 @@ import { useToolCallProcessor } from "./useToolCallProcessor";
 
 export const useStockbotMessages = (
   marketData: any[] = [],
-  hasGroqKey: boolean,
-  checkApiKey: CheckApiKeyFunction
+  hasGroqKey: boolean
 ) => {
   const [messages, setMessages] = useState<ChatMessage[]>(loadMessages() as ChatMessage[]);
   const [inputMessage, setInputMessage] = useState("");
@@ -44,10 +43,7 @@ export const useStockbotMessages = (
       let responseMessage: ChatMessage;
       let toolCalls: any[] | undefined;
       
-      // Double-check API key availability
-      const apiKeyValid = await checkApiKey();
-      
-      if (!apiKeyValid) {
+      if (!hasGroqKey) {
         console.warn('API key check failed, unable to proceed');
         
         responseMessage = {
@@ -139,7 +135,7 @@ export const useStockbotMessages = (
     } finally {
       setIsLoading(false);
     }
-  }, [inputMessage, messages, marketData, hasGroqKey, checkApiKey, callGroqApi, processToolCalls, errorCount]);
+  }, [inputMessage, messages, marketData, hasGroqKey, callGroqApi, processToolCalls, errorCount]);
 
   const clearChat = useCallback(() => {
     setMessages([]);

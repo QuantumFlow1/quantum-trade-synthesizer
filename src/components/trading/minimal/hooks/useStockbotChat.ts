@@ -21,7 +21,7 @@ export const useStockbotChat = (marketData: any[] = []): StockbotChatHook => {
     isLoading,
     handleSendMessage,
     clearChat
-  } = useStockbotMessages(marketData, hasGroqKey, checkGroqApiKey);
+  } = useStockbotMessages(marketData, hasGroqKey);
   
   const {
     isKeyDialogOpen,

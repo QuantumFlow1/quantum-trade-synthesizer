@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Bar, ComposedChart } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Bar, ComposedChart, Cell } from 'recharts';
 import { Play, Pause, RotateCcw, Save, FileDown, ChevronsRight, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -155,7 +155,7 @@ export function BacktestingSimulationPanel() {
     const metrics = {
       totalReturn: (equity[equity.length - 1] / initialCapital - 1) * 100,
       maxDrawdown: Math.max(...drawdowns),
-      sharpeRatio: (Math.random() * 1 + 0.5).toFixed(2),
+      sharpeRatio: Number((Math.random() * 1 + 0.5).toFixed(2)), // Convert to number explicitly
       winRate: (winningTrades.length / trades.length) * 100,
       profitFactor: Math.abs(
         winningTrades.reduce((sum, t) => sum + t.profitLoss, 0) / 
@@ -448,9 +448,12 @@ export function BacktestingSimulationPanel() {
                       <Tooltip />
                       <Bar 
                         dataKey="return" 
-                        name="Return %" 
-                        fill={(entry) => entry.return >= 0 ? "#4ade80" : "#ef4444"}
-                      />
+                        name="Return %"
+                      >
+                        {equityChartData.filter((_, i) => i > 0).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.return >= 0 ? "#4ade80" : "#ef4444"} />
+                        ))}
+                      </Bar>
                     </ComposedChart>
                   </ResponsiveContainer>
                 </CardContent>

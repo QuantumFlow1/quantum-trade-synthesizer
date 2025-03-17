@@ -1,15 +1,14 @@
 
-import { useTradingForm } from "@/hooks/use-trading-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ApiStatus } from "@/hooks/use-trading-chart-data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StockbotChat } from "./minimal/components/stockbot/StockbotChat";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { AssetDetailCard } from "./minimal/components/AssetDetailCard";
 import { MarketSummary } from "./minimal/components/MarketSummary";
 import { MarketMetrics } from "./minimal/components/trading-view/MarketMetrics";
+import { StockbotChat } from "./minimal/components/stockbot/StockbotChat";
 
 interface TradingOrderSectionProps {
   apiStatus: ApiStatus;

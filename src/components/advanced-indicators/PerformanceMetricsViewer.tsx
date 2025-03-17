@@ -70,6 +70,11 @@ export function PerformanceMetricsViewer() {
   
   const equityCurveData = generateEquityCurveData();
   
+  // Helper function to get color based on value
+  const getReturnColor = (value: number) => {
+    return value >= 0 ? "#4ade80" : "#ef4444";
+  };
+  
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -328,7 +333,12 @@ export function PerformanceMetricsViewer() {
                       dataKey="return" 
                       name="Return %" 
                       fill={(entry) => entry.return >= 0 ? "#4ade80" : "#ef4444"}
-                    />
+                      // Fix: Use Cell components instead of a function for fill
+                    >
+                      {performanceData.tradingPerformance.monthlyReturns.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.return >= 0 ? "#4ade80" : "#ef4444"} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

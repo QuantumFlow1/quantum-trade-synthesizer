@@ -1,7 +1,5 @@
 
 import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { 
   Home, 
@@ -23,7 +21,7 @@ interface MainNavProps {
 }
 
 export function MainNav({ className }: MainNavProps) {
-  const pathname = usePathname();
+  const [pathname, setPathname] = useState("/");
   const [showAllItems, setShowAllItems] = useState(false);
 
   const mainNavItems = [
@@ -106,10 +104,15 @@ export function MainNav({ className }: MainNavProps) {
     ? mainNavItems 
     : mainNavItems.filter(item => item.primary);
 
+  const handleNavClick = (href: string) => {
+    setPathname(href);
+    // In a real app, you would use a router to navigate
+  };
+
   return (
     <nav className={cn("flex items-center space-x-4 lg:space-x-6 overflow-x-auto", className)}>
       {displayedNavItems.map((item) => (
-        <Link
+        <a
           key={item.href}
           href={item.href}
           className={cn(
@@ -118,10 +121,14 @@ export function MainNav({ className }: MainNavProps) {
               ? "text-primary"
               : "text-muted-foreground"
           )}
+          onClick={(e) => {
+            e.preventDefault();
+            handleNavClick(item.href);
+          }}
         >
           {item.icon}
           {item.title}
-        </Link>
+        </a>
       ))}
       
       {!showAllItems && mainNavItems.some(item => !item.primary) && (
