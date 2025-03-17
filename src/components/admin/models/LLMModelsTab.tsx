@@ -3,9 +3,10 @@ import React, { useState } from "react";
 import { LLMModelsList } from "./LLMModelsList"; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Server, Bot, Key } from "lucide-react";
+import { Sparkles, Server, Bot, Key, Settings } from "lucide-react";
 import { OllamaDockerConnect } from "./OllamaDockerConnect";
 import { AIAgentsChatTab } from "./AIAgentsChatTab";
+import { APIKeysTab } from "./APIKeysTab";
 
 export const LLMModelsTab = () => {
   const [activeTab, setActiveTab] = useState("llm_models");
@@ -35,7 +36,10 @@ export const LLMModelsTab = () => {
                 <Key className="h-4 w-4 mr-1" />
                 API Keys
               </TabsTrigger>
-              <TabsTrigger value="settings">Instellingen</TabsTrigger>
+              <TabsTrigger value="settings">
+                <Settings className="h-4 w-4 mr-1" />
+                Instellingen
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="llm_models">
@@ -51,9 +55,7 @@ export const LLMModelsTab = () => {
             </TabsContent>
             
             <TabsContent value="api_keys">
-              <div className="p-4 text-center text-muted-foreground">
-                API keys beheer functionaliteit komt binnenkort beschikbaar.
-              </div>
+              <APIKeysTab />
             </TabsContent>
             
             <TabsContent value="settings">
