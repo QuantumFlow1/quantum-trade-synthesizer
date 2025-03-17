@@ -59,20 +59,22 @@ export function ConnectionStatus({ status, llm, onRetryConnection, onConfigure }
     <div className={`p-2 px-4 text-sm flex items-center justify-between rounded-t-md ${config.className}`}>
       <div className="flex items-center">
         {config.icon}
-        {config.text}
+        <span>{config.text}</span>
       </div>
       
-      {status === 'disconnected' && onConfigure && (
-        <Button size="sm" variant="outline" onClick={onConfigure} className="ml-2">
-          Configure API Key
-        </Button>
-      )}
-      
-      {status === 'unavailable' && onRetryConnection && (
-        <Button size="sm" variant="outline" onClick={onRetryConnection} className="ml-2">
-          Retry Connection
-        </Button>
-      )}
+      <div className="flex gap-2">
+        {status === 'disconnected' && onConfigure && (
+          <Button size="sm" variant="outline" onClick={onConfigure} className="ml-2">
+            Configure API Key
+          </Button>
+        )}
+        
+        {(status === 'unavailable' || status === 'disconnected') && onRetryConnection && (
+          <Button size="sm" variant="outline" onClick={onRetryConnection} className="ml-2">
+            Retry Connection
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

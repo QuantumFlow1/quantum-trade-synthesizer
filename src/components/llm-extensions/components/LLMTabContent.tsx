@@ -10,6 +10,7 @@ import { AlertCircle, Loader2, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DisabledTabContent } from './DisabledTabContent';
 import { ConnectionStatus } from './ConnectionStatus';
+import { useEffect } from 'react';
 
 interface LLMTabContentProps {
   tabValue: string;
@@ -28,6 +29,11 @@ export function LLMTabContent({
   onRetryConnection,
   onConfigure
 }: LLMTabContentProps) {
+  // Log the connection status for debugging
+  useEffect(() => {
+    console.log(`[LLMTabContent] ${tabValue} connection status:`, connectionStatus);
+  }, [tabValue, connectionStatus]);
+
   if (!isEnabled) {
     return (
       <TabsContent value={tabValue} className="border rounded-md p-0 h-[400px]">

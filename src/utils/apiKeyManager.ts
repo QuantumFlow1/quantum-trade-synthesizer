@@ -1,3 +1,4 @@
+
 // Function to save API key to local storage
 export const saveApiKey = (type: 'openai' | 'groq' | 'claude' | 'anthropic' | 'gemini' | 'deepseek', key: string): boolean => {
   try {
@@ -168,10 +169,10 @@ export const testApiKeyConnection = async (type: 'openai' | 'groq' | 'claude' | 
     
     // For groq, use the specific test function from groqApiClient
     if (type === 'groq') {
-      const { groqApi } = await import('./groqApiClient');
-      const testResult = await groqApi.hasValidApiKey();
-      console.log(`Groq API key validation result: ${testResult}`);
-      return testResult;
+      const { testGroqApiConnection } = await import('./groqApiClient');
+      const testResult = await testGroqApiConnection();
+      console.log(`Groq API key validation result:`, testResult);
+      return testResult.success;
     }
     
     // For now, if we have a key of reasonable length, assume it's valid

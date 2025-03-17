@@ -42,8 +42,11 @@ export class GroqApiClient {
         console.warn('Groq API key does not start with "gsk_", but proceeding anyway');
       }
       
-      // Create headers object
-      const headers: Record<string, string> = {};
+      // Create headers object with the API key
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
       if (apiKey) {
         headers['x-groq-api-key'] = apiKey;
       }
@@ -72,6 +75,15 @@ export class GroqApiClient {
         return {
           status: 'error',
           error: error.message || 'Error calling Groq API'
+        };
+      }
+      
+      if (!data) {
+        const errorMsg = "No data returned from the API";
+        console.error(errorMsg);
+        return {
+          status: 'error',
+          error: errorMsg
         };
       }
       
@@ -133,22 +145,29 @@ export async function testGroqApiConnection(): Promise<{ success: boolean, messa
       };
     }
     
-    const response = await groqApi.createChatCompletion([
-      { role: 'user', content: 'Hello, are you working? Please respond with a single word: "Working"' }
-    ]);
+    console.log("Testing Groq API connection...");
     
-    if (response.status === 'success') {
-      return { 
-        success: true, 
-        message: 'Successfully connected to Groq API' 
-      };
-    } else {
+    // Make a simple request to test the connection
+    const testMessages = [
+      { role: 'user' as const, content: 'Hello, are you working?' }
+    ];
+    
+    const response = await groqApi.createChatCompletion(testMessages);
+    console.log("Groq test response:", response);
+    
+    if (response && response.status === 'error') {
       return { 
         success: false, 
-        message: response.error || 'Unknown error occurred' 
+        message: response.error || 'Failed to connect to Groq API'
       };
     }
+    
+    return { 
+      success: true, 
+      message: 'Successfully connected to Groq API' 
+    };
   } catch (error) {
+    console.error("Error testing Groq connection:", error);
     return { 
       success: false, 
       message: error instanceof Error ? error.message : 'Failed to connect to Groq API'
