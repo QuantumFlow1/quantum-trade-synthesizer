@@ -1,5 +1,6 @@
 
 import { supabase } from '@/lib/supabase';
+import { toast } from '@/components/ui/use-toast';
 
 /**
  * A simple client for interacting with the Groq API
@@ -28,6 +29,22 @@ export class GroqApiClient {
       const localStorageKey = localStorage.getItem('groqApiKey');
       const apiKey = this.apiKey || localStorageKey;
       
+      if (!apiKey) {
+        console.error('No Groq API key available');
+        return {
+          status: 'error',
+          error: 'No Groq API key available. Please configure your API key in settings.'
+        };
+      }
+      
+      if (!apiKey.startsWith('gsk_')) {
+        console.error('Invalid Groq API key format');
+        return {
+          status: 'error',
+          error: 'Invalid API key format. Groq API keys should start with "gsk_".'
+        };
+      }
+      
       // Create headers object
       const headers: Record<string, string> = {};
       if (apiKey) {
@@ -45,13 +62,35 @@ export class GroqApiClient {
       
       if (error) {
         console.error('Error calling Groq API via edge function:', error);
-        throw new Error(error.message || 'Error calling Groq API');
+        
+        // Show a toast notification for API errors
+        toast({
+          title: "API Error",
+          description: error.message || "Error calling Groq API",
+          variant: "destructive"
+        });
+        
+        return {
+          status: 'error',
+          error: error.message || 'Error calling Groq API'
+        };
       }
       
       return data;
     } catch (error) {
       console.error('Error in createChatCompletion:', error);
-      throw error;
+      
+      // Show a toast notification for exceptions
+      toast({
+        title: "Connection Error",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      });
+      
+      return {
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
     }
   }
   
