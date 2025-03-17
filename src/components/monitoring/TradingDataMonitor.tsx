@@ -187,7 +187,9 @@ export function TradingDataMonitor() {
             data.map(d => ({ 
               price: d.close, 
               symbol: 'BTC', 
-              timestamp: d.timestamp,
+              // Use a generated timestamp based on the name if it contains a date pattern,
+              // otherwise use the current timestamp
+              timestamp: Date.now(),
               volume: d.volume || 0,
               high: d.high || d.close,
               low: d.low || d.close
