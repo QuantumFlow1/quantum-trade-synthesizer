@@ -1,13 +1,25 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Coins, LineChart, MessageSquare } from "lucide-react";
-import { MarketOverview } from "@/components/market/MarketOverview";
-import { TradingView } from "@/components/trading/TradingView";
+import MarketOverview from "@/components/MarketOverview";
+import { TradingView } from "@/components/trading/minimal/components/trading-view";
 import { StockbotChat } from "./components/stockbot/StockbotChat";
 
-export const MinimalTradingTab = () => {
+interface MinimalTradingTabProps {
+  initialOpenAgentsTab?: boolean;
+}
+
+export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradingTabProps) => {
   const [activeTab, setActiveTab] = useState("market");
+
+  // Set active tab to stockbot if initialOpenAgentsTab is true
+  useEffect(() => {
+    if (initialOpenAgentsTab) {
+      setActiveTab("stockbot");
+    }
+  }, [initialOpenAgentsTab]);
 
   return (
     <Card className="col-span-4">
@@ -31,7 +43,7 @@ export const MinimalTradingTab = () => {
             <MarketOverview />
           </TabsContent>
           <TabsContent value="trading" className="h-full p-2">
-            <TradingView />
+            <TradingView apiStatus="available" chartData={[]} />
           </TabsContent>
           <TabsContent value="stockbot" className="h-full p-2">
             <div className="h-full">
