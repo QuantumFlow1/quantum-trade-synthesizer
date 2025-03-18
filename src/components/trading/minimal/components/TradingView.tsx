@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTradingViewState } from "../hooks/useTradingViewState";
+import { useTradingViewState, TimeInterval } from "../hooks/useTradingViewState";
 import { 
   ChartControls, 
   IndicatorControls,
@@ -53,6 +53,19 @@ export const TradingView = ({ chartData, apiStatus, useRealData = false }: Tradi
   // Controleer of er data is om weer te geven
   const hasValidData = enhancedChartData && enhancedChartData.length > 0;
   
+  // Handler for interval selection that ensures proper typing
+  const handleIntervalSelect = (interval: string) => {
+    // Type guard to ensure interval is a valid TimeInterval
+    if (isValidTimeInterval(interval)) {
+      setSelectedInterval(interval);
+    }
+  };
+  
+  // Type guard function
+  const isValidTimeInterval = (interval: string): interval is TimeInterval => {
+    return ["1m", "5m", "15m", "1h", "4h", "1d", "1w"].includes(interval);
+  };
+  
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -88,7 +101,7 @@ export const TradingView = ({ chartData, apiStatus, useRealData = false }: Tradi
                 variant={interval === selectedInterval ? "default" : "ghost"} 
                 size="sm" 
                 className="rounded-none h-8 px-2 text-xs"
-                onClick={() => setSelectedInterval(interval)}
+                onClick={() => handleIntervalSelect(interval)}
               >
                 {interval}
               </Button>
@@ -135,6 +148,7 @@ export const TradingView = ({ chartData, apiStatus, useRealData = false }: Tradi
                 chartType={chartType}
                 data={enhancedChartData}
                 visibleIndicators={visibleIndicators}
+                showLegend={showLegend}
               />
               
               {visibleIndicators.volume && (

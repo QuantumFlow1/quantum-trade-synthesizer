@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
 export type TimeInterval = "1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w";
@@ -25,6 +25,7 @@ export function useTradingViewState() {
     rsi: false,
     bollingerBands: false
   });
+  const [showLegend, setShowLegend] = useState(true);
 
   // Use ref to track if toast was shown for an interval
   const shownToastsRef = useRef(new Set<string>());
@@ -57,6 +58,25 @@ export function useTradingViewState() {
     }));
   }, []);
 
+  // Toggle legend display
+  const toggleLegend = useCallback(() => {
+    setShowLegend(prev => !prev);
+  }, []);
+
+  // Process chart data with indicators
+  const processChartData = useCallback((data: any[]) => {
+    if (!data || data.length === 0) return [];
+    
+    // Clone data to avoid mutating original
+    return data.map(point => {
+      // Return original data with any calculated indicators
+      return {
+        ...point,
+        // Add any custom calculated indicators here if needed
+      };
+    });
+  }, []);
+
   // Reset shown toasts when component unmounts
   useEffect(() => {
     return () => {
@@ -70,6 +90,9 @@ export function useTradingViewState() {
     chartType,
     setChartType: handleChartTypeChange,
     visibleIndicators,
-    toggleIndicator
+    toggleIndicator,
+    showLegend,
+    toggleLegend,
+    processChartData
   };
 }
