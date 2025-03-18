@@ -11,10 +11,19 @@ type Message = {
   timestamp: Date;
 };
 
+// Available AI models
+const AVAILABLE_MODELS = [
+  { id: 'llama-3.3-70b-versatile', name: 'Llama 3 70B', providerName: 'Groq' },
+  { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7b', providerName: 'Groq' },
+  { id: 'gemini-pro', name: 'Gemini Pro', providerName: 'Google' },
+  { id: 'claude-3-haiku', name: 'Claude 3 Haiku', providerName: 'Anthropic' },
+];
+
 export const useStockbotState = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentModel, setCurrentModel] = useState(AVAILABLE_MODELS[0].id);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
@@ -59,5 +68,8 @@ export const useStockbotState = () => {
     isLoading,
     handleSendMessage,
     clearChat,
+    currentModel,
+    setCurrentModel,
+    availableModels: AVAILABLE_MODELS
   };
 };

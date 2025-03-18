@@ -1,232 +1,142 @@
 
-import { useState, useRef, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import React, { useState, useRef, useEffect } from "react";
+import { StockbotMessageList } from "./StockbotMessageList";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, Settings } from "lucide-react";
 import { useStockbotState } from "../../hooks/stockbot/useStockbotState";
 import { Spinner } from "@/components/ui/spinner";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 export function StockbotChat() {
-  const {
-    messages,
-    inputMessage: input,
-    setInputMessage: setInput,
-    isLoading,
-    handleSendMessage: handleSubmit,
-    clearChat: clearMessages
+  const { 
+    messages, 
+    inputMessage, 
+    setInputMessage, 
+    isLoading, 
+    handleSendMessage,
+    clearChat,
+    currentModel,
+    setCurrentModel,
+    availableModels
   } = useStockbotState();
-
-  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [isSimulationMode, setIsSimulationMode] = useState(false);
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [isUsingRealData, setIsUsingRealData] = useState(false);
+  
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Focus input field when component mounts
   useEffect(() => {
-    // Check for API key in localStorage on component mount
-    const storedKey = localStorage.getItem("stockbot-api-key");
-    setHasApiKey(!!storedKey);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   }, []);
 
+  // Scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({
-        behavior: "smooth"
-      });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  const handleSaveApiKey = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem("stockbot-api-key", apiKey.trim());
-      setHasApiKey(true);
-      setShowApiKeyDialog(false);
-      setApiKey("");
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSendMessage();
   };
 
-  const clearChat = () => {
-    clearMessages();
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit();
+      handleSendMessage();
     }
-  };
-
-  const toggleRealData = () => {
-    setIsUsingRealData(!isUsingRealData);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
   };
 
   return (
-    <>
-      <Card className="flex flex-col h-full border-muted-foreground/20">
-        <StockbotHeader
-          clearChat={clearChat}
-          showApiKeyDialog={() => setShowApiKeyDialog(true)}
-          hasApiKey={hasApiKey}
-          isUsingRealData={isUsingRealData}
-          toggleRealData={toggleRealData}
-          isSimulationMode={isSimulationMode}
-          setIsSimulationMode={setIsSimulationMode}
-        />
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <ScrollArea className="h-[400px] px-4">
-            <div className="space-y-4 pt-4 pb-4">
-              {messages.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  <Bot className="mx-auto h-12 w-12 mb-2 text-primary/50" />
-                  <p>Hallo! Ik ben Stockbot, je financiële assistent.</p>
-                  <p className="text-sm">Stel me een vraag over aandelen, crypto, of marktgegevens.</p>
-                </div>
-              ) : (
-                messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${
-                      message.role === "user" ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2 mb-1">
-                        {message.role === "user" ? (
-                          <User className="h-4 w-4" />
-                        ) : (
-                          <Bot className="h-4 w-4" />
-                        )}
-                        <span className="text-xs font-semibold">
-                          {message.role === "user" ? "Jij" : "Stockbot"}
-                        </span>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    </div>
-                  </div>
-                ))
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
-        </CardContent>
-        <div className="p-4 border-t">
-          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex space-x-2">
-            <Input
-              className="flex-1"
-              placeholder="Stel een vraag over de markt..."
-              value={input}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              disabled={isLoading}
-            />
-            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-              {isLoading ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+    <Card className="flex flex-col h-full">
+      <CardHeader className="pb-3 pt-4">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-xl font-semibold flex items-center">
+            <Bot className="mr-2 h-5 w-5" />
+            Stockbot
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Select 
+              value={currentModel} 
+              onValueChange={setCurrentModel}
+            >
+              <SelectTrigger className="w-[180px] h-8 text-xs">
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableModels.map((model) => (
+                  <SelectItem key={model.id} value={model.id} className="text-xs">
+                    {model.name} ({model.providerName})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline" 
+              size="icon"
+              onClick={() => clearChat()}
+              title="Clear chat"
+            >
+              <Settings className="h-4 w-4" />
             </Button>
-          </form>
+          </div>
         </div>
-      </Card>
-
-      <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
-        <DialogContent>
+      </CardHeader>
+      <CardContent className="p-0 px-4 flex-grow overflow-hidden">
+        <StockbotMessageList messages={messages} />
+        <div ref={messagesEndRef} />
+      </CardContent>
+      <CardFooter className="p-4 pt-2">
+        <form onSubmit={handleSubmit} className="flex w-full gap-2">
+          <Input
+            ref={inputRef}
+            type="text"
+            placeholder="Type your message..."
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={handleKeyPress}
+            disabled={isLoading}
+            className="flex-grow"
+          />
+          <Button 
+            type="submit" 
+            size="icon" 
+            disabled={isLoading || !inputMessage.trim()}
+          >
+            {isLoading ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+          </Button>
+        </form>
+      </CardFooter>
+      
+      {/* Settings Dialog (Future implementation) */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>API Sleutel Configuratie</DialogTitle>
+            <DialogTitle>Stockbot Settings</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              Voer je API sleutel in om toegang te krijgen tot realtime marktgegevens.
-            </p>
-            <Input
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="API Sleutel"
-              type="password"
-            />
+            {/* Settings content would go here */}
+            <p className="text-muted-foreground">Configure Stockbot behavior and API connections</p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowApiKeyDialog(false)}>
-              Annuleren
-            </Button>
-            <Button onClick={handleSaveApiKey}>
-              Opslaan
+            <Button onClick={() => setIsSettingsOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </Card>
   );
 }
-
-// StockbotHeader component
-function StockbotHeader({
-  clearChat,
-  showApiKeyDialog,
-  hasApiKey,
-  isUsingRealData,
-  toggleRealData,
-  isSimulationMode,
-  setIsSimulationMode
-}: {
-  clearChat: () => void;
-  showApiKeyDialog: () => void;
-  hasApiKey: boolean;
-  isUsingRealData: boolean;
-  toggleRealData: () => void;
-  isSimulationMode: boolean;
-  setIsSimulationMode: React.Dispatch<React.SetStateAction<boolean>>;
-}) {
-  return (
-    <div className="flex items-center justify-between p-4 border-b">
-      <div className="flex items-center">
-        <Bot className="h-5 w-5 mr-2 text-primary" />
-        <h3 className="font-semibold">Stockbot</h3>
-      </div>
-      <div className="flex items-center space-x-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleRealData}
-          disabled={!hasApiKey}
-        >
-          {isUsingRealData ? "Simulatie" : "Live data"}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={showApiKeyDialog}
-        >
-          API sleutel
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsSimulationMode(!isSimulationMode)}
-        >
-          {isSimulationMode ? "Simulatie uit" : "Simulatie aan"}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearChat}
-        >
-          Wissen
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-export default StockbotChat;
