@@ -1,13 +1,13 @@
 
 import React from "react";
-import { ChatMessage } from "../hooks/stockbot/types";
+import { StockbotMessage } from "../hooks/stockbot/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useContentParser } from "./stockbot/messages/ContentParser";
 import { cn } from "@/lib/utils";
 import { Loader2, Bot, UserCircle2 } from "lucide-react";
 
 interface StockbotMessagesProps {
-  messages: ChatMessage[];
+  messages: StockbotMessage[];
   isLoading: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   hasApiKey?: boolean;

@@ -1,9 +1,8 @@
 
 import { useState, useCallback } from "react";
 import { 
-  ChatMessage, 
   StockbotMessage,
-  CheckApiKeyFunction,
+  StockbotToolCall
 } from "./types";
 import { toast } from "@/hooks/use-toast";
 import { loadMessages, saveMessages } from "./storage";
@@ -14,7 +13,7 @@ export const useStockbotMessages = (
   marketData: any[] = [],
   hasGroqKey: boolean
 ) => {
-  const [messages, setMessages] = useState<ChatMessage[]>(loadMessages() as ChatMessage[]);
+  const [messages, setMessages] = useState<StockbotMessage[]>(loadMessages() as StockbotMessage[]);
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorCount, setErrorCount] = useState(0);
@@ -26,7 +25,7 @@ export const useStockbotMessages = (
     if (!inputMessage.trim()) return;
 
     setIsLoading(true);
-    const userMessage: ChatMessage = {
+    const userMessage: StockbotMessage = {
       id: crypto.randomUUID(),
       sender: 'user' as 'user',
       role: 'user' as 'user',
@@ -40,8 +39,8 @@ export const useStockbotMessages = (
     setInputMessage("");
 
     try {
-      let responseMessage: ChatMessage;
-      let toolCalls: any[] | undefined;
+      let responseMessage: StockbotMessage;
+      let toolCalls: StockbotToolCall[] | undefined;
       
       if (!hasGroqKey) {
         console.warn('API key check failed, unable to proceed');
@@ -115,7 +114,7 @@ export const useStockbotMessages = (
       console.error("Error sending message:", error);
       
       // Add error message to the chat
-      const errorMessage: ChatMessage = {
+      const errorMessage: StockbotMessage = {
         id: crypto.randomUUID(),
         sender: 'system' as 'system',
         role: 'assistant' as 'assistant',

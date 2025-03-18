@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { ChatMessage, StockbotApiResponse } from './types';
+import { StockbotMessage, StockbotApiResponse } from './types';
 
 /**
  * Call the Stockbot API with the user message
@@ -37,9 +37,9 @@ export const callStockbotAPI = async (
 /**
  * Create an assistant message from the API response
  * @param text The response text from the API
- * @returns A formatted ChatMessage
+ * @returns A formatted StockbotMessage
  */
-export const createAssistantMessage = (text: string): ChatMessage => {
+export const createAssistantMessage = (text: string): StockbotMessage => {
   return {
     id: uuidv4(),
     sender: 'assistant', // This is correct now that we've updated the type
@@ -53,9 +53,9 @@ export const createAssistantMessage = (text: string): ChatMessage => {
 /**
  * Create an error message as an assistant message
  * @param errorText The error text to display
- * @returns A formatted ChatMessage
+ * @returns A formatted StockbotMessage
  */
-export const createErrorMessage = (errorText: string): ChatMessage => {
+export const createErrorMessage = (errorText: string): StockbotMessage => {
   return {
     id: uuidv4(),
     sender: 'assistant', // This is correct now that we've updated the type

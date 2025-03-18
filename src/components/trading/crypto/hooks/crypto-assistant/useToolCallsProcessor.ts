@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { CryptoMessage } from '../../types';
 import { StockbotToolCall } from '../../../minimal/hooks/stockbot/types';

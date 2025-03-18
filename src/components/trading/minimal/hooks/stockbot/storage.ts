@@ -1,5 +1,5 @@
 
-import { ChatMessage, StockbotMessage } from './types';
+import { StockbotMessage } from './types';
 import { 
   saveApiKey as saveApiKeyToManager, 
   hasApiKey, 
@@ -10,7 +10,7 @@ import {
 /**
  * Save stockbot chat messages to localStorage
  */
-export const saveMessages = (messages: ChatMessage[] | StockbotMessage[]) => {
+export const saveMessages = (messages: StockbotMessage[]) => {
   try {
     localStorage.setItem('stockbot-chat-history', JSON.stringify(messages));
     return true;
@@ -23,7 +23,7 @@ export const saveMessages = (messages: ChatMessage[] | StockbotMessage[]) => {
 /**
  * Load stockbot chat messages from localStorage
  */
-export const loadMessages = (): ChatMessage[] => {
+export const loadMessages = (): StockbotMessage[] => {
   try {
     const savedMessages = localStorage.getItem('stockbot-chat-history');
     if (savedMessages) {

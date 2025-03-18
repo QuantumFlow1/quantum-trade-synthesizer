@@ -1,12 +1,12 @@
 
-import { ChatMessage, StockbotToolCall } from "./types";
+import { StockbotMessage, StockbotToolCall } from "./types";
 
 export const useToolCallProcessor = () => {
   // Process tool calls and generate tool response messages
-  const processToolCalls = async (toolCalls: StockbotToolCall[]): Promise<ChatMessage[]> => {
+  const processToolCalls = async (toolCalls: StockbotToolCall[]): Promise<StockbotMessage[]> => {
     if (!toolCalls || toolCalls.length === 0) return [];
     
-    const toolMessages: ChatMessage[] = [];
+    const toolMessages: StockbotMessage[] = [];
     
     for (const toolCall of toolCalls) {
       try {
@@ -54,7 +54,7 @@ export const useToolCallProcessor = () => {
         // Only add a message if we have content to show
         if (responseContent) {
           // Add a message for the tool response
-          const toolMessage: ChatMessage = {
+          const toolMessage: StockbotMessage = {
             id: crypto.randomUUID(),
             sender: 'system' as 'system',
             role: 'assistant' as 'assistant',
@@ -68,7 +68,7 @@ export const useToolCallProcessor = () => {
       } catch (error) {
         console.error(`Error processing tool call:`, error);
         // Add error message for failed tool call
-        const errorMessage: ChatMessage = {
+        const errorMessage: StockbotMessage = {
           id: crypto.randomUUID(),
           sender: 'system' as 'system',
           role: 'assistant' as 'assistant',

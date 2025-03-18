@@ -1,10 +1,10 @@
 
-import { ChatMessage, StockbotToolCall } from "./types";
+import { StockbotMessage, StockbotToolCall } from "./types";
 import { supabase } from "@/lib/supabase";
 import { toast } from "@/hooks/use-toast";
 
 export const useGroqApiCall = () => {
-  const callGroqApi = async (userMessage: string, messages: ChatMessage[]): Promise<{message: ChatMessage, toolCalls?: StockbotToolCall[]}> => {
+  const callGroqApi = async (userMessage: string, messages: StockbotMessage[]): Promise<{message: StockbotMessage, toolCalls?: StockbotToolCall[]}> => {
     try {
       console.log('Calling Groq API for response to:', userMessage.substring(0, 50) + (userMessage.length > 50 ? '...' : ''));
       
@@ -80,7 +80,7 @@ export const useGroqApiCall = () => {
         }
       }
       
-      const message: ChatMessage = {
+      const message: StockbotMessage = {
         id: crypto.randomUUID(),
         sender: 'assistant' as 'assistant', // Explicitly cast to ensure correct type
         role: 'assistant' as 'assistant',

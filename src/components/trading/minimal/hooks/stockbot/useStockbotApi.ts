@@ -1,12 +1,12 @@
 
 import { useState, useCallback } from 'react';
-import { ChatMessage } from './types';
+import { StockbotMessage } from './types';
 import { callStockbotAPI, createAssistantMessage, createErrorMessage } from './apiService';
 
 export const useStockbotApi = () => {
   const [isLoading, setIsLoading] = useState(false);
   
-  const callApi = useCallback(async (message: string, apiKey: string): Promise<ChatMessage> => {
+  const callApi = useCallback(async (message: string, apiKey: string): Promise<StockbotMessage> => {
     setIsLoading(true);
     
     try {
