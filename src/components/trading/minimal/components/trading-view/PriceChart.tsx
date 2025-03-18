@@ -45,7 +45,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({
 
   // Generate legend items
   const legendItems = [
-    { label: 'Price', color: '#3b82f6', type: chartType === 'line' ? 'line' : 'area' },
+    { label: 'Price', color: '#3b82f6', type: chartType === 'line' ? 'line' : 'area' as "line" | "area" },
     ...(visibleIndicators.sma ? [{ label: 'SMA', color: '#ef4444', type: 'line' as const }] : []),
     ...(visibleIndicators.ema ? [{ label: 'EMA', color: '#8b5cf6', type: 'line' as const }] : []),
     ...(visibleIndicators.bollingerBands ? [
@@ -53,6 +53,9 @@ export const PriceChart: React.FC<PriceChartProps> = ({
       { label: 'Bollinger Lower', color: '#84cc16', type: 'dashed' as const }
     ] : [])
   ];
+
+  // Helper function to determine the color based on candle data
+  const getCandleColor = (d: any) => d.close >= d.open ? '#22c55e' : '#ef4444';
 
   return (
     <div className="relative h-[300px] w-full">
@@ -117,8 +120,8 @@ export const PriceChart: React.FC<PriceChartProps> = ({
               />
               <Bar 
                 dataKey="candle" 
-                fill={(data) => data.close >= data.open ? '#22c55e' : '#ef4444'}
-                stroke={(data) => data.close >= data.open ? '#22c55e' : '#ef4444'}
+                fill={(data) => getCandleColor(data)}
+                stroke={(data) => getCandleColor(data)}
               />
             </>
           )}
