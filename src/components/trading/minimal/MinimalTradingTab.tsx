@@ -4,8 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Coins, LineChart, MessageSquare } from "lucide-react";
 import MarketOverview from "@/components/MarketOverview";
-import { TradingView } from "@/components/trading/minimal/components/trading-view";
-import { StockbotChat } from "./components/stockbot/StockbotChat";
+import { TradingView } from "./components/trading-view";
+import StockbotChat from "./StockbotChat";
 
 interface MinimalTradingTabProps {
   initialOpenAgentsTab?: boolean;
