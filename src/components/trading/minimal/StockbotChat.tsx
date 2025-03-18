@@ -1,34 +1,35 @@
 
-import { useStockbotChat } from "../hooks/useStockbotChat";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import { StockbotHeader } from "./components/StockbotHeader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User } from "lucide-react";
+import { useStockbotState } from "./hooks/stockbot/useStockbotState";
 
 export function StockbotChat() {
   const {
     messages,
-    input,
-    setInput,
-    handleInputChange,
-    handleSubmit,
+    inputMessage: input,
+    setInputMessage: setInput,
     isLoading,
-    clearMessages,
-    hasApiKey,
-    setHasApiKey,
-    isUsingRealData,
-    toggleRealData
-  } = useStockbotChat();
+    handleSendMessage: handleSubmit,
+    clearChat: clearMessages
+  } = useStockbotState();
 
   const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [isSimulationMode, setIsSimulationMode] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
+  const [isUsingRealData, setIsUsingRealData] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Check for API key in localStorage on component mount
+    const storedKey = localStorage.getItem("stockbot-api-key");
+    setHasApiKey(!!storedKey);
+  }, []);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -52,8 +53,16 @@ export function StockbotChat() {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e as unknown as React.FormEvent);
+      handleSubmit();
     }
+  };
+
+  const toggleRealData = () => {
+    setIsUsingRealData(!isUsingRealData);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
   };
 
   return (
@@ -112,7 +121,7 @@ export function StockbotChat() {
           </ScrollArea>
         </CardContent>
         <div className="p-4 border-t">
-          <form onSubmit={handleSubmit} className="flex space-x-2">
+          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex space-x-2">
             <Input
               className="flex-1"
               placeholder="Stel een vraag over de markt..."
@@ -122,7 +131,7 @@ export function StockbotChat() {
               disabled={isLoading}
             />
             <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-              {isLoading ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+              {isLoading ? <LoadingSpinner /> : <Send className="h-4 w-4" />}
             </Button>
           </form>
         </div>
@@ -153,6 +162,91 @@ export function StockbotChat() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+// Loading spinner component since @/components/ui/spinner is missing
+function LoadingSpinner() {
+  return (
+    <svg 
+      className="animate-spin h-4 w-4 text-current" 
+      xmlns="http://www.w3.org/2000/svg" 
+      fill="none" 
+      viewBox="0 0 24 24"
+    >
+      <circle 
+        className="opacity-25" 
+        cx="12" 
+        cy="12" 
+        r="10" 
+        stroke="currentColor" 
+        strokeWidth="4"
+      ></circle>
+      <path 
+        className="opacity-75" 
+        fill="currentColor" 
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+      ></path>
+    </svg>
+  );
+}
+
+// StockbotHeader component
+function StockbotHeader({
+  clearChat,
+  showApiKeyDialog,
+  hasApiKey,
+  isUsingRealData,
+  toggleRealData,
+  isSimulationMode,
+  setIsSimulationMode
+}: {
+  clearChat: () => void;
+  showApiKeyDialog: () => void;
+  hasApiKey: boolean;
+  isUsingRealData: boolean;
+  toggleRealData: () => void;
+  isSimulationMode: boolean;
+  setIsSimulationMode: (value: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between p-4 border-b">
+      <div className="flex items-center">
+        <Bot className="h-5 w-5 mr-2 text-primary" />
+        <h3 className="font-semibold">Stockbot</h3>
+      </div>
+      <div className="flex items-center space-x-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={toggleRealData}
+          disabled={!hasApiKey}
+        >
+          {isUsingRealData ? "Simulatie" : "Live data"}
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={showApiKeyDialog}
+        >
+          API sleutel
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => setIsSimulationMode(!isSimulationMode)}
+        >
+          {isSimulationMode ? "Simulatie uit" : "Simulatie aan"}
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={clearChat}
+        >
+          Wissen
+        </Button>
+      </div>
+    </div>
   );
 }
 
