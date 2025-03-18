@@ -1,5 +1,4 @@
-
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { 
   StockbotMessage,
   StockbotToolCall
@@ -18,13 +17,30 @@ export const useStockbotMessages = (
   const [isLoading, setIsLoading] = useState(false);
   const [errorCount, setErrorCount] = useState(0);
   
+  const messagesRef = useRef(messages);
+  const isLoadingRef = useRef(false);
+  
+  useEffect(() => {
+    messagesRef.current = messages;
+    isLoadingRef.current = isLoading;
+  }, [messages, isLoading]);
+  
   const { callGroqApi } = useGroqApiCall();
   const { processToolCalls } = useToolCallProcessor();
 
-  const handleSendMessage = useCallback(async () => {
-    if (!inputMessage.trim()) return;
+  const activeRequestRef = useRef<AbortController | null>(null);
 
+  const handleSendMessage = useCallback(async () => {
+    if (!inputMessage.trim() || isLoadingRef.current) return;
+
+    if (activeRequestRef.current) {
+      activeRequestRef.current.abort();
+    }
+    
+    activeRequestRef.current = new AbortController();
     setIsLoading(true);
+    isLoadingRef.current = true;
+    
     const userMessage: StockbotMessage = {
       id: crypto.randomUUID(),
       sender: 'user' as 'user',
@@ -33,7 +49,7 @@ export const useStockbotMessages = (
       text: inputMessage,
       timestamp: new Date()
     };
-    const updatedMessages = [...messages, userMessage];
+    const updatedMessages = [...messagesRef.current, userMessage];
     setMessages(updatedMessages);
     saveMessages(updatedMessages);
     setInputMessage("");
@@ -60,22 +76,27 @@ export const useStockbotMessages = (
           variant: "warning",
         });
       } else {
-        // Use the Groq API
         try {
           console.log('Attempting to call Groq API with valid key');
-          const result = await callGroqApi(inputMessage, messages);
+          
+          const timeoutId = setTimeout(() => {
+            if (activeRequestRef.current) {
+              activeRequestRef.current.abort();
+            }
+          }, 30000);
+          
+          const result = await callGroqApi(inputMessage, updatedMessages);
+          clearTimeout(timeoutId);
+          
           responseMessage = result.message;
           toolCalls = result.toolCalls;
-          // Reset error count on successful call
           setErrorCount(0);
         } catch (apiError) {
           console.error('Error from Groq API:', apiError);
-          // Increment error count
           const newErrorCount = errorCount + 1;
           setErrorCount(newErrorCount);
           
           if (newErrorCount >= 3) {
-            // After 3 consecutive errors, show error toast
             toast({
               title: "API Connection Issues",
               description: "Multiple API errors detected. Please check your connection or API key.",
@@ -84,7 +105,6 @@ export const useStockbotMessages = (
             });
           }
           
-          // Create error message
           responseMessage = {
             id: crypto.randomUUID(),
             sender: 'system' as 'system',
@@ -96,45 +116,55 @@ export const useStockbotMessages = (
         }
       }
 
-      let finalMessages = [...updatedMessages, responseMessage];
-      
-      // Process any tool calls if they exist
-      if (toolCalls && toolCalls.length > 0) {
-        console.log('Processing tool calls:', toolCalls);
-        const toolMessages = await processToolCalls(toolCalls);
+      if (!activeRequestRef.current?.signal.aborted) {
+        let finalMessages = [...updatedMessages, responseMessage];
         
-        if (toolMessages.length > 0) {
-          finalMessages = [...finalMessages, ...toolMessages];
+        if (toolCalls && toolCalls.length > 0) {
+          console.log('Processing tool calls:', toolCalls);
+          const toolMessages = await processToolCalls(toolCalls);
+          
+          if (toolMessages.length > 0) {
+            finalMessages = [...finalMessages, ...toolMessages];
+          }
         }
+        
+        setMessages(finalMessages);
+        saveMessages(finalMessages);
       }
-      
-      setMessages(finalMessages);
-      saveMessages(finalMessages);
     } catch (error: any) {
-      console.error("Error sending message:", error);
-      
-      // Add error message to the chat
-      const errorMessage: StockbotMessage = {
-        id: crypto.randomUUID(),
-        sender: 'system' as 'system',
-        role: 'assistant' as 'assistant',
-        content: `I'm sorry, I encountered an error processing your request. ${error.message || 'Please try again later.'}`,
-        text: `I'm sorry, I encountered an error processing your request. ${error.message || 'Please try again later.'}`,
-        timestamp: new Date()
-      };
-      
-      setMessages([...updatedMessages, errorMessage]);
-      saveMessages([...updatedMessages, errorMessage]);
-      
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send message.",
-        variant: "destructive",
-      });
+      if (!activeRequestRef.current?.signal.aborted) {
+        const errorMessage: StockbotMessage = {
+          id: crypto.randomUUID(),
+          sender: 'system' as 'system',
+          role: 'assistant' as 'assistant',
+          content: `I'm sorry, I encountered an error processing your request. ${error.message || 'Please try again later.'}`,
+          text: `I'm sorry, I encountered an error processing your request. ${error.message || 'Please try again later.'}`,
+          timestamp: new Date()
+        };
+        
+        setMessages([...updatedMessages, errorMessage]);
+        saveMessages([...updatedMessages, errorMessage]);
+        
+        toast({
+          title: "Error",
+          description: error.message || "Failed to send message.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
+      activeRequestRef.current = null;
     }
-  }, [inputMessage, messages, marketData, hasGroqKey, callGroqApi, processToolCalls, errorCount]);
+  }, [inputMessage, errorCount, hasGroqKey, callGroqApi, processToolCalls]);
+
+  useEffect(() => {
+    return () => {
+      if (activeRequestRef.current) {
+        activeRequestRef.current.abort();
+      }
+    };
+  }, []);
 
   const clearChat = useCallback(() => {
     setMessages([]);

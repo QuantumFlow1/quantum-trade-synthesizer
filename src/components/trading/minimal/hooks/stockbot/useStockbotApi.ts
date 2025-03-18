@@ -12,7 +12,16 @@ export const useStockbotApi = () => {
     try {
       console.log('Calling Stockbot API from hook with message:', message);
       
-      const response = await callStockbotAPI(message, apiKey);
+      // Add a timeout to prevent hanging requests
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('API request timed out after 20 seconds')), 20000);
+      });
+      
+      // Race the API call against the timeout
+      const response = await Promise.race([
+        callStockbotAPI(message, apiKey),
+        timeoutPromise
+      ]);
       
       if (response.success && response.response) {
         return createAssistantMessage(response.response);
