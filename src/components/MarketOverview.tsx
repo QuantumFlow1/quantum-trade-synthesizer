@@ -151,20 +151,33 @@ const MarketOverview = () => {
     );
   }
 
+  // Add debug logging for marketData
+  console.log('Processing marketData for charts:', {
+    items: marketData.length,
+    firstItem: marketData[0],
+    markets: [...new Set(marketData.map(item => item.market))]
+  });
+
   const groupedData = marketData.reduce((acc, item) => {
     if (!acc[item.market]) {
       acc[item.market] = [];
     }
     acc[item.market].push({
       name: item.symbol,
-      volume: item.volume,
+      volume: item.volume || 0,
       price: item.price,
-      change: item.change24h,
-      high: item.high24h,
-      low: item.low24h
+      change: item.change24h || 0,
+      high: item.high24h || item.price,
+      low: item.low24h || item.price
     });
     return acc;
   }, {} as Record<string, any[]>);
+
+  // Log the grouped data for debugging
+  console.log('Grouped chart data:', {
+    markets: Object.keys(groupedData),
+    sampleMarket: Object.keys(groupedData)[0] ? groupedData[Object.keys(groupedData)[0]][0] : null
+  });
 
   const marketOrder = ['NYSE', 'NASDAQ', 'AEX', 'DAX', 'CAC40', 'NIKKEI', 'HSI', 'SSE', 'Crypto'];
 

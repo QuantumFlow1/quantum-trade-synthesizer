@@ -1,239 +1,159 @@
-import { useRef, useEffect, useState } from "react";
+
+import { useStockbotChat } from "../hooks/useStockbotChat";
 import { Card, CardContent } from "@/components/ui/card";
-import { useStockbotChat } from "./hooks/useStockbotChat";
-import { StockbotHeader } from "./components/StockbotHeader";
-import { StockbotMessages } from "./components/StockbotMessages";
-import { StockbotInput } from "./components/StockbotInput";
-import { toast } from "@/hooks/use-toast";
-import { StockbotKeyDialog } from "./components/stockbot/StockbotKeyDialog";
-import { hasApiKey } from "@/utils/apiKeyManager";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { StockbotHeader } from "./components/StockbotHeader";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { useState, useRef, useEffect } from "react";
+import { Send, Bot, User } from "lucide-react";
 
-interface StockbotChatProps {
-  hasApiKey?: boolean;
-  marketData?: any[];
-}
+export function StockbotChat() {
+  const {
+    messages,
+    input,
+    setInput,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    clearMessages,
+    hasApiKey,
+    setHasApiKey,
+    isUsingRealData,
+    toggleRealData
+  } = useStockbotChat();
 
-export const StockbotChat = ({ hasApiKey: initialHasApiKey = false, marketData = [] }: StockbotChatProps) => {
-  const [isUsingRealData, setIsUsingRealData] = useState(false);
-  
-  const { 
-    messages, 
-    inputMessage, 
-    setInputMessage, 
-    isLoading, 
-    handleSendMessage, 
-    clearChat,
-    showApiKeyDialog,
-    isKeyDialogOpen,
-    setIsKeyDialogOpen,
-    reloadApiKeys,
-    hasApiKey: hookHasApiKey,
-    isCheckingAdminKey
-  } = useStockbotChat(marketData);
-  
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [isSimulationMode, setIsSimulationMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [apiKeyStatus, setApiKeyStatus] = useState({ exists: initialHasApiKey || hookHasApiKey });
-  const dialogCloseTimeoutRef = useRef<number | null>(null);
-  const keyCheckInProgress = useRef(false);
-  const lastKeyUpdateTime = useRef(0);
-  
+
   useEffect(() => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  useEffect(() => {
-    const checkKey = () => {
-      const now = Date.now();
-      if (keyCheckInProgress.current || now - lastKeyUpdateTime.current < 1000) {
-        return false;
-      }
-      
-      keyCheckInProgress.current = true;
-      lastKeyUpdateTime.current = now;
-      
-      try {
-        const keyExists = hasApiKey('groq');
-        const groqKeyValue = localStorage.getItem('groqApiKey');
-        
-        console.log('StockbotChat - API key check:', {
-          exists: keyExists,
-          keyLength: groqKeyValue ? groqKeyValue.length : 0,
-          previous: apiKeyStatus.exists,
-          timestamp: new Date().toISOString()
-        });
-        
-        if (keyExists !== apiKeyStatus.exists) {
-          console.log('StockbotChat - API key status changed:', { 
-            exists: keyExists, 
-            previous: apiKeyStatus.exists,
-            timestamp: new Date().toISOString()
-          });
-          setApiKeyStatus({ exists: keyExists });
-        }
-        
-        keyCheckInProgress.current = false;
-        return keyExists;
-      } catch (err) {
-        console.error("Error checking API key:", err);
-        keyCheckInProgress.current = false;
-        return false;
-      }
-    };
-    
-    checkKey();
-    
-    let lastEventTime = 0;
-    const handleApiKeyChange = () => {
-      const now = Date.now();
-      if (now - lastEventTime < 1000) return;
-      
-      lastEventTime = now;
-      setTimeout(() => {
-        if (!keyCheckInProgress.current) {
-          checkKey();
-        }
-      }, 300);
-    };
-    
-    window.addEventListener('apikey-updated', handleApiKeyChange);
-    window.addEventListener('localStorage-changed', handleApiKeyChange);
-    
-    return () => {
-      window.removeEventListener('apikey-updated', handleApiKeyChange);
-      window.removeEventListener('localStorage-changed', handleApiKeyChange);
-    };
-  }, [apiKeyStatus.exists, hookHasApiKey]);
-
-  const handleDialogClose = () => {
-    console.log("Dialog closing, checking for API key");
-    
-    if (dialogCloseTimeoutRef.current) {
-      clearTimeout(dialogCloseTimeoutRef.current);
-    }
-    
-    setIsKeyDialogOpen(false);
-    
-    dialogCloseTimeoutRef.current = window.setTimeout(() => {
-      dialogCloseTimeoutRef.current = null;
-      
-      try {
-        const keyExists = hasApiKey('groq');
-        const groqKeyValue = localStorage.getItem('groqApiKey');
-        
-        console.log('Dialog closed, API key status:', {
-          exists: keyExists,
-          keyLength: groqKeyValue ? groqKeyValue.length : 0,
-          timestamp: new Date().toISOString()
-        });
-        
-        setApiKeyStatus({ exists: keyExists });
-        
-        if (keyExists) {
-          toast({
-            title: "API Key Detected",
-            description: "Groq API key has been configured successfully",
-            duration: 3000
-          });
-        }
-        
-        setTimeout(reloadApiKeys, 300);
-      } catch (err) {
-        console.error("Error handling dialog close:", err);
-      }
-    }, 500);
-  };
-
-  const handleApiKeySuccess = () => {
-    console.log("API key saved successfully, refreshing state");
-    
-    try {
-      setTimeout(() => {
-        if (dialogCloseTimeoutRef.current) {
-          clearTimeout(dialogCloseTimeoutRef.current);
-          dialogCloseTimeoutRef.current = null;
-        }
-        
-        const keyExists = hasApiKey('groq');
-        const groqKeyValue = localStorage.getItem('groqApiKey');
-        
-        console.log('API key success callback, status:', {
-          exists: keyExists,
-          keyLength: groqKeyValue ? groqKeyValue.length : 0,
-          timestamp: new Date().toISOString()
-        });
-        
-        setApiKeyStatus({ exists: keyExists });
-      }, 800);
-    } catch (err) {
-      console.error("Error in API key success handler:", err);
+  const handleSaveApiKey = () => {
+    if (apiKey.trim()) {
+      localStorage.setItem("stockbot-api-key", apiKey.trim());
+      setHasApiKey(true);
+      setShowApiKeyDialog(false);
+      setApiKey("");
     }
   };
 
-  const toggleRealData = () => {
-    setIsUsingRealData(prev => !prev);
+  const clearChat = () => {
+    clearMessages();
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e as unknown as React.FormEvent);
+    }
   };
 
   return (
-    <Card className="flex flex-col h-[500px] shadow-md overflow-hidden">
-      <StockbotHeader 
-        clearChat={clearChat}
-        showApiKeyDialog={showApiKeyDialog}
-        hasApiKey={apiKeyStatus.exists}
-        isUsingRealData={isUsingRealData}
-        toggleRealData={toggleRealData}
-        isSimulationMode={false}
-        setIsSimulationMode={() => {}}
-      />
-
-      <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">
-        {!apiKeyStatus.exists && (
-          <div className="p-3 bg-amber-50 border-b border-amber-200 text-sm text-amber-700 flex justify-between items-center">
-            <div className="flex items-center">
-              <span>API key required for Stockbot to function</span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs bg-white"
-              onClick={showApiKeyDialog}
-            >
-              Configure API Key
-            </Button>
-          </div>
-        )}
-        
-        {isCheckingAdminKey && (
-          <div className="p-3 bg-blue-50 border-b border-blue-200 text-sm text-blue-700 flex items-center">
-            <div className="w-4 h-4 mr-2 border-2 border-blue-700 border-t-transparent rounded-full animate-spin"></div>
-            <span>Checking Groq API connection...</span>
-          </div>
-        )}
-        
-        <StockbotMessages 
-          messages={messages}
-          isLoading={isLoading}
-          messagesEndRef={messagesEndRef}
-          hasApiKey={apiKeyStatus.exists}
-          onConfigureApiKey={showApiKeyDialog}
+    <>
+      <Card className="flex flex-col h-full border-muted-foreground/20">
+        <StockbotHeader
+          clearChat={clearChat}
+          showApiKeyDialog={() => setShowApiKeyDialog(true)}
+          hasApiKey={hasApiKey}
           isUsingRealData={isUsingRealData}
+          toggleRealData={toggleRealData}
+          isSimulationMode={isSimulationMode}
+          setIsSimulationMode={setIsSimulationMode}
         />
-        
-        <StockbotInput 
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          handleSendMessage={handleSendMessage}
-          isLoading={isLoading}
-        />
-      </CardContent>
+        <CardContent className="flex-1 overflow-hidden p-0">
+          <ScrollArea className="h-[400px] px-4">
+            <div className="space-y-4 pt-4 pb-4">
+              {messages.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  <Bot className="mx-auto h-12 w-12 mb-2 text-primary/50" />
+                  <p>Hallo! Ik ben Stockbot, je financiële assistent.</p>
+                  <p className="text-sm">Stel me een vraag over aandelen, crypto, of marktgegevens.</p>
+                </div>
+              ) : (
+                messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${
+                      message.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2 mb-1">
+                        {message.role === "user" ? (
+                          <User className="h-4 w-4" />
+                        ) : (
+                          <Bot className="h-4 w-4" />
+                        )}
+                        <span className="text-xs font-semibold">
+                          {message.role === "user" ? "Jij" : "Stockbot"}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </ScrollArea>
+        </CardContent>
+        <div className="p-4 border-t">
+          <form onSubmit={handleSubmit} className="flex space-x-2">
+            <Input
+              className="flex-1"
+              placeholder="Stel een vraag over de markt..."
+              value={input}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              disabled={isLoading}
+            />
+            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+              {isLoading ? <Spinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </form>
+        </div>
+      </Card>
 
-      <StockbotKeyDialog
-        isKeyDialogOpen={isKeyDialogOpen}
-        handleDialogClose={handleDialogClose}
-        onSuccessfulSave={handleApiKeySuccess}
-      />
-    </Card>
+      <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>API Sleutel Configuratie</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Voer je API sleutel in om toegang te krijgen tot realtime marktgegevens.
+            </p>
+            <Input
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="API Sleutel"
+              type="password"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApiKeyDialog(false)}>
+              Annuleren
+            </Button>
+            <Button onClick={handleSaveApiKey}>Opslaan</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
-};
+}
+
+export default StockbotChat;

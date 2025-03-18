@@ -5,7 +5,8 @@ import { Dialog, DialogContent } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { ExternalLink, Maximize2, BarChart } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
-import { MarketData } from './types';
+import { MarketData } from '../monitoring/MarketData';
+import { LoadingChart } from './LoadingChart';
 
 interface ChartProps {
   data: any[];
@@ -26,12 +27,18 @@ export const MarketCharts = ({ data, isLoading, type }: ChartProps) => {
     setShowModal(false);
   };
 
+  // Add debug logging
+  useEffect(() => {
+    console.log('MarketCharts rendering with:', {
+      dataPoints: data?.length || 0,
+      isLoading,
+      type,
+      sampleData: data && data.length > 0 ? data[0] : null
+    });
+  }, [data, isLoading, type]);
+
   if (isLoading) {
-    return (
-      <div className="w-full h-[350px]">
-        <Skeleton className="w-full h-full" />
-      </div>
-    );
+    return <LoadingChart />;
   }
 
   if (!data || data.length === 0) {
