@@ -44,72 +44,12 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
       globalConnectionStatus = connectionStatus;
     }
   }, [connectionStatus]);
-  
-  // Get auth state (if available)
-  let auth = { isAdmin: false, user: null };
-  try {
-    // Safely try to use auth, but don't fail if it's not available
-    const authModule = require('@/components/auth/AuthProvider');
-    if (authModule && typeof authModule.useAuth === 'function') {
-      try {
-        auth = authModule.useAuth();
-      } catch (e) {
-        // Silent fail if auth context is not available
-        console.log('Auth context not available, using default values');
-      }
-    }
-  } catch (e) {
-    // Module not found or other error, just continue with default auth
-  }
-  
+
   // Environment flags
-  const isLocalhost = isLocalhostEnvironment();
+  const isLocalhost = true; // Force local mode
   const currentOrigin = getCurrentOrigin();
   
-  // Automatically reconnect if we were previously connected
-  useEffect(() => {
-    const reconnectIfNeeded = async () => {
-      // Check if we have a recent connection (within the last 24 hours)
-      const lastConnectedTime = lastConnected || 0;
-      const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
-      const wasRecentlyConnected = lastConnectedTime > twentyFourHoursAgo;
-      
-      // If we have a saved connection status that says we're connected, ensure the API client has the correct URL
-      if (globalConnectionStatus?.connected) {
-        const savedHost = localStorage.getItem('ollamaHost');
-        if (savedHost) {
-          ollamaApi.setBaseUrl(savedHost);
-          console.log("Restored Ollama connection to:", savedHost);
-        }
-        return;
-      }
-      
-      // If we're an admin or we were recently connected, and we have a saved host, try to reconnect
-      if ((auth.isAdmin || wasRecentlyConnected) && 
-          localStorage.getItem('ollamaHost') && 
-          !connectionStatus?.connected) {
-        console.log("Automatically reconnecting to Ollama...");
-        await connectToDocker(localStorage.getItem('ollamaHost') || 'http://localhost:11434');
-      }
-    };
-    
-    reconnectIfNeeded();
-    
-    // Add reconnection on visibility change (when user returns to the tab)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !connectionStatus?.connected) {
-        reconnectIfNeeded();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [auth.isAdmin, connectionStatus?.connected, lastConnected]);
-
-  // Connection auto-retry strategy
+  // Connection auto-retry strategy - start with local connections only
   useEffect(() => {
     // Only proceed if auto retry is enabled and we don't have an active connection
     if (!autoRetryEnabled || connectionStatus?.connected) {
@@ -118,17 +58,31 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
 
     // Only try automatically if we haven't already attempted a connection
     if (connectionAttempts === 0) {
-      console.log("Starting automatic connection sequence");
+      console.log("Starting automatic connection sequence to local Ollama only");
       connectToDocker(getInitialConnectionAddress());
       setConnectionAttempts(prev => prev + 1);
     }
   }, [autoRetryEnabled, connectionAttempts, connectionStatus?.connected]);
 
   const connectToDocker = async (address: string): Promise<boolean | void> => {
+    // Skip non-local connections (except for Docker-specific addresses)
+    if (!address.includes('localhost') && 
+        !address.includes('127.0.0.1') && 
+        !address.includes('host.docker.internal') &&
+        !address.includes('ollama:11434')) {
+      console.log(`Skipping non-local connection attempt to: ${address}`);
+      toast({
+        title: "Connection restricted",
+        description: "Only local Ollama connections are allowed",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
     setIsConnecting(true);
     
     try {
-      console.log(`Attempting to connect to Ollama at: ${address}`);
+      console.log(`Attempting to connect to local Ollama at: ${address}`);
       
       // Update the address in the API client
       ollamaApi.setBaseUrl(address);
@@ -184,10 +138,10 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
         const isCorsError = result.message.includes('CORS');
         if (isCorsError && !corsErrorShown) {
           setCorsErrorShown(true);
-          // Show a more concise error message
+          // Show a more concise error message with local-specific advice
           toast({
             title: "CORS Error",
-            description: "Please configure Ollama with CORS permissions for this origin.",
+            description: "Add OLLAMA_ORIGINS=" + currentOrigin + " when starting Ollama",
             variant: "destructive",
           });
         } else if (!isCorsError) {
@@ -227,8 +181,8 @@ export function useOllamaDockerConnect(): UseOllamaDockerConnectReturn {
       if (isCorsError && !corsErrorShown) {
         setCorsErrorShown(true);
         toast({
-          title: "CORS Error",
-          description: "Please configure Ollama with CORS permissions for this origin.",
+          title: "Local Ollama CORS Error",
+          description: "Run Ollama with: OLLAMA_ORIGINS=" + currentOrigin + " ollama serve",
           variant: "destructive",
         });
       } else if (!isCorsError) {

@@ -14,11 +14,8 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
 
   // Extract origin for display purposes
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'unknown';
-  const isGitpod = typeof window !== 'undefined' && 
-    (window.location.hostname.includes('gitpod.io') || 
-     window.location.hostname.includes('lovableproject.com'));
-  const isLovablePreview = typeof window !== 'undefined' && 
-    window.location.hostname.includes('lovable.app');
+  const isLocalOrigin = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   
   // Check if this is likely a CORS error
   const isCorsError = connectionStatus.error?.includes('CORS') || 
@@ -43,15 +40,9 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
                 </p>
                 <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs">
                   <p className="font-medium mb-1">Pull a model by running:</p>
-                  {isGitpod ? (
-                    <code className="block">
-                      docker exec -it ollama ollama pull llama3
-                    </code>
-                  ) : (
-                    <code className="block">
-                      docker exec -it ollama ollama pull llama3
-                    </code>
-                  )}
+                  <code className="block">
+                    ollama pull llama3
+                  </code>
                   <p className="mt-2 text-xs text-muted-foreground">
                     Refresh after pulling to see available models
                   </p>
@@ -68,7 +59,7 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
             {isCorsError ? (
               <div>
                 <p className="font-semibold text-red-600 dark:text-red-400 mb-1">
-                  CORS Error: Browser security is blocking the connection
+                  CORS Error: Browser security is blocking the connection to your local Ollama
                 </p>
                 <p>{connectionStatus.error}</p>
                 
@@ -85,13 +76,11 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
                     <code>docker run -d --name ollama -e OLLAMA_ORIGINS={currentOrigin} -p 11434:11434 ollama/ollama</code>
                   </div>
                   
-                  {isGitpod && (
-                    <>
-                      <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
-                        <strong>Note for Gitpod/Cloud environments:</strong> Make sure port 11434 is exposed 
-                        and publicly accessible. For Gitpod, check the Ports tab in the terminal panel.
-                      </p>
-                    </>
+                  {!isLocalOrigin && (
+                    <p className="text-xs text-amber-500 dark:text-amber-400 mt-2">
+                      <strong>Note:</strong> You are accessing this app from a non-local origin ({currentOrigin}). 
+                      For a purely local setup, consider running this app on localhost.
+                    </p>
                   )}
                 </div>
               </div>
@@ -102,10 +91,10 @@ export const OllamaConnectionStatus = ({ connectionStatus }: OllamaConnectionSta
                 <div className="mt-3 p-2 bg-gray-100 dark:bg-gray-800 rounded-md">
                   <p className="text-xs font-medium">Troubleshooting suggestions:</p>
                   <ul className="list-disc list-inside pl-2 mt-1 text-xs">
-                    <li>Try alternative ports like 11435 or 37321</li>
+                    <li>Make sure Ollama is running on your local machine</li>
+                    <li>Try alternative ports like 11435</li>
                     <li>Check if Docker is running and accessible</li>
-                    <li>Try restarting the container: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">docker restart ollama</code></li>
-                    <li>Make sure CORS is properly set for your current origin</li>
+                    <li>Try restarting Ollama: <code className="bg-gray-200 dark:bg-gray-700 px-1 rounded">ollama serve</code></li>
                   </ul>
                 </div>
               </div>
