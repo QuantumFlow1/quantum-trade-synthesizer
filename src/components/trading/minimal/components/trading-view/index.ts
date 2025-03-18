@@ -7,6 +7,7 @@ import { LoadingState } from './LoadingState';
 import { MarketMetrics } from './MarketMetrics';
 import { PriceChart } from './PriceChart';
 import { VolumeChart } from './VolumeChart';
+import TradingView from './TradingView';
 
 // Re-export components
 export { 
@@ -16,8 +17,6 @@ export {
   LoadingState,
   MarketMetrics,
   PriceChart,
-  VolumeChart
+  VolumeChart,
+  TradingView
 };
-
-// Export the default TradingView component
-export { default as TradingView } from './index';

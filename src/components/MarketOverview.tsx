@@ -191,7 +191,7 @@ const MarketOverview = () => {
         
         <div className="relative flex justify-between items-center mb-6">
           <h2 className="text-2xl font-semibold bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
-            Wereldwijde Markten
+            {/* "Wereldwijde Markten" text removed as requested */}
           </h2>
           
           <Button 
