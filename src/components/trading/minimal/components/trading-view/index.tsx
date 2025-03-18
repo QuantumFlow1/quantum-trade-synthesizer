@@ -1,50 +1,30 @@
 
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ApiStatusAlert, LoadingState } from "./ApiStatusAlert";
-import { Spinner } from "@/components/ui/spinner";
+import React from 'react';
+import { ApiStatus } from '@/hooks/use-trading-chart-data';
+import { Card, CardContent } from '@/components/ui/card';
+import { ApiStatusAlert } from './ApiStatusAlert';
+import { PriceChart } from './PriceChart';
+import { ChartControls } from './ChartControls';
 
 interface TradingViewProps {
+  apiStatus: ApiStatus;
   chartData: any[];
-  apiStatus: string;
-  useRealData?: boolean;
 }
 
-export const TradingView = ({ chartData, apiStatus, useRealData = false }: TradingViewProps) => {
-  const hasValidData = chartData && chartData.length > 0;
-  
-  if (apiStatus === 'checking') {
-    return <LoadingState />;
-  }
-
-  if (!hasValidData) {
-    return (
-      <div className="h-[400px] w-full flex items-center justify-center bg-gray-50 rounded-lg border">
-        <div className="text-center">
-          <p className="text-gray-500 mb-2">Geen geldige chartdata beschikbaar</p>
-          <p className="text-gray-400 text-sm">Controleer de verbinding of API-status</p>
-        </div>
-      </div>
-    );
-  }
-
+const TradingView: React.FC<TradingViewProps> = ({ apiStatus, chartData }) => {
   return (
-    <div className="space-y-4">
-      <Card className="overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">
-            BTC/USD {useRealData ? "Live Price" : "Simulated Price"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 h-80 flex items-center justify-center">
-          <div className="text-center">
-            <Spinner className="h-8 w-8 mx-auto mb-4" />
-            <p className="text-muted-foreground">Chart data wordt geladen...</p>
+    <Card className="h-full">
+      <CardContent className="p-0 h-full">
+        <div className="flex flex-col h-full">
+          <ApiStatusAlert apiStatus={apiStatus} />
+          <div className="flex-1 relative">
+            <ChartControls />
+            <PriceChart data={chartData} />
           </div>
-        </CardContent>
-      </Card>
-      
-      <ApiStatusAlert apiStatus={apiStatus} />
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
+
+export default TradingView;

@@ -2,7 +2,7 @@
 import React, { useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bot, User } from "lucide-react";
-import { StockbotMessage } from "../../../hooks/stockbot/types";
+import { StockbotMessage } from "../../hooks/stockbot/types";
 
 interface StockbotMessageListProps {
   messages: StockbotMessage[];
