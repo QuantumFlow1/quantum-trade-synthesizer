@@ -1,9 +1,14 @@
 
 import { useState } from "react";
+import { StockbotMessage } from "./types";
 
 type Message = {
+  id: string;
   role: "user" | "assistant";
+  sender: "user" | "assistant" | "system";
   content: string;
+  text: string;
+  timestamp: Date;
 };
 
 export const useStockbotState = () => {
@@ -16,8 +21,12 @@ export const useStockbotState = () => {
 
     // Add user message
     const userMessage: Message = {
+      id: crypto.randomUUID(),
       role: "user",
+      sender: "user",
       content: inputMessage.trim(),
+      text: inputMessage.trim(),
+      timestamp: new Date()
     };
     
     setMessages((prev) => [...prev, userMessage]);
@@ -27,8 +36,12 @@ export const useStockbotState = () => {
     // Simulate a response
     setTimeout(() => {
       const botResponse: Message = {
+        id: crypto.randomUUID(),
         role: "assistant",
+        sender: "assistant",
         content: `Dit is een gesimuleerd antwoord op: "${userMessage.content}"`,
+        text: `Dit is een gesimuleerd antwoord op: "${userMessage.content}"`,
+        timestamp: new Date()
       };
       setMessages((prev) => [...prev, botResponse]);
       setIsLoading(false);
@@ -40,7 +53,7 @@ export const useStockbotState = () => {
   };
 
   return {
-    messages,
+    messages: messages as StockbotMessage[],
     inputMessage,
     setInputMessage,
     isLoading,

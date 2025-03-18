@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Send, Bot, User } from "lucide-react";
-import { useStockbotState } from "../../../hooks/stockbot/useStockbotState";
+import { useStockbotState } from "../../hooks/stockbot/useStockbotState";
 import { Spinner } from "@/components/ui/spinner";
 
 export function StockbotChat() {

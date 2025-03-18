@@ -29,7 +29,7 @@ export const StockbotMessageList: React.FC<StockbotMessageListProps> = ({ messag
         ) : (
           messages.map((message, index) => (
             <div
-              key={index}
+              key={message.id || index}
               className={`flex ${
                 message.role === "user" ? "justify-end" : "justify-start"
               }`}
