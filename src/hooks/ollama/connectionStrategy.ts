@@ -25,11 +25,6 @@ export async function handleConnectionFailure({
   setAlternativePortsAttempted: (value: boolean) => void;
   suppressToast?: boolean;
 }) {
-  // Display error toast only if not suppressed
-  if (!suppressToast) {
-    console.log("Connection failed:", error instanceof Error ? error.message : "Unknown error");
-  }
-
   // Skip auto-retry if disabled
   if (!autoRetryEnabled) {
     console.log("Auto-retry is disabled, skipping automatic retry attempts");

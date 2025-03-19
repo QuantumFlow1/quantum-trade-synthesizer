@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AlertTriangle, Settings, Server, ExternalLink } from 'lucide-react';
+import { Settings, Server } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { OllamaModel } from '../types/ollamaTypes';
@@ -19,87 +19,48 @@ export function OllamaEmptyState({
   connectionError,
   toggleSettings,
   toggleConnectionInfo,
-  models = [],
-  isLoadingModels = false
+  models,
+  isLoadingModels
 }: OllamaEmptyStateProps) {
-  const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
-  const isCorsError = connectionError?.includes('CORS') || 
-                     connectionError?.includes('Failed to fetch') || 
-                     connectionError?.includes('cross-origin');
-  
   return (
-    <div className="flex flex-col items-center justify-center h-full space-y-4 p-4 text-center">
-      {isConnected ? (
-        <>
-          <div className="rounded-full bg-green-100 p-3">
-            <Server className="h-6 w-6 text-green-600" />
-          </div>
-          <h3 className="text-xl font-medium">Connected to Ollama</h3>
-          <p className="text-muted-foreground max-w-md">
-            {models && models.length === 0 
-              ? "Your Ollama instance doesn't have any models installed. Install models to start chatting."
-              : "Start a conversation with your local Ollama models."}
-          </p>
-          <Button onClick={toggleSettings}>
-            Configure Models
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+      <Server className="h-12 w-12 text-muted-foreground mb-4" />
+      
+      <h3 className="text-xl font-semibold mb-2">
+        {isConnected ? 'Select a model to start chat' : 'Ollama Connection Required'}
+      </h3>
+      
+      <p className="text-muted-foreground mb-6 max-w-md">
+        {isConnected
+          ? models && models.length > 0 
+            ? "Choose an Ollama model from the dropdown above to start chatting" 
+            : "No models found. You'll need to pull some models first."
+          : "Currently using simulation mode. Connect to Ollama for full functionality."}
+      </p>
+      
+      <div className="flex flex-wrap gap-3 justify-center">
+        <Button onClick={toggleSettings} variant="outline" className="flex items-center">
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
+        </Button>
+        
+        {!isConnected && (
+          <Button onClick={toggleConnectionInfo} variant="default" className="flex items-center">
+            <Server className="mr-2 h-4 w-4" />
+            Connection Details
           </Button>
-        </>
-      ) : (
-        <>
-          <div className="rounded-full bg-amber-100 p-3">
-            <AlertTriangle className="h-6 w-6 text-amber-600" />
-          </div>
-          <h3 className="text-xl font-medium">Not Connected to Ollama</h3>
-          
-          {connectionError && (
-            <Alert variant={isCorsError ? "destructive" : "warning"} className="max-w-md">
-              <AlertTitle>Connection Error</AlertTitle>
-              <AlertDescription className="text-left text-sm">
-                {isCorsError ? (
-                  <div className="space-y-3">
-                    <p>CORS Error: Browser security is blocking the connection to your local Ollama server.</p>
-                    
-                    <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded text-xs mt-2">
-                      <p className="font-medium">To fix this, start Ollama with:</p>
-                      <pre className="bg-black text-white p-2 rounded my-1 overflow-x-auto">
-                        {`OLLAMA_ORIGINS=${currentOrigin} ollama serve`}
-                      </pre>
-                    </div>
-                    
-                    <div className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1 mt-1">
-                      <AlertTriangle className="h-3 w-3 flex-shrink-0" />
-                      <span>While disconnected, AI responses will use simulation mode</span>
-                    </div>
-                  </div>
-                ) : (
-                  connectionError
-                )}
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={toggleConnectionInfo}>
-              Connection Details
-            </Button>
-            <Button onClick={toggleSettings}>
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-          </div>
-          
-          <p className="text-xs text-muted-foreground max-w-md">
-            <a 
-              href="https://github.com/ollama/ollama#macos" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline inline-flex items-center"
-            >
-              Ollama installation instructions
-              <ExternalLink className="h-3 w-3 ml-0.5" />
-            </a>
-          </p>
-        </>
+        )}
+      </div>
+      
+      {!isConnected && (
+        <div className="mt-6 w-full max-w-lg">
+          <Alert>
+            <AlertTitle>Using simulation mode</AlertTitle>
+            <AlertDescription>
+              <p>AI responses are currently simulated. To use local Ollama models, install Ollama and start the service.</p>
+            </AlertDescription>
+          </Alert>
+        </div>
       )}
     </div>
   );

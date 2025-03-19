@@ -57,12 +57,7 @@ class OllamaApiClient {
     } catch (error) {
       console.error('Error listing models:', error);
       
-      // Check if this is likely a CORS error
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        this.corsError = true;
-        console.warn('Possible CORS error detected when listing models');
-      }
-      
+      // Just log the error but don't set corsError flag to avoid showing CORS errors in UI
       throw error;
     }
   }
@@ -99,30 +94,20 @@ class OllamaApiClient {
       });
       
       if (!response.ok) {
-        const statusCode = response.status;
-        console.error(`Connection failed with status: ${statusCode} ${response.statusText}`);
-        
-        if (statusCode === 403) {
-          this.corsError = true;
-          return {
-            success: false,
-            message: `CORS error (403 Forbidden): De Ollama server blokkeert cross-origin verzoeken. Controleer of je Ollama server de juiste ORIGINS instellingen heeft. De huidige applicatie-oorsprong staat mogelijk niet in de toegestane lijst.`,
-          };
-        }
+        console.error(`Connection failed with status: ${response.status} ${response.statusText}`);
         
         return {
           success: false,
-          message: `Ollama server reageerde met een fout: ${response.status} ${response.statusText}`,
+          message: `Ollama server responded with an error`,
         };
       }
       
       const data = await response.json();
       console.log('Connection successful, models:', data.models);
-      this.corsError = false;
       
       return {
         success: true,
-        message: 'Succesvol verbonden met Ollama',
+        message: 'Successfully connected to Ollama',
         models: data.models || [],
       };
     } catch (error) {
@@ -136,21 +121,10 @@ class OllamaApiClient {
         return this.checkConnection(retryCount + 1);
       }
       
-      // Detect CORS errors
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        this.corsError = true;
-        console.warn('CORS error detected during connection check');
-        
-        return {
-          success: false,
-          message: `CORS Error: Your browser blocked the connection to Ollama. Start Ollama with OLLAMA_ORIGINS=${typeof window !== 'undefined' ? window.location.origin : '*'} to fix this issue.`,
-        };
-      }
-      
-      // Handle different types of errors
+      // Generic error message without revealing CORS details
       return {
         success: false,
-        message: getConnectionErrorMessage(error),
+        message: `Could not connect to Ollama service`,
       };
     } finally {
       this.connectionInProgress = false;

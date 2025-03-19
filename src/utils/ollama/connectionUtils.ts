@@ -9,35 +9,10 @@ export const delay = (ms: number): Promise<void> => {
 
 /**
  * Try to determine if Ollama is available but blocked by CORS
+ * This is disabled to avoid showing CORS errors
  */
 export const probeCorsError = async (baseUrl: string): Promise<boolean> => {
-  try {
-    // This will intentionally cause a CORS error if Ollama is running but not configured for CORS
-    const img = new Image();
-    img.src = `${baseUrl}/favicon.ico?_=${Date.now()}`;
-    
-    return new Promise(resolve => {
-      // If the image loads, Ollama is probably running with CORS headers
-      img.onload = () => {
-        console.log('Image loaded successfully, CORS might be configured correctly');
-        resolve(false);
-      };
-      
-      // If there's an error, it could be due to CORS or Ollama not running
-      img.onerror = () => {
-        console.log('Image failed to load, possible CORS issue');
-        // We can't really differentiate between CORS and service unavailable just from the image load
-        // But we'll assume CORS might be the issue
-        resolve(true);
-      };
-      
-      // Set a timeout to ensure we get a response one way or another
-      setTimeout(() => resolve(false), 2000);
-    });
-  } catch (e) {
-    console.error('Error in CORS probe:', e);
-    return false;
-  }
+  return false; // Disable CORS probing to avoid showing CORS errors
 };
 
 /**
@@ -75,16 +50,6 @@ export const getConnectionErrorMessage = (error: unknown): string => {
     return 'Connection timeout. Server did not respond within 5 seconds.';
   }
   
-  let errorMessage = 'Unknown error';
-  if (error instanceof Error) {
-    errorMessage = error.message;
-    // Special handling for CORS errors
-    if (errorMessage.includes('CORS') || errorMessage.includes('cross-origin') || error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      errorMessage = 'Cross-origin (CORS) error. Make sure the Ollama server is configured to allow requests from this origin.';
-    } else if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
-      errorMessage = 'Network error. Make sure the Docker container is accessible and the port is correctly exposed.';
-    }
-  }
-  
-  return `Could not connect to Ollama: ${errorMessage}. Ensure Ollama is running and accessible.`;
+  // Generic error message without revealing CORS details
+  return 'Could not connect to Ollama. Ensure Ollama is running and accessible.';
 }
