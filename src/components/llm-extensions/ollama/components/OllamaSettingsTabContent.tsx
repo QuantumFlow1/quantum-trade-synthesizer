@@ -1,8 +1,6 @@
 
 import React from 'react';
-import { Loader2, RefreshCw, Server } from 'lucide-react';
-import { OllamaConnectionForm } from '@/components/admin/models/ollama/OllamaConnectionForm';
-import { OllamaConnectionStatus } from '@/components/admin/models/ollama/OllamaConnectionStatus';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,18 +14,6 @@ interface OllamaSettingsTabContentProps {
   setSelectedModel: (model: string) => void;
   setActiveTab: (tab: string) => void;
   refreshModels: () => void;
-  dockerAddress: string;
-  setDockerAddress: (address: string) => void;
-  customAddress: string;
-  setCustomAddress: (address: string) => void;
-  isConnecting: boolean;
-  connectToDocker: (address: string) => Promise<boolean | void>;
-  currentOrigin: string;
-  useServerSideProxy: boolean;
-  setUseServerSideProxy: (enabled: boolean) => void;
-  autoRetryEnabled: boolean;
-  toggleAutoRetry: () => void;
-  isLocalhost: boolean;
   connectionError: string | null;
 }
 
@@ -39,42 +25,32 @@ export function OllamaSettingsTabContent({
   setSelectedModel,
   setActiveTab,
   refreshModels,
-  dockerAddress,
-  setDockerAddress,
-  customAddress,
-  setCustomAddress,
-  isConnecting,
-  connectToDocker,
-  currentOrigin,
-  useServerSideProxy,
-  setUseServerSideProxy,
-  autoRetryEnabled,
-  toggleAutoRetry,
-  isLocalhost,
   connectionError
 }: OllamaSettingsTabContentProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium mb-3">Connection Settings</h3>
-        <OllamaConnectionForm
-          dockerAddress={dockerAddress}
-          setDockerAddress={setDockerAddress}
-          customAddress={customAddress}
-          setCustomAddress={setCustomAddress}
-          isConnecting={isConnecting}
-          connectToDocker={connectToDocker}
-          currentOrigin={currentOrigin}
-          useServerSideProxy={useServerSideProxy}
-          setUseServerSideProxy={setUseServerSideProxy}
-          autoRetryEnabled={autoRetryEnabled}
-          toggleAutoRetry={toggleAutoRetry}
-          isLocalhost={isLocalhost}
-        />
+        <h3 className="text-lg font-medium mb-3">Ollama Connection</h3>
+        
+        <div className="p-4 bg-muted rounded-md">
+          <p className="text-sm mb-2">
+            Ollama is running locally at <code className="bg-background px-1 py-0.5 rounded">http://localhost:11434</code>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            If you're having connection issues, make sure Ollama is running with proper CORS settings:
+            <br />
+            <code className="bg-background px-1 py-0.5 rounded text-xs">
+              OLLAMA_ORIGINS={typeof window !== 'undefined' ? window.location.origin : 'your-website-origin'} ollama serve
+            </code>
+          </p>
+        </div>
       </div>
       
       {connectionError && (
-        <OllamaConnectionStatus connectionStatus={{ connected: false, error: connectionError }} />
+        <div className="p-3 border border-red-200 bg-red-50 rounded-md">
+          <p className="text-sm text-red-600 font-medium">Connection Error</p>
+          <p className="text-xs text-red-500">{connectionError}</p>
+        </div>
       )}
       
       {isConnected && (
