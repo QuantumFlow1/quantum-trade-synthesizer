@@ -1,6 +1,6 @@
 
 import React from "react";
-import { GrokChat } from "@/components/chat/GrokChat";
+import { OllamaFullChat } from "@/components/llm-extensions/ollama/OllamaFullChat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Terminal } from "lucide-react";
 
@@ -17,12 +17,12 @@ export default function OllamaChatPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0 h-[70vh]">
-            <GrokChat />
+            <OllamaFullChat />
           </CardContent>
         </Card>
         <div className="mt-4 text-sm text-muted-foreground">
           <p>Available models: llama3, gemma, phi3, mistral, mixtral, and more</p>
-          <p>Connect to your local Ollama instance to get started</p>
+          <p>Connect to your local Ollama instance with <code className="bg-slate-100 px-1 rounded">OLLAMA_ORIGINS={typeof window !== 'undefined' ? window.location.origin : '*'}</code> to fix CORS issues</p>
         </div>
       </div>
     </div>
