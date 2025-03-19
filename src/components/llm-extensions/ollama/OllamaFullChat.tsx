@@ -10,6 +10,7 @@ import { useOllamaFullChat } from './hooks/useOllmaFullChat';
 export function OllamaFullChat() {
   const {
     // Chat state
+    ollamaHost,
     selectedModel,
     inputMessage,
     messages,
@@ -20,6 +21,7 @@ export function OllamaFullChat() {
     connectionError,
     
     // Chat actions
+    updateHost,
     setSelectedModel,
     setInputMessage,
     clearChat,
@@ -78,6 +80,8 @@ export function OllamaFullChat() {
         <TabsContent value="settings" className="mt-0 overflow-y-auto">
           <div className="p-4">
             <OllamaSettingsTabContent
+              ollamaHost={ollamaHost}
+              updateHost={updateHost}
               isConnected={isConnected}
               isLoadingModels={isLoadingModels}
               models={models}

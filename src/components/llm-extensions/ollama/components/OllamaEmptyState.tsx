@@ -3,19 +3,24 @@ import React from 'react';
 import { AlertTriangle, Settings, Server } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { OllamaModel } from '../types/ollamaTypes';
 
 interface OllamaEmptyStateProps {
   isConnected: boolean;
   connectionError: string | null;
   toggleSettings: () => void;
   toggleConnectionInfo: () => void;
+  models?: OllamaModel[];
+  isLoadingModels?: boolean;
 }
 
 export function OllamaEmptyState({
   isConnected,
   connectionError,
   toggleSettings,
-  toggleConnectionInfo
+  toggleConnectionInfo,
+  models = [],
+  isLoadingModels = false
 }: OllamaEmptyStateProps) {
   const currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   const isCorsError = connectionError?.includes('CORS') || 
@@ -31,7 +36,9 @@ export function OllamaEmptyState({
           </div>
           <h3 className="text-xl font-medium">Connected to Ollama</h3>
           <p className="text-muted-foreground max-w-md">
-            Your Ollama instance doesn't have any models installed or no messages have been sent yet.
+            {models && models.length === 0 
+              ? "Your Ollama instance doesn't have any models installed. Install models to start chatting."
+              : "Start a conversation with your local Ollama models."}
           </p>
           <Button onClick={toggleSettings}>
             Configure Models

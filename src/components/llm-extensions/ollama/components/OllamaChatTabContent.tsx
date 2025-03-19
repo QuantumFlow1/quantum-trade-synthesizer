@@ -38,10 +38,10 @@ export function OllamaChatTabContent({
           <OllamaEmptyState
             isConnected={isConnected}
             connectionError={connectionError}
-            models={models}
-            isLoadingModels={isLoadingModels}
             toggleSettings={toggleSettings}
             toggleConnectionInfo={toggleConnectionInfo}
+            models={models}
+            isLoadingModels={isLoadingModels}
           />
         ) : (
           <OllamaMessageList 
