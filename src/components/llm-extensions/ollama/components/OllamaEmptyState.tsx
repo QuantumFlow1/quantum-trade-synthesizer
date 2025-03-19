@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AlertTriangle, Settings, Server } from 'lucide-react';
+import { AlertTriangle, Settings, Server, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { OllamaModel } from '../types/ollamaTypes';
@@ -65,6 +65,11 @@ export function OllamaEmptyState({
                         {`OLLAMA_ORIGINS=${currentOrigin} ollama serve`}
                       </pre>
                     </div>
+                    
+                    <div className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1 mt-1">
+                      <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                      <span>While disconnected, AI responses will use simulation mode</span>
+                    </div>
                   </div>
                 ) : (
                   connectionError
@@ -82,6 +87,18 @@ export function OllamaEmptyState({
               Settings
             </Button>
           </div>
+          
+          <p className="text-xs text-muted-foreground max-w-md">
+            <a 
+              href="https://github.com/ollama/ollama#macos" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline inline-flex items-center"
+            >
+              Ollama installation instructions
+              <ExternalLink className="h-3 w-3 ml-0.5" />
+            </a>
+          </p>
         </>
       )}
     </div>
