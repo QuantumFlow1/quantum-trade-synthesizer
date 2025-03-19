@@ -1,7 +1,6 @@
 
 import { useState } from 'react';
 import { useOllamaChat } from './useOllamaChat';
-import { useOllamaDockerConnect } from '@/hooks/useOllamaDockerConnect';
 
 export function useOllamaFullChat() {
   const {
@@ -25,22 +24,6 @@ export function useOllamaFullChat() {
     sendMessage,
     refreshModels
   } = useOllamaChat();
-
-  const {
-    dockerAddress,
-    setDockerAddress,
-    customAddress,
-    setCustomAddress,
-    isConnecting,
-    connectionStatus,
-    connectToDocker,
-    currentOrigin,
-    useServerSideProxy,
-    setUseServerSideProxy,
-    autoRetryEnabled,
-    toggleAutoRetry,
-    isLocalhost
-  } = useOllamaDockerConnect();
 
   const [activeTab, setActiveTab] = useState('chat');
 
@@ -67,21 +50,6 @@ export function useOllamaFullChat() {
     toggleConnectionInfo,
     sendMessage,
     refreshModels,
-    
-    // Docker connection
-    dockerAddress,
-    setDockerAddress,
-    customAddress,
-    setCustomAddress,
-    isConnecting,
-    connectionStatus,
-    connectToDocker,
-    currentOrigin,
-    useServerSideProxy,
-    setUseServerSideProxy,
-    autoRetryEnabled,
-    toggleAutoRetry,
-    isLocalhost,
     
     // Tab state
     activeTab,

@@ -28,20 +28,6 @@ export function OllamaFullChat() {
     sendMessage,
     refreshModels,
     
-    // Docker connection
-    dockerAddress,
-    setDockerAddress,
-    customAddress,
-    setCustomAddress,
-    isConnecting,
-    connectToDocker,
-    currentOrigin,
-    useServerSideProxy,
-    setUseServerSideProxy,
-    autoRetryEnabled,
-    toggleAutoRetry,
-    isLocalhost,
-    
     // Tab state
     activeTab,
     setActiveTab
@@ -99,18 +85,6 @@ export function OllamaFullChat() {
               setSelectedModel={setSelectedModel}
               setActiveTab={setActiveTab}
               refreshModels={refreshModels}
-              dockerAddress={dockerAddress}
-              setDockerAddress={setDockerAddress}
-              customAddress={customAddress}
-              setCustomAddress={setCustomAddress}
-              isConnecting={isConnecting}
-              connectToDocker={connectToDocker}
-              currentOrigin={currentOrigin}
-              useServerSideProxy={useServerSideProxy}
-              setUseServerSideProxy={setUseServerSideProxy}
-              autoRetryEnabled={autoRetryEnabled}
-              toggleAutoRetry={toggleAutoRetry}
-              isLocalhost={isLocalhost}
               connectionError={connectionError}
             />
           </div>
