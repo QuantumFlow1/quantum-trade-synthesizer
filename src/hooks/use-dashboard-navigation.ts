@@ -9,7 +9,8 @@ export const useDashboardNavigation = () => {
   // Extract active page from URL path
   const getActivePageFromPath = () => {
     const path = location.pathname.split('/').filter(Boolean)[1] || "overview";
-    return path;
+    // If the path is "llm", return "overview" instead
+    return path === "llm" ? "overview" : path;
   };
   
   const [activePage, setActivePage] = useState<string>(getActivePageFromPath());
@@ -41,8 +42,10 @@ export const useDashboardNavigation = () => {
 
   // Handle page navigation
   const handlePageChange = (page: string) => {
-    setActivePage(page);
-    navigate(`/dashboard/${page === "overview" ? "" : page}`);
+    // If trying to navigate to llm, redirect to overview
+    const targetPage = page === "llm" ? "overview" : page;
+    setActivePage(targetPage);
+    navigate(`/dashboard/${targetPage === "overview" ? "" : targetPage}`);
   };
 
   // Handle back to admin
@@ -70,10 +73,10 @@ export const useDashboardNavigation = () => {
     setOpenAgentsTab(true);
   };
 
-  // Function to navigate to specific LLM tools
+  // Function to navigate to specific LLM tools - now redirects to overview
   const navigateToLLM = () => {
-    setActivePage('llm');
-    navigate('/dashboard/llm');
+    setActivePage('overview');
+    navigate('/dashboard/overview');
   };
 
   return {

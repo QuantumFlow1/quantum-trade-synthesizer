@@ -11,9 +11,6 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { VisualizationPage } from "./pages/VisualizationPage";
 import { VirtualEnvironmentDemo } from "../visualization/VirtualEnvironmentDemo";
-import { GrokChat } from "../chat/GrokChat";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Terminal } from "lucide-react";
 
 interface DashboardPageContentProps {
   activePage: string;
@@ -35,7 +32,10 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
   openAgentsTab,
   openTradingAgentsTab
 }) => {
-  switch (activePage) {
+  // If someone attempts to access the llm page, redirect to overview
+  const currentPage = activePage === "llm" ? "overview" : activePage;
+  
+  switch (currentPage) {
     case "overview":
       return (
         <>
@@ -59,26 +59,7 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
         showApiAccess={visibleWidgets.apiAccess} 
         openTradingAgents={openTradingAgentsTab}
       />;
-    case "llm":
-      return (
-        <div className="container mx-auto px-4 py-6 max-w-5xl">
-          <Card className="shadow-lg border-slate-200">
-            <CardHeader className="bg-slate-50 border-b">
-              <CardTitle className="flex items-center">
-                <Terminal className="mr-2 h-5 w-5 text-teal-600" />
-                Local Ollama Models
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <GrokChat />
-            </CardContent>
-          </Card>
-          <div className="mt-4 text-sm text-muted-foreground">
-            <p>To use Ollama, make sure you have it installed and running on your local machine.</p>
-            <p>Use the settings panel to connect to your Ollama instance (default: http://localhost:11434).</p>
-          </div>
-        </div>
-      );
+    // LLM page content removed
     case "gamification":
       return <GamificationPage />;
     case "visualization":

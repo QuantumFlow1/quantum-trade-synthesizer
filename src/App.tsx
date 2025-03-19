@@ -16,7 +16,7 @@ import AdminPanel from "./components/AdminPanel";
 import ChatPage from "./pages/chat";
 import UserDashboard from "./components/UserDashboard";
 import ResearchPage from "./pages/ResearchPage";
-import OllamaChatPage from "./pages/ollama-chat";
+// import OllamaChatPage from "./pages/ollama-chat";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,7 +39,9 @@ function App() {
               <Routes>
                 <Route path="/" element={<IndexPage />} />
                 <Route path="/chat" element={<ChatPage />} />
-                <Route path="/ollama-chat" element={<OllamaChatPage />} />
+                {/* Temporarily disabled Ollama chat route */}
+                {/* <Route path="/ollama-chat" element={<OllamaChatPage />} /> */}
+                <Route path="/ollama-chat" element={<Navigate to="/" replace />} />
                 <Route path="/admin" element={<AdminPanel />} />
                 <Route path="/admin/dashboard/overview" element={<Overview />} />
                 <Route path="/admin/dashboard/users" element={<Users />} />
