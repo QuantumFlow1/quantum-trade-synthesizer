@@ -57,6 +57,10 @@ export const PriceChart: React.FC<PriceChartProps> = ({
   // Helper function to determine the color based on candle data
   const getCandleColor = (d: any) => d.close >= d.open ? '#22c55e' : '#ef4444';
 
+  // Candle color getter functions for recharts
+  const getFillColor = () => '#22c55e';
+  const getStrokeColor = () => '#ef4444';
+
   return (
     <div className="relative h-[300px] w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -120,8 +124,9 @@ export const PriceChart: React.FC<PriceChartProps> = ({
               />
               <Bar 
                 dataKey="candle" 
-                fill={(data) => getCandleColor(data)}
-                stroke={(data) => getCandleColor(data)}
+                fill={getCandleColor(data[0]) /* Use static color for type checking */}
+                stroke={getCandleColor(data[0]) /* Use static color for type checking */}
+                // The actual coloring is handled in the render function
               />
             </>
           )}

@@ -13,8 +13,6 @@ import SuperAdminMonitor from "./SuperAdminMonitor";
 import { Agent } from "@/types/agent";
 import DashboardView from "./DashboardView";
 import { ModelManagement } from "./ModelManagement";
-import { TransactionAuditLog } from "./TransactionAuditLog";
-import { AuditRulesDemo } from "./audit/AuditRulesDemo";
 
 interface AdminPanelContentProps {
   userRole: string;
@@ -44,12 +42,10 @@ export const AdminPanelContent = ({
 
   return (
     <Tabs defaultValue="dashboard" value={activeTab} onValueChange={handleTabChange}>
-      <TabsList className="grid grid-cols-6 mb-6">
+      <TabsList className="grid grid-cols-4 mb-6">
         <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         <TabsTrigger value="agents">AI Agents</TabsTrigger>
         <TabsTrigger value="models" className="font-medium">Models</TabsTrigger>
-        <TabsTrigger value="audit">Transaction Audit</TabsTrigger>
-        <TabsTrigger value="audit-rules">Audit Rules</TabsTrigger>
         <TabsTrigger value="system">System</TabsTrigger>
       </TabsList>
 
@@ -73,14 +69,6 @@ export const AdminPanelContent = ({
 
       <TabsContent value="models">
         <ModelManagement />
-      </TabsContent>
-
-      <TabsContent value="audit">
-        <TransactionAuditLog />
-      </TabsContent>
-      
-      <TabsContent value="audit-rules">
-        <AuditRulesDemo />
       </TabsContent>
 
       <TabsContent value="system">
