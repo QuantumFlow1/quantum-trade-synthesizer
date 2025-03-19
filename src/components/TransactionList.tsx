@@ -1,8 +1,8 @@
+
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { logApiCall } from "@/utils/apiLogger";
-import { useTransactionAuditWithRules } from "@/hooks/useTransactionAuditWithRules";
 
 interface Transaction {
   id: string;
@@ -17,7 +17,6 @@ const TransactionList = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const { auditTransactionWithRules } = useTransactionAuditWithRules();
 
   useEffect(() => {
     if (!user) {
@@ -42,21 +41,6 @@ const TransactionList = () => {
 
         setTransactions(data || []);
         await logApiCall('trades/fetch', 'TransactionList', 'success');
-        
-        // Audit all transactions that might not have been audited
-        if (data && data.length > 0) {
-          data.forEach(tx => {
-            if (tx.status === 'completed') {
-              // Only audit completed transactions using our new rule-based function
-              auditTransactionWithRules(
-                tx.type,
-                'Unknown',  // Asset symbol might be different in your schema
-                tx.amount,
-                tx.price
-              );
-            }
-          });
-        }
       } catch (error: any) {
         console.error("Error fetching transactions:", error);
         await logApiCall('trades/fetch', 'TransactionList', 'error', error.message);
@@ -81,16 +65,6 @@ const TransactionList = () => {
         (payload) => {
           const newTrade = payload.new as Transaction;
           setTransactions((current) => [newTrade, ...current].slice(0, 5));
-          
-          // Audit the new transaction with rules
-          if (newTrade.status === 'completed') {
-            auditTransactionWithRules(
-              newTrade.type,
-              'Unknown',  // Asset symbol might be different in your schema
-              newTrade.amount,
-              newTrade.price
-            );
-          }
         }
       )
       .subscribe();
@@ -98,7 +72,7 @@ const TransactionList = () => {
     return () => {
       tradesSubscription.unsubscribe();
     };
-  }, [user, auditTransactionWithRules]);
+  }, [user]);
 
   if (isLoading) {
     return (

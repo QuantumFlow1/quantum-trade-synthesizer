@@ -45,7 +45,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({
 
   // Generate legend items
   const legendItems = [
-    { label: 'Price', color: '#3b82f6', type: chartType === 'line' ? 'line' : 'area' as "line" | "area" },
+    { label: 'Price', color: '#3b82f6', type: 'line' as "line" | "area" },
     ...(visibleIndicators.sma ? [{ label: 'SMA', color: '#ef4444', type: 'line' as const }] : []),
     ...(visibleIndicators.ema ? [{ label: 'EMA', color: '#8b5cf6', type: 'line' as const }] : []),
     ...(visibleIndicators.bollingerBands ? [
@@ -57,9 +57,9 @@ export const PriceChart: React.FC<PriceChartProps> = ({
   // Helper function to determine the color based on candle data
   const getCandleColor = (d: any) => d.close >= d.open ? '#22c55e' : '#ef4444';
 
-  // Candle color getter functions for recharts
-  const getFillColor = () => '#22c55e';
-  const getStrokeColor = () => '#ef4444';
+  // Static colors for type checking
+  const greenColor = '#22c55e';
+  const redColor = '#ef4444';
 
   return (
     <div className="relative h-[300px] w-full">
@@ -124,9 +124,8 @@ export const PriceChart: React.FC<PriceChartProps> = ({
               />
               <Bar 
                 dataKey="candle" 
-                fill={getCandleColor(data[0]) /* Use static color for type checking */}
-                stroke={getCandleColor(data[0]) /* Use static color for type checking */}
-                // The actual coloring is handled in the render function
+                fill={greenColor}
+                stroke={redColor}
               />
             </>
           )}
