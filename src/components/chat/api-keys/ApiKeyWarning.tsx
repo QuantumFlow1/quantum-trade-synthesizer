@@ -5,9 +5,10 @@ import { ModelInfo } from '../types/GrokSettings';
 interface ApiKeyWarningProps {
   selectedModel: ModelInfo | undefined;
   hasApiKey: boolean;
+  adminPanelPath?: string;
 }
 
-export function ApiKeyWarning({ selectedModel, hasApiKey }: ApiKeyWarningProps) {
+export function ApiKeyWarning({ selectedModel, hasApiKey, adminPanelPath = '/admin/api-keys' }: ApiKeyWarningProps) {
   // Only show warning if the model needs a key and it isn't set
   if (!selectedModel?.needsApiKey || hasApiKey) {
     return null;
