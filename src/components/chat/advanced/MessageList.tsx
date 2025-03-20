@@ -28,7 +28,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
   const modelDisplayName = getModelDisplayName(selectedModelName);
 
   return (
-    <div className="p-4 border border-gray-700 rounded-md bg-gray-800 mb-4 h-[300px] overflow-y-auto flex flex-col">
+    <div className="p-4 border border-gray-700 rounded-md bg-gray-900 mb-4 h-[300px] overflow-y-auto flex flex-col">
       {messages.length > 0 ? (
         <div className="space-y-4 w-full">
           {messages.map((message, index) => {
@@ -45,8 +45,8 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
                 key={index} 
                 className={`p-3 rounded-lg max-w-[85%] ${
                   message.role === 'user' 
-                    ? 'bg-blue-900 text-gray-100 ml-auto' 
-                    : 'bg-gray-700 text-gray-100 border border-gray-600 mr-auto'
+                    ? 'bg-blue-900 text-gray-50 ml-auto' 
+                    : 'bg-gray-800 text-gray-50 border border-gray-700 mr-auto'
                 } chat-message`}
                 data-message-index={index}
                 data-message-role={message.role}
@@ -56,7 +56,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
                     {message.role === 'user' ? 'You' : modelDisplayName}
                   </span>
                 </div>
-                <p className="text-sm whitespace-pre-wrap text-gray-100">
+                <p className="text-sm whitespace-pre-wrap text-gray-50">
                   {messageContent || "Error: Empty message content"}
                 </p>
               </div>
@@ -71,6 +71,6 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
       )}
     </div>
   );
-};
+}
 
 export default MessageList;

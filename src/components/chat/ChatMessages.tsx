@@ -11,10 +11,10 @@ interface ChatMessagesProps {
 export function ChatMessages({ messages }: ChatMessagesProps) {
   if (!messages || messages.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-400">
+      <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-300">
         <Bot className="h-12 w-12 mb-4 opacity-70" />
-        <h3 className="text-lg font-medium mb-2 text-gray-300">Stel een vraag</h3>
-        <p className="max-w-md">
+        <h3 className="text-lg font-medium mb-2 text-gray-200">Stel een vraag</h3>
+        <p className="max-w-md text-gray-300">
           Ik kan u helpen met vragen over Ollama, Llama 3.3, of andere AI-gerelateerde onderwerpen.
         </p>
       </div>
@@ -28,8 +28,8 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
           key={index}
           className={`p-4 rounded-lg ${
             message.role === 'user' 
-              ? 'bg-blue-800 text-gray-100 ml-12' 
-              : 'bg-gray-800 text-gray-100 mr-12'
+              ? 'bg-blue-900 text-gray-50 ml-12' 
+              : 'bg-gray-800 text-gray-50 mr-12'
           }`}
         >
           <MessageContent 
