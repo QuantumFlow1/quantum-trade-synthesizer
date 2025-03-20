@@ -4,11 +4,13 @@ import * as THREE from "three";
 
 interface ThemeBasedLightingProps {
   optimizationLevel?: 'normal' | 'aggressive';
+  theme?: ColorTheme;
 }
 
-export const ThemeBasedLighting = ({ optimizationLevel = 'normal' }: ThemeBasedLightingProps) => {
-  const theme: ColorTheme = 'dark'; // Default to dark theme
-  
+export const ThemeBasedLighting = ({ 
+  optimizationLevel = 'normal',
+  theme = 'dark' // Default to dark theme if not provided
+}: ThemeBasedLightingProps) => {
   // Optimize lighting based on optimization level
   const ambientIntensity = optimizationLevel === 'aggressive' ? 0.6 : 0.8;
   const directionalIntensity = optimizationLevel === 'aggressive' ? 0.4 : 0.7;
