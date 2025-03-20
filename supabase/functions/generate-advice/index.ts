@@ -43,19 +43,69 @@ serve(async (req) => {
       );
     }
 
-    // Generate financial advice (simplified for now)
     console.log("Generating financial advice for user:", user.id);
     
-    // In a real implementation, you would call an AI API or use a more complex algorithm
-    // For now, we'll generate a simple response
-    const advice = generateFinancialAdvice();
-    
-    return new Response(
-      JSON.stringify({ advice }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    try {
+      // Get OpenAI API key from environment
+      const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+      
+      if (!openaiApiKey) {
+        console.error("Missing OpenAI API key");
+        throw new Error("Server configuration error: Missing API key");
+      }
+
+      // Generate personalized financial advice using OpenAI
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a professional financial advisor. Provide personalized financial advice that is concise, 
+                        practical and actionable. Focus on investment strategies, portfolio diversification, and risk management.
+                        Limit your response to 3-4 paragraphs. Use formal language but be approachable.`
+            },
+            {
+              role: 'user',
+              content: 'Provide me with personalized financial advice for today\'s market conditions. Focus on current trends and actionable recommendations.'
+            }
+          ],
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("OpenAI API error:", errorData);
+        throw new Error(`AI service error: ${errorData.error?.message || response.statusText}`);
+      }
+
+      const data = await response.json();
+      const advice = data.choices[0].message.content.trim();
+      
+      return new Response(
+        JSON.stringify({ advice, source: 'ai' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    } catch (error) {
+      console.error("Error generating AI advice:", error);
+      
+      // Fallback to predefined advice if AI fails
+      console.log("Falling back to predefined advice");
+      const fallbackAdvice = generateFallbackAdvice();
+      
+      return new Response(
+        JSON.stringify({ advice: fallbackAdvice, source: 'fallback' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
   } catch (error) {
-    console.error("Error generating advice:", error);
+    console.error("Error in edge function:", error);
     
     return new Response(
       JSON.stringify({ error: error.message }),
@@ -64,8 +114,8 @@ serve(async (req) => {
   }
 });
 
-// Simple function to generate financial advice
-function generateFinancialAdvice(): string {
+// Fallback function to generate financial advice
+function generateFallbackAdvice(): string {
   const adviceOptions = [
     "Based on current market trends, consider increasing your investment in index funds, which offer diversification and lower fees.",
     "Your portfolio appears to be overexposed to tech stocks. Consider reallocating some assets to more defensive sectors like utilities and consumer staples.",

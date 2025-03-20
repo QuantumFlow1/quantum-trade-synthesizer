@@ -1,28 +1,23 @@
 
 import { AgentConnectionStatus } from "./types";
 
+// Enable or disable detailed logging
+const DEBUG_LOGGING = true;
+
+// Helper function to log connection-related activities
+export const logConnection = (message: string): string => {
+  if (DEBUG_LOGGING) {
+    console.log(`[AgentConnection] ${message}`);
+  }
+  return message;
+};
+
 // Initial connection status
 export const initialConnectionStatus: AgentConnectionStatus = {
   isConnected: false,
-  lastChecked: null,
-  activeAgents: 0,
   isVerifying: false,
+  activeAgents: 0,
+  lastChecked: undefined,
   error: null,
   retryCount: 0
 };
-
-/**
- * Helper function to create a consistent console log prefix
- */
-export const logPrefix = "[AgentConnection]";
-
-/**
- * Helper to log agent connection activities with consistent format
- */
-export function logConnection(message: string, data?: any): void {
-  if (data) {
-    console.log(`${logPrefix} ${message}`, data);
-  } else {
-    console.log(`${logPrefix} ${message}`);
-  }
-}

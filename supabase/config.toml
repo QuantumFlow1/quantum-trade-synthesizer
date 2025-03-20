@@ -3,3 +3,7 @@ project_id = "tfmlretexydslgowlkid"
 
 [functions.generate-advice]
 verify_jwt = true
+
+[functions.agent-communication]
+verify_jwt = false
+

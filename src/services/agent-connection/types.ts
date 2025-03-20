@@ -1,16 +1,11 @@
 
-/**
- * Agent connection types
- */
 export interface AgentConnectionStatus {
   isConnected: boolean;
-  lastChecked: Date | null;
-  activeAgents: number;
   isVerifying: boolean;
+  activeAgents: number;
+  lastChecked?: Date;
   error?: string | null;
   retryCount?: number;
 }
 
-export interface ConnectionListener {
-  (status: AgentConnectionStatus): void;
-}
+export type ConnectionListener = (status: AgentConnectionStatus) => void;
