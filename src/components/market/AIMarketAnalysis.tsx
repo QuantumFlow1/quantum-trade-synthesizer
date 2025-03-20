@@ -28,7 +28,7 @@ export function AIMarketAnalysis({ marketData, className }: AIMarketAnalysisProp
       <CardHeader className="p-4">
         <CardTitle className="flex items-center text-lg font-medium">
           <BrainCircuit className="w-5 h-5 mr-2 text-primary" />
-          Market Analysis AI
+          Quantum-Enhanced Market Analysis
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 flex flex-col h-[calc(100%-68px)]">

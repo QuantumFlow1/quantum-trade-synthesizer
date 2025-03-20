@@ -15,7 +15,7 @@ export function useAIAnalysis(marketData?: MarketData) {
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I can help you analyze market data. Ask me about trends, price movements, or trading strategies.'
+      content: 'Hello! I can help you analyze market data using both traditional and quantum-inspired methods. I can explain optimization concepts, prepare QUBO formulations, and provide insights on up to 16 assets. Ask me about trends, quantum portfolio optimization, or trading strategies. Remember, I only provide analysis - all final decisions are yours.'
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +34,8 @@ export function useAIAnalysis(marketData?: MarketData) {
       const { data, error } = await supabase.functions.invoke('market-analysis', {
         body: { 
           message: userMessage,
-          marketData: marketData 
+          marketData: marketData,
+          includeQuantumApproach: true
         }
       });
       
@@ -86,7 +87,7 @@ export function useAIAnalysis(marketData?: MarketData) {
     setMessages([{
       id: '1',
       role: 'assistant',
-      content: 'Hello! I can help you analyze market data. Ask me about trends, price movements, or trading strategies.'
+      content: 'Hello! I can help you analyze market data using both traditional and quantum-inspired methods. I can explain optimization concepts, prepare QUBO formulations, and provide insights on up to 16 assets. Ask me about trends, quantum portfolio optimization, or trading strategies. Remember, I only provide analysis - all final decisions are yours.'
     }]);
     toast({
       title: "Chat Reset",
