@@ -6,9 +6,10 @@ import { MessageContent } from './components/MessageContent';
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
+  adminPanelPath?: string;
 }
 
-export function ChatMessages({ messages }: ChatMessagesProps) {
+export function ChatMessages({ messages, adminPanelPath }: ChatMessagesProps) {
   // Check if we have any simulated data responses
   const hasSimulatedData = messages.some(msg => 
     msg.role === 'assistant' && 
@@ -25,6 +26,17 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
         <p className="max-w-md text-gray-300">
           Ik kan u helpen met vragen over Ollama, Llama 3.3, of andere AI-gerelateerde onderwerpen.
         </p>
+        {adminPanelPath && (
+          <div className="mt-4">
+            <a 
+              href={adminPanelPath} 
+              className="text-blue-400 hover:underline text-sm flex items-center"
+            >
+              <Server className="h-4 w-4 mr-1" />
+              Configureer API sleutels in Admin Paneel
+            </a>
+          </div>
+        )}
       </div>
     );
   }
@@ -35,10 +47,18 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
         <div className="bg-amber-900/50 border border-amber-700 text-amber-100 p-3 rounded-md flex items-center mb-4">
           <Server className="h-5 w-5 mr-2 text-amber-400" />
           <div>
-            <h4 className="font-medium text-amber-200">Using Simulated Trading Data</h4>
+            <h4 className="font-medium text-amber-200">Gesimuleerde handelsdata wordt gebruikt</h4>
             <p className="text-sm">
-              We're unable to fetch real-time data. Some responses contain simulated market information.
+              We kunnen geen real-time data ophalen. Sommige antwoorden bevatten gesimuleerde marktinformatie.
             </p>
+            {adminPanelPath && (
+              <a 
+                href={adminPanelPath} 
+                className="text-amber-200 hover:underline text-sm inline-flex items-center mt-1"
+              >
+                Configureer API sleutels in Admin Paneel
+              </a>
+            )}
           </div>
         </div>
       )}

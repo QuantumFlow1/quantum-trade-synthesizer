@@ -20,9 +20,15 @@ interface ApiKeyManagerProps {
   selectedModel: ModelInfo | undefined;
   apiKeys: ApiKeySettings;
   onApiKeysChange: (apiKeys: ApiKeySettings) => void;
+  adminPanelPath?: string;
 }
 
-export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKeyManagerProps) {
+export function ApiKeyManager({ 
+  selectedModel, 
+  apiKeys, 
+  onApiKeysChange,
+  adminPanelPath = '/admin/api-keys'
+}: ApiKeyManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   
   // Load API keys from localStorage on component mount
@@ -41,13 +47,12 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
     onApiKeysChange(updatedKeys);
   }, [onApiKeysChange]);
 
-  const handleSave = (openaiKey: string, claudeKey: string, geminiKey: string, deepseekKey: string, groqKey: string) => {
-    const updatedKeys = saveApiKeys(openaiKey, claudeKey, geminiKey, deepseekKey, groqKey);
-    onApiKeysChange(updatedKeys);
-  };
-
   const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
+    if (open) {
+      // Redirect to admin panel instead of opening dialog
+      window.location.href = adminPanelPath;
+    }
+    setIsOpen(false);
   };
 
   // Check if the current model needs an API key
@@ -61,25 +66,18 @@ export function ApiKeyManager({ selectedModel, apiKeys, onApiKeysChange }: ApiKe
       <ApiKeyWarning 
         selectedModel={selectedModel} 
         hasApiKey={hasModelKey} 
+        adminPanelPath={adminPanelPath}
       />
       
-      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mb-4 text-xs"
-          >
-            <Key className="h-3.5 w-3.5 mr-1" />
-            API Sleutels
-          </Button>
-        </DialogTrigger>
-        
-        <ApiKeyDialogContent 
-          apiKeys={apiKeys}
-          onSave={handleSave}
-        />
-      </Dialog>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="mb-4 text-xs"
+        onClick={() => window.location.href = adminPanelPath}
+      >
+        <Key className="h-3.5 w-3.5 mr-1" />
+        API Sleutels Beheren
+      </Button>
     </div>
   );
 }

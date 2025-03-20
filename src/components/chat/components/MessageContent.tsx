@@ -45,7 +45,7 @@ export function MessageContent({ role, content, timestamp }: MessageContentProps
         {isSimulatedData && (
           <div className="mb-2 text-xs font-medium px-2 py-1 bg-amber-950/30 text-amber-300 rounded inline-block flex items-center">
             <Server className="h-3 w-3 mr-1" />
-            <span>SIMULATED DATA (NOT REAL-TIME)</span>
+            <span>GESIMULEERDE DATA (NIET REAL-TIME)</span>
           </div>
         )}
         <p className={`whitespace-pre-line text-base leading-relaxed font-normal ${
@@ -58,7 +58,7 @@ export function MessageContent({ role, content, timestamp }: MessageContentProps
           {content || "Error: Empty message content"}
           {isSimulatedData && (
             <span className="block mt-2 text-sm text-amber-300 italic">
-              Note: This is simulated data, not actual market information.
+              Note: Dit is gesimuleerde data, geen actuele marktinformatie.
             </span>
           )}
         </p>
