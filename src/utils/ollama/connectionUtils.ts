@@ -8,11 +8,10 @@ export const delay = (ms: number): Promise<void> => {
 };
 
 /**
- * Try to determine if Ollama is available but blocked by CORS
- * This is disabled to avoid showing CORS errors
+ * CORS error probing is now completely disabled
  */
 export const probeCorsError = async (baseUrl: string): Promise<boolean> => {
-  return false; // Disable CORS probing to avoid showing CORS errors
+  return false; // CORS probing is completely disabled
 };
 
 /**
@@ -43,7 +42,7 @@ export const normalizeOllamaUrl = (url: string): string => {
 };
 
 /**
- * Handles error messages from connection attempts
+ * Handles error messages from connection attempts with minimal CORS information
  */
 export const getConnectionErrorMessage = (error: unknown): string => {
   if (error instanceof DOMException && error.name === 'AbortError') {

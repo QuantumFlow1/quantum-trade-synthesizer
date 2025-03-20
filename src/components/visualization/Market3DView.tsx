@@ -1,10 +1,12 @@
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Box, Text, Sphere } from '@react-three/drei';
+import { OrbitControls, Box, Text, Sphere, Grid, Environment } from '@react-three/drei';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, AlertTriangle } from 'lucide-react';
+import { RefreshCw, AlertTriangle, ZoomIn, ZoomOut, RotateCcw, Eye } from 'lucide-react';
+import { useThemeString } from '@/hooks/use-theme-string';
+import { TradingFloorEnvironment } from './environment/environments/TradingHubEnvironment';
 
 interface Market3DViewProps {
   data: any[];
@@ -21,7 +23,11 @@ export const Market3DView = ({
 }: Market3DViewProps) => {
   const [hasRendered, setHasRendered] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [viewMode, setViewMode] = useState<'default' | 'volume' | 'price'>('default');
+  const [dataDensity, setDataDensity] = useState(50);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const theme = useThemeString();
+  const controlsRef = useRef<any>(null);
 
   // Reset error state when data changes
   useEffect(() => {
@@ -34,6 +40,44 @@ export const Market3DView = ({
       onLoaded();
     }
   }, [hasRendered, hasError, onLoaded]);
+
+  // Process data for visualization
+  const processedData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    
+    // Take a subset of data based on data density
+    const stepSize = Math.max(1, Math.floor(data.length / (dataDensity / 10)));
+    const filteredData = data.filter((_, i) => i % stepSize === 0);
+    
+    // Process the data for visualization
+    const maxPrice = Math.max(...filteredData.map(d => d.high || d.close || 0));
+    const minPrice = Math.min(...filteredData.map(d => d.low || d.close || 0));
+    const priceRange = maxPrice - minPrice;
+    const maxVolume = Math.max(...filteredData.map(d => d.volume || 0));
+
+    return filteredData.map((item, index) => {
+      const price = item.close || 0;
+      const normalizedPrice = priceRange ? (price - minPrice) / priceRange * 2 - 1 : 0;
+      const normalizedVolume = maxVolume ? (item.volume || 0) / maxVolume : 0.1;
+      
+      // Determine color based on price change
+      const priceChange = index > 0 ? price - (filteredData[index - 1].close || 0) : 0;
+      const color = priceChange > 0 ? '#22c55e' : priceChange < 0 ? '#ef4444' : '#3b82f6';
+      
+      return {
+        position: [index * 0.3 - filteredData.length * 0.15, normalizedPrice, 0],
+        size: viewMode === 'volume' 
+          ? [0.1, normalizedVolume * 3, 0.1] 
+          : viewMode === 'price'
+          ? [0.1, Math.abs(normalizedPrice) * 2, 0.1]
+          : [0.1, 0.1, normalizedVolume * 5 + 0.1],
+        color,
+        price,
+        volume: item.volume || 0,
+        date: item.name || `Day ${index}`
+      };
+    });
+  }, [data, dataDensity, viewMode]);
 
   // Error handling
   const handleRenderError = () => {
@@ -48,12 +92,26 @@ export const Market3DView = ({
     setTimeout(() => setHasRendered(true), 100);
   };
 
+  // Reset view
+  const handleResetView = () => {
+    if (controlsRef.current) {
+      controlsRef.current.reset();
+    }
+  };
+
+  // Change view mode
+  const cycleViewMode = () => {
+    if (viewMode === 'default') setViewMode('volume');
+    else if (viewMode === 'volume') setViewMode('price');
+    else setViewMode('default');
+  };
+
   if (hasError) {
     return (
-      <Card className="h-[500px] flex flex-col items-center justify-center p-6 bg-red-50 border-red-200">
-        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+      <Card className="h-[500px] flex flex-col items-center justify-center p-6 bg-card/50 border-border">
+        <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
         <h3 className="text-xl font-medium mb-2">Visualization Error</h3>
-        <p className="text-center mb-4 text-gray-700">
+        <p className="text-center mb-4 text-muted-foreground">
           There was a problem rendering the 3D visualization. This might be due to WebGL compatibility issues.
         </p>
         <Button onClick={handleRefresh} variant="outline" className="gap-2">
@@ -67,39 +125,13 @@ export const Market3DView = ({
   if (!data || data.length === 0) {
     return (
       <Card className="h-[500px] flex items-center justify-center">
-        <p className="text-gray-500">No data available for 3D visualization</p>
+        <p className="text-muted-foreground">No data available for 3D visualization</p>
       </Card>
     );
   }
 
-  // Process data for visualization
-  const maxPrice = Math.max(...data.map(d => d.high || d.close || 0));
-  const minPrice = Math.min(...data.map(d => d.low || d.close || 0));
-  const priceRange = maxPrice - minPrice;
-  
-  const maxVolume = Math.max(...data.map(d => d.volume || 0));
-
-  const normalizeData = data.map((item, index) => {
-    const price = item.close || 0;
-    const normalizedPrice = priceRange ? (price - minPrice) / priceRange * 2 - 1 : 0;
-    const normalizedVolume = maxVolume ? (item.volume || 0) / maxVolume * 0.5 : 0.1;
-    
-    // Determine color based on price change
-    const priceChange = index > 0 ? price - (data[index - 1].close || 0) : 0;
-    const color = priceChange > 0 ? '#22c55e' : priceChange < 0 ? '#ef4444' : '#3b82f6';
-    
-    return {
-      position: [index * 0.3 - data.length * 0.15, normalizedPrice, 0] as [number, number, number],
-      size: [0.1, 0.1, normalizedVolume * 5 + 0.1] as [number, number, number],
-      color,
-      price,
-      volume: item.volume || 0,
-      date: item.name || `Day ${index}`
-    };
-  });
-
   return (
-    <Card className="relative h-[500px] shadow-lg overflow-hidden" style={{ background: '#111' }}>
+    <Card className="relative h-[500px] shadow-lg overflow-hidden bg-background/10 backdrop-blur-sm border border-border/30">
       <Canvas
         ref={canvasRef}
         camera={{ position: [0, 0, 5], fov: 60 }}
@@ -108,11 +140,16 @@ export const Market3DView = ({
         style={{ width: '100%', height: '100%' }}
         shadows
       >
+        <color attach="background" args={[theme === 'dark' ? '#111' : '#f5f5f5']} />
+        
         <ambientLight intensity={0.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
         
-        {/* Price data visualization */}
-        {normalizeData.map((item, index) => (
+        {/* Environment */}
+        <Environment preset={theme === 'dark' ? 'night' : 'sunset'} />
+        
+        {/* Market data visualization */}
+        {processedData.map((item, index) => (
           <Box 
             key={index} 
             position={item.position} 
@@ -129,13 +166,13 @@ export const Market3DView = ({
           </Box>
         ))}
         
-        {/* Price labels */}
-        {normalizeData.filter((_, i) => i % 5 === 0).map((item, index) => (
+        {/* Price labels for every 5th item */}
+        {processedData.filter((_, i) => i % 5 === 0).map((item, index) => (
           <Text
             key={`text-${index}`}
-            position={item.position.map((val, idx) => idx === 1 ? val + 0.2 : val) as [number, number, number]}
+            position={[item.position[0], item.position[1] + 0.2, item.position[2]]}
             fontSize={0.1}
-            color="white"
+            color={theme === 'dark' ? 'white' : 'black'}
             anchorX="center"
             anchorY="middle"
           >
@@ -145,30 +182,81 @@ export const Market3DView = ({
         
         {/* Reference sphere at origin */}
         <Sphere position={[0, 0, 0]} args={[0.05]}>
-          <meshStandardMaterial color="white" />
+          <meshStandardMaterial color={theme === 'dark' ? 'white' : 'black'} />
         </Sphere>
         
         {/* Grid and controls */}
-        <gridHelper args={[20, 20, '#333', '#222']} />
-        <OrbitControls enableDamping dampingFactor={0.2} />
+        <Grid args={[20, 20]} infiniteGrid cellColor={theme === 'dark' ? '#444' : '#ddd'} sectionColor={theme === 'dark' ? '#666' : '#bbb'} />
+        <OrbitControls 
+          ref={controlsRef}
+          enableDamping
+          dampingFactor={0.2}
+          minDistance={2}
+          maxDistance={10}
+        />
       </Canvas>
       
-      {/* Overlay controls */}
-      <div className="absolute bottom-4 right-4">
+      {/* Visualization controls */}
+      <div className="absolute bottom-4 right-4 flex gap-2">
         <Button
           variant="secondary"
           size="sm"
-          className="bg-white/10 backdrop-blur-sm hover:bg-white/20"
-          onClick={handleRefresh}
+          className="bg-background/20 backdrop-blur-sm hover:bg-background/40"
+          onClick={handleResetView}
+          title="Reset View"
         >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh View
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant="secondary"
+          size="sm"
+          className="bg-background/20 backdrop-blur-sm hover:bg-background/40"
+          onClick={cycleViewMode}
+          title={`Current: ${viewMode} mode - Click to change`}
+        >
+          <Eye className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant="secondary"
+          size="sm"
+          className="bg-background/20 backdrop-blur-sm hover:bg-background/40"
+          onClick={() => setDataDensity(Math.min(100, dataDensity + 10))}
+          title="Increase Data Detail"
+        >
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant="secondary"
+          size="sm"
+          className="bg-background/20 backdrop-blur-sm hover:bg-background/40"
+          onClick={() => setDataDensity(Math.max(10, dataDensity - 10))}
+          title="Decrease Data Detail"
+        >
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant="secondary"
+          size="sm"
+          className="bg-background/20 backdrop-blur-sm hover:bg-background/40"
+          onClick={handleRefresh}
+          title="Refresh View"
+        >
+          <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
       
       {/* Data source indicator */}
-      <div className="absolute top-2 left-2 bg-black/40 backdrop-blur-sm px-2 py-1 rounded text-xs text-white/80">
-        {isSimulationMode ? 'Simulated Data' : 'Live Market Data'}
+      <div className="absolute top-2 left-2 bg-background/40 backdrop-blur-sm px-2 py-1 rounded text-xs text-foreground/80">
+        {isSimulationMode ? 'Simulated Data' : 'Live Market Data'} • {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)} View
+      </div>
+      
+      {/* Instruction overlay */}
+      <div className="absolute bottom-2 left-2 text-xs text-foreground/70 bg-background/20 backdrop-blur-sm px-2 py-1 rounded">
+        Drag to rotate • Scroll to zoom • Right-click to pan
       </div>
     </Card>
   );

@@ -27,7 +27,7 @@ export function OllamaEmptyState({
       <Server className="h-12 w-12 text-muted-foreground mb-4" />
       
       <h3 className="text-xl font-semibold mb-2">
-        {isConnected ? 'Select a model to start chat' : 'Ollama Connection Required'}
+        {isConnected ? 'Select a model to start chat' : 'Simulation Mode Active'}
       </h3>
       
       <p className="text-muted-foreground mb-6 max-w-md">
@@ -35,7 +35,7 @@ export function OllamaEmptyState({
           ? models && models.length > 0 
             ? "Choose an Ollama model from the dropdown above to start chatting" 
             : "No models found. You'll need to pull some models first."
-          : "Currently using simulation mode. Connect to Ollama for full functionality."}
+          : "Currently using simulation mode with pre-generated responses."}
       </p>
       
       <div className="flex flex-wrap gap-3 justify-center">
@@ -47,7 +47,7 @@ export function OllamaEmptyState({
         {!isConnected && (
           <Button onClick={toggleConnectionInfo} variant="default" className="flex items-center">
             <Server className="mr-2 h-4 w-4" />
-            Connection Details
+            Information
           </Button>
         )}
       </div>
@@ -57,7 +57,7 @@ export function OllamaEmptyState({
           <Alert>
             <AlertTitle>Using simulation mode</AlertTitle>
             <AlertDescription>
-              <p>AI responses are currently simulated. To use local Ollama models, install Ollama and start the service.</p>
+              <p>AI responses are currently simulated with pre-generated text.</p>
             </AlertDescription>
           </Alert>
         </div>
