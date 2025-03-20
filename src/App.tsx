@@ -15,7 +15,6 @@ import Finance from "./pages/admin/dashboard/Finance";
 import AdminPanel from "./components/AdminPanel";
 import ChatPage from "./pages/chat";
 import UserDashboard from "./components/UserDashboard";
-import ResearchPage from "./pages/ResearchPage";
 // import OllamaChatPage from "./pages/ollama-chat";
 
 const queryClient = new QueryClient({
@@ -49,7 +48,6 @@ function App() {
                 <Route path="/admin/dashboard/system" element={<System />} />
                 <Route path="/admin/dashboard/finance" element={<Finance />} />
                 <Route path="/dashboard/*" element={<UserDashboard />} />
-                <Route path="/research" element={<ResearchPage />} />
                 <Route path="/auth/callback/*" element={<Navigate to="/" replace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

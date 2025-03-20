@@ -9,7 +9,6 @@ import { RiskPage } from "./pages/RiskPage";
 import { AIToolsPage } from "./pages/AIToolsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { GamificationPage } from "./pages/GamificationPage";
-import { VisualizationPage } from "./pages/VisualizationPage";
 import { VirtualEnvironmentDemo } from "../visualization/VirtualEnvironmentDemo";
 
 interface DashboardPageContentProps {
@@ -62,8 +61,6 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
     // LLM page content removed
     case "gamification":
       return <GamificationPage />;
-    case "visualization":
-      return <VisualizationPage />;
     case "settings":
       return <SettingsPage />;
     default:
