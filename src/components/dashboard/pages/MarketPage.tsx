@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { MarketHeader } from "./market/MarketHeader";
 import { MarketTabs } from "./market/MarketTabs";
-import { MarketDataTable } from "./market/MarketDataTable";
 import { TestnetTokenTab } from "./market/TestnetTokenTab";
 import { WalletConnection } from "./market/WalletConnection";
 import { useMarketData } from "./market/useMarketData";
@@ -12,7 +11,7 @@ import { AlertCircle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const MarketPage = () => {
-  const [activeTab, setActiveTab] = useState("coins");
+  const [activeTab, setActiveTab] = useState("enhanced");
   const [walletConnected, setWalletConnected] = useState(false);
   const { 
     marketData, 
@@ -36,43 +35,11 @@ export const MarketPage = () => {
     fetchMarketData();
   };
 
-  // Check if marketData is not an array or empty
-  const hasError = !Array.isArray(marketData) || marketData.length === 0;
-
   return (
     <div className="space-y-6">
       <MarketHeader isLoading={isLoading} onRefresh={handleRefresh} />
 
       <MarketTabs activeTab={activeTab} onTabChange={setActiveTab} />
-
-      {hasError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error loading market data</AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            <p>We encountered an issue while loading the market data.</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefresh}
-              className="w-fit"
-            >
-              <RefreshCcw className="h-4 w-4 mr-2" />
-              Try Again
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {!hasError && activeTab === "coins" && (
-        <MarketDataTable 
-          data={marketData} 
-          isLoading={isLoading} 
-          sortField={sortField}
-          sortDirection={sortDirection}
-          onSortChange={handleSortChange}
-        />
-      )}
 
       {activeTab === "enhanced" && (
         <EnhancedMarketTab />
