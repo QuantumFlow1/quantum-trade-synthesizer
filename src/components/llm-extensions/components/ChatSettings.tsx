@@ -1,27 +1,17 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ServerCrash } from 'lucide-react';
 
 interface ChatSettingsProps {
-  apiKey: string;
-  setApiKey: (key: string) => void;
-  saveApiKey: (key: string) => void;
   type: 'openai' | 'claude' | 'grok' | 'deepseek' | 'ollama';
 }
 
-export function ChatSettings({ 
-  apiKey, 
-  setApiKey, 
-  saveApiKey,
-  type 
-}: ChatSettingsProps) {
-  const [tempApiKey, setTempApiKey] = useState(apiKey);
-
-  const handleSave = () => {
-    saveApiKey(tempApiKey);
+export function ChatSettings({ type }: ChatSettingsProps) {
+  const navigateToAdminPanel = () => {
+    window.location.href = '/admin/api-keys';
   };
 
   return (
@@ -36,27 +26,25 @@ export function ChatSettings({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="api-key">API Key</Label>
-            <Input
-              id="api-key"
-              type="password"
-              value={tempApiKey}
-              onChange={(e) => setTempApiKey(e.target.value)}
-              placeholder={`Enter your ${type} API key`}
-            />
-            {type === 'openai' && (
-              <p className="text-xs text-muted-foreground">
-                You can get your API key from the OpenAI dashboard.
-              </p>
-            )}
-          </div>
-        </div>
+        <Alert variant="destructive" className="mb-4">
+          <ServerCrash className="h-4 w-4" />
+          <AlertDescription>
+            API sleutels kunnen alleen worden geconfigureerd in het Admin Paneel.
+            Neem contact op met uw systeembeheerder voor toegang.
+          </AlertDescription>
+        </Alert>
+        
+        <p className="text-sm text-muted-foreground mt-2">
+          {type === 'openai' && 'OpenAI API keys geven toegang tot GPT modellen voor AI chatbots en content generatie.'}
+          {type === 'claude' && 'Claude API keys zijn nodig voor toegang tot Anthropic\'s Claude modellen.'}
+          {type === 'grok' && 'Grok API keys geven toegang tot de nieuwste AI modellen van xAI.'}
+          {type === 'deepseek' && 'DeepSeek API keys zijn nodig voor toegang tot DeepSeek\'s AI modellen.'}
+          {type === 'ollama' && 'Ollama instellingen configureren verbinding met lokale Ollama server.'}
+        </p>
       </CardContent>
       <CardFooter>
-        <Button onClick={handleSave} disabled={!tempApiKey.trim()}>
-          Save Settings
+        <Button onClick={navigateToAdminPanel}>
+          Naar Admin Paneel
         </Button>
       </CardFooter>
     </Card>

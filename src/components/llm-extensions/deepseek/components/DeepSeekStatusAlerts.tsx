@@ -1,5 +1,5 @@
 
-import { AlertTriangle, Key } from 'lucide-react';
+import { AlertTriangle, Key, ServerCrash } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { EdgeFunctionStatus } from '../../types/chatTypes';
@@ -17,14 +17,29 @@ export function DeepSeekStatusAlerts({
   formattedLastChecked,
   onRetryConnection
 }: DeepSeekStatusAlertsProps) {
+  const navigateToAdminPanel = () => {
+    window.location.href = '/admin/api-keys';
+  };
+
   return (
     <>
-      {!hasApiKey && edgeFunctionStatus !== 'unavailable' && (
+      {!hasApiKey && (
         <Alert className="mb-2">
-          <Key className="h-4 w-4" />
-          <AlertTitle>API Key Required</AlertTitle>
-          <AlertDescription>
-            You need to set a DeepSeek API key to use this chat. Click the settings icon to add your API key.
+          <ServerCrash className="h-4 w-4" />
+          <AlertTitle>API Sleutel Vereist</AlertTitle>
+          <AlertDescription className="space-y-2">
+            <p>
+              API sleutels kunnen alleen worden geconfigureerd in het Admin Paneel.
+              Neem contact op met uw systeembeheerder voor toegang.
+            </p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={navigateToAdminPanel}
+              className="mt-2"
+            >
+              Naar Admin Paneel
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -35,7 +50,7 @@ export function DeepSeekStatusAlerts({
           <AlertTitle>Connection Failed</AlertTitle>
           <AlertDescription className="space-y-2">
             <p>
-              Unable to connect to the DeepSeek API. Please check your API key and try again.
+              Unable to connect to the DeepSeek API. Please check your API key in the Admin Panel.
               {formattedLastChecked && <span className="block text-xs opacity-70">Last checked: {formattedLastChecked}</span>}
             </p>
             <Button 

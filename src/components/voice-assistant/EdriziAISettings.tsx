@@ -1,8 +1,9 @@
 
 import { Button } from '@/components/ui/button'
-import { MessageSquare, CheckCircle, Power } from 'lucide-react'
+import { MessageSquare, CheckCircle, Power, ServerCrash } from 'lucide-react'
 import { VoiceSelector } from './audio/VoiceSelector'
 import { Switch } from '@/components/ui/switch'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 type EdriziAISettingsProps = {
   grok3Available: boolean;
@@ -34,10 +35,30 @@ export const EdriziAISettings = ({
     }
   }
   
+  const navigateToAdminPanel = () => {
+    window.location.href = '/admin/api-keys';
+  };
+  
   return (
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-medium">Grok3 AI Status</h3>
+        
+        {!grok3Available && !manuallyDisabled && (
+          <Alert className="my-3">
+            <ServerCrash className="h-4 w-4" />
+            <AlertDescription>
+              API sleutels kunnen alleen worden geconfigureerd in het Admin Paneel.
+              <Button 
+                variant="link" 
+                className="h-auto p-0 ml-1" 
+                onClick={navigateToAdminPanel}
+              >
+                Ga naar Admin Paneel
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
         
         {disableGrok3Connection && (
           <div className="flex items-center justify-between my-3 p-3 border rounded-md">

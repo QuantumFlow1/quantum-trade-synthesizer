@@ -7,6 +7,7 @@ import { ApiKeySheet } from "./ApiKeySheet";
 import { useApiKeyManager } from "./hooks/useApiKeyManager";
 import { useState, useEffect } from "react";
 import { useApiStatus } from "@/components/trading/hooks/api-status";
+import { Button } from "@/components/ui/button";
 
 interface AIAnalysisPanelProps {
   aiAnalysis?: {
@@ -38,8 +39,7 @@ export const AIAnalysisPanel = ({
     showApiKeySheet, 
     apiKeyStatus, 
     handleOpenApiKeySheet, 
-    handleCloseApiKeySheet,
-    saveApiKeys
+    handleCloseApiKeySheet
   } = useApiKeyManager();
 
   // When API keys are saved, verify the status
@@ -113,10 +113,7 @@ export const AIAnalysisPanel = ({
         isOpen={showApiKeySheet}
         onClose={handleCloseApiKeySheet}
         apiKeyStatus={apiKeyStatus}
-        onSave={saveApiKeys}
       />
     </div>
   );
 };
-
-import { Button } from "@/components/ui/button";
