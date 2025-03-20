@@ -79,16 +79,20 @@ export default {
       typography: {
         DEFAULT: {
           css: {
-            color: '#333',
+            color: '#D1D5DB', // Light gray for text in dark mode
             a: {
-              color: '#3182ce',
+              color: '#60A5FA', // Blue for links
               '&:hover': {
-                color: '#2c5282',
+                color: '#93C5FD',
               },
             },
             strong: {
-              color: '#000',
+              color: '#F9FAFB', // Almost white for strong text
               fontWeight: '600',
+            },
+            code: {
+              color: '#F9FAFB',
+              backgroundColor: 'rgba(55, 65, 81, 0.5)', // Dark gray with transparency
             },
           },
         },

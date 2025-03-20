@@ -63,4 +63,30 @@
   [role="dialog"] {
     @apply border-secondary/30 shadow-lg;
   }
+  
+  /* Chat message styling */
+  .user-message {
+    @apply bg-blue-900 text-gray-100;
+  }
+  
+  .assistant-message {
+    @apply bg-gray-800 text-gray-100 border-gray-700;
+  }
+  
+  .system-message {
+    @apply bg-purple-900 border-purple-800 text-gray-100;
+  }
+  
+  .message-text {
+    @apply text-current;
+  }
+  
+  .message-time {
+    @apply opacity-70;
+  }
+  
+  /* Chat container background */
+  .chat-container {
+    @apply bg-gray-900;
+  }
 }

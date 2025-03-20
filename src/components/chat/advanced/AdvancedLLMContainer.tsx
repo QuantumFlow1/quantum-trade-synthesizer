@@ -11,8 +11,8 @@ interface AdvancedLLMContainerProps {
 
 export default function AdvancedLLMContainer({ children }: AdvancedLLMContainerProps) {
   return (
-    <div className="w-full min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto bg-white rounded-lg shadow-sm min-h-screen">
+    <div className="w-full min-h-screen bg-gray-900">
+      <div className="max-w-7xl mx-auto bg-gray-800 rounded-lg shadow-sm min-h-screen">
         {children}
       </div>
     </div>

@@ -1,3 +1,4 @@
+
 import { Card, CardContent } from '@/components/ui/card'
 import { GrokChatHeader } from './GrokChatHeader'
 import { ChatMessages } from './ChatMessages'
@@ -190,7 +191,7 @@ export function GrokChat() {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-lg bg-white">
+    <Card className="w-full max-w-4xl mx-auto shadow-lg bg-gray-900 border-gray-800">
       <GrokChatHeader 
         onClearChat={clearChat} 
         onToggleSettings={toggleSettings}
@@ -255,13 +256,13 @@ export function GrokChat() {
           </div>
         )}
         
-        <div className="mx-4 mt-2 text-xs text-gray-500">
+        <div className="mx-4 mt-2 text-xs text-gray-400">
           Messages in state: {messages.length} | {isOffline ? "Offline Mode" : "Online Mode"} | Model: {selectedModelName}
         </div>
         
         <div 
           ref={messagesContainerRef} 
-          className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-50 pt-3"
+          className="flex-grow overflow-y-auto p-6 space-y-6 bg-gray-900 pt-3"
         >
           <ChatMessages messages={messages} />
         </div>

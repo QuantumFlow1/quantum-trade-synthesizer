@@ -11,7 +11,7 @@ interface MessageContentProps {
 export function MessageContent({ role, content, timestamp }: MessageContentProps) {
   return (
     <div className="flex items-start">
-      <div className={`mr-3 mt-1 ${role === 'user' ? 'text-white' : 'text-indigo-600'}`}>
+      <div className={`mr-3 mt-1 ${role === 'user' ? 'text-blue-300' : 'text-green-300'}`}>
         {role === 'user' ? (
           <User className="w-5 h-5" />
         ) : (
@@ -19,10 +19,10 @@ export function MessageContent({ role, content, timestamp }: MessageContentProps
         )}
       </div>
       <div className="flex-1">
-        <p className="whitespace-pre-line text-base leading-relaxed font-normal">
+        <p className="whitespace-pre-line text-base leading-relaxed font-normal text-gray-100">
           {content || "Error: Empty message content"}
         </p>
-        <p className={`text-xs mt-2 ${role === 'user' ? 'text-indigo-200' : 'text-gray-500'}`}>
+        <p className={`text-xs mt-2 ${role === 'user' ? 'text-blue-300' : 'text-gray-400'}`}>
           {timestamp.toLocaleTimeString()} - {timestamp.toLocaleDateString()}
         </p>
       </div>

@@ -28,7 +28,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
   const modelDisplayName = getModelDisplayName(selectedModelName);
 
   return (
-    <div className="p-4 border rounded-md bg-gray-50 mb-4 h-[300px] overflow-y-auto flex flex-col">
+    <div className="p-4 border border-gray-700 rounded-md bg-gray-800 mb-4 h-[300px] overflow-y-auto flex flex-col">
       {messages.length > 0 ? (
         <div className="space-y-4 w-full">
           {messages.map((message, index) => {
@@ -45,18 +45,18 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
                 key={index} 
                 className={`p-3 rounded-lg max-w-[85%] ${
                   message.role === 'user' 
-                    ? 'bg-blue-100 text-blue-900 ml-auto' 
-                    : 'bg-white border border-gray-200 mr-auto'
+                    ? 'bg-blue-900 text-gray-100 ml-auto' 
+                    : 'bg-gray-700 text-gray-100 border border-gray-600 mr-auto'
                 } chat-message`}
                 data-message-index={index}
                 data-message-role={message.role}
               >
                 <div className="flex items-center mb-1">
-                  <span className="font-semibold text-xs">
+                  <span className="font-semibold text-xs text-gray-300">
                     {message.role === 'user' ? 'You' : modelDisplayName}
                   </span>
                 </div>
-                <p className="text-sm whitespace-pre-wrap">
+                <p className="text-sm whitespace-pre-wrap text-gray-100">
                   {messageContent || "Error: Empty message content"}
                 </p>
               </div>
@@ -66,7 +66,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, selectedModelName }
         </div>
       ) : (
         <div className="flex items-center justify-center h-full">
-          <p className="text-gray-500 italic text-center">Send a message to start the conversation...</p>
+          <p className="text-gray-400 italic text-center">Send a message to start the conversation...</p>
         </div>
       )}
     </div>
