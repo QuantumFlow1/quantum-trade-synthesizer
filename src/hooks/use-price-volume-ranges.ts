@@ -2,23 +2,35 @@
 import { useMemo } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
 
-export function usePriceVolumeRanges(processedData: TradingDataPoint[]) {
-  const { maxPrice, minPrice, maxVolume } = useMemo(() => {
-    try {
-      if (!processedData || processedData.length === 0) {
-        return { maxPrice: 100, minPrice: 0, maxVolume: 100 };
-      }
-      
-      const maxP = Math.max(...processedData.map(d => d.close));
-      const minP = Math.min(...processedData.map(d => d.close));
-      const maxV = Math.max(...processedData.map(d => d.volume));
-      
-      return { maxPrice: maxP, minPrice: minP, maxVolume: maxV };
-    } catch (error) {
-      console.error("Error calculating min/max values:", error);
-      return { maxPrice: 100, minPrice: 0, maxVolume: 100 };
+export const usePriceVolumeRanges = (data: TradingDataPoint[]) => {
+  return useMemo(() => {
+    if (!data || data.length === 0) {
+      return {
+        maxPrice: 0,
+        minPrice: 0,
+        maxVolume: 0,
+        avgPrice: 0,
+        priceRange: 0
+      };
     }
-  }, [processedData]);
-  
-  return { maxPrice, minPrice, maxVolume };
-}
+    
+    // Calculate price ranges
+    const prices = data.map(point => point.close);
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
+    const priceRange = maxPrice - minPrice;
+    const avgPrice = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+    
+    // Calculate volume maximum
+    const volumes = data.map(point => point.volume);
+    const maxVolume = Math.max(...volumes);
+    
+    return {
+      maxPrice,
+      minPrice,
+      maxVolume,
+      avgPrice,
+      priceRange
+    };
+  }, [data]);
+};

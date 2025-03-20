@@ -1,41 +1,39 @@
 
 import { ColorTheme } from "@/hooks/use-theme-detection";
+import { Environment } from "@react-three/drei";
 import { OptimizationLevel, EnvironmentPreset } from "./SceneContainer";
 
 interface EnvironmentEffectsProps {
   theme: ColorTheme;
   environmentPreset: EnvironmentPreset;
-  optimizationLevel?: 'normal' | 'aggressive';
+  optimizationLevel: OptimizationLevel;
 }
 
 export const EnvironmentEffects = ({ 
-  theme, 
+  theme,
   environmentPreset,
-  optimizationLevel = 'normal'
+  optimizationLevel
 }: EnvironmentEffectsProps) => {
-  // In aggressive optimization mode, we provide minimal environment
-  if (optimizationLevel === 'aggressive') {
-    return (
-      <fog
-        attach="fog"
-        color={theme === 'dark' ? '#14143a' : '#f8fafc'}
-        near={30}
-        far={90}
-      />
-    );
+  // Don't render advanced effects in extreme optimization mode
+  if (optimizationLevel === 'extreme') {
+    return null;
   }
   
   return (
     <>
-      {/* Fog effect */}
-      <fog
-        attach="fog"
-        color={theme === 'dark' ? '#14143a' : '#f8fafc'}
-        near={40}
-        far={100}
-      />
+      <Environment preset={environmentPreset} background={false} />
       
-      {/* We can add other environment effects here in the future */}
+      {/* Add fog in normal optimization level */}
+      {optimizationLevel === 'normal' && (
+        <fog 
+          attach="fog" 
+          args={[
+            theme === 'dark' ? '#111111' : '#f0f0f0', 
+            20, 
+            100
+          ]} 
+        />
+      )}
     </>
   );
 };

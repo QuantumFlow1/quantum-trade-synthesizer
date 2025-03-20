@@ -1,43 +1,46 @@
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { TradingDataPoint } from "@/utils/tradingData";
 
-export function useProcessedTradingData(data: TradingDataPoint[]) {
-  const [processedData, setProcessedData] = useState<TradingDataPoint[]>([]);
-
-  useEffect(() => {
-    try {
-      if (data && Array.isArray(data) && data.length > 0) {
-        console.log("Processing 3D visualization data:", data.length, "data points");
-        setProcessedData(data);
-      } else {
-        console.warn("Empty or invalid data received, creating fallback data");
-        const fallbackData: TradingDataPoint[] = Array.from({ length: 5 }).map((_, i) => ({
-          name: `Fallback ${i + 1}`,
-          open: 100 + i * 5,
-          close: 105 + i * 5,
-          high: 110 + i * 5,
-          low: 95 + i * 5,
-          volume: 1000 + i * 100,
-          sma: 102 + i * 5,
-          ema: 103 + i * 5,
-          rsi: 50 + i,
-          macd: 0.5 + i * 0.1,
-          macdSignal: 0.3 + i * 0.1,
-          macdHistogram: 0.2 + i * 0.1,
-          bollingerUpper: 115 + i * 5,
-          bollingerLower: 90 + i * 5,
-          stochastic: 40 + i * 5,
-          adx: 30 + i * 2,
-          trend: i % 2 === 0 ? "up" : "down"
-        }));
-        setProcessedData(fallbackData);
-      }
-    } catch (error) {
-      console.error("Error processing 3D visualization data:", error);
-      setProcessedData([]);
+export const useProcessedTradingData = (data: TradingDataPoint[]): TradingDataPoint[] => {
+  return useMemo(() => {
+    if (!data || data.length === 0) {
+      return [];
     }
+    
+    // Process data points to ensure they have all required properties
+    return data.map((point, index, arr) => {
+      // Default values for missing fields
+      const processedPoint: TradingDataPoint = {
+        ...point,
+        // Ensure trend is set
+        trend: point.trend || (
+          index > 0 
+            ? (point.close > arr[index - 1].close ? 'up' : 'down') 
+            : 'neutral'
+        ),
+        // Add fallbacks for technical indicators if missing
+        sma: point.sma || point.close,
+        ema: point.ema || point.close,
+        rsi: point.rsi || 50,
+        macd: point.macd || 0,
+        macdSignal: point.macdSignal || point.signal || 0,
+        signal: point.signal || point.macdSignal || 0,
+        macdHistogram: point.macdHistogram || point.histogram || 0,
+        histogram: point.histogram || point.macdHistogram || 0,
+        bollingerUpper: point.bollingerUpper || point.bollinger_upper || point.close * 1.05,
+        bollingerMiddle: point.bollingerMiddle || point.bollinger_middle || point.close,
+        bollingerLower: point.bollingerLower || point.bollinger_lower || point.close * 0.95,
+        bollinger_upper: point.bollinger_upper || point.bollingerUpper || point.close * 1.05,
+        bollinger_middle: point.bollinger_middle || point.bollingerMiddle || point.close,
+        bollinger_lower: point.bollinger_lower || point.bollingerLower || point.close * 0.95,
+        atr: point.atr || 0,
+        cci: point.cci || 0,
+        stochastic: point.stochastic || 50,
+        adx: point.adx || 25
+      };
+      
+      return processedPoint;
+    });
   }, [data]);
-
-  return processedData;
-}
+};

@@ -48,23 +48,29 @@ export const validateMarketData = (data: any[]): DataValidationResult => {
   }
   
   try {
-    // Convert data to PriceDataPoint format
+    // Convert data to PriceDataPoint format with more flexible validation
     const formattedData: PriceDataPoint[] = data.map(item => {
-      // Basic validation for required fields
-      if (!item.timestamp || typeof item.open !== 'number' || 
-          typeof item.high !== 'number' || typeof item.low !== 'number' ||
-          typeof item.close !== 'number') {
-        throw new Error(`Invalid data point: ${JSON.stringify(item)}`);
-      }
+      // Extract timestamp - accept different formats
+      const timestamp = item.timestamp ? 
+        (typeof item.timestamp === 'number' ? item.timestamp : new Date(item.timestamp).getTime()) : 
+        Date.now();
       
+      // Handle different price field names
+      const open = typeof item.open !== 'undefined' ? item.open : item.price || 0;
+      const close = typeof item.close !== 'undefined' ? item.close : item.price || 0;
+      const high = typeof item.high !== 'undefined' ? item.high : item.high24h || close;
+      const low = typeof item.low !== 'undefined' ? item.low : item.low24h || close;
+      const volume = typeof item.volume !== 'undefined' ? item.volume : 0;
+      
+      // Make sure all values are properly typed as numbers
       return {
-        timestamp: typeof item.timestamp === 'number' ? item.timestamp : new Date(item.timestamp).getTime(),
-        date: new Date(item.timestamp),
-        open: item.open,
-        high: item.high,
-        low: item.low,
-        close: item.close,
-        volume: item.volume || 0
+        timestamp: Number(timestamp),
+        date: new Date(timestamp),
+        open: Number(open),
+        high: Number(high),
+        low: Number(low),
+        close: Number(close),
+        volume: Number(volume)
       };
     });
     
