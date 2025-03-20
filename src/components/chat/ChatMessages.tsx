@@ -29,6 +29,12 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
                               message.content.toLowerCase().includes('failed to') ||
                               message.content.toLowerCase().includes('api error');
         
+        // Check if the message appears to be simulated data
+        const isSimulatedData = message.role === 'assistant' && 
+                               (message.content.includes('as your trusted trading agent') ||
+                                message.content.includes('my algorithms are indicating') ||
+                                message.content.includes('I would recommend a cautious approach'));
+        
         return (
           <div
             key={index}
@@ -37,7 +43,9 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
                 ? 'bg-blue-900 text-gray-50 ml-12' 
                 : isErrorMessage
                   ? 'bg-red-900/50 border border-red-700 text-gray-50 mr-12'
-                  : 'bg-gray-800 text-gray-50 mr-12'
+                  : isSimulatedData
+                    ? 'bg-amber-900/30 border border-amber-700/50 text-gray-50 mr-12'
+                    : 'bg-gray-800 text-gray-50 mr-12'
             }`}
           >
             <MessageContent 
