@@ -23,22 +23,31 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
 
   return (
     <div className="space-y-6">
-      {messages.map((message, index) => (
-        <div
-          key={index}
-          className={`p-4 rounded-lg ${
-            message.role === 'user' 
-              ? 'bg-blue-900 text-gray-50 ml-12' 
-              : 'bg-gray-800 text-gray-50 mr-12'
-          }`}
-        >
-          <MessageContent 
-            role={message.role} 
-            content={message.content}
-            timestamp={message.timestamp}
-          />
-        </div>
-      ))}
+      {messages.map((message, index) => {
+        // Check if the message contains an error
+        const isErrorMessage = message.content.toLowerCase().includes('error:') || 
+                              message.content.toLowerCase().includes('failed to') ||
+                              message.content.toLowerCase().includes('api error');
+        
+        return (
+          <div
+            key={index}
+            className={`p-4 rounded-lg ${
+              message.role === 'user' 
+                ? 'bg-blue-900 text-gray-50 ml-12' 
+                : isErrorMessage
+                  ? 'bg-red-900/50 border border-red-700 text-gray-50 mr-12'
+                  : 'bg-gray-800 text-gray-50 mr-12'
+            }`}
+          >
+            <MessageContent 
+              role={message.role} 
+              content={message.content}
+              timestamp={message.timestamp}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }
