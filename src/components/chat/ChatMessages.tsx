@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bot, User } from 'lucide-react';
+import { Bot, User, AlertTriangle, Server } from 'lucide-react';
 import { ChatMessage } from './types/chat';
 import { MessageContent } from './components/MessageContent';
 
@@ -9,6 +9,14 @@ interface ChatMessagesProps {
 }
 
 export function ChatMessages({ messages }: ChatMessagesProps) {
+  // Check if we have any simulated data responses
+  const hasSimulatedData = messages.some(msg => 
+    msg.role === 'assistant' && 
+    (msg.content.includes('as your trusted trading agent') ||
+     msg.content.includes('my algorithms are indicating') ||
+     msg.content.includes('I would recommend a cautious approach'))
+  );
+
   if (!messages || messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-6 text-gray-300">
@@ -23,6 +31,18 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
 
   return (
     <div className="space-y-6">
+      {hasSimulatedData && (
+        <div className="bg-amber-900/50 border border-amber-700 text-amber-100 p-3 rounded-md flex items-center mb-4">
+          <Server className="h-5 w-5 mr-2 text-amber-400" />
+          <div>
+            <h4 className="font-medium text-amber-200">Using Simulated Trading Data</h4>
+            <p className="text-sm">
+              We're unable to fetch real-time data. Some responses contain simulated market information.
+            </p>
+          </div>
+        </div>
+      )}
+
       {messages.map((message, index) => {
         // Check if the message contains an error
         const isErrorMessage = message.content.toLowerCase().includes('error:') || 

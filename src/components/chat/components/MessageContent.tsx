@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bot, User, AlertCircle, AlertTriangle } from 'lucide-react';
+import { Bot, User, AlertCircle, AlertTriangle, Server } from 'lucide-react';
 
 interface MessageContentProps {
   role: 'user' | 'assistant';
@@ -43,8 +43,9 @@ export function MessageContent({ role, content, timestamp }: MessageContentProps
       </div>
       <div className="flex-1">
         {isSimulatedData && (
-          <div className="mb-2 text-xs font-medium px-2 py-1 bg-amber-950/30 text-amber-300 rounded inline-block">
-            Simulated Data (Not Real-Time)
+          <div className="mb-2 text-xs font-medium px-2 py-1 bg-amber-950/30 text-amber-300 rounded inline-block flex items-center">
+            <Server className="h-3 w-3 mr-1" />
+            <span>SIMULATED DATA (NOT REAL-TIME)</span>
           </div>
         )}
         <p className={`whitespace-pre-line text-base leading-relaxed font-normal ${
