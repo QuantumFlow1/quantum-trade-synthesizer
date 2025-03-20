@@ -12,7 +12,7 @@ export interface ChatSettingsProps {
   saveApiKey?: (key: string) => void;
 }
 
-export function ChatSettings({ type }: ChatSettingsProps) {
+export function ChatSettings({ type, apiKey, setApiKey, saveApiKey }: ChatSettingsProps) {
   const navigateToAdminPanel = () => {
     window.location.href = '/admin/api-keys';
   };

@@ -12,7 +12,6 @@ import SystemAlerts from "./SystemAlerts";
 import SuperAdminMonitor from "./SuperAdminMonitor";
 import { Agent } from "@/types/agent";
 import DashboardView from "./DashboardView";
-import { ModelManagement } from "./ModelManagement";
 
 interface AdminPanelContentProps {
   userRole: string;
@@ -42,10 +41,9 @@ export const AdminPanelContent = ({
 
   return (
     <Tabs defaultValue="dashboard" value={activeTab} onValueChange={handleTabChange}>
-      <TabsList className="grid grid-cols-4 mb-6">
+      <TabsList className="grid grid-cols-3 mb-6">
         <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         <TabsTrigger value="agents">AI Agents</TabsTrigger>
-        <TabsTrigger value="models" className="font-medium">Models</TabsTrigger>
         <TabsTrigger value="system">System</TabsTrigger>
       </TabsList>
 
@@ -65,10 +63,6 @@ export const AdminPanelContent = ({
             console.log(`Agent ${agentId} action: ${action}`);
           }} 
         />
-      </TabsContent>
-
-      <TabsContent value="models">
-        <ModelManagement />
       </TabsContent>
 
       <TabsContent value="system">
