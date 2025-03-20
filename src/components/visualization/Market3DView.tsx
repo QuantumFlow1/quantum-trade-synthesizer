@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertTriangle, ZoomIn, ZoomOut, RotateCcw, Eye } from 'lucide-react';
 import { useThemeString } from '@/hooks/use-theme-string';
-import { TradingFloorEnvironment } from './environment/environments/TradingHubEnvironment';
+import { TradingHubEnvironment } from './environment/environments/TradingHubEnvironment';
 
 interface Market3DViewProps {
   data: any[];
@@ -65,12 +65,12 @@ export const Market3DView = ({
       const color = priceChange > 0 ? '#22c55e' : priceChange < 0 ? '#ef4444' : '#3b82f6';
       
       return {
-        position: [index * 0.3 - filteredData.length * 0.15, normalizedPrice, 0],
+        position: [index * 0.3 - filteredData.length * 0.15, normalizedPrice, 0] as [number, number, number],
         size: viewMode === 'volume' 
-          ? [0.1, normalizedVolume * 3, 0.1] 
+          ? [0.1, normalizedVolume * 3, 0.1] as [number, number, number]
           : viewMode === 'price'
-          ? [0.1, Math.abs(normalizedPrice) * 2, 0.1]
-          : [0.1, 0.1, normalizedVolume * 5 + 0.1],
+          ? [0.1, Math.abs(normalizedPrice) * 2, 0.1] as [number, number, number]
+          : [0.1, 0.1, normalizedVolume * 5 + 0.1] as [number, number, number],
         color,
         price,
         volume: item.volume || 0,
@@ -194,6 +194,9 @@ export const Market3DView = ({
           minDistance={2}
           maxDistance={10}
         />
+        
+        {/* Optional: Include the trading hub environment */}
+        <TradingHubEnvironment />
       </Canvas>
       
       {/* Visualization controls */}
