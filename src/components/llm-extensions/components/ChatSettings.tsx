@@ -5,8 +5,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ServerCrash } from 'lucide-react';
 
-interface ChatSettingsProps {
+export interface ChatSettingsProps {
   type: 'openai' | 'claude' | 'grok' | 'deepseek' | 'ollama';
+  apiKey?: string;
+  setApiKey?: (key: string) => void;
+  saveApiKey?: (key: string) => void;
 }
 
 export function ChatSettings({ type }: ChatSettingsProps) {

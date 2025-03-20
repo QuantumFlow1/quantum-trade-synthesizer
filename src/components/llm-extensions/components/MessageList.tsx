@@ -23,10 +23,10 @@ export function MessageList({
   if (showSettings) {
     return (
       <ChatSettings
+        type="openai"
         apiKey={apiKey}
         setApiKey={setApiKey}
         saveApiKey={saveApiKey}
-        type="openai"
       />
     );
   }
