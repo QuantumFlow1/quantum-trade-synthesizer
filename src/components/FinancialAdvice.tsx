@@ -25,20 +25,26 @@ const FinancialAdvice = () => {
           description: "Please log in to generate AI analysis",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
-      const response = await fetch("/api/generate-advice", {
+      // Call the edge function to generate advice
+      const { data, error } = await supabase.functions.invoke('generate-advice', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to generate advice: ${response.statusText}`);
+      if (error) {
+        console.error("Error from edge function:", error);
+        throw new Error(`Failed to generate advice: ${error.message}`);
       }
       
-      const data = await response.json();
+      if (!data || !data.advice) {
+        throw new Error("Received invalid response from server");
+      }
+      
       setAiAdvice(data.advice);
       toast({
         title: "AI Analysis Complete",
@@ -48,7 +54,7 @@ const FinancialAdvice = () => {
       console.error("Failed to generate advice:", error);
       toast({
         title: "Error",
-        description: "Failed to generate AI analysis",
+        description: error instanceof Error ? error.message : "Failed to generate AI analysis",
         variant: "destructive",
       });
       setAiAdvice("");
