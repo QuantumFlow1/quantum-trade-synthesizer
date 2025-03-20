@@ -8,6 +8,7 @@ import { VisualizationControls } from './market-3d/VisualizationControls';
 import { StatusOverlays } from './market-3d/StatusOverlays';
 import { Market3DScene } from './market-3d/Market3DScene';
 import { useMarketDataProcessor } from './market-3d/useMarketDataProcessor';
+import { useWebGLState } from '@/hooks/use-webgl-state';
 
 interface Market3DViewProps {
   data: any[];
@@ -22,40 +23,37 @@ export const Market3DView = ({
   onError,
   onLoaded 
 }: Market3DViewProps) => {
-  const [hasRendered, setHasRendered] = useState(false);
-  const [hasError, setHasError] = useState(false);
   const [viewMode, setViewMode] = useState<'default' | 'volume' | 'price'>('default');
   const [dataDensity, setDataDensity] = useState(50);
   const controlsRef = useRef<any>(null);
   const theme = useThemeString();
-
-  // Reset error state when data changes
-  useEffect(() => {
-    setHasError(false);
-  }, [data]);
-
-  // Notify parent component when loaded
-  useEffect(() => {
-    if (hasRendered && !hasError && onLoaded) {
-      onLoaded();
-    }
-  }, [hasRendered, hasError, onLoaded]);
+  
+  // Use the new WebGL state hook
+  const {
+    isLoading,
+    hasError,
+    handleContextLost,
+    handleContextRestored,
+    handleRetry,
+    setIsLoading
+  } = useWebGLState();
 
   // Process data for visualization
   const processedData = useMarketDataProcessor(data, dataDensity, viewMode);
 
-  // Error handling
-  const handleRenderError = () => {
-    console.error('3D rendering error occurred');
-    setHasError(true);
-    if (onError) onError();
-  };
+  // Notify parent component when loaded
+  useEffect(() => {
+    if (!isLoading && !hasError && onLoaded) {
+      onLoaded();
+    }
+  }, [isLoading, hasError, onLoaded]);
 
-  // Force a re-render
-  const handleRefresh = () => {
-    setHasRendered(false);
-    setTimeout(() => setHasRendered(true), 100);
-  };
+  // Forward error events to parent
+  useEffect(() => {
+    if (hasError && onError) {
+      onError();
+    }
+  }, [hasError, onError]);
 
   // Reset view
   const handleResetView = () => {
@@ -81,7 +79,7 @@ export const Market3DView = ({
   };
 
   if (hasError) {
-    return <ErrorState onRetry={handleRefresh} />;
+    return <ErrorState onRetry={handleRetry} />;
   }
 
   if (!data || data.length === 0) {
@@ -92,8 +90,8 @@ export const Market3DView = ({
     <Card className="relative h-[500px] shadow-lg overflow-hidden bg-background/10 backdrop-blur-sm border border-border/30">
       <Market3DScene 
         processedData={processedData}
-        onCreated={() => setHasRendered(true)}
-        onError={handleRenderError}
+        onCreated={() => setIsLoading(false)}
+        onError={handleContextLost}
         onControlsRef={(ref) => (controlsRef.current = ref)}
         theme={theme}
       />
@@ -105,7 +103,7 @@ export const Market3DView = ({
         onCycleViewMode={cycleViewMode}
         onIncreaseDataDensity={handleIncreaseDataDensity}
         onDecreaseDataDensity={handleDecreaseDataDensity}
-        onRefresh={handleRefresh}
+        onRefresh={handleRetry}
       />
       
       <StatusOverlays 
