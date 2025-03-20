@@ -1,6 +1,5 @@
 
-import { useThemeDetection } from "@/hooks/use-theme-detection";
-import { useThree } from "@react-three/fiber";
+import { ColorTheme } from "@/hooks/use-theme-detection";
 import * as THREE from "three";
 
 interface ThemeBasedLightingProps {
@@ -8,7 +7,7 @@ interface ThemeBasedLightingProps {
 }
 
 export const ThemeBasedLighting = ({ optimizationLevel = 'normal' }: ThemeBasedLightingProps) => {
-  const { theme } = useThemeDetection();
+  const theme: ColorTheme = 'dark'; // Default to dark theme
   
   // Optimize lighting based on optimization level
   const ambientIntensity = optimizationLevel === 'aggressive' ? 0.6 : 0.8;

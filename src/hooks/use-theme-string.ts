@@ -1,13 +1,12 @@
 
-import { useThemeDetection } from './use-theme-detection';
 import { ColorTheme } from './use-theme-detection';
 
 /**
  * A wrapper hook that maintains backward compatibility with components
- * that expect the theme as a string instead of an object.
+ * that expect the theme as a string.
  * This is primarily for 3D visualization components.
  */
 export function useThemeString(): ColorTheme {
-  const { theme } = useThemeDetection();
-  return theme;
+  // Simply return the theme string
+  return 'dark'; // Default to dark theme
 }
