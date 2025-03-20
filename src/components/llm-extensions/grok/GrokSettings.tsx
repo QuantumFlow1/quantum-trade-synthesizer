@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, ServerCrash } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -9,6 +8,10 @@ interface GrokSettingsProps {
 }
 
 export function GrokSettings({ onClose }: GrokSettingsProps) {
+  const navigateToAdminPanel = () => {
+    window.location.href = '/admin/api-keys';
+  };
+
   return (
     <div className="bg-gray-50 p-4 rounded-lg">
       <h3 className="text-sm font-medium mb-2">Grok API Settings</h3>
@@ -21,13 +24,12 @@ export function GrokSettings({ onClose }: GrokSettingsProps) {
           </AlertDescription>
         </Alert>
         
-        <p className="text-sm text-gray-600">
-          Grok API integratie komt binnenkort. Kom later terug voor updates.
-        </p>
-        
         <div className="flex justify-end space-x-2">
-          <Button onClick={onClose} size="sm">
+          <Button variant="outline" onClick={onClose} size="sm">
             Sluiten
+          </Button>
+          <Button onClick={navigateToAdminPanel} size="sm">
+            Naar Admin Paneel
           </Button>
         </div>
       </div>

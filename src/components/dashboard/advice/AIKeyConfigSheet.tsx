@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Key, Shield, Loader2, ServerCrash } from "lucide-react";
+import { Key, Shield, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/lib/supabase";
 
@@ -13,7 +13,7 @@ interface AIKeyConfigSheetProps {
   onManualCheck?: () => void;
 }
 
-export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }: AIKeyConfigSheetProps) {
+export function AIKeyConfigSheet({ isOpen, onOpenChange, onManualCheck }: AIKeyConfigSheetProps) {
   const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [openaiKey, setOpenaiKey] = useState('');

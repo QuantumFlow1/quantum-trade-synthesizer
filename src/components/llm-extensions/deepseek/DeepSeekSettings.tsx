@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ServerCrash } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -26,11 +25,6 @@ export function DeepSeekSettings({ apiKey, setApiKey, onClose }: DeepSeekSetting
           Neem contact op met uw systeembeheerder voor toegang.
         </AlertDescription>
       </Alert>
-      
-      <div className="text-sm text-muted-foreground">
-        <p>DeepSeek is een AI-assistent gefocust op programmeren en technische taken.</p>
-        <p>API sleutels zijn nodig voor toegang tot DeepSeek functionaliteit.</p>
-      </div>
       
       <div className="flex space-x-2">
         <Button variant="outline" onClick={onClose}>

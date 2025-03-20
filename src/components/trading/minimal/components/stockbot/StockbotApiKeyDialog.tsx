@@ -22,9 +22,6 @@ interface StockbotApiKeyDialogProps {
 export const StockbotApiKeyDialog: React.FC<StockbotApiKeyDialogProps> = ({
   isOpen,
   onOpenChange,
-  apiKey,
-  setApiKey,
-  onSave
 }) => {
   const navigateToAdminPanel = () => {
     window.location.href = '/admin/api-keys';

@@ -1,9 +1,6 @@
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ExternalLink, Save, X, AlertTriangle, Info, ServerCrash } from 'lucide-react';
+import { X, ServerCrash } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ClaudeSettingsProps {
@@ -12,7 +9,11 @@ interface ClaudeSettingsProps {
   onClose: () => void;
 }
 
-export function ClaudeSettings({ apiKey, setApiKey, onClose }: ClaudeSettingsProps) {
+export function ClaudeSettings({ onClose }: ClaudeSettingsProps) {
+  const navigateToAdminPanel = () => {
+    window.location.href = '/admin/api-keys';
+  };
+  
   return (
     <div className="p-4 bg-white rounded-lg border shadow-sm space-y-4">
       <div className="flex items-center justify-between">
@@ -34,6 +35,9 @@ export function ClaudeSettings({ apiKey, setApiKey, onClose }: ClaudeSettingsPro
       <div className="flex justify-end space-x-2">
         <Button variant="outline" onClick={onClose}>
           Sluiten
+        </Button>
+        <Button onClick={navigateToAdminPanel}>
+          Naar Admin Paneel
         </Button>
       </div>
     </div>
