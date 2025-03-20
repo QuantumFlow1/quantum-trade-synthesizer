@@ -74,8 +74,8 @@ export const saveApiKey = (provider: string, key: string): boolean => {
       // Directly save to localStorage
       localStorage.setItem(`${provider}ApiKey`, key);
       
-      // Dispatch events as fallback
-      broadcastApiKeyChange(validProvider as 'openai' | 'claude' | 'gemini' | 'groq' | 'deepseek' | 'anthropic', 'save');
+      // Dispatch events as fallback - use 'set' instead of 'save'
+      broadcastApiKeyChange(validProvider as 'openai' | 'claude' | 'gemini' | 'groq' | 'deepseek' | 'anthropic', 'set');
     }
     
     return true;

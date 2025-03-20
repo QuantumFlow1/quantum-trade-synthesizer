@@ -99,3 +99,14 @@ export const broadcastApiKeyChange = (keyType: string, action: 'set' | 'remove')
 export const hasAnyApiKey = (): boolean => {
   return validKeyTypes.some(keyType => hasApiKey(keyType));
 };
+
+// Get available API key providers
+export const getAvailableProviders = (): Record<string, boolean> => {
+  const providers: Record<string, boolean> = {};
+  
+  validKeyTypes.forEach(keyType => {
+    providers[keyType] = hasApiKey(keyType);
+  });
+  
+  return providers;
+};
