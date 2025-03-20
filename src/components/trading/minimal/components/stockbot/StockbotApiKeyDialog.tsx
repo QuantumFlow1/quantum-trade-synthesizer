@@ -8,7 +8,8 @@ import {
   DialogFooter 
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ServerCrash } from "lucide-react";
 
 interface StockbotApiKeyDialogProps {
   isOpen: boolean;
@@ -25,6 +26,10 @@ export const StockbotApiKeyDialog: React.FC<StockbotApiKeyDialogProps> = ({
   setApiKey,
   onSave
 }) => {
+  const navigateToAdminPanel = () => {
+    window.location.href = '/admin/api-keys';
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -32,21 +37,24 @@ export const StockbotApiKeyDialog: React.FC<StockbotApiKeyDialogProps> = ({
           <DialogTitle>API Sleutel Configuratie</DialogTitle>
         </DialogHeader>
         <div className="py-4">
-          <p className="text-sm text-muted-foreground mb-4">
-            Voer je API sleutel in om toegang te krijgen tot realtime marktgegevens.
+          <Alert variant="destructive" className="mb-4">
+            <ServerCrash className="h-4 w-4" />
+            <AlertDescription>
+              API sleutels kunnen alleen worden geconfigureerd in het Admin Paneel.
+              Neem contact op met uw systeembeheerder voor toegang.
+            </AlertDescription>
+          </Alert>
+          
+          <p className="text-sm text-muted-foreground">
+            API sleutels zijn nodig voor toegang tot realtime marktgegevens.
+            Deze kunnen alleen door beheerders worden ingesteld.
           </p>
-          <Input
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="API Sleutel"
-            type="password"
-          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuleren
           </Button>
-          <Button onClick={onSave}>Opslaan</Button>
+          <Button onClick={navigateToAdminPanel}>Naar Admin Paneel</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

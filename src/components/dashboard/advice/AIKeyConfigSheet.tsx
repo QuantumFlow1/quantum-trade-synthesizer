@@ -1,13 +1,10 @@
 
 import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Key, Shield, Loader2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { Key, Shield, Loader2, ServerCrash } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { supabase } from "@/lib/supabase";
 
 interface AIKeyConfigSheetProps {
   isOpen: boolean;
@@ -17,15 +14,13 @@ interface AIKeyConfigSheetProps {
 }
 
 export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }: AIKeyConfigSheetProps) {
-  const { toast } = useToast();
+  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [openaiKey, setOpenaiKey] = useState('');
   const [claudeKey, setClaudeKey] = useState('');
   const [geminiKey, setGeminiKey] = useState('');
   const [deepseekKey, setDeepseekKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isCheckingAdmin, setIsCheckingAdmin] = useState(true);
   
   // Check if user is admin
   useEffect(() => {
@@ -90,94 +85,8 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
     setGroqKey(savedGroq);
   };
   
-  const saveApiKeys = async () => {
-    if (!isAdmin) {
-      toast({
-        title: "Niet toegestaan",
-        description: "Alleen administrators kunnen API sleutels instellen.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsSaving(true);
-    
-    try {
-      // Store previous values to check what changed
-      const prevOpenAI = localStorage.getItem('openaiApiKey');
-      const prevClaude = localStorage.getItem('claudeApiKey');
-      const prevGemini = localStorage.getItem('geminiApiKey');
-      const prevDeepseek = localStorage.getItem('deepseekApiKey');
-      const prevGroq = localStorage.getItem('groqApiKey');
-      
-      // Save new values
-      if (openaiKey.trim()) localStorage.setItem('openaiApiKey', openaiKey.trim());
-      if (claudeKey.trim()) localStorage.setItem('claudeApiKey', claudeKey.trim());
-      if (geminiKey.trim()) localStorage.setItem('geminiApiKey', geminiKey.trim());
-      if (deepseekKey.trim()) localStorage.setItem('deepseekApiKey', deepseekKey.trim());
-      if (groqKey.trim()) localStorage.setItem('groqApiKey', groqKey.trim());
-      
-      console.log('Saved API keys to localStorage:', {
-        openai: openaiKey ? 'present' : 'not set',
-        claude: claudeKey ? 'present' : 'not set',
-        gemini: geminiKey ? 'present' : 'not set',
-        deepseek: deepseekKey ? 'present' : 'not set',
-        groq: groqKey ? 'present' : 'not set'
-      });
-      
-      toast({
-        title: "API sleutels opgeslagen",
-        description: "Uw API sleutels zijn opgeslagen. Controleer opnieuw de verbinding.",
-      });
-      
-      onOpenChange(false);
-      onSave();
-      
-      // Dispatch custom events for other components
-      window.dispatchEvent(new Event('localStorage-changed'));
-      window.dispatchEvent(new Event('apikey-updated'));
-      
-      // For each API key that changed, dispatch a specific event
-      if (prevOpenAI !== openaiKey && openaiKey) {
-        window.dispatchEvent(new CustomEvent('connection-status-changed', {
-          detail: { provider: 'openai', status: 'connected' }
-        }));
-      }
-      
-      if (prevClaude !== claudeKey && claudeKey) {
-        window.dispatchEvent(new CustomEvent('connection-status-changed', {
-          detail: { provider: 'claude', status: 'connected' }
-        }));
-      }
-      
-      if (prevDeepseek !== deepseekKey && deepseekKey) {
-        window.dispatchEvent(new CustomEvent('connection-status-changed', {
-          detail: { provider: 'deepseek', status: 'connected' }
-        }));
-      }
-      
-      if (prevGroq !== groqKey && groqKey) {
-        window.dispatchEvent(new CustomEvent('connection-status-changed', {
-          detail: { provider: 'groq', status: 'connected' }
-        }));
-      }
-      
-      // Automatically trigger a connection check
-      if (onManualCheck) {
-        setTimeout(() => {
-          onManualCheck();
-        }, 500);
-      }
-    } catch (error) {
-      console.error('Error saving API keys:', error);
-      toast({
-        title: "Error",
-        description: "Er is een fout opgetreden bij het opslaan van de API sleutels.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSaving(false);
-    }
+  const navigateToAdminPanel = () => {
+    window.location.href = '/admin/api-keys';
   };
 
   return (
@@ -202,86 +111,9 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
             <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
             <span className="ml-2">Controleert admin status...</span>
           </div>
-        ) : isAdmin ? (
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="openai-api-key">OpenAI API Sleutel</Label>
-              <Input 
-                id="openai-api-key"
-                type="password" 
-                placeholder="sk-..." 
-                value={openaiKey}
-                onChange={(e) => setOpenaiKey(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Vereist voor GPT-4 en andere OpenAI modellen</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="claude-api-key">Claude API Sleutel</Label>
-              <Input 
-                id="claude-api-key"
-                type="password" 
-                placeholder="sk-ant-..." 
-                value={claudeKey}
-                onChange={(e) => setClaudeKey(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Vereist voor Claude modellen</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="gemini-api-key">Gemini API Sleutel</Label>
-              <Input 
-                id="gemini-api-key"
-                type="password" 
-                placeholder="AIza..." 
-                value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Vereist voor Gemini modellen</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="deepseek-api-key">DeepSeek API Sleutel</Label>
-              <Input 
-                id="deepseek-api-key"
-                type="password" 
-                placeholder="sk-..." 
-                value={deepseekKey}
-                onChange={(e) => setDeepseekKey(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Vereist voor DeepSeek modellen</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="groq-api-key">Groq API Sleutel</Label>
-              <Input 
-                id="groq-api-key"
-                type="password" 
-                placeholder="gsk_..." 
-                value={groqKey}
-                onChange={(e) => setGroqKey(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">Vereist voor Stockbot en Groq functionaliteit</p>
-            </div>
-            
-            <Button 
-              className="w-full mt-4" 
-              onClick={saveApiKeys}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <span className="animate-spin mr-2">⟳</span>
-                  Opslaan...
-                </>
-              ) : (
-                "Opslaan"
-              )}
-            </Button>
-          </div>
         ) : (
           <div className="py-4">
-            <Alert className="bg-amber-50 border-amber-200">
+            <Alert className="bg-amber-50 border-amber-200 mb-4">
               <Shield className="h-4 w-4 text-amber-500" />
               <AlertDescription className="text-amber-800">
                 <p className="font-medium mb-2">Alleen voor Administrators</p>
@@ -320,16 +152,25 @@ export function AIKeyConfigSheet({ isOpen, onOpenChange, onSave, onManualCheck }
               </ul>
             </div>
             
-            <Button 
-              className="w-full mt-6" 
-              variant="outline"
-              onClick={() => {
-                onManualCheck?.();
-                onOpenChange(false);
-              }}
-            >
-              Controleer API verbindingen
-            </Button>
+            {isAdmin ? (
+              <Button 
+                className="w-full mt-6" 
+                onClick={navigateToAdminPanel}
+              >
+                Ga naar Admin API Sleutels
+              </Button>
+            ) : (
+              <Button 
+                className="w-full mt-6" 
+                variant="outline"
+                onClick={() => {
+                  onManualCheck?.();
+                  onOpenChange(false);
+                }}
+              >
+                Controleer API verbindingen
+              </Button>
+            )}
           </div>
         )}
       </SheetContent>
