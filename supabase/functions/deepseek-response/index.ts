@@ -51,6 +51,16 @@ serve(async (req) => {
       });
     }
     
+    // Ensure we handle empty messages array
+    if (formattedMessages.length === 0) {
+      formattedMessages.push({
+        role: 'user',
+        content: 'Hello'
+      });
+    }
+    
+    console.log('Sending to DeepSeek API with formatted messages:', JSON.stringify(formattedMessages.slice(0, 2) + (formattedMessages.length > 2 ? '...' : '')));
+    
     try {
       // Make request to DeepSeek API
       const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -69,7 +79,14 @@ serve(async (req) => {
       
       // Enhanced error handling for response
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorText = '';
+        try {
+          const errorJson = await response.json();
+          errorText = JSON.stringify(errorJson);
+        } catch (e) {
+          errorText = await response.text();
+        }
+        
         console.error(`DeepSeek API error (${response.status} ${response.statusText}):`, errorText);
         
         return new Response(
@@ -85,7 +102,10 @@ serve(async (req) => {
       }
       
       const data = await response.json();
-      console.log('DeepSeek API response received');
+      console.log('DeepSeek API response received:', {
+        status: response.status,
+        choices: data.choices ? data.choices.length : 0
+      });
       
       // Verify that the response contains the expected structure
       if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
@@ -103,7 +123,9 @@ serve(async (req) => {
       
       return new Response(
         JSON.stringify({
-          response: data.choices[0].message.content
+          response: data.choices[0].message.content,
+          id: data.id,
+          model: data.model
         }),
         { headers: corsHeaders }
       );

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Bot, Send, Loader2, Zap } from "lucide-react";
+import { Sparkles, Bot, Send, Loader2, Zap, AlertCircle, ToggleLeft, ToggleRight } from "lucide-react";
 import { LLMProvider, LLMProviderType, LLMChatMessage } from "./types";
 import { useLLMModels } from "./hooks/useLLMModels";
 import { LLMModelSelector } from "./LLMModelSelector";
@@ -12,14 +12,18 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LLMSettingsDialog } from "./LLMSettingsDialog";
+import { supabase } from "@/lib/supabase";
+import { toast } from "@/components/ui/use-toast";
+import { hasApiKey } from "@/utils/apiKeyManager";
 
 export function LLMUnifiedChat() {
-  const [selectedProvider, setSelectedProvider] = useState<LLMProviderType>("groq");
+  const [selectedProvider, setSelectedProvider] = useState<LLMProviderType>("deepseek");
   const [messages, setMessages] = useState<LLMChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [showStreamingResponse, setShowStreamingResponse] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [agentActive, setAgentActive] = useState(true);
   
   const { 
     models, 
@@ -54,7 +58,7 @@ export function LLMUnifiedChat() {
   }, []);
   
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isGenerating || !isConnected) return;
+    if (!inputMessage.trim() || isGenerating || !isConnected || !agentActive) return;
     
     // Add user message
     const userMessage: LLMChatMessage = {
@@ -86,23 +90,29 @@ export function LLMUnifiedChat() {
     }
     
     try {
-      // Simulate API call to the selected provider
-      // In a real implementation, this would call the appropriate LLM API
-      const response = await simulateLLMResponse(
-        userMessage.content, 
-        selectedProvider, 
-        selectedModel || "default",
-        showStreamingResponse ? 
-          (token) => updateStreamingMessage(thinkingId, token) : 
-          undefined
-      );
+      let response = "";
+      
+      // Call the appropriate API based on the selected provider
+      if (selectedProvider === "deepseek") {
+        response = await callDeepSeekAPI(userMessage.content, messages);
+      } else {
+        // Call other provider APIs or use simulation for testing
+        response = await simulateLLMResponse(
+          userMessage.content, 
+          selectedProvider, 
+          selectedModel || "default",
+          showStreamingResponse ? 
+            (token) => updateStreamingMessage(thinkingId, token) : 
+            undefined
+        );
+      }
       
       if (showStreamingResponse) {
         // Update the streaming message with isStreaming set to false
         setMessages(prev => 
           prev.map(msg => 
             msg.id === thinkingId ? 
-              {...msg, isStreaming: false} : 
+              {...msg, content: response, isStreaming: false} : 
               msg
           )
         );
@@ -128,7 +138,7 @@ export function LLMUnifiedChat() {
         {
           id: `error-${Date.now()}`,
           role: "system",
-          content: `An error occurred while generating a response. Please try again later.`,
+          content: `An error occurred while generating a response: ${error instanceof Error ? error.message : "Unknown error"}`,
           provider: selectedProvider,
           model: selectedModel || "unknown",
           isError: true
@@ -142,6 +152,53 @@ export function LLMUnifiedChat() {
         textareaRef.current?.focus();
       }, 100);
     }
+  };
+  
+  const callDeepSeekAPI = async (message: string, chatHistory: LLMChatMessage[]) => {
+    // Check if DeepSeek API key is configured
+    const apiKey = localStorage.getItem('deepseekApiKey');
+    if (!apiKey) {
+      throw new Error("DeepSeek API key not configured. Please add your API key in settings.");
+    }
+    
+    // First check if API is available
+    const { data: pingData, error: pingError } = await supabase.functions.invoke('deepseek-ping', {
+      body: { apiKey }
+    });
+    
+    if (pingError || pingData?.status !== 'available') {
+      throw new Error(pingData?.message || "DeepSeek API is currently unavailable");
+    }
+    
+    // Format chat history for the API
+    const formattedHistory = chatHistory
+      .filter(msg => msg.role !== "system" && !msg.isError)
+      .slice(0, -1) // Exclude the last message (current user message)
+      .map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+    
+    // Call the DeepSeek API
+    const { data, error } = await supabase.functions.invoke('deepseek-response', {
+      body: {
+        message,
+        context: formattedHistory,
+        apiKey,
+        model: selectedModel || "deepseek-chat"
+      }
+    });
+    
+    if (error) {
+      console.error("DeepSeek API error:", error);
+      throw new Error(`DeepSeek API error: ${error.message}`);
+    }
+    
+    if (!data?.response) {
+      throw new Error("Invalid response from DeepSeek API");
+    }
+    
+    return data.response;
   };
   
   const updateStreamingMessage = (id: string, token: string) => {
@@ -165,6 +222,18 @@ export function LLMUnifiedChat() {
     setMessages([]);
   };
   
+  const toggleAgentActivity = () => {
+    setAgentActive(!agentActive);
+    
+    toast({
+      title: agentActive ? "Agent Deactivated" : "Agent Activated",
+      description: agentActive ? 
+        "The LLM agent has been deactivated. No responses will be generated." : 
+        "The LLM agent has been activated. You can now receive responses.",
+      variant: agentActive ? "destructive" : "default"
+    });
+  };
+  
   return (
     <Card className="h-full">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -173,6 +242,21 @@ export function LLMUnifiedChat() {
           Unified LLM Chat
         </CardTitle>
         <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 mr-4">
+            <Switch
+              id="agent-toggle"
+              checked={agentActive}
+              onCheckedChange={toggleAgentActivity}
+            />
+            <Label htmlFor="agent-toggle" className="flex items-center text-sm">
+              {agentActive ? 
+                <ToggleRight className="h-4 w-4 mr-1 text-green-500" /> : 
+                <ToggleLeft className="h-4 w-4 mr-1 text-gray-400" />
+              }
+              Agent {agentActive ? "Active" : "Inactive"}
+            </Label>
+          </div>
+          
           <Button 
             variant="outline" 
             size="sm" 
@@ -229,6 +313,15 @@ export function LLMUnifiedChat() {
           </Alert>
         )}
         
+        {!agentActive && (
+          <Alert variant="warning" className="m-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Agent is currently inactive. Responses will not be generated.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="h-[400px] overflow-y-auto p-4 space-y-4">
           <LLMChatHistory messages={messages} />
           <div ref={messagesEndRef} />
@@ -240,15 +333,15 @@ export function LLMUnifiedChat() {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
+              placeholder={agentActive ? "Type a message..." : "Agent is inactive..."}
               className="resize-none"
-              disabled={isGenerating || !isConnected}
+              disabled={isGenerating || !isConnected || !agentActive}
               ref={textareaRef}
               rows={2}
             />
             <Button 
               onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isGenerating || !isConnected}
+              disabled={!inputMessage.trim() || isGenerating || !isConnected || !agentActive}
               className="shrink-0"
             >
               {isGenerating ? (
@@ -270,7 +363,7 @@ export function LLMUnifiedChat() {
   );
 }
 
-// Simulate LLM response (in a real app, this would call the API)
+// Simulate LLM response (used as fallback or for testing)
 async function simulateLLMResponse(
   message: string, 
   provider: LLMProviderType, 

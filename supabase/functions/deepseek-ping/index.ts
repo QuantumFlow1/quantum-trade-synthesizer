@@ -15,7 +15,10 @@ serve(async (req) => {
   try {
     const { apiKey } = await req.json()
     
+    console.log(`DeepSeek API ping request received, key length: ${apiKey ? apiKey.length : 0}`)
+    
     if (!apiKey) {
+      console.error('Missing API key in request')
       return new Response(
         JSON.stringify({ 
           status: 'error', 
@@ -37,26 +40,42 @@ serve(async (req) => {
       }
     })
     
+    console.log(`DeepSeek API response status: ${response.status}`)
+    
     if (response.ok) {
-      console.log('DeepSeek API connection successful')
+      const models = await response.json()
+      console.log('DeepSeek API connection successful, found models:', models.data ? models.data.length : 0)
+      
       return new Response(
         JSON.stringify({ 
           status: 'available', 
           success: true,
-          message: 'Successfully connected to DeepSeek API' 
+          message: 'Successfully connected to DeepSeek API',
+          modelCount: models.data ? models.data.length : 0
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       )
     } else {
-      const errorData = await response.json()
-      console.error('DeepSeek API connection failed:', errorData)
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch (e) {
+        errorData = { error: { message: await response.text() } }
+      }
+      
+      console.error('DeepSeek API connection failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData
+      })
+      
       return new Response(
         JSON.stringify({ 
           status: 'unavailable', 
           success: false,
-          message: errorData.error?.message || 'Invalid API key or service unavailable' 
+          message: errorData.error?.message || `API error: ${response.status} ${response.statusText}` 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

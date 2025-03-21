@@ -26,4 +26,5 @@ export interface LLMProvider {
   description: string;
   apiKeyConfigured: boolean;
   models: LLMModel[];
+  isActive?: boolean;
 }
