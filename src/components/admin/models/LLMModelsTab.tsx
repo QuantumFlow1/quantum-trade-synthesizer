@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sparkles, Bot, Key, Settings } from "lucide-react";
 import { AIAgentsChatTab } from "./AIAgentsChatTab";
-import { APIKeysTab } from "./APIKeysTab";
+import { APIManager } from "@/components/apimanager/APIManager";
 
 export const LLMModelsTab = () => {
   const [activeTab, setActiveTab] = useState("llm_models");
@@ -47,7 +47,7 @@ export const LLMModelsTab = () => {
               </TabsContent>
               
               <TabsContent value="api_keys">
-                <APIKeysTab />
+                <APIManager />
               </TabsContent>
               
               <TabsContent value="settings">

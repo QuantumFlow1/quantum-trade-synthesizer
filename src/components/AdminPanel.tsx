@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import AdminPanelHeader from "@/components/admin/AdminPanelHeader";
 import { AdminPanelContent } from "@/components/admin/AdminPanelContent";
 import UserDashboard from "@/components/UserDashboard";
-import ApiKeyManagement from "@/components/admin/ApiKeyManagement";
+import { APIManager } from "@/components/apimanager/APIManager";
 import { Agent } from "@/types/agent";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -115,7 +115,7 @@ const AdminPanel = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           <span className="font-medium">Back to Admin</span>
         </Button>
-        <ApiKeyManagement />
+        <APIManager />
       </div>
     );
   }
@@ -174,6 +174,6 @@ const AdminPanel = () => {
       </div>
     </div>
   );
-};
+}
 
 export default AdminPanel;
