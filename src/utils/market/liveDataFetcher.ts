@@ -30,6 +30,45 @@ export async function fetchLiveMarketData(): Promise<MarketData[]> {
 }
 
 /**
+ * Fetch a single cryptocurrency's current price directly from CoinGecko
+ * This provides the most up-to-date price information for a specific coin
+ */
+export async function fetchCurrentCryptoPrice(coinId: string = 'bitcoin'): Promise<{
+  price: number;
+  change24h: number;
+  lastUpdated: string;
+}> {
+  try {
+    console.log(`Fetching current price for ${coinId} directly from CoinGecko`);
+    
+    const { data, error } = await supabase.functions.invoke('crypto-price-data', {
+      body: { symbol: coinId }
+    });
+    
+    if (error) {
+      console.error(`Error fetching ${coinId} price data:`, error);
+      throw new Error(`Failed to fetch ${coinId} price data: ${error.message}`);
+    }
+    
+    if (!data || !data.success || !data.data) {
+      console.error(`Invalid data format received for ${coinId}:`, data);
+      throw new Error(`Invalid data format received for ${coinId}`);
+    }
+    
+    console.log(`Successfully fetched current price for ${coinId}: $${data.data.price}`);
+    
+    return {
+      price: data.data.price,
+      change24h: data.data.price_change_percentage_24h || 0,
+      lastUpdated: data.data.last_updated
+    };
+  } catch (error) {
+    console.error(`Error fetching ${coinId} price:`, error);
+    throw error;
+  }
+}
+
+/**
  * Optimizes a portfolio using the top 3 major cryptocurrencies
  * @param budget The investment budget in USD
  * @param riskLevel Risk profile: 'low' (risk-averse), 'medium' (balanced), 'high' (aggressive)

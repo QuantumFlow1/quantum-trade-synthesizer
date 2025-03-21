@@ -11,6 +11,38 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 };
 
+// Fetch real Bitcoin price from CoinGecko
+async function fetchRealBitcoinPrice() {
+  try {
+    console.log("Fetching real-time Bitcoin price from CoinGecko");
+    const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true", {
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`CoinGecko API responded with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log("Bitcoin price data received:", data);
+    
+    if (data && data.bitcoin && data.bitcoin.usd) {
+      return {
+        price: data.bitcoin.usd,
+        change24h: data.bitcoin.usd_24h_change || 0,
+        timestamp: new Date().toISOString()
+      };
+    } else {
+      throw new Error("Invalid data format from CoinGecko");
+    }
+  } catch (error) {
+    console.error("Error fetching Bitcoin price:", error);
+    return null;
+  }
+}
+
 // Generate QUBO matrix from market data
 function generateQUBOMatrix(
   marketData: any[],
@@ -97,6 +129,23 @@ serve(async (req) => {
     console.log("Include quantum approach:", includeQuantumApproach);
     console.log("Generate QUBO matrix:", generateQuboMatrix);
 
+    // Check for bitcoin price related queries
+    const isBitcoinPriceQuery = message && 
+      message.toLowerCase().includes("bitcoin") && 
+      (message.toLowerCase().includes("price") || 
+       message.toLowerCase().includes("worth") || 
+       message.toLowerCase().includes("value") ||
+       message.toLowerCase().includes("btc") || 
+       message.toLowerCase().includes("cost"));
+    
+    // If asking about Bitcoin price, always fetch the latest data
+    let bitcoinData = null;
+    if (isBitcoinPriceQuery) {
+      console.log("Detected Bitcoin price query, fetching real-time price data");
+      bitcoinData = await fetchRealBitcoinPrice();
+      console.log("Real-time Bitcoin data:", bitcoinData);
+    }
+
     if (!openAIApiKey) {
       console.error("OpenAI API key is not configured");
       return new Response(
@@ -148,6 +197,15 @@ serve(async (req) => {
         Market Cap: ${marketData.marketCap}
         You are a market analysis AI assistant specializing in financial analysis.`
       : 'You are a market analysis AI assistant. No specific market data is available, so provide general trading advice.';
+    
+    // If we have real-time Bitcoin data and this is a Bitcoin price query, add it to the prompt
+    if (bitcoinData && isBitcoinPriceQuery) {
+      systemPrompt = `IMPORTANT: The CURRENT REAL-TIME price of Bitcoin (BTC) is $${bitcoinData.price} USD as of ${new Date().toLocaleString()} with a 24h change of ${bitcoinData.change24h?.toFixed(2)}%.
+      
+      ${systemPrompt}
+      
+      When answering questions about current Bitcoin prices, ALWAYS use the real-time price of $${bitcoinData.price} provided above. Do not use outdated price information or estimates.`;
+    }
     
     // Add quantum optimization context with enhanced Markowitz portfolio model
     if (includeQuantumApproach) {
@@ -274,8 +332,17 @@ serve(async (req) => {
     
     console.log("Generated AI response:", aiResponse.substring(0, 100) + "...");
 
+    // For Bitcoin price queries, also return the real-time price data used
+    const result = {
+      response: aiResponse
+    };
+    
+    if (bitcoinData && isBitcoinPriceQuery) {
+      Object.assign(result, { bitcoinData });
+    }
+
     return new Response(
-      JSON.stringify({ response: aiResponse }),
+      JSON.stringify(result),
       { headers: corsHeaders }
     );
     
