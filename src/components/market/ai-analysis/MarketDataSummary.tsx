@@ -43,50 +43,60 @@ const LiveQuboMatrixDisplay = ({ marketData }: { marketData?: MarketData }) => {
   const [quboMatrix, setQuboMatrix] = useState<number[][] | null>(null);
   const [assets, setAssets] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     const fetchAndGenerateMatrix = async () => {
+      if (!marketData) return;
+      
       try {
-        if (!marketData) return;
-        
         setIsLoading(true);
+        setError(null);
         
-        // For demo purposes, create mock data from the single marketData entry
-        // In a real implementation, you would use fetchLiveMarketData() to get real data
+        // Create mock data from the single marketData entry for demonstration
+        // This ensures we always have data to display
         const mockLiveData: MarketData[] = [
           { ...marketData },
           { 
             ...marketData, 
             symbol: 'ETH', 
-            price: marketData.price * 0.7,
-            change24h: marketData.change24h - 1.5 
+            price: marketData.price * 0.06, // ETH/BTC ratio
+            change24h: marketData.change24h - 1.5,
+            marketCap: marketData.marketCap ? marketData.marketCap * 0.25 : undefined
           },
           { 
             ...marketData, 
-            symbol: 'ADA', 
-            price: marketData.price * 0.02,
-            change24h: marketData.change24h + 2.1 
+            symbol: 'BNB', 
+            price: marketData.price * 0.004, // BNB/BTC ratio
+            change24h: marketData.change24h + 0.7,
+            marketCap: marketData.marketCap ? marketData.marketCap * 0.05 : undefined
           },
           { 
             ...marketData, 
             symbol: 'SOL', 
-            price: marketData.price * 0.2,
-            change24h: marketData.change24h - 0.8 
+            price: marketData.price * 0.002, // SOL/BTC ratio
+            change24h: marketData.change24h - 0.8,
+            marketCap: marketData.marketCap ? marketData.marketCap * 0.03 : undefined
           },
           { 
             ...marketData, 
-            symbol: 'DOT', 
-            price: marketData.price * 0.1,
-            change24h: marketData.change24h + 1.3 
+            symbol: 'DOGE', 
+            price: marketData.price * 0.000002, // DOGE/BTC ratio
+            change24h: marketData.change24h + 1.3,
+            marketCap: marketData.marketCap ? marketData.marketCap * 0.01 : undefined
           }
         ];
         
-        // Generate QUBO matrix
+        // Generate QUBO matrix with fixed budget and weights
+        console.log("Generating QUBO matrix with mock data:", mockLiveData);
         const result = generateQUBOMatrix(mockLiveData, 10000, [0.4, 0.4, 0.2]);
+        
+        console.log("Generated QUBO matrix:", result);
         setQuboMatrix(result.matrix);
         setAssets(result.assets);
       } catch (error) {
         console.error("Error generating live QUBO matrix:", error);
+        setError("Failed to generate QUBO matrix. Please try again later.");
       } finally {
         setIsLoading(false);
       }
@@ -103,6 +113,14 @@ const LiveQuboMatrixDisplay = ({ marketData }: { marketData?: MarketData }) => {
     );
   }
   
+  if (error) {
+    return (
+      <div className="py-4 text-center text-xs text-red-500">
+        {error}
+      </div>
+    );
+  }
+  
   if (!quboMatrix || quboMatrix.length === 0) {
     return (
       <div className="py-4 text-center text-xs text-muted-foreground">
@@ -113,6 +131,7 @@ const LiveQuboMatrixDisplay = ({ marketData }: { marketData?: MarketData }) => {
   
   // Format matrix for display - show only first 3x3 for space
   const displayMatrix = quboMatrix.slice(0, 3).map(row => row.slice(0, 3));
+  const displayAssets = assets.slice(0, 3);
   
   return (
     <div className="mt-4 pt-3 border-t border-muted text-xs">
@@ -144,12 +163,12 @@ const LiveQuboMatrixDisplay = ({ marketData }: { marketData?: MarketData }) => {
       </div>
       
       <div className="font-mono bg-black/10 dark:bg-white/5 rounded p-2 text-[10px] overflow-x-auto">
-        <div className="font-medium mb-1">Q Matrix (3x3 sample):</div>
+        <div className="font-medium mb-1">Q Matrix ({displayAssets.length}x{displayAssets.length} sample):</div>
         <table className="w-full text-left">
           <thead>
             <tr>
               <th className="p-1"></th>
-              {assets.slice(0, 3).map((asset, i) => (
+              {displayAssets.map((asset, i) => (
                 <th key={i} className="p-1">{asset}</th>
               ))}
             </tr>
@@ -157,7 +176,7 @@ const LiveQuboMatrixDisplay = ({ marketData }: { marketData?: MarketData }) => {
           <tbody>
             {displayMatrix.map((row, i) => (
               <tr key={i}>
-                <td className="p-1 font-medium">{assets[i]}</td>
+                <td className="p-1 font-medium">{displayAssets[i]}</td>
                 {row.map((value, j) => (
                   <td key={j} className="p-1">{value.toFixed(2)}</td>
                 ))}
@@ -166,7 +185,7 @@ const LiveQuboMatrixDisplay = ({ marketData }: { marketData?: MarketData }) => {
           </tbody>
         </table>
         <div className="mt-2 text-center text-muted-foreground">
-          {quboMatrix.length > 3 ? `(Showing 3x3 of ${quboMatrix.length}x${quboMatrix.length} matrix)` : ''}
+          {quboMatrix.length > 3 ? `(Showing ${displayAssets.length}x${displayAssets.length} of ${quboMatrix.length}x${quboMatrix.length} matrix)` : ''}
         </div>
       </div>
       
