@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { 
   LayoutDashboard, LineChart, TrendingUp, 
   BarChart3, Wallet, Shield, Brain, 
-  Settings, Trophy
+  Settings, Trophy, Atom
 } from "lucide-react";
 
 interface DashboardNavigationProps {
@@ -17,7 +17,7 @@ export const DashboardNavigation = ({ activePage, onChangePage }: DashboardNavig
     { id: "overview", label: "Overview", icon: <LayoutDashboard className="h-5 w-5" /> },
     { id: "market", label: "Market", icon: <LineChart className="h-5 w-5" /> },
     { id: "trading", label: "Trading", icon: <TrendingUp className="h-5 w-5" /> },
-    { id: "analytics", label: "Analytics", icon: <BarChart3 className="h-5 w-5" /> },
+    { id: "analytics", label: "Quantalytics", icon: <Atom className="h-5 w-5" /> },
     { id: "wallet", label: "Wallet", icon: <Wallet className="h-5 w-5" /> },
     { id: "risk", label: "Risk", icon: <Shield className="h-5 w-5" /> },
     { id: "ai", label: "AI Tools", icon: <Brain className="h-5 w-5" /> },
