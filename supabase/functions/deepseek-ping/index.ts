@@ -1,98 +1,83 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  'Content-Type': 'application/json'
+};
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
+// Helper to check if an API key is valid by making a minimal request to DeepSeek
+async function checkDeepSeekApiKey(apiKey: string): Promise<boolean> {
   try {
-    const { apiKey } = await req.json()
-    
-    console.log(`DeepSeek API ping request received, key length: ${apiKey ? apiKey.length : 0}`)
-    
-    if (!apiKey) {
-      console.error('Missing API key in request')
-      return new Response(
-        JSON.stringify({ 
-          status: 'error', 
-          message: 'Missing API key' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
-        }
-      )
-    }
-    
-    // Make a simple request to the DeepSeek API to check if the API key works
     const response = await fetch('https://api.deepseek.com/v1/models', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
-    })
+    });
     
-    console.log(`DeepSeek API response status: ${response.status}`)
-    
-    if (response.ok) {
-      const models = await response.json()
-      console.log('DeepSeek API connection successful, found models:', models.data ? models.data.length : 0)
-      
-      return new Response(
-        JSON.stringify({ 
-          status: 'available', 
-          success: true,
-          message: 'Successfully connected to DeepSeek API',
-          modelCount: models.data ? models.data.length : 0
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    } else {
-      let errorData
-      try {
-        errorData = await response.json()
-      } catch (e) {
-        errorData = { error: { message: await response.text() } }
-      }
-      
-      console.error('DeepSeek API connection failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData
-      })
-      
-      return new Response(
-        JSON.stringify({ 
-          status: 'unavailable', 
-          success: false,
-          message: errorData.error?.message || `API error: ${response.status} ${response.statusText}` 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+    return response.ok;
   } catch (error) {
-    console.error('Error in deepseek-ping function:', error)
+    console.error('Error checking DeepSeek API key:', error);
+    return false;
+  }
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Get the provided API key or use the environment variable
+    const { apiKey } = await req.json().catch(() => ({}));
+    const key = apiKey || Deno.env.get('DEEPSEEK_API_KEY');
+    
+    if (!key) {
+      return new Response(
+        JSON.stringify({
+          status: 'unavailable',
+          message: 'No DeepSeek API key provided'
+        }),
+        { headers: corsHeaders }
+      );
+    }
+    
+    // Test if the DeepSeek API key is valid
+    const isValid = await checkDeepSeekApiKey(key);
+    
+    if (!isValid) {
+      return new Response(
+        JSON.stringify({
+          status: 'unavailable',
+          message: 'Invalid DeepSeek API key or service unavailable'
+        }),
+        { headers: corsHeaders }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ 
-        status: 'error', 
-        message: error.message || 'An unexpected error occurred' 
+      JSON.stringify({
+        status: 'available',
+        message: 'DeepSeek API is available'
+      }),
+      { headers: corsHeaders }
+    );
+  } catch (error) {
+    console.error('Error in deepseek-ping function:', error);
+    
+    return new Response(
+      JSON.stringify({
+        status: 'unavailable',
+        message: `Error: ${error.message}`
       }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: 500, 
+        headers: corsHeaders 
       }
-    )
+    );
   }
-})
+});

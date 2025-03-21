@@ -87,7 +87,8 @@ serve(async (req) => {
         content: `You are a helpful assistant that specializes in cryptocurrency and trading information. 
         Today's date is ${new Date().toISOString().split('T')[0]}.
         You can use tools to fetch real-time cryptocurrency data.
-        Always respond in the language the user is using.`
+        Always respond in the language the user is using.
+        When asked about crypto prices or market data, ALWAYS use the getCryptoPrice tool.`
       });
     }
     
@@ -172,58 +173,61 @@ serve(async (req) => {
               
               if (!cryptoResponse.ok) {
                 console.error(`Error fetching crypto data: ${cryptoResponse.status}`);
-                continue;
-              }
-              
-              const cryptoData = await cryptoResponse.json();
-              
-              if (cryptoData.success && cryptoData.data) {
-                // Add the tool response to the messages
-                formattedMessages.push({
-                  role: "assistant",
-                  content: null,
-                  tool_calls: [toolCall]
-                });
+                // Continue execution rather than stopping here
+                const errorData = await cryptoResponse.json();
+                console.error('Error details:', errorData);
+              } else {
+                const cryptoData = await cryptoResponse.json();
                 
-                // Add the function response
-                formattedMessages.push({
-                  role: "tool",
-                  tool_call_id: toolCall.id,
-                  content: JSON.stringify(cryptoData.data)
-                });
-                
-                // Make a second request to DeepSeek with the tool results
-                const secondResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${key}`,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    model: model,
-                    messages: formattedMessages,
-                    temperature: temperature,
-                    max_tokens: maxTokens
-                  })
-                });
-                
-                if (!secondResponse.ok) {
-                  console.error('Error in second DeepSeek request:', secondResponse.status);
-                  break;
+                if (cryptoData.success && cryptoData.data) {
+                  // Add the tool response to the messages
+                  formattedMessages.push({
+                    role: "assistant",
+                    content: null,
+                    tool_calls: [toolCall]
+                  });
+                  
+                  // Add the function response
+                  formattedMessages.push({
+                    role: "tool",
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify(cryptoData.data)
+                  });
+                  
+                  // Make a second request to DeepSeek with the tool results
+                  const secondResponse = await fetch('https://api.deepseek.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${key}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      model: model,
+                      messages: formattedMessages,
+                      temperature: temperature,
+                      max_tokens: maxTokens
+                    })
+                  });
+                  
+                  if (!secondResponse.ok) {
+                    console.error('Error in second DeepSeek request:', secondResponse.status);
+                    const errorData = await secondResponse.text();
+                    console.error('Error details:', errorData);
+                  } else {
+                    const secondData = await secondResponse.json();
+                    
+                    // Return this enhanced response
+                    return new Response(
+                      JSON.stringify({
+                        response: secondData.choices[0].message.content,
+                        id: secondData.id,
+                        model: secondData.model,
+                        cryptoData: cryptoData.data
+                      }),
+                      { headers: corsHeaders }
+                    );
+                  }
                 }
-                
-                const secondData = await secondResponse.json();
-                
-                // Return this enhanced response
-                return new Response(
-                  JSON.stringify({
-                    response: secondData.choices[0].message.content,
-                    id: secondData.id,
-                    model: secondData.model,
-                    cryptoData: cryptoData.data
-                  }),
-                  { headers: corsHeaders }
-                );
               }
             } catch (toolError) {
               console.error('Error processing tool call:', toolError);
