@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowUpIcon, ArrowDownIcon, Loader2, AlertCircle } from 'lucide-react';
 import useAssetStore from '@/stores/useAssetStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { MarketTrendChart } from './MarketTrendChart';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export const GlobalMarketMetrics: React.FC = () => {
   const {
@@ -17,6 +19,7 @@ export const GlobalMarketMetrics: React.FC = () => {
     marketDirection,
     isLoading,
     error,
+    trendData,
     fetchMarketData
   } = useAssetStore();
 
@@ -88,99 +91,144 @@ export const GlobalMarketMetrics: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent className="pt-2">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="bg-secondary/10 rounded-md p-4">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">Total Market Cap</div>
-                  <div className="text-2xl font-bold">${totalMarketCap}</div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Total cryptocurrency market capitalization</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <Tabs defaultValue="metrics">
+          <TabsList className="mb-4">
+            <TabsTrigger value="metrics">Key Metrics</TabsTrigger>
+            <TabsTrigger value="trends">Market Trends</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="metrics">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="bg-secondary/10 rounded-md p-4">
+                      <div className="text-sm font-medium text-muted-foreground mb-1">Total Market Cap</div>
+                      <div className="text-2xl font-bold">${totalMarketCap}</div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Total cryptocurrency market capitalization</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="bg-secondary/10 rounded-md p-4">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">24h Volume</div>
-                  <div className="text-2xl font-bold">${totalVolume}</div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Total trading volume in the last 24 hours</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="bg-secondary/10 rounded-md p-4">
+                      <div className="text-sm font-medium text-muted-foreground mb-1">24h Volume</div>
+                      <div className="text-2xl font-bold">${totalVolume}</div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Total trading volume in the last 24 hours</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="bg-secondary/10 rounded-md p-4">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">BTC Dominance</div>
-                  <div className="text-2xl font-bold flex items-center">
-                    {btcDominance}%
-                    {marketDirection === "up" ? 
-                      <ArrowUpIcon className="ml-1 h-4 w-4 text-green-500" /> : 
-                      <ArrowDownIcon className="ml-1 h-4 w-4 text-red-500" />
-                    }
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="bg-secondary/10 rounded-md p-4">
+                      <div className="text-sm font-medium text-muted-foreground mb-1">BTC Dominance</div>
+                      <div className="text-2xl font-bold flex items-center">
+                        {btcDominance}%
+                        {marketDirection === "up" ? 
+                          <ArrowUpIcon className="ml-1 h-4 w-4 text-green-500" /> : 
+                          <ArrowDownIcon className="ml-1 h-4 w-4 text-red-500" />
+                        }
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Bitcoin's percentage of total market capitalization</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="bg-secondary/10 rounded-md p-4">
+                      <div className="text-sm font-medium text-muted-foreground mb-1">ETH Dominance</div>
+                      <div className="text-2xl font-bold">{ethDominance}%</div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Ethereum's percentage of total market capitalization</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="bg-secondary/5 rounded-md p-4">
+                      <div className="text-sm font-medium text-muted-foreground mb-1">Active Cryptocurrencies</div>
+                      <div className="text-xl font-bold">{activeCryptocurrencies.toLocaleString()}</div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Number of active cryptocurrencies being tracked</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="bg-secondary/5 rounded-md p-4">
+                      <div className="text-sm font-medium text-muted-foreground mb-1">Active Exchanges</div>
+                      <div className="text-xl font-bold">{activeExchanges.toLocaleString()}</div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Number of active cryptocurrency exchanges</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="trends">
+            <div className="space-y-4">
+              <MarketTrendChart 
+                data={trendData} 
+                title="Market Cap Trend" 
+                showCard={false} 
+                height={250}
+                marketDirection={marketDirection}
+                lastUpdated={lastUpdated}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-secondary/5 rounded-md p-4">
+                  <div className="text-sm font-medium text-muted-foreground mb-1">Current Market Direction</div>
+                  <div className="text-xl font-bold flex items-center">
+                    {marketDirection === "up" && <span className="text-green-500">Bullish</span>}
+                    {marketDirection === "down" && <span className="text-red-500">Bearish</span>}
+                    {marketDirection === "neutral" && <span className="text-gray-500">Neutral</span>}
+                    
+                    {marketDirection === "up" && <ArrowUpIcon className="ml-2 h-5 w-5 text-green-500" />}
+                    {marketDirection === "down" && <ArrowDownIcon className="ml-2 h-5 w-5 text-red-500" />}
                   </div>
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Bitcoin's percentage of total market capitalization</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="bg-secondary/10 rounded-md p-4">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">ETH Dominance</div>
-                  <div className="text-2xl font-bold">{ethDominance}%</div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Ethereum's percentage of total market capitalization</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+                
                 <div className="bg-secondary/5 rounded-md p-4">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">Active Cryptocurrencies</div>
-                  <div className="text-xl font-bold">{activeCryptocurrencies.toLocaleString()}</div>
+                  <div className="text-sm font-medium text-muted-foreground mb-1">Sentiment</div>
+                  <div className="text-xl font-bold">
+                    {marketDirection === "up" && <span className="text-green-500">Positive</span>}
+                    {marketDirection === "down" && <span className="text-red-500">Negative</span>}
+                    {marketDirection === "neutral" && <span className="text-gray-500">Neutral</span>}
+                  </div>
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Number of active cryptocurrencies being tracked</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="bg-secondary/5 rounded-md p-4">
-                  <div className="text-sm font-medium text-muted-foreground mb-1">Active Exchanges</div>
-                  <div className="text-xl font-bold">{activeExchanges.toLocaleString()}</div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Number of active cryptocurrency exchanges</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
         
         <div className="mt-4 text-xs text-right text-muted-foreground">
           Data provided by CoinMarketCap

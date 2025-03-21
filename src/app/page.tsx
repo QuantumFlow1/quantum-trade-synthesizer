@@ -1,5 +1,6 @@
 
 import { GlobalMarketMetrics } from '@/components/market/GlobalMarketMetrics';
+import { DetailedMarketCharts } from '@/components/market/DetailedMarketCharts';
 
 export default function HomePage() {
   return (
@@ -8,8 +9,7 @@ export default function HomePage() {
       
       <div className="space-y-6">
         <GlobalMarketMetrics />
-        
-        {/* You can add more components here as needed */}
+        <DetailedMarketCharts />
       </div>
     </div>
   );
