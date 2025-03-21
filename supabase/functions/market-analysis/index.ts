@@ -11,6 +11,78 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 };
 
+// Generate QUBO matrix from market data
+function generateQUBOMatrix(
+  marketData: any[],
+  budget = 10000,
+  weights = [0.4, 0.4, 0.2]
+) {
+  if (!marketData || marketData.length === 0) {
+    return { error: "No market data available for QUBO matrix generation" };
+  }
+  
+  // Extract weights
+  const [theta1, theta2, theta3] = weights;
+  
+  // Prepare asset data
+  const assets = marketData.map(asset => asset.symbol);
+  const prices = marketData.map(asset => asset.price);
+  
+  // Generate expected returns (using 24h change as a simple proxy)
+  const expectedReturns = marketData.map(asset => asset.change24h / 100);
+  
+  // Create empty QUBO matrix (n x n)
+  const n = marketData.length;
+  const Q = Array(n).fill(0).map(() => Array(n).fill(0));
+  
+  // Generate simple covariance matrix (in a real system, this would use historical data)
+  const covariance = Array(n).fill(0).map(() => Array(n).fill(0));
+  
+  // Fill diagonal of covariance with volatility estimate
+  for (let i = 0; i < n; i++) {
+    covariance[i][i] = Math.pow(prices[i] / 1000, 2); // Simple volatility estimate
+  }
+  
+  // Fill off-diagonal with simplified correlation
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      // Simplified correlation based on price movement
+      const correlation = (Math.sign(expectedReturns[i]) === Math.sign(expectedReturns[j])) ? 0.5 : -0.3;
+      covariance[i][j] = correlation * Math.sqrt(covariance[i][i] * covariance[j][j]);
+      covariance[j][i] = covariance[i][j]; // Ensure symmetry
+    }
+  }
+  
+  // Fill the QUBO matrix
+  for (let i = 0; i < n; i++) {
+    // Diagonal elements: expected return + budget constraint + own variance
+    Q[i][i] = -theta1 * expectedReturns[i] + theta2 * Math.pow(prices[i], 2) + theta3 * covariance[i][i];
+    
+    // Also account for the linear term in budget constraint
+    Q[i][i] -= 2 * theta2 * budget * prices[i];
+    
+    // Fill off-diagonal elements: budget constraint interaction + covariance
+    for (let j = i + 1; j < n; j++) {
+      Q[i][j] = 2 * theta2 * prices[i] * prices[j] + theta3 * covariance[i][j];
+      Q[j][i] = Q[i][j]; // Ensure symmetry
+    }
+  }
+  
+  return {
+    matrix: Q,
+    assets,
+    prices,
+    expectedReturns,
+    covariance,
+    budget,
+    weights: {
+      expectedReturn: theta1,
+      budgetConstraint: theta2,
+      diversification: theta3
+    }
+  };
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -18,11 +90,12 @@ serve(async (req) => {
   }
 
   try {
-    const { message, marketData, includeQuantumApproach = false } = await req.json();
+    const { message, marketData, includeQuantumApproach = false, generateQuboMatrix = false } = await req.json();
     
     console.log("Received market analysis request with message:", message);
     console.log("Market data context:", marketData ? JSON.stringify(marketData) : "none");
     console.log("Include quantum approach:", includeQuantumApproach);
+    console.log("Generate QUBO matrix:", generateQuboMatrix);
 
     if (!openAIApiKey) {
       console.error("OpenAI API key is not configured");
@@ -34,6 +107,31 @@ serve(async (req) => {
           status: 500, 
           headers: corsHeaders 
         }
+      );
+    }
+    
+    // Check if this is a request specifically for generating a QUBO matrix
+    if (generateQuboMatrix && marketData) {
+      console.log("Generating QUBO matrix from real-time market data");
+      
+      // Convert single marketData to array if needed
+      const dataArray = Array.isArray(marketData) ? marketData : [marketData];
+      
+      // Generate the QUBO matrix
+      const quboResult = generateQUBOMatrix(
+        dataArray,
+        marketData.budget || 10000,
+        marketData.weights || [0.4, 0.4, 0.2]
+      );
+      
+      console.log("QUBO matrix generated successfully");
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          qubo: quboResult
+        }),
+        { headers: corsHeaders }
       );
     }
 
@@ -127,6 +225,14 @@ serve(async (req) => {
         
         When asked about QUBO matrix generation, provide detailed explanations of the math and include examples of how specific entries in the matrix are calculated.
         
+        REAL-TIME DATA INTEGRATION:
+        When working with real-time market data:
+        1. Use the current price as p[i]
+        2. Use recent price changes (e.g., 24h change percentage) as proxies for expected returns r[i]
+        3. Estimate covariance using recent price correlation patterns
+        4. Adjust weights θ₁, θ₂, θ₃ based on market volatility conditions
+        5. Generate the QUBO matrix entries using the real-time values
+        
         IMPORTANT GUIDELINES:
         1. When discussing portfolio optimization, always explain both traditional and QUBO formulations.
         2. Explain how the binary decision variables work (1 = include asset, 0 = exclude asset).
@@ -135,6 +241,7 @@ serve(async (req) => {
         5. ALWAYS EMPHASIZE that you only provide analysis and research - the user makes all final investment decisions.
         6. When asked about QUBO formulation, explain the process using the formula above.
         7. When asked to generate a QUBO matrix, explain the construction of each component with numerical examples.
+        8. When using real-time data, explain how the current market conditions affect the QUBO formulation.
         
         Always provide thoughtful, accurate, insightful analysis based on the available data.`;
     }
