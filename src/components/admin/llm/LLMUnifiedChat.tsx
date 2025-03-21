@@ -185,7 +185,8 @@ export function LLMUnifiedChat() {
         message,
         context: formattedHistory,
         apiKey,
-        model: selectedModel || "deepseek-chat"
+        model: selectedModel || "deepseek-chat",
+        useTools: true  // Enable tools for real-time data
       }
     });
     
@@ -196,6 +197,11 @@ export function LLMUnifiedChat() {
     
     if (!data?.response) {
       throw new Error("Invalid response from DeepSeek API");
+    }
+    
+    // If we received crypto data along with the response, log it
+    if (data.cryptoData) {
+      console.log("Received crypto data:", data.cryptoData);
     }
     
     return data.response;
