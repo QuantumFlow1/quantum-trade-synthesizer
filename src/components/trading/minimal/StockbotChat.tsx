@@ -33,6 +33,8 @@ export function StockbotChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<string>("chat");
   const [availableProviders, setAvailableProviders] = useState<Record<string, boolean>>({});
+  const [isUsingRealData, setIsUsingRealData] = useState<boolean>(true);
+  const [isSimulationMode, setIsSimulationMode] = useState<boolean>(false);
   
   // Get available API providers
   useEffect(() => {
@@ -57,6 +59,11 @@ export function StockbotChat() {
     setInputMessage(e.target.value);
   };
 
+  // Toggle between real data and simulation data
+  const toggleRealData = () => {
+    setIsUsingRealData(!isUsingRealData);
+  };
+
   // Filter agents for trading specialists
   const tradingAgents = agents.filter(agent => 
     agent.type === 'trader' || 
@@ -72,6 +79,10 @@ export function StockbotChat() {
           clearChat={clearChat}
           showApiKeyDialog={showApiKeyDialog}
           hasApiKey={hasGroqKey}
+          isUsingRealData={isUsingRealData}
+          toggleRealData={toggleRealData}
+          isSimulationMode={isSimulationMode}
+          setIsSimulationMode={setIsSimulationMode}
         />
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Coins, LineChart, MessageSquare, Robot } from "lucide-react";
+import { Coins, LineChart, MessageSquare, Bot } from "lucide-react";
 import MarketOverview from "@/components/MarketOverview";
 import { TradingView } from "./components/trading-view";
 import { StockbotChat } from "./components/stockbot/StockbotChat";
@@ -38,7 +38,7 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
               Trading
             </TabsTrigger>
             <TabsTrigger value="agents" className="col-span-1">
-              <Robot className="h-4 w-4 mr-2" />
+              <Bot className="h-4 w-4 mr-2" />
               AI Agents
             </TabsTrigger>
             <TabsTrigger value="stockbot" className="col-span-1">

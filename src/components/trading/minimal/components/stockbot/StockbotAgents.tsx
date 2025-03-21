@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Robot, Briefcase, Brain, TrendingUp, PieChart, Shield } from "lucide-react";
+import { Bot, Briefcase, Brain, TrendingUp, PieChart, Shield } from "lucide-react";
 import { Agent } from "@/types/agent";
 
 interface StockbotAgentsProps {
@@ -49,7 +49,7 @@ export const StockbotAgents: React.FC<StockbotAgentsProps> = ({ agents }) => {
       case 'portfolio_manager':
         return <PieChart className="h-4 w-4" />;
       default:
-        return <Robot className="h-4 w-4" />;
+        return <Bot className="h-4 w-4" />;
     }
   };
 
