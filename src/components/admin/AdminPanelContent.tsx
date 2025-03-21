@@ -12,7 +12,7 @@ import SystemAlerts from "./SystemAlerts";
 import SuperAdminMonitor from "./SuperAdminMonitor";
 import { Agent } from "@/types/agent";
 import DashboardView from "./DashboardView";
-import { LLMExtensions } from "@/components/llm-extensions/LLMExtensions";
+import { LLMUnifiedChat } from "./llm/LLMUnifiedChat";
 
 interface AdminPanelContentProps {
   userRole: string;
@@ -46,7 +46,7 @@ export const AdminPanelContent = ({
         <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         <TabsTrigger value="agents">AI Agents</TabsTrigger>
         <TabsTrigger value="system">System</TabsTrigger>
-        <TabsTrigger value="llm">LLM Extensions</TabsTrigger>
+        <TabsTrigger value="settings">Settings</TabsTrigger>
       </TabsList>
 
       <TabsContent value="dashboard">
@@ -58,13 +58,20 @@ export const AdminPanelContent = ({
       </TabsContent>
 
       <TabsContent value="agents">
-        <AIAgentsList 
-          agents={agents} 
-          setAgents={setAgents} 
-          onAction={(agentId, action) => {
-            console.log(`Agent ${agentId} action: ${action}`);
-          }} 
-        />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div>
+            <AIAgentsList 
+              agents={agents} 
+              setAgents={setAgents} 
+              onAction={(agentId, action) => {
+                console.log(`Agent ${agentId} action: ${action}`);
+              }} 
+            />
+          </div>
+          <div>
+            <LLMUnifiedChat />
+          </div>
+        </div>
       </TabsContent>
 
       <TabsContent value="system">
@@ -79,8 +86,13 @@ export const AdminPanelContent = ({
         </div>
       </TabsContent>
 
-      <TabsContent value="llm">
-        <LLMExtensions />
+      <TabsContent value="settings">
+        <div className="p-4 bg-white rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">System Settings</h2>
+          <p className="text-muted-foreground">
+            Configure system-wide settings and preferences.
+          </p>
+        </div>
       </TabsContent>
     </Tabs>
   );

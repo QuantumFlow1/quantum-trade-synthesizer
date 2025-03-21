@@ -10,7 +10,6 @@ import { AIToolsPage } from "./pages/AIToolsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { VirtualEnvironmentDemo } from "../visualization/VirtualEnvironmentDemo";
-import { LLMExtensions } from "../llm-extensions/LLMExtensions";
 
 interface DashboardPageContentProps {
   activePage: string;
@@ -56,8 +55,6 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
         showApiAccess={visibleWidgets.apiAccess} 
         openTradingAgents={openTradingAgentsTab}
       />;
-    case "llm":
-      return <LLMExtensions />;
     case "gamification":
       return <GamificationPage />;
     case "settings":
