@@ -12,6 +12,7 @@ import SystemAlerts from "./SystemAlerts";
 import SuperAdminMonitor from "./SuperAdminMonitor";
 import { Agent } from "@/types/agent";
 import DashboardView from "./DashboardView";
+import { LLMExtensions } from "@/components/llm-extensions/LLMExtensions";
 
 interface AdminPanelContentProps {
   userRole: string;
@@ -41,10 +42,11 @@ export const AdminPanelContent = ({
 
   return (
     <Tabs defaultValue="dashboard" value={activeTab} onValueChange={handleTabChange}>
-      <TabsList className="grid grid-cols-3 mb-6">
+      <TabsList className="grid grid-cols-4 mb-6">
         <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
         <TabsTrigger value="agents">AI Agents</TabsTrigger>
         <TabsTrigger value="system">System</TabsTrigger>
+        <TabsTrigger value="llm">LLM Extensions</TabsTrigger>
       </TabsList>
 
       <TabsContent value="dashboard">
@@ -75,6 +77,10 @@ export const AdminPanelContent = ({
             errorRate={errorRate}
           />}
         </div>
+      </TabsContent>
+
+      <TabsContent value="llm">
+        <LLMExtensions />
       </TabsContent>
     </Tabs>
   );

@@ -21,7 +21,7 @@ export const DashboardNavigation = ({ activePage, onChangePage }: DashboardNavig
     { id: "wallet", label: "Wallet", icon: <Wallet className="h-5 w-5" /> },
     { id: "risk", label: "Risk", icon: <Shield className="h-5 w-5" /> },
     { id: "ai", label: "AI Tools", icon: <Brain className="h-5 w-5" /> },
-    // LLM option removed
+    { id: "llm", label: "LLM Extensions", icon: <Brain className="h-5 w-5" /> },
     { id: "gamification", label: "Gamification", icon: <Trophy className="h-5 w-5" /> },
     { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" /> },
   ];
