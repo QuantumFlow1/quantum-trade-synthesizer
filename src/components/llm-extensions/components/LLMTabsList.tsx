@@ -34,7 +34,10 @@ export function LLMTabsList({
           <div className="flex items-center space-x-2">
             <Switch
               checked={enabledLLMs[llm] || false}
-              onCheckedChange={(checked) => toggleLLM(llm, checked)}
+              onCheckedChange={(checked) => {
+                console.log(`Toggle switch changed for ${llm}: ${checked}`);
+                toggleLLM(llm, checked);
+              }}
               className="data-[state=checked]:bg-primary"
             />
             <TabsTrigger 
@@ -59,6 +62,7 @@ export function LLMTabsList({
                     : 'bg-red-500'
                 }`}
                 onClick={() => checkConnectionStatusForLLM(llm)}
+                title={connectionStatus[llm] === 'connected' ? 'Connected' : 'Not connected'}
               />
             )}
           </div>

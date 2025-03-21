@@ -65,7 +65,7 @@ export function useLLMExtensions() {
     // Listen for API key updates
     const handleApiKeyUpdate = (e: CustomEvent) => {
       console.log('API key updated, rechecking connections...', e.detail);
-      if (e.detail?.type) {
+      if (e.detail?.keyType) {
         // Map the API key type to the corresponding LLM
         const llmMap: Record<string, string> = {
           groq: 'grok',
@@ -75,8 +75,8 @@ export function useLLMExtensions() {
           deepseek: 'deepseek'
         };
         
-        if (llmMap[e.detail.type]) {
-          checkConnectionStatusForLLM(llmMap[e.detail.type]);
+        if (llmMap[e.detail.keyType]) {
+          checkConnectionStatusForLLM(llmMap[e.detail.keyType]);
         }
       } else {
         // If no specific type, check all enabled LLMs
@@ -90,16 +90,22 @@ export function useLLMExtensions() {
     
     window.addEventListener('apikey-updated', handleApiKeyUpdate as EventListener);
     window.addEventListener('localStorage-changed', handleApiKeyUpdate as EventListener);
+    window.addEventListener('api-key-update', handleApiKeyUpdate as EventListener);
     
     return () => {
       window.removeEventListener('apikey-updated', handleApiKeyUpdate as EventListener);
       window.removeEventListener('localStorage-changed', handleApiKeyUpdate as EventListener);
+      window.removeEventListener('api-key-update', handleApiKeyUpdate as EventListener);
     };
   }, [enabledLLMs]); 
   
   const toggleLLM = useCallback((llm: string, enabled: boolean) => {
+    console.log(`Toggling ${llm} to ${enabled ? 'enabled' : 'disabled'}`);
+    
     setEnabledLLMs(prev => {
       const updated = { ...prev, [llm]: enabled };
+      // Save immediately to ensure it persists
+      localStorage.setItem('enabledLLMs', JSON.stringify(updated));
       return updated;
     });
     
@@ -120,8 +126,17 @@ export function useLLMExtensions() {
         description: `${llm.charAt(0).toUpperCase() + llm.slice(1)} has been disabled`,
         duration: 3000,
       });
+      
+      // If disabling the active tab, switch to another enabled tab
+      if (activeTab === llm) {
+        const newActiveTab = Object.entries(enabledLLMs)
+          .filter(([key, val]) => key !== llm && val)
+          .map(([key]) => key)[0] || 'grok';
+        
+        setActiveTab(newActiveTab);
+      }
     }
-  }, []);
+  }, [activeTab, enabledLLMs]);
   
   const checkConnectionStatusForLLM = useCallback(async (llm: string) => {
     console.log(`Checking connection status for ${llm}...`);

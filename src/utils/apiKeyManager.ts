@@ -72,6 +72,22 @@ export const removeApiKey = (keyType: string): boolean => {
   }
 };
 
+// Test API key connection
+export const testApiKeyConnection = async (keyType: string): Promise<boolean> => {
+  try {
+    // Check if the API key exists
+    const hasKey = hasApiKey(keyType);
+    console.log(`Testing ${keyType} API key - exists: ${hasKey}`);
+    return hasKey;
+    
+    // In a real implementation, you might want to make a test API call here
+    // to verify the key is valid, but for now we'll just check existence
+  } catch (error) {
+    console.error(`Error testing ${keyType} API key:`, error);
+    return false;
+  }
+};
+
 // Generic method to broadcast API key changes to other tabs
 export const broadcastApiKeyChange = (keyType: string, action: 'set' | 'remove') => {
   try {
