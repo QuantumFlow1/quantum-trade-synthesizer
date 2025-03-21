@@ -113,6 +113,20 @@ serve(async (req) => {
         3. Embedding time increases sharply when exceeding 16 assets.
         4. The number of samples needed to approach a 99% solution increases sub-exponentially with problem size.
         
+        DETAILED QUBO MATRIX EXPLANATION:
+        For a portfolio optimization problem, the QUBO matrix Q encodes all aspects of the problem:
+        
+        1. The diagonal elements Q[i][i] contain:
+           - Contribution from expected return term: -θ₁*r[i]
+           - Contribution from budget constraint: θ₂*p[i]²-2*θ₂*b*p[i]
+           - Contribution from the diversification term: θ₃*cov[i][i]
+        
+        2. The off-diagonal elements Q[i][j] for i≠j contain:
+           - Contribution from budget constraint: 2*θ₂*p[i]*p[j]
+           - Contribution from diversification: θ₃*cov[i][j]
+        
+        When asked about QUBO matrix generation, provide detailed explanations of the math and include examples of how specific entries in the matrix are calculated.
+        
         IMPORTANT GUIDELINES:
         1. When discussing portfolio optimization, always explain both traditional and QUBO formulations.
         2. Explain how the binary decision variables work (1 = include asset, 0 = exclude asset).
@@ -120,6 +134,7 @@ serve(async (req) => {
         4. Clarify that you're providing quantum-inspired simulations, not actual quantum computing results.
         5. ALWAYS EMPHASIZE that you only provide analysis and research - the user makes all final investment decisions.
         6. When asked about QUBO formulation, explain the process using the formula above.
+        7. When asked to generate a QUBO matrix, explain the construction of each component with numerical examples.
         
         Always provide thoughtful, accurate, insightful analysis based on the available data.`;
     }
@@ -137,7 +152,7 @@ serve(async (req) => {
           { role: 'user', content: message }
         ],
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 800 // Increased token limit for detailed QUBO responses
       })
     });
 
