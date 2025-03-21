@@ -1,11 +1,17 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useStockbotState } from "./hooks/stockbot/useStockbotState";
+import { useStockbotChat } from "./hooks/useStockbotChat";
 import { StockbotHeader } from "./components/stockbot/StockbotHeader";
-import { StockbotMessageList } from "./components/stockbot/StockbotMessageList";
+import { StockbotMessages } from "./components/StockbotMessages";
 import { StockbotInput } from "./components/stockbot/StockbotInput";
 import { StockbotApiKeyDialog } from "./components/stockbot/StockbotApiKeyDialog";
+import { StockbotModelSelector } from "./components/stockbot/StockbotModelSelector";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAgents } from "@/hooks/use-agents";
+import { StockbotAgents } from "./components/stockbot/StockbotAgents";
+import { Button } from "@/components/ui/button";
+import { hasApiKey, getAvailableProviders } from "@/utils/apiKeyManager";
 
 export function StockbotChat() {
   const {
@@ -14,33 +20,31 @@ export function StockbotChat() {
     setInputMessage,
     isLoading,
     handleSendMessage,
-    clearChat: clearMessages
-  } = useStockbotState();
+    clearChat,
+    hasApiKey: hasGroqKey,
+    showApiKeyDialog,
+    isKeyDialogOpen,
+    setIsKeyDialogOpen,
+    reloadApiKeys,
+    isCheckingAdminKey
+  } = useStockbotChat();
 
-  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [isSimulationMode, setIsSimulationMode] = useState(false);
-  const [hasApiKey, setHasApiKey] = useState(false);
-  const [isUsingRealData, setIsUsingRealData] = useState(false);
-
+  const { agents } = useAgents();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<string>("chat");
+  const [availableProviders, setAvailableProviders] = useState<Record<string, boolean>>({});
+  
+  // Get available API providers
   useEffect(() => {
-    // Check for API key in localStorage on component mount
-    const storedKey = localStorage.getItem("stockbot-api-key");
-    setHasApiKey(!!storedKey);
-  }, []);
+    setAvailableProviders(getAvailableProviders());
+  }, [hasGroqKey]);
 
-  const handleSaveApiKey = () => {
-    if (apiKey.trim()) {
-      localStorage.setItem("stockbot-api-key", apiKey.trim());
-      setHasApiKey(true);
-      setShowApiKeyDialog(false);
-      setApiKey("");
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  };
-
-  const clearChat = () => {
-    clearMessages();
-  };
+  }, [messages]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -49,44 +53,70 @@ export function StockbotChat() {
     }
   };
 
-  const toggleRealData = () => {
-    setIsUsingRealData(!isUsingRealData);
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputMessage(e.target.value);
   };
+
+  // Filter agents for trading specialists
+  const tradingAgents = agents.filter(agent => 
+    agent.type === 'trader' || 
+    agent.type === 'advisor' || 
+    agent.name.toLowerCase().includes('trading') ||
+    agent.name.toLowerCase().includes('portfolio')
+  );
 
   return (
     <>
       <Card className="flex flex-col h-full border-muted-foreground/20">
         <StockbotHeader
           clearChat={clearChat}
-          showApiKeyDialog={() => setShowApiKeyDialog(true)}
-          hasApiKey={hasApiKey}
-          isUsingRealData={isUsingRealData}
-          toggleRealData={toggleRealData}
-          isSimulationMode={isSimulationMode}
-          setIsSimulationMode={setIsSimulationMode}
+          showApiKeyDialog={showApiKeyDialog}
+          hasApiKey={hasGroqKey}
         />
-        <CardContent className="flex-1 overflow-hidden p-0">
-          <StockbotMessageList messages={messages} />
-        </CardContent>
-        <StockbotInput
-          value={inputMessage}
-          onChange={handleInputChange}
-          onKeyPress={handleKeyPress}
-          onSubmit={handleSendMessage}
-          isLoading={isLoading}
-        />
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <TabsList className="mx-4 mt-2">
+            <TabsTrigger value="chat">Chat</TabsTrigger>
+            <TabsTrigger value="agents">Trading Agents</TabsTrigger>
+            <TabsTrigger value="models">LLM Models</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="chat" className="flex-1 flex flex-col">
+            <CardContent className="flex-1 overflow-hidden p-0">
+              <StockbotMessages 
+                messages={messages} 
+                isLoading={isLoading} 
+                messagesEndRef={messagesEndRef}
+                hasApiKey={hasGroqKey}
+                onConfigureApiKey={showApiKeyDialog}
+              />
+            </CardContent>
+            <StockbotInput
+              value={inputMessage}
+              onChange={handleInputChange}
+              onKeyPress={handleKeyPress}
+              onSubmit={handleSendMessage}
+              isLoading={isLoading}
+            />
+          </TabsContent>
+          
+          <TabsContent value="agents" className="flex-1 overflow-auto p-4">
+            <StockbotAgents agents={tradingAgents} />
+          </TabsContent>
+          
+          <TabsContent value="models" className="flex-1 overflow-auto p-4">
+            <StockbotModelSelector 
+              availableProviders={availableProviders}
+              onConfigureApiKey={showApiKeyDialog}
+            />
+          </TabsContent>
+        </Tabs>
       </Card>
 
       <StockbotApiKeyDialog
-        isOpen={showApiKeyDialog}
-        onOpenChange={setShowApiKeyDialog}
-        apiKey={apiKey}
-        setApiKey={setApiKey}
-        onSave={handleSaveApiKey}
+        isOpen={isKeyDialogOpen}
+        onOpenChange={setIsKeyDialogOpen}
+        onSave={reloadApiKeys}
       />
     </>
   );
