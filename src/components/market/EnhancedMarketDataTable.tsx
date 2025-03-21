@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody } from '@/components/ui/table';
 import { 
@@ -14,7 +13,6 @@ import { useMarketTableSort } from './hooks/useMarketTableSort';
 import { useFavoritesManager } from './hooks/useFavoritesManager';
 import { MarketTableHeader } from './components/MarketTableHeader';
 import { MarketDataRow } from './components/MarketDataRow';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface EnhancedMarketDataTableProps {
   data: MarketData[];
@@ -32,7 +30,7 @@ export const EnhancedMarketDataTable: React.FC<EnhancedMarketDataTableProps> = (
   const sortedData = sortData(data);
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-auto">
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -65,32 +63,30 @@ export const EnhancedMarketDataTable: React.FC<EnhancedMarketDataTableProps> = (
         </div>
       </div>
 
-      <ScrollArea className="h-[calc(100vh-25rem)]">
-        <Table>
-          <MarketTableHeader 
-            sortField={sortField}
-            sortOrder={sortOrder}
-            onSort={handleSort}
-          />
-          <TableBody>
-            {sortedData.filter(item => {
-              if (filterCategory === 'all') return true;
-              if (filterCategory === 'favorites') return favorites.includes(item.symbol);
-              // Additional filters could be implemented based on categories
-              return true;
-            }).map((item, index) => (
-              <MarketDataRow
-                key={item.symbol}
-                item={item}
-                index={index}
-                isFavorite={favorites.includes(item.symbol)}
-                onToggleFavorite={toggleFavorite}
-                onSelectMarket={onSelectMarket}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </ScrollArea>
+      <Table>
+        <MarketTableHeader 
+          sortField={sortField}
+          sortOrder={sortOrder}
+          onSort={handleSort}
+        />
+        <TableBody>
+          {sortedData.filter(item => {
+            if (filterCategory === 'all') return true;
+            if (filterCategory === 'favorites') return favorites.includes(item.symbol);
+            // Additional filters could be implemented based on categories
+            return true;
+          }).map((item, index) => (
+            <MarketDataRow
+              key={item.symbol}
+              item={item}
+              index={index}
+              isFavorite={favorites.includes(item.symbol)}
+              onToggleFavorite={toggleFavorite}
+              onSelectMarket={onSelectMarket}
+            />
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };
