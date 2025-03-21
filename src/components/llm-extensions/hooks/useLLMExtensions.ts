@@ -2,52 +2,147 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { testOllamaConnection } from '@/utils/ollamaApiClient';
+import { testApiKeyConnection } from '@/utils/apiKeyManager';
+import { testGroqApiConnection } from '@/utils/groqApiClient';
 
 export function useLLMExtensions() {
-  const [enabledLLMs, setEnabledLLMs] = useState<Record<string, boolean>>({
-    deepseek: false,
-    openai: false,
-    grok: true,
-    claude: false,
-    ollama: true
+  // Set default values for enabled LLMs
+  const [enabledLLMs, setEnabledLLMs] = useState<Record<string, boolean>>(() => {
+    try {
+      // Try to load saved preferences
+      const savedSettings = localStorage.getItem('enabledLLMs');
+      if (savedSettings) {
+        return JSON.parse(savedSettings);
+      }
+    } catch (e) {
+      console.error('Error loading LLM preferences:', e);
+    }
+    // Default values if nothing is saved
+    return {
+      deepseek: false,
+      openai: false,
+      grok: true,     // Enable Groq by default
+      claude: false,
+      ollama: true    // Enable Ollama by default
+    };
   });
-
-  const [activeTab, setActiveTab] = useState<string>('ollama');
-
+  
+  // Initialize with Groq as the active tab if enabled, otherwise use the first enabled LLM
+  const [activeTab, setActiveTab] = useState(() => {
+    if (enabledLLMs.grok) return 'grok';
+    if (enabledLLMs.ollama) return 'ollama';
+    // Find first enabled LLM
+    const firstEnabled = Object.entries(enabledLLMs).find(([_, enabled]) => enabled);
+    return firstEnabled ? firstEnabled[0] : 'ollama';
+  });
+  
   const [connectionStatus, setConnectionStatus] = useState<
     Record<string, 'connected' | 'disconnected' | 'unavailable' | 'checking'>
   >({
-    deepseek: 'checking',
-    openai: 'checking',
-    grok: 'checking',
-    claude: 'checking',
-    ollama: 'checking'
+    deepseek: 'disconnected',
+    openai: 'disconnected',
+    grok: 'checking',    // Start checking Groq since it's enabled by default
+    claude: 'disconnected',
+    ollama: 'checking'   // Start checking Ollama since it's enabled by default
   });
   
-  // Add the missing properties for the API key dialog
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   const [currentLLM, setCurrentLLM] = useState<string | null>(null);
+  
+  // Save enabled LLMs to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('enabledLLMs', JSON.stringify(enabledLLMs));
+  }, [enabledLLMs]);
 
+  // Check API keys for all enabled LLMs on mount
+  useEffect(() => {
+    Object.entries(enabledLLMs).forEach(([llm, enabled]) => {
+      if (enabled) {
+        checkConnectionStatusForLLM(llm);
+      }
+    });
+    
+    // Listen for API key updates
+    const handleApiKeyUpdate = (e: CustomEvent) => {
+      console.log('API key updated, rechecking connections...', e.detail);
+      if (e.detail?.keyType) {
+        // Map the API key type to the corresponding LLM
+        const llmMap: Record<string, string> = {
+          groq: 'grok',
+          openai: 'openai',
+          claude: 'claude',
+          anthropic: 'claude',
+          deepseek: 'deepseek'
+        };
+        
+        if (llmMap[e.detail.keyType]) {
+          checkConnectionStatusForLLM(llmMap[e.detail.keyType]);
+        }
+      } else {
+        // If no specific type, check all enabled LLMs
+        Object.entries(enabledLLMs)
+          .filter(([_, enabled]) => enabled)
+          .forEach(([llm]) => {
+            checkConnectionStatusForLLM(llm);
+          });
+      }
+    };
+    
+    window.addEventListener('apikey-updated', handleApiKeyUpdate as EventListener);
+    window.addEventListener('localStorage-changed', handleApiKeyUpdate as EventListener);
+    window.addEventListener('api-key-update', handleApiKeyUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('apikey-updated', handleApiKeyUpdate as EventListener);
+      window.removeEventListener('localStorage-changed', handleApiKeyUpdate as EventListener);
+      window.removeEventListener('api-key-update', handleApiKeyUpdate as EventListener);
+    };
+  }, [enabledLLMs]); 
+  
   const toggleLLM = useCallback((llm: string, enabled: boolean) => {
-    setEnabledLLMs(prev => ({ ...prev, [llm]: enabled }));
+    console.log(`Toggling ${llm} to ${enabled ? 'enabled' : 'disabled'}`);
+    
+    setEnabledLLMs(prev => {
+      const updated = { ...prev, [llm]: enabled };
+      // Save immediately to ensure it persists
+      localStorage.setItem('enabledLLMs', JSON.stringify(updated));
+      return updated;
+    });
     
     if (enabled) {
-      setActiveTab(llm);
+      // Check connection when enabling
       checkConnectionStatusForLLM(llm);
+      // Switch to the tab if enabling
+      setActiveTab(llm);
+      
+      toast({
+        title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} Enabled`,
+        description: `${llm.charAt(0).toUpperCase() + llm.slice(1)} is now available`,
+        duration: 3000,
+      });
+    } else {
+      toast({
+        title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} Disabled`,
+        description: `${llm.charAt(0).toUpperCase() + llm.slice(1)} has been disabled`,
+        duration: 3000,
+      });
+      
+      // If disabling the active tab, switch to another enabled tab
+      if (activeTab === llm) {
+        const newActiveTab = Object.entries(enabledLLMs)
+          .filter(([key, val]) => key !== llm && val)
+          .map(([key]) => key)[0] || 'grok';
+        
+        setActiveTab(newActiveTab);
+      }
     }
-    
-    toast({
-      title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} ${enabled ? 'Enabled' : 'Disabled'}`,
-      description: enabled 
-        ? `${llm.charAt(0).toUpperCase() + llm.slice(1)} is now available` 
-        : `${llm.charAt(0).toUpperCase() + llm.slice(1)} has been disabled`,
-      duration: 3000,
-    });
-  }, []);
-
+  }, [activeTab, enabledLLMs]);
+  
   const checkConnectionStatusForLLM = useCallback(async (llm: string) => {
+    console.log(`Checking connection status for ${llm}...`);
     setConnectionStatus(prev => ({ ...prev, [llm]: 'checking' }));
     
+    // Add some delay to show the checking state
     await new Promise(resolve => setTimeout(resolve, 500));
     
     try {
@@ -56,103 +151,48 @@ export function useLLMExtensions() {
       switch (llm) {
         case 'ollama':
           const ollamaResult = await testOllamaConnection();
+          console.log('Ollama connection test result:', ollamaResult);
           status = ollamaResult.success ? 'connected' : 'unavailable';
           break;
           
-        case 'deepseek':
-          const deepseekKey = localStorage.getItem('deepseekApiKey');
-          if (deepseekKey && deepseekKey.length > 10) {
-            status = 'connected';
-          }
-          break;
-          
-        case 'openai':
-          const openaiKey = localStorage.getItem('openaiApiKey');
-          if (openaiKey && openaiKey.length > 10) {
-            status = 'connected';
-          }
-          break;
-          
         case 'grok':
-          const grokKey = localStorage.getItem('groqApiKey');
-          if (grokKey && grokKey.length > 10) {
-            status = 'connected';
-          }
-          break;
-          
-        case 'claude':
-          const claudeKey = localStorage.getItem('claudeApiKey');
-          if (claudeKey && claudeKey.length > 10) {
-            status = 'connected';
-          }
+          // Use the specific Groq test function
+          const groqResult = await testGroqApiConnection();
+          console.log('Groq connection test result:', groqResult);
+          status = groqResult.success ? 'connected' : 'disconnected';
           break;
           
         default:
-          status = 'disconnected';
+          // For other LLMs, use the generic API key test
+          const apiKeyExists = await testApiKeyConnection(llm as any);
+          console.log(`${llm} API key exists:`, apiKeyExists);
+          status = apiKeyExists ? 'connected' : 'disconnected';
+          break;
       }
       
+      console.log(`Setting ${llm} connection status to ${status}`);
       setConnectionStatus(prev => ({ ...prev, [llm]: status }));
-      
       return status === 'connected';
     } catch (error) {
-      console.error(`Error checking ${llm} connection:`, error);
+      console.error(`Error checking connection for ${llm}:`, error);
       setConnectionStatus(prev => ({ ...prev, [llm]: 'unavailable' }));
       return false;
     }
   }, []);
-
+  
   const configureApiKey = useCallback((llm: string) => {
-    // Set the current LLM and open the dialog
     setCurrentLLM(llm);
     setIsApiKeyDialogOpen(true);
-    
-    switch (llm) {
-      case 'ollama':
-        setActiveTab('ollama');
-        break;
-        
-      case 'deepseek':
-        window.location.href = '/dashboard/settings';
-        break;
-        
-      case 'openai':
-        window.location.href = '/dashboard/settings';
-        break;
-        
-      case 'grok':
-        window.location.href = '/dashboard/settings';
-        break;
-        
-      case 'claude':
-        window.location.href = '/dashboard/settings';
-        break;
-        
-      default:
-        toast({
-          title: "Configuration Required",
-          description: `Please set up your ${llm.charAt(0).toUpperCase() + llm.slice(1)} API key in settings.`,
-          duration: 5000,
-        });
-    }
   }, []);
   
-  // Add close dialog handler
   const closeApiKeyDialog = useCallback(() => {
     setIsApiKeyDialogOpen(false);
+    // Re-check connection after closing dialog
     if (currentLLM) {
-      // Re-check connection after closing the dialog
       checkConnectionStatusForLLM(currentLLM);
     }
   }, [currentLLM, checkConnectionStatusForLLM]);
-
-  useEffect(() => {
-    Object.entries(enabledLLMs)
-      .filter(([_, enabled]) => enabled)
-      .forEach(([llm]) => {
-        checkConnectionStatusForLLM(llm);
-      });
-  }, []);
-
+  
   return {
     activeTab,
     setActiveTab,
@@ -161,7 +201,6 @@ export function useLLMExtensions() {
     toggleLLM,
     checkConnectionStatusForLLM,
     configureApiKey,
-    // Include these properties in the return value to fix the TypeScript errors
     isApiKeyDialogOpen,
     closeApiKeyDialog,
     currentLLM

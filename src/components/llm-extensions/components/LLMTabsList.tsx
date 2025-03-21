@@ -1,5 +1,4 @@
 
-import { Button } from '@/components/ui/button';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LLM_LABELS } from '../constants';
 import { Loader2 } from 'lucide-react';
@@ -20,6 +19,8 @@ export function LLMTabsList({
   activeTab,
   checkConnectionStatusForLLM
 }: LLMTabsListProps) {
+  console.log("LLMTabsList - enabledLLMs:", enabledLLMs);
+  
   return (
     <TabsList className="flex flex-wrap justify-start w-full h-auto p-0 bg-transparent space-x-1 mb-4 border-b">
       {['deepseek', 'openai', 'grok', 'claude', 'ollama'].map((llm) => (
@@ -33,9 +34,10 @@ export function LLMTabsList({
         >
           <div className="flex items-center space-x-2">
             <Switch
-              checked={enabledLLMs[llm] || false}
+              id={`toggle-${llm}`}
+              checked={!!enabledLLMs[llm]}
               onCheckedChange={(checked) => {
-                console.log(`Toggle switch changed for ${llm}: ${checked}`);
+                console.log(`Toggle switch for ${llm}: ${checked}`);
                 toggleLLM(llm, checked);
               }}
               className="data-[state=checked]:bg-primary"
