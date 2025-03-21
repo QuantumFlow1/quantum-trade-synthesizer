@@ -1,3 +1,4 @@
+
 /**
  * QUBO (Quadratic Unconstrained Binary Optimization) Utilities
  * This module provides functions for generating and solving QUBO problems
@@ -89,6 +90,9 @@ export function generateQUBOMatrix(params: PortfolioParams): QUBOMatrix {
   // Generate correlation matrix if not provided
   const correlationMatrix = params.correlationMatrix || generateCorrelationMatrix(assets);
 
+  // IMPORTANT: Normalize prices by the budget to avoid extreme values in QUBO
+  const normalizedPrices = prices.map(p => p / budget);
+  
   // Populate QUBO matrix
   // 1. Expected Returns component (linear terms on diagonal)
   for (let i = 0; i < n; i++) {
@@ -96,22 +100,32 @@ export function generateQUBOMatrix(params: PortfolioParams): QUBOMatrix {
   }
   
   // 2. Budget constraint component (quadratic terms)
+  // For quadratic terms x_i * x_j
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
-      Q[i][j] += budgetWeight * prices[i] * prices[j];
+      Q[i][j] += budgetWeight * normalizedPrices[i] * normalizedPrices[j];
     }
-    // Linear terms for budget constraint
-    Q[i][i] -= 2 * budgetWeight * budget * prices[i];
+    // Linear terms for budget constraint: -2 * θ₂ * (p_i/b) (for x_i)
+    Q[i][i] -= 2 * budgetWeight * normalizedPrices[i];
   }
   
   // Add constant term to expected value (not in matrix)
-  const constantTerm = budgetWeight * budget * budget;
+  const constantTerm = budgetWeight; // This is b²/b² = 1 after normalization
   
   // 3. Diversification component using correlation matrix
+  // Normalize the correlation contribution to avoid dominating the QUBO
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
-      Q[i][j] += diversificationWeight * correlationMatrix[i][j];
+      Q[i][j] += diversificationWeight * correlationMatrix[i][j] * 0.1; // Scale by 0.1 to keep values reasonable
     }
+  }
+
+  // Log the QUBO matrix generated (for debugging purposes)
+  console.log(`Generated QUBO matrix for ${n} assets with budget $${budget}`);
+  if (n <= 3) { // Only log small matrices to avoid console spam
+    console.log("QUBO Matrix:", Q);
+    console.log("Normalized Prices:", normalizedPrices);
+    console.log("Expected Returns:", returns);
   }
 
   return {
@@ -187,6 +201,11 @@ export function solveQUBOClassical(qubo: QUBOMatrix, budget: number, assets: Ass
       objectiveValue += qubo.matrix[i][j] * selected[i] * selected[j];
     }
   }
+  
+  console.log("Solved portfolio with classical approach:");
+  console.log("Selected assets:", symbols.filter((_, i) => selected[i] === 1));
+  console.log("Total cost:", totalCost);
+  console.log("Expected return:", expectedReturn);
   
   return {
     selectedAssets: symbols.filter((_, i) => selected[i] === 1),

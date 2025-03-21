@@ -1,28 +1,22 @@
 
-# project_id is required for all functions
+# Supabase Edge Function Config
+
 project_id = "tfmlretexydslgowlkid"
 
-[functions.fetch-market-data]
+[functions.fetch-crypto-prices]
 verify_jwt = false
-
-[functions.grok3-response]
-verify_jwt = false
-
-[functions.check-api-keys]
-verify_jwt = false
-no_hooks = true
-
-[functions.real-crypto-data]
-verify_jwt = false
-no_hooks = true
-
-[functions.market-data-collector]
-verify_jwt = false
-no_hooks = true
 
 [functions.portfolio-decision]
 verify_jwt = false
 
-[functions.agent-communication]
+[functions.crypto-price-data]
 verify_jwt = false
 
+[functions.market-data-collector]
+verify_jwt = false
+
+[functions.fetch-market-data]
+verify_jwt = false
+
+[functions.quantum-portfolio]
+verify_jwt = false
