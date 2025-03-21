@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { LLMModelsList } from "./LLMModelsList"; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,16 @@ import { APIManager } from "@/components/apimanager/APIManager";
 
 export const LLMModelsTab = () => {
   const [activeTab, setActiveTab] = useState("llm_models");
+  
+  // Check if we should show the API Keys tab directly
+  useEffect(() => {
+    const savedTab = localStorage.getItem('current-api-tab');
+    if (savedTab === 'apimanager') {
+      setActiveTab('api_keys');
+      // Clear the stored tab after using it
+      localStorage.removeItem('current-api-tab');
+    }
+  }, []);
 
   return (
     <div className="space-y-6">

@@ -85,6 +85,8 @@ const AdminPanel = () => {
   const navigateToDashboard = () => {
     // Set flag for navigation tracking
     localStorage.setItem('fromAdminPage', 'true');
+    // Store current API tab state to ensure consistency
+    localStorage.setItem('current-api-tab', 'apimanager');
     navigate('/dashboard');
   };
 

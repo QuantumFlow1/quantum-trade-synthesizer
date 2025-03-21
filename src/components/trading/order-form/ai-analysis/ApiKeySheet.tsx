@@ -17,7 +17,9 @@ export const ApiKeySheet = ({
   apiKeyStatus,
 }: ApiKeySheetProps) => {
   const navigateToAdminPanel = () => {
-    window.location.href = '/admin/api-keys';
+    // Set flag to open API Keys tab directly when redirected
+    localStorage.setItem('current-api-tab', 'apimanager');
+    window.location.href = '/admin';
   };
 
   return (
@@ -51,7 +53,7 @@ export const ApiKeySheet = ({
         
         <SheetFooter>
           <Button onClick={onClose} variant="outline">Annuleren</Button>
-          <Button onClick={navigateToAdminPanel}>Naar Admin Paneel</Button>
+          <Button onClick={navigateToAdminPanel}>Naar API Manager</Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
