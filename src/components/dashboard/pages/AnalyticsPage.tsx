@@ -6,6 +6,7 @@ import { PortfolioManager } from '@/components/trading/PortfolioManager';
 import { AIMarketAnalysis } from '@/components/market/AIMarketAnalysis';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MarketData } from '@/components/market/types';
+import { QuantumPortfolioDisplay } from '@/components/market/ai-analysis/QuantumPortfolioDisplay';
 
 export const AnalyticsPage = () => {
   const [activeTab, setActiveTab] = useState('market');
@@ -60,6 +61,8 @@ export const AnalyticsPage = () => {
               <AIMarketAnalysis marketData={marketData} />
             </CardContent>
           </Card>
+          
+          <QuantumPortfolioDisplay />
         </TabsContent>
         
         <TabsContent value="agents" className="space-y-6">
@@ -108,4 +111,4 @@ export const AnalyticsPage = () => {
       </Tabs>
     </div>
   );
-};
+}

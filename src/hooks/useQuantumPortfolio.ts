@@ -45,9 +45,9 @@ export function useQuantumPortfolio({
   const { toast } = useToast();
   const [isOptimizing, setIsOptimizing] = useState(false);
   
-  // Fetch crypto prices using our optimized hook
+  // Fetch crypto prices using our optimized hook with priority set to accuracy
   const { data: cryptoPrices, isLoading: pricesLoading, error: pricesError } = 
-    useCryptoPrices({ symbols, priority: 'accuracy' });
+    useCryptoPrices({ symbols, priority: 'accuracy', refetchInterval: 30000 });
   
   // Format crypto data for quantum optimization
   const formatAssetsForOptimization = (prices: CryptoPrice[]): PortfolioAsset[] => {
