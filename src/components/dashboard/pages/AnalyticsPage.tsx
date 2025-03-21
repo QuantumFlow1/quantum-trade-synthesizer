@@ -1,14 +1,49 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, LineChart, Brain, Atom, BookOpen } from 'lucide-react';
+import { BarChart, LineChart, Brain, Atom, BookOpen, TrendingUp, Briefcase, AreaChart } from 'lucide-react';
 import { AIMarketAnalysis } from '@/components/market/AIMarketAnalysis';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MarketData } from '@/components/market/types';
 import { QuantumPortfolioDisplay } from '@/components/market/ai-analysis/QuantumPortfolioDisplay';
+import { Agent } from '@/types/agent';
+import { otherAgent1 } from '@/components/trading/portfolio/data/otherAgent1';
+import { useAgents } from '@/hooks/use-agents';
 
 export const AnalyticsPage = () => {
   const [activeTab, setActiveTab] = useState('market');
+  const { agents } = useAgents();
+  
+  // Find specific agents by type and name
+  const valueInvestor = otherAgent1;
+  
+  // Find financial advisor and portfolio optimizer from available agents
+  const financialAdvisor = agents.find(agent => 
+    agent.type === 'advisor' && agent.name.toLowerCase().includes('advisor')) || {
+    id: "financial-advisor",
+    name: "Financial Advisor",
+    status: "active",
+    type: "advisor",
+    description: "Investment advice and financial planning specialist",
+    performance: {
+      successRate: 89.2,
+      tasksCompleted: 728
+    }
+  };
+  
+  const portfolioOptimizer = agents.find(agent => 
+    agent.name.toLowerCase().includes('optimizer') || 
+    agent.name.toLowerCase().includes('portfolio')) || {
+    id: "portfolio-optimizer",
+    name: "Portfolio Optimizer",
+    status: "active",
+    type: "portfolio_manager",
+    description: "Balances portfolio risk and optimizes asset allocation",
+    performance: {
+      successRate: 92.1,
+      tasksCompleted: 531
+    }
+  };
   
   // Sample market data for demonstration
   const marketData: MarketData = {
@@ -67,6 +102,36 @@ export const AnalyticsPage = () => {
               <CardTitle>Traditional Strategy Analysis</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="grid grid-cols-1 gap-6 mb-6">
+                <Card className="bg-muted/40 border border-primary/20">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 text-primary" />
+                      AI Advisor Insights
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <AgentInsightCard 
+                        agent={valueInvestor}
+                        icon={<AreaChart className="h-5 w-5 text-emerald-500" />}
+                        insight="Current market conditions suggest focusing on assets with strong fundamentals and cash flow. Consider a value-based approach to current volatility."
+                      />
+                      <AgentInsightCard 
+                        agent={financialAdvisor}
+                        icon={<TrendingUp className="h-5 w-5 text-blue-500" />}
+                        insight="Portfolio diversification across asset classes is recommended. Monitor market correlation patterns to minimize risk exposure."
+                      />
+                      <AgentInsightCard 
+                        agent={portfolioOptimizer}
+                        icon={<BarChart className="h-5 w-5 text-purple-500" />}
+                        insight="Optimal allocation suggests 60% blue-chip assets, 30% growth potential, and 10% hedge positions based on current conditions."
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
                   <CardHeader className="p-4">
@@ -139,3 +204,39 @@ export const AnalyticsPage = () => {
     </div>
   );
 }
+
+// Agent Insight Card Component
+interface AgentInsightCardProps {
+  agent: any;
+  icon: React.ReactNode;
+  insight: string;
+}
+
+const AgentInsightCard = ({ agent, icon, insight }: AgentInsightCardProps) => {
+  return (
+    <Card className="border border-primary/10">
+      <CardHeader className="p-3 pb-0">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            {icon}
+            <h4 className="font-medium text-sm">{agent.name}</h4>
+          </div>
+          <div className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full">
+            {agent.specialization || agent.type}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-3 pt-2">
+        <p className="text-xs text-muted-foreground">{insight}</p>
+        <div className="flex items-center justify-between mt-2">
+          <div className="text-xs text-muted-foreground">
+            Confidence: {agent.confidence || (agent.performance?.successRate ?? 0)}%
+          </div>
+          <div className="bg-green-500/10 text-green-600 text-xs px-2 py-0.5 rounded-full">
+            Active
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
