@@ -54,7 +54,9 @@ export function useQuantumPortfolio({
     return prices.map(crypto => ({
       symbol: crypto.symbol,
       price: crypto.price,
-      expectedReturn: crypto.change24h / 100, // Convert percentage to decimal
+      // Use absolute value to ensure expected returns are positive by default,
+      // or use a minimum positive value if change24h is negative
+      expectedReturn: Math.max(Math.abs(crypto.change24h) / 100, 0.01), 
     }));
   };
   
@@ -121,14 +123,22 @@ export function useQuantumPortfolio({
         throw new Error("Invalid solution structure returned from optimization");
       }
       
+      // Calculate total cost based on selected assets
+      const totalCost = solution.selectedAssets.reduce((sum, symbol) => {
+        const asset = assets.find(a => a.symbol === symbol);
+        return sum + (asset ? asset.price : 0);
+      }, 0);
+      
       // Compute allocations and quantities for selected assets
-      const portfolio = assets.map((asset, index) => ({
-        ...asset,
-        allocation: solution.binaryVector[index] === 1 ? 
-          (asset.price / solution.totalCost) * solution.totalCost : 0,
-        quantity: solution.binaryVector[index] === 1 ? 
-          1 : 0 // We're using binary decisions, so quantity is either 0 or 1
-      })).filter(asset => asset.allocation > 0);
+      const portfolio = assets.map(asset => {
+        const isSelected = solution.selectedAssets.includes(asset.symbol);
+        const allocation = isSelected ? (asset.price / totalCost) * 100 : 0;
+        return {
+          ...asset,
+          allocation: allocation,
+          quantity: isSelected ? 1 : 0 // We're using binary decisions, so quantity is either 0 or 1
+        };
+      }).filter(asset => asset.allocation > 0);
       
       console.log("Optimized portfolio:", portfolio);
       
@@ -138,7 +148,7 @@ export function useQuantumPortfolio({
         qubo,
         metrics: {
           expectedReturn: solution.expectedReturn,
-          totalCost: solution.totalCost,
+          totalCost: totalCost,
           objectiveValue: solution.objectiveValue
         }
       };

@@ -175,7 +175,8 @@ export function solveQUBOClassical(qubo: QUBOMatrix, budget: number, assets: Ass
   const valueRatios = returns.map((ret, i) => ({
     index: i,
     ratio: ret / prices[i],
-    price: prices[i]
+    price: prices[i],
+    symbol: symbols[i]
   }));
   
   // Sort by return-to-price ratio in descending order
@@ -185,12 +186,14 @@ export function solveQUBOClassical(qubo: QUBOMatrix, budget: number, assets: Ass
   const selected = new Array(n).fill(0);
   let totalCost = 0;
   let expectedReturn = 0;
+  const selectedAssets: string[] = [];
   
   for (const item of valueRatios) {
     if (totalCost + item.price <= budget) {
       selected[item.index] = 1;
       totalCost += item.price;
       expectedReturn += returns[item.index];
+      selectedAssets.push(item.symbol);
     }
   }
   
@@ -203,12 +206,12 @@ export function solveQUBOClassical(qubo: QUBOMatrix, budget: number, assets: Ass
   }
   
   console.log("Solved portfolio with classical approach:");
-  console.log("Selected assets:", symbols.filter((_, i) => selected[i] === 1));
+  console.log("Selected assets:", selectedAssets);
   console.log("Total cost:", totalCost);
   console.log("Expected return:", expectedReturn);
   
   return {
-    selectedAssets: symbols.filter((_, i) => selected[i] === 1),
+    selectedAssets,
     binaryVector: selected,
     objectiveValue,
     totalCost,
