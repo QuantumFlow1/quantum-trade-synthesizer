@@ -1,185 +1,253 @@
 
-import React, { useState } from 'react';
-import { useQuantumPortfolio } from '@/hooks/useQuantumPortfolio';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { PortfolioOptimizationResults } from './PortfolioOptimizationResults';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
+import { RotateCw, AlertCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-interface QuantumPortfolioOptimizerProps {
-  defaultBudget?: number;
-  defaultSymbols?: string[];
-}
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-export const QuantumPortfolioOptimizer: React.FC<QuantumPortfolioOptimizerProps> = ({
-  defaultBudget = 100000,
-  defaultSymbols = ['BTC', 'ETH', 'BNB', 'SOL', 'XRP']
-}) => {
-  const [budget, setBudget] = useState(defaultBudget);
-  const [returnWeight, setReturnWeight] = useState(0.5);
-  const [budgetWeight, setBudgetWeight] = useState(0.2);
-  const [diversificationWeight, setDiversificationWeight] = useState(0.3);
-
-  // Calculate combined weight sum to ensure it equals 1
-  const weightSum = returnWeight + budgetWeight + diversificationWeight;
-  const weightsValid = Math.abs(weightSum - 1) < 0.01;
-
-  const {
-    cryptoPrices,
-    pricesLoading,
-    optimizationResults,
-    isOptimizing,
-    optimizePortfolio,
-    reoptimize
-  } = useQuantumPortfolio({
-    budget,
-    weights: {
-      returnWeight,
-      budgetWeight,
-      diversificationWeight
-    },
-    symbols: defaultSymbols
+export function QuantumPortfolioOptimizer() {
+  // Portfolio weights
+  const [weights, setWeights] = useState({
+    returnWeight: 1,
+    budgetWeight: 2,
+    diversificationWeight: 0.5
   });
 
-  const handleOptimize = async () => {
-    await optimizePortfolio(budget, {
-      returnWeight,
-      budgetWeight,
-      diversificationWeight
-    });
+  // Budget
+  const [budget, setBudget] = useState(100000);
+  
+  // Fetch portfolio data
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ['portfolio-optimization', weights, budget],
+    queryFn: async () => {
+      const assets = [
+        { symbol: 'BTC', price: 83924, expectedReturn: 0.15 },
+        { symbol: 'ETH', price: 1964.32, expectedReturn: 0.09 },
+        { symbol: 'XRP', price: 2.40, expectedReturn: 0.08 },
+        { symbol: 'BNB', price: 635.18, expectedReturn: 0.10 },
+        { symbol: 'SOL', price: 126.35, expectedReturn: 0.12 }
+      ];
+      
+      const { data, error } = await supabase.functions.invoke('quantum-portfolio', {
+        body: { assets, budget, weights }
+      });
+      
+      if (error) throw new Error(error.message);
+      if (!data.success) throw new Error(data.error || 'Unknown error occurred');
+      
+      // Process portfolio allocation data
+      const portfolio = data.solution.selectedAssets.map((symbol: string, idx: number) => {
+        const asset = assets.find(a => a.symbol === symbol);
+        const quantity = data.solution.binaryVector[idx];
+        return {
+          symbol,
+          allocation: (asset?.price || 0) / data.solution.totalCost * 100,
+          quantity,
+          price: asset?.price || 0,
+          expectedReturn: asset?.expectedReturn || 0
+        };
+      });
+      
+      return {
+        portfolio,
+        solution: data.solution,
+        qubo: data.qubo,
+        metrics: {
+          totalCost: data.solution.totalCost,
+          expectedReturn: data.solution.expectedReturn,
+          budgetUtilization: (data.solution.totalCost / budget) * 100
+        }
+      };
+    }
+  });
+  
+  // Handle refetch button click
+  const handleRefetch = () => {
+    refetch();
   };
-
+  
+  // Update weights
+  const updateWeight = (weightType: keyof typeof weights, value: number[]) => {
+    setWeights(prev => ({
+      ...prev,
+      [weightType]: value[0]
+    }));
+  };
+  
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex justify-between items-center">
-            <span>Quantum Portfolio Optimizer</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={reoptimize} 
-              disabled={isOptimizing || pricesLoading}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh Data
-            </Button>
-          </CardTitle>
+          <CardTitle>Portfolio Optimization Parameters</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium block mb-2">Investment Budget ($)</label>
-                <Input
-                  type="number"
-                  value={budget}
-                  onChange={(e) => setBudget(Number(e.target.value))}
-                  min={1000}
-                  max={10000000}
-                  disabled={isOptimizing}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium block mb-2">
-                  Return Weight: {returnWeight.toFixed(2)}
-                </label>
-                <Slider
-                  value={[returnWeight]}
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  onValueChange={(values) => setReturnWeight(values[0])}
-                  disabled={isOptimizing}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium block mb-2">
-                  Budget Weight: {budgetWeight.toFixed(2)}
-                </label>
-                <Slider
-                  value={[budgetWeight]}
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  onValueChange={(values) => setBudgetWeight(values[0])}
-                  disabled={isOptimizing}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-medium block mb-2">
-                  Diversification Weight: {diversificationWeight.toFixed(2)}
-                </label>
-                <Slider
-                  value={[diversificationWeight]}
-                  min={0}
-                  max={1}
-                  step={0.05}
-                  onValueChange={(values) => setDiversificationWeight(values[0])}
-                  disabled={isOptimizing}
-                />
-              </div>
-
-              {!weightsValid && (
-                <div className="text-red-500 text-sm">
-                  Weights must sum to 1. Current sum: {weightSum.toFixed(2)}
-                </div>
-              )}
-
-              <Button 
-                onClick={handleOptimize} 
-                disabled={isOptimizing || pricesLoading || !weightsValid}
-                className="w-full"
-              >
-                {isOptimizing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Optimizing...
-                  </>
-                ) : (
-                  'Optimize Portfolio'
-                )}
-              </Button>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium mb-2">Available Assets</h3>
-              {pricesLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Return Weight: {weights.returnWeight}</Label>
+            <Slider 
+              value={[weights.returnWeight]} 
+              min={0.1} 
+              max={3} 
+              step={0.1} 
+              onValueChange={(value) => updateWeight('returnWeight', value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Budget Weight: {weights.budgetWeight}</Label>
+            <Slider 
+              value={[weights.budgetWeight]} 
+              min={0.1} 
+              max={3} 
+              step={0.1} 
+              onValueChange={(value) => updateWeight('budgetWeight', value)}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Diversification Weight: {weights.diversificationWeight}</Label>
+            <Slider 
+              value={[weights.diversificationWeight]} 
+              min={0.1} 
+              max={3} 
+              step={0.1} 
+              onValueChange={(value) => updateWeight('diversificationWeight', value)}
+            />
+          </div>
+          
+          <div className="pt-4">
+            <Button 
+              onClick={() => handleRefetch()} 
+              className="w-full" 
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <RotateCw className="mr-2 h-4 w-4 animate-spin" />
+                  Optimizing...
+                </>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
-                  {cryptoPrices?.map((crypto) => (
-                    <Card key={crypto.symbol} className="p-3">
-                      <div className="font-medium">{crypto.symbol}</div>
-                      <div className="text-sm text-muted-foreground">
-                        ${crypto.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                      </div>
-                      <div className={`text-xs ${crypto.change24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {crypto.change24h >= 0 ? '+' : ''}{crypto.change24h.toFixed(2)}% (24h)
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                <>
+                  <RotateCw className="mr-2 h-4 w-4" />
+                  Optimize Portfolio
+                </>
               )}
-            </div>
+            </Button>
           </div>
         </CardContent>
       </Card>
-
-      {optimizationResults && (
-        <PortfolioOptimizationResults 
-          portfolio={optimizationResults.portfolio}
-          metrics={optimizationResults.metrics}
-          budget={budget}
-        />
+      
+      {isError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error?.message || 'Failed to optimize portfolio'}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {data && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Optimal Portfolio</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={data.portfolio}
+                    dataKey="allocation"
+                    nameKey="symbol"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    label={({ symbol, allocation }) => `${symbol} (${allocation.toFixed(2)}%)`}
+                  >
+                    {data.portfolio.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: any) => [`${Number(value).toFixed(2)}%`, 'Allocation']}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              
+              <div className="mt-4 space-y-2">
+                {data.portfolio.map((asset: any) => (
+                  <div key={asset.symbol} className="flex justify-between">
+                    <span>{asset.symbol}</span>
+                    <span>${asset.price.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Portfolio Metrics</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium">Total Cost</h3>
+                  <p className="text-2xl font-bold">${data.metrics.totalCost.toLocaleString()}</p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium">Expected Return</h3>
+                  <p className={`text-2xl font-bold ${data.metrics.expectedReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(data.metrics.expectedReturn * 100).toFixed(2)}%
+                  </p>
+                </div>
+                
+                <div>
+                  <h3 className="text-sm font-medium">Budget Utilization</h3>
+                  <p className="text-2xl font-bold">{data.metrics.budgetUtilization.toFixed(2)}%</p>
+                </div>
+                
+                <div className="pt-2">
+                  <h3 className="text-sm font-medium mb-2">Asset Allocation</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={data.portfolio}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="symbol" />
+                      <YAxis tickFormatter={(value) => `${value}%`} />
+                      <Tooltip formatter={(value: any) => [`${Number(value).toFixed(2)}%`, 'Allocation']} />
+                      <Bar dataKey="allocation" fill="#8884d8">
+                        {data.portfolio.map((entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
-};
+}

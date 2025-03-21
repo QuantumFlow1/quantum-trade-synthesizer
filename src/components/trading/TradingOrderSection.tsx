@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { AssetDetailCard } from "./minimal/components/AssetDetailCard";
 import { MarketSummary } from "./minimal/components/MarketSummary";
 import { MarketMetrics } from "./minimal/components/trading-view/MarketMetrics";
-import { StockbotChat } from "./minimal/components/stockbot/StockbotChat";
 
 interface TradingOrderSectionProps {
   apiStatus: ApiStatus;
@@ -67,15 +66,10 @@ export function TradingOrderSection({
           <CardTitle>Trading Advisor</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="assistant">
-            <TabsList className="grid grid-cols-2 mb-4">
-              <TabsTrigger value="assistant">AI Assistant</TabsTrigger>
+          <Tabs defaultValue="summary">
+            <TabsList className="grid grid-cols-1 mb-4">
               <TabsTrigger value="summary">Market Summary</TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="assistant" className="mt-0">
-              <StockbotChat />
-            </TabsContent>
             
             <TabsContent value="summary" className="mt-0">
               <MarketSummary />
