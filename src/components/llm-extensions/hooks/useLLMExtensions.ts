@@ -15,10 +15,15 @@ export function useLLMExtensions() {
   const { enabledLLMs, setEnabledLLMs, activeTab, setActiveTab } = useExtensionsState();
   
   // Get connection status management
-  const { connectionStatus, checkConnectionStatusForLLM } = useConnectionStatus();
+  const { connectionStatus, checkConnectionStatusForLLM, setConnectionStatus } = useConnectionStatus();
   
   // Get API key dialog management
   const { isApiKeyDialogOpen, currentLLM, configureApiKey, setIsApiKeyDialogOpen } = useApiKeyDialog();
+  
+  // Ensure connection status accurately reflects the enabled state
+  const checkConnectionWithEnabledState = useCallback((llm: string) => {
+    return checkConnectionStatusForLLM(llm, enabledLLMs[llm]);
+  }, [enabledLLMs, checkConnectionStatusForLLM]);
   
   // Get LLM toggle functionality
   const { toggleLLM } = useExtensionsToggle(
@@ -26,20 +31,33 @@ export function useLLMExtensions() {
     setEnabledLLMs, 
     activeTab, 
     setActiveTab, 
-    checkConnectionStatusForLLM
+    checkConnectionWithEnabledState
   );
   
+  // Update connection statuses for disabled LLMs
+  const updateConnectionStatusForDisabledLLMs = useCallback(() => {
+    Object.entries(enabledLLMs).forEach(([llm, enabled]) => {
+      if (!enabled && connectionStatus[llm] === 'connected') {
+        console.log(`${llm} is disabled but shows as connected. Updating status.`);
+        setConnectionStatus(prev => ({ ...prev, [llm]: 'disconnected' }));
+      }
+    });
+  }, [enabledLLMs, connectionStatus, setConnectionStatus]);
+  
+  // Call this once on hook initialization
+  updateConnectionStatusForDisabledLLMs();
+  
   // Setup API key event listeners
-  useApiKeyEvents(enabledLLMs, checkConnectionStatusForLLM);
+  useApiKeyEvents(enabledLLMs, checkConnectionWithEnabledState);
   
   // Close API key dialog and recheck connection
   const closeApiKeyDialog = useCallback(() => {
     setIsApiKeyDialogOpen(false);
     // Re-check connection after closing dialog
     if (currentLLM) {
-      checkConnectionStatusForLLM(currentLLM);
+      checkConnectionWithEnabledState(currentLLM);
     }
-  }, [currentLLM, checkConnectionStatusForLLM, setIsApiKeyDialogOpen]);
+  }, [currentLLM, checkConnectionWithEnabledState, setIsApiKeyDialogOpen]);
   
   return {
     activeTab,
@@ -47,7 +65,7 @@ export function useLLMExtensions() {
     enabledLLMs,
     connectionStatus,
     toggleLLM,
-    checkConnectionStatusForLLM,
+    checkConnectionStatusForLLM: checkConnectionWithEnabledState,
     configureApiKey,
     isApiKeyDialogOpen,
     closeApiKeyDialog,

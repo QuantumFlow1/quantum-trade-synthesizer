@@ -34,6 +34,7 @@ export function useExtensionsToggle(
         duration: 3000,
       });
     } else {
+      // When disabling, update the connection status as well
       toast({
         title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} Disabled`,
         description: `${llm.charAt(0).toUpperCase() + llm.slice(1)} has been disabled`,

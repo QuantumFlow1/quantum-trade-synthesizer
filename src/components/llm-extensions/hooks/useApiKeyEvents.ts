@@ -21,8 +21,10 @@ export function useApiKeyEvents(
         deepseek: 'deepseek'
       };
       
-      if (llmMap[e.detail.keyType]) {
-        checkConnectionStatusForLLM(llmMap[e.detail.keyType]);
+      const llm = llmMap[e.detail.keyType];
+      if (llm && enabledLLMs[llm]) {
+        // Only check connections for enabled LLMs
+        checkConnectionStatusForLLM(llm);
       }
     } else {
       // If no specific type, check all enabled LLMs

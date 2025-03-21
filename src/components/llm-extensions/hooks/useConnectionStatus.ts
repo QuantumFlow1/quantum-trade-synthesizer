@@ -18,8 +18,16 @@ export function useConnectionStatus() {
     ollama: 'checking'
   });
 
-  const checkConnectionStatusForLLM = useCallback(async (llm: string) => {
+  const checkConnectionStatusForLLM = useCallback(async (llm: string, isEnabled?: boolean) => {
     console.log(`Checking connection status for ${llm}...`);
+    
+    // If explicitly told the LLM is disabled, mark it as disconnected
+    if (isEnabled === false) {
+      console.log(`${llm} is disabled, setting connection status to disconnected`);
+      setConnectionStatus(prev => ({ ...prev, [llm]: 'disconnected' }));
+      return false;
+    }
+    
     setConnectionStatus(prev => ({ ...prev, [llm]: 'checking' }));
     
     // Add some delay to show the checking state
