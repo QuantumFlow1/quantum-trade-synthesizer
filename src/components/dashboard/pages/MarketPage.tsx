@@ -9,6 +9,7 @@ import { EnhancedMarketTab } from "./market/EnhancedMarketTab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const MarketPage = () => {
   const [activeTab, setActiveTab] = useState("enhanced");
@@ -36,7 +37,7 @@ export const MarketPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 h-full overflow-hidden">
       <MarketHeader isLoading={isLoading} onRefresh={handleRefresh} />
 
       <MarketTabs activeTab={activeTab} onTabChange={setActiveTab} />
@@ -47,20 +48,28 @@ export const MarketPage = () => {
 
       {activeTab === "tokens" && (
         walletConnected ? (
-          <div>
-            <p className="text-center text-gray-500 py-10">
-              Coming soon: Your token balances will appear here
-            </p>
-          </div>
+          <ScrollArea className="h-[calc(100vh-14rem)]">
+            <div>
+              <p className="text-center text-gray-500 py-10">
+                Coming soon: Your token balances will appear here
+              </p>
+            </div>
+          </ScrollArea>
         ) : (
-          <WalletConnection 
-            onConnect={handleConnectWallet}
-            onDisconnect={handleDisconnectWallet}  
-          />
+          <ScrollArea className="h-[calc(100vh-14rem)]">
+            <WalletConnection 
+              onConnect={handleConnectWallet}
+              onDisconnect={handleDisconnectWallet}  
+            />
+          </ScrollArea>
         )
       )}
 
-      {activeTab === "testnet" && <TestnetTokenTab />}
+      {activeTab === "testnet" && (
+        <ScrollArea className="h-[calc(100vh-14rem)]">
+          <TestnetTokenTab />
+        </ScrollArea>
+      )}
     </div>
   );
 };

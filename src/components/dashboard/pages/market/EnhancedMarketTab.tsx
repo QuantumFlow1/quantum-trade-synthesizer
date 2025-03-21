@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export const EnhancedMarketTab: React.FC = () => {
   const {
@@ -60,36 +61,40 @@ export const EnhancedMarketTab: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <MarketTabList activeTab={activeTab} />
 
-        <TabsContent value="market" className="mt-6">
+        <TabsContent value="market" className="mt-6 overflow-hidden">
           <EnhancedMarketPage />
         </TabsContent>
 
         <TabsContent value="positions" className="mt-6">
-          <PositionsTab 
-            positions={positions || []}
-            isLoading={isLoading}
-            showCharts={showCharts}
-            toggleChartsVisibility={toggleChartsVisibility}
-          />
+          <ScrollArea className="h-[calc(100vh-14rem)]">
+            <PositionsTab 
+              positions={positions || []}
+              isLoading={isLoading}
+              showCharts={showCharts}
+              toggleChartsVisibility={toggleChartsVisibility}
+            />
+          </ScrollArea>
         </TabsContent>
 
         <TabsContent value="transactions" className="mt-6">
-          <TransactionsTab 
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            typeFilter={typeFilter}
-            setTypeFilter={setTypeFilter}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onNextPage={handleNextPage}
-            onPreviousPage={handlePreviousPage}
-          />
+          <ScrollArea className="h-[calc(100vh-14rem)]">
+            <TransactionsTab 
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              typeFilter={typeFilter}
+              setTypeFilter={setTypeFilter}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onNextPage={handleNextPage}
+              onPreviousPage={handlePreviousPage}
+            />
+          </ScrollArea>
         </TabsContent>
       </Tabs>
     </div>
