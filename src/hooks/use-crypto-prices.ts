@@ -15,31 +15,38 @@ export interface CryptoPrice {
   low24h?: number;
   lastUpdated: string;
   thumbnail?: string;
+  source?: string;
 }
 
 interface UseCryptoPricesOptions {
   symbols?: string[];
   refetchInterval?: number;
   enabled?: boolean;
+  priority?: 'price' | 'accuracy';
 }
 
 export function useCryptoPrices({
   symbols = ['BTC', 'ETH', 'BNB', 'SOL', 'XRP'],
   refetchInterval = 60000, // Default: 1 minute
-  enabled = true
+  enabled = true,
+  priority = 'accuracy'
 }: UseCryptoPricesOptions = {}) {
   const { toast } = useToast();
   const [retryCount, setRetryCount] = useState(0);
   const maxRetries = 3;
 
   return useQuery({
-    queryKey: ['cryptoPrices', ...symbols],
+    queryKey: ['cryptoPrices', ...symbols, priority],
     queryFn: async () => {
       try {
         console.log(`Fetching crypto prices for: ${symbols.join(', ')}`);
+        console.log(`Data priority: ${priority}`);
 
         const { data, error } = await supabase.functions.invoke('fetch-crypto-prices', {
-          body: { symbols }
+          body: { 
+            symbols,
+            priority
+          }
         });
 
         if (error) {
@@ -53,6 +60,7 @@ export function useCryptoPrices({
         }
 
         console.log(`Successfully received price data from ${data.source} for ${data.data.length} cryptocurrencies`);
+        console.log(`First price (${data.data[0].symbol}): $${data.data[0].price}`);
         setRetryCount(0); // Reset retry count on success
 
         // Show toast for simulated data
@@ -94,5 +102,6 @@ export function useCryptoPrices({
     enabled,
     retry: maxRetries,
     refetchOnWindowFocus: enabled,
+    staleTime: 30000, // Consider data stale after 30 seconds
   });
 }

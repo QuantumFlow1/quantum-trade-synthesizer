@@ -38,17 +38,74 @@ serve(async (req) => {
     // Extract requested symbols or use defaults
     const requestedSymbols = params.symbols || ['BTC', 'ETH', 'BNB', 'SOL', 'XRP'];
     const limit = params.limit || 5;
+    const priority = params.priority || 'accuracy'; // 'price' or 'accuracy'
     
-    console.log(`Fetching data for symbols: ${requestedSymbols.join(', ')}`);
+    console.log(`Fetching data for symbols: ${requestedSymbols.join(', ')} with priority: ${priority}`);
     
     // Try multiple data sources in sequence with timeout protection
-    const cryptoData = await fetchWithFallback(requestedSymbols, limit);
+    // If priority is 'price', we'll try Binance first, otherwise CoinGecko
+    let sourcesToTry = ['coingecko', 'binance', 'simulated'];
+    if (priority === 'price') {
+      sourcesToTry = ['binance', 'coingecko', 'simulated'];
+    }
     
-    console.log(`Successfully fetched data for ${cryptoData.data.length} cryptocurrencies from ${cryptoData.source}`);
+    let cryptoData = null;
+    let successSource = null;
+    
+    for (const source of sourcesToTry) {
+      try {
+        console.log(`Attempting to fetch from ${source}...`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        let data;
+        if (source === 'coingecko') {
+          data = await fetchFromCoinGecko(requestedSymbols, controller.signal);
+        } else if (source === 'binance') {
+          data = await fetchFromBinance(requestedSymbols, controller.signal);
+        } else if (source === 'simulated') {
+          data = generateSimulatedData(requestedSymbols);
+        }
+        
+        clearTimeout(timeoutId);
+        
+        if (data && data.length > 0) {
+          console.log(`Successfully fetched from ${source}`);
+          // Log the first crypto price for debugging
+          if (data[0]) {
+            console.log(`First crypto (${data[0].symbol}) price: $${data[0].price}`);
+          }
+          cryptoData = data;
+          successSource = source;
+          break;
+        }
+      } catch (error) {
+        console.warn(`${source} fetch failed:`, error.message);
+        // Continue to next source
+      }
+    }
+    
+    if (!cryptoData) {
+      console.error("All data sources failed");
+      throw new Error("Failed to fetch data from any source");
+    }
+    
+    // Add source information to each data item
+    cryptoData = cryptoData.map(item => ({
+      ...item,
+      source: successSource
+    }));
+    
+    console.log(`Successfully fetched data for ${cryptoData.length} cryptocurrencies from ${successSource}`);
     console.log(`Memory usage after fetch: ${JSON.stringify(Deno.memoryUsage())}`);
     
     return new Response(
-      JSON.stringify(cryptoData),
+      JSON.stringify({
+        success: true,
+        data: cryptoData,
+        source: successSource,
+        timestamp: new Date().toISOString()
+      }),
       { 
         headers: { 
           ...corsHeaders,
@@ -82,66 +139,6 @@ serve(async (req) => {
     console.log(`fetch-crypto-prices function completed at ${new Date().toISOString()}`);
   }
 });
-
-/**
- * Try multiple data sources with fallback capability
- */
-async function fetchWithFallback(symbols: string[], limit: number = 5): Promise<CryptoResponse> {
-  // Try CoinGecko first
-  try {
-    console.log("Attempting to fetch from CoinGecko API");
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-    
-    const data = await fetchFromCoinGecko(symbols, controller.signal);
-    clearTimeout(timeoutId);
-    
-    if (data && data.length > 0) {
-      console.log("Successfully fetched from CoinGecko");
-      return {
-        success: true,
-        data: data,
-        source: "coingecko",
-        timestamp: new Date().toISOString()
-      };
-    }
-  } catch (error) {
-    console.warn("CoinGecko fetch failed:", error.message);
-    // Continue to next source on failure
-  }
-  
-  // Try Binance API as fallback
-  try {
-    console.log("Attempting to fetch from Binance API");
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-    
-    const data = await fetchFromBinance(symbols, controller.signal);
-    clearTimeout(timeoutId);
-    
-    if (data && data.length > 0) {
-      console.log("Successfully fetched from Binance");
-      return {
-        success: true,
-        data: data,
-        source: "binance",
-        timestamp: new Date().toISOString()
-      };
-    }
-  } catch (error) {
-    console.warn("Binance fetch failed:", error.message);
-    // Continue to next source on failure
-  }
-  
-  // Last resort: generate simulated data
-  console.log("All external APIs failed, generating simulated data");
-  return {
-    success: true,
-    data: generateSimulatedData(symbols),
-    source: "simulated",
-    timestamp: new Date().toISOString()
-  };
-}
 
 /**
  * Fetch data from CoinGecko API
@@ -183,6 +180,11 @@ async function fetchFromCoinGecko(symbols: string[], signal?: AbortSignal): Prom
     }
     
     const rawData = await response.json();
+    
+    // Log the raw price data for the first coin for debugging
+    if (rawData[0]) {
+      console.log(`CoinGecko raw price for ${rawData[0].symbol}: $${rawData[0].current_price}`);
+    }
     
     // Map response to our standard format
     return rawData.map((coin: any) => ({
@@ -226,6 +228,9 @@ async function fetchFromBinance(symbols: string[], signal?: AbortSignal): Promis
         
         const ticker = await response.json();
         
+        // Log the raw price for debugging
+        console.log(`Binance raw price for ${symbol}: $${ticker.lastPrice}`);
+        
         results.push({
           symbol: symbol.toUpperCase(),
           name: getCryptoName(symbol), // Helper function to get full name
@@ -234,8 +239,7 @@ async function fetchFromBinance(symbols: string[], signal?: AbortSignal): Promis
           volume24h: parseFloat(ticker.volume),
           high24h: parseFloat(ticker.highPrice),
           low24h: parseFloat(ticker.lowPrice),
-          lastUpdated: new Date().toISOString(),
-          source: 'binance'
+          lastUpdated: new Date().toISOString()
         });
       } catch (error) {
         console.warn(`Error fetching ${symbol} from Binance:`, error);
@@ -255,24 +259,44 @@ async function fetchFromBinance(symbols: string[], signal?: AbortSignal): Promis
  */
 function generateSimulatedData(symbols: string[]): any[] {
   return symbols.map(symbol => {
-    // Base prices for common cryptos
+    // Get today's date for more accurate simulated prices
+    const today = new Date();
+    const dateString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    // Use the date as a seed for pseudo-random number generation
+    // This ensures that the same date produces the same "random" numbers
+    const dateSeed = dateString.split('-').reduce((sum, part) => sum + parseInt(part, 10), 0);
+    
+    // Use Math.sin to generate an oscillation around base price
+    // Apply a cycle that changes throughout the day
+    const hourCycle = (today.getHours() + today.getMinutes() / 60) / 24 * Math.PI * 2;
+    const dayCycle = (dateSeed % 7) / 7 * Math.PI * 2;
+    
+    // Base prices for common cryptos - use realistic values based on spring 2024
     const basePrices: Record<string, number> = {
-      'BTC': 62500,
-      'ETH': 3450,
-      'BNB': 580,
-      'SOL': 140,
-      'XRP': 0.55,
-      'DOGE': 0.15,
-      'ADA': 0.45,
-      'AVAX': 35,
-      'LINK': 15,
-      'DOT': 7
+      'BTC': 65000 + Math.sin(dayCycle) * 3000, // ~$65k range for BTC
+      'ETH': 3450 + Math.sin(dayCycle + 1) * 150, // ~$3450 range for ETH
+      'BNB': 580 + Math.sin(dayCycle + 2) * 25,  // ~$580 range for BNB
+      'SOL': 140 + Math.sin(dayCycle + 3) * 10,  // ~$140 range for SOL
+      'XRP': 0.55 + Math.sin(dayCycle + 4) * 0.05, // ~$0.55 range for XRP
+      'DOGE': 0.15 + Math.sin(dayCycle + 5) * 0.02, // ~$0.15 range for DOGE
+      'ADA': 0.45 + Math.sin(dayCycle + 6) * 0.04, // ~$0.45 range for ADA
+      'AVAX': 35 + Math.sin(dayCycle + 7) * 3,    // ~$35 range for AVAX
+      'LINK': 15 + Math.sin(dayCycle + 8) * 1.5,  // ~$15 range for LINK
+      'DOT': 7 + Math.sin(dayCycle + 9) * 0.7     // ~$7 range for DOT
     };
     
     const basePrice = basePrices[symbol.toUpperCase()] || 100;
-    const fluctuation = (Math.random() * 0.05) - 0.025; // +/- 2.5%
-    const price = basePrice * (1 + fluctuation);
-    const change24h = fluctuation * 100;
+    
+    // Add hourly fluctuation
+    const hourlyFluctuation = Math.sin(hourCycle) * 0.02; // ±2% hourly fluctuation
+    
+    // Combine for final price
+    const price = basePrice * (1 + hourlyFluctuation);
+    const change24h = hourlyFluctuation * 100; // as percentage
+    
+    // Log the simulated price for debugging
+    console.log(`Simulated price for ${symbol}: $${price.toFixed(2)}`);
     
     return {
       symbol: symbol.toUpperCase(),
@@ -283,8 +307,7 @@ function generateSimulatedData(symbols: string[]): any[] {
       marketCap: parseFloat((price * (Math.random() * 10000000 + 1000000)).toFixed(2)),
       high24h: parseFloat((price * 1.02).toFixed(2)),
       low24h: parseFloat((price * 0.98).toFixed(2)),
-      lastUpdated: new Date().toISOString(),
-      source: 'simulated'
+      lastUpdated: new Date().toISOString()
     };
   });
 }
