@@ -58,6 +58,12 @@ export function useQuantumPortfolio({
     }));
   };
   
+  // Log if we have price data
+  if (cryptoPrices && cryptoPrices.length > 0) {
+    console.log("Crypto prices available for portfolio optimization:", 
+      cryptoPrices.map(c => `${c.symbol}: $${c.price.toFixed(2)}`));
+  }
+  
   // Function to run portfolio optimization
   const optimizePortfolio = async (customBudget?: number, customWeights?: PortfolioWeights) => {
     if (!cryptoPrices || cryptoPrices.length === 0) {
@@ -78,6 +84,17 @@ export function useQuantumPortfolio({
       console.log("Budget:", customBudget || budget);
       console.log("Weights:", customWeights || weights);
       
+      // Validate asset data before sending to edge function
+      assets.forEach(asset => {
+        if (!asset.symbol || typeof asset.price !== 'number' || typeof asset.expectedReturn !== 'number') {
+          throw new Error(`Invalid asset data: ${JSON.stringify(asset)}`);
+        }
+        
+        if (asset.price <= 0) {
+          throw new Error(`Asset price must be positive: ${asset.symbol} has price ${asset.price}`);
+        }
+      });
+      
       const { data, error } = await supabase.functions.invoke('quantum-portfolio', {
         body: { 
           assets,
@@ -93,11 +110,16 @@ export function useQuantumPortfolio({
       
       if (!data || !data.success) {
         console.error("Invalid response from quantum-portfolio function:", data);
-        throw new Error("Failed to optimize portfolio");
+        throw new Error(data?.error || "Failed to optimize portfolio");
       }
       
       // Process results
       const { solution, qubo } = data;
+      
+      // Validate solution
+      if (!solution || !Array.isArray(solution.selectedAssets)) {
+        throw new Error("Invalid solution structure returned from optimization");
+      }
       
       // Compute allocations and quantities for selected assets
       const portfolio = assets.map((asset, index) => ({
@@ -105,7 +127,7 @@ export function useQuantumPortfolio({
         allocation: solution.binaryVector[index] === 1 ? 
           (asset.price / solution.totalCost) * solution.totalCost : 0,
         quantity: solution.binaryVector[index] === 1 ? 
-          solution.totalCost / asset.price : 0
+          1 : 0 // We're using binary decisions, so quantity is either 0 or 1
       })).filter(asset => asset.allocation > 0);
       
       console.log("Optimized portfolio:", portfolio);
@@ -134,11 +156,12 @@ export function useQuantumPortfolio({
   };
   
   // Query to auto-run the optimization when prices are available
-  const { data: optimizationResults, refetch: reoptimize } = useQuery({
+  const { data: optimizationResults, refetch: reoptimize, isError: optimizationError } = useQuery({
     queryKey: ['quantum-portfolio', symbols.join(','), budget, JSON.stringify(weights)],
     queryFn: () => optimizePortfolio(),
     enabled: !pricesLoading && cryptoPrices !== undefined && cryptoPrices.length > 0,
     staleTime: 5 * 60 * 1000, // Consider results stale after 5 minutes
+    retry: 2, // Only retry twice in case of errors
   });
   
   return {
@@ -146,6 +169,7 @@ export function useQuantumPortfolio({
     pricesLoading,
     pricesError,
     optimizationResults,
+    optimizationError,
     isOptimizing,
     optimizePortfolio,
     reoptimize

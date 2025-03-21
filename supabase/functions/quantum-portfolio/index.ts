@@ -72,6 +72,20 @@ serve(async (req) => {
       console.warn(`Portfolio weights don't sum to 1. Current sum: ${weightSum}`);
     }
     
+    // Validate asset data
+    assets.forEach((asset, index) => {
+      if (!asset.symbol || typeof asset.price !== 'number' || typeof asset.expectedReturn !== 'number') {
+        throw new Error(`Invalid asset data at index ${index}: ${JSON.stringify(asset)}`);
+      }
+      
+      if (asset.price <= 0) {
+        throw new Error(`Asset price must be positive: ${asset.symbol} has price ${asset.price}`);
+      }
+      
+      // Log each asset for debugging
+      console.log(`Asset ${index}: Symbol=${asset.symbol}, Price=${asset.price}, ExpectedReturn=${asset.expectedReturn}`);
+    });
+    
     // Generate QUBO matrix
     console.log(`Generating QUBO matrix for ${assets.length} assets with budget $${budget}`);
     const qubo = generateQUBOMatrix({
@@ -143,6 +157,9 @@ function generateQUBOMatrix(params: PortfolioParams): QUBOMatrix {
   // IMPORTANT: Normalize prices by the budget to avoid extreme values in QUBO
   const normalizedPrices = prices.map(p => p / budget);
   
+  // Log normalized prices for debugging
+  console.log("Normalized prices:", normalizedPrices);
+  
   // Populate QUBO matrix
   // 1. Expected Returns component (linear terms on diagonal)
   for (let i = 0; i < n; i++) {
@@ -163,15 +180,35 @@ function generateQUBOMatrix(params: PortfolioParams): QUBOMatrix {
   const constantTerm = budgetWeight; // This is b²/b² = 1 after normalization
   
   // 3. Diversification component using correlation matrix
-  // Normalize the correlation contribution
+  // Scale down the correlation contribution to avoid it dominating
+  const correlationScale = 0.1;
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < n; j++) {
-      Q[i][j] += diversificationWeight * correlationMatrix[i][j] * 0.1;
+      Q[i][j] += diversificationWeight * correlationMatrix[i][j] * correlationScale;
     }
   }
 
-  // Log the QUBO matrix for debugging
-  console.log(`Generated QUBO matrix for ${n} assets with budget $${budget}`);
+  // Check for NaN or Infinity values in the QUBO matrix
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      if (!isFinite(Q[i][j])) {
+        console.error(`QUBO matrix contains NaN or Infinity at position [${i}][${j}]: ${Q[i][j]}`);
+        // Replace with a safe value
+        Q[i][j] = 0;
+      }
+    }
+  }
+
+  // Log a sample of the QUBO matrix for debugging
+  if (n <= 5) {
+    console.log("Full QUBO matrix:");
+    console.log(Q);
+  } else {
+    console.log("QUBO matrix (first 3x3 elements):");
+    for (let i = 0; i < 3; i++) {
+      console.log(Q[i].slice(0, 3));
+    }
+  }
   
   return {
     matrix: Q,
@@ -215,42 +252,61 @@ function solveQUBOClassical(qubo: QUBOMatrix, budget: number, assets: Asset[]): 
   const prices = assets.map(a => a.price);
   const returns = assets.map(a => a.expectedReturn);
   
-  // For demonstration, use a greedy approach based on return-to-price ratio
-  const valueRatios = returns.map((ret, i) => ({
-    index: i,
-    ratio: ret / prices[i],
-    price: prices[i]
-  }));
-  
-  // Sort by return-to-price ratio in descending order
-  valueRatios.sort((a, b) => b.ratio - a.ratio);
-  
-  // Greedily select assets up to budget
-  const selected = new Array(n).fill(0);
-  let totalCost = 0;
-  let expectedReturn = 0;
-  
-  for (const item of valueRatios) {
-    if (totalCost + item.price <= budget) {
-      selected[item.index] = 1;
-      totalCost += item.price;
-      expectedReturn += returns[item.index];
+  try {
+    // For demonstration, use a greedy approach based on return-to-price ratio
+    const valueRatios = returns.map((ret, i) => ({
+      index: i,
+      ratio: ret / prices[i],
+      price: prices[i]
+    }));
+    
+    // Sort by return-to-price ratio in descending order
+    valueRatios.sort((a, b) => b.ratio - a.ratio);
+    
+    // Greedily select assets up to budget
+    const selected = new Array(n).fill(0);
+    let totalCost = 0;
+    let expectedReturn = 0;
+    
+    for (const item of valueRatios) {
+      if (totalCost + item.price <= budget) {
+        selected[item.index] = 1;
+        totalCost += item.price;
+        expectedReturn += returns[item.index];
+      }
     }
-  }
-  
-  // Calculate objective value based on QUBO formulation
-  let objectiveValue = qubo.expectedValue;
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      objectiveValue += qubo.matrix[i][j] * selected[i] * selected[j];
+    
+    // Calculate objective value based on QUBO formulation
+    let objectiveValue = qubo.expectedValue;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        objectiveValue += qubo.matrix[i][j] * selected[i] * selected[j];
+      }
     }
+
+    // Check if objective value is valid
+    if (!isFinite(objectiveValue)) {
+      console.warn("Invalid objective value detected, defaulting to 0");
+      objectiveValue = 0;
+    }
+    
+    return {
+      selectedAssets: symbols.filter((_, i) => selected[i] === 1),
+      binaryVector: selected,
+      objectiveValue,
+      totalCost,
+      expectedReturn
+    };
+  } catch (error) {
+    console.error("Error in solveQUBOClassical:", error);
+    
+    // Provide a fallback solution when the solver fails
+    return {
+      selectedAssets: [],
+      binaryVector: new Array(n).fill(0),
+      objectiveValue: 0,
+      totalCost: 0,
+      expectedReturn: 0
+    };
   }
-  
-  return {
-    selectedAssets: symbols.filter((_, i) => selected[i] === 1),
-    binaryVector: selected,
-    objectiveValue,
-    totalCost,
-    expectedReturn
-  };
 }
