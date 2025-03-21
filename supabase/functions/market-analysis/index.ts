@@ -75,7 +75,20 @@ serve(async (req) => {
         • θ₁, θ₂, θ₃ are weights for expected returns, budget constraint, and diversification
         • θ₁ + θ₂ + θ₃ = 1
         
-        For cryptocurrency applications, we can use binary fractional series to handle divisibility.
+        For cryptocurrency applications, we can use binary fractional series to handle divisibility:
+        
+        fractions = 2⁰, 2¹, 2², …, 2ⁿ
+        
+        APPLICATION TO CRYPTOCURRENCY:
+        • Cryptocurrencies can be divided into any desired fraction based on the budget
+        • Normalize purchase price to the budget
+        • Use binary fractional series
+        • Highly volatile, offering potential for high returns but also significant losses
+        
+        QUBO FORMULATION COMPONENTS:
+        1. Expected Returns: -θ₁∑ᵢxᵢrᵢ
+        2. Budget Penalty: θ₂(∑ᵢxᵢpᵢ - b)²
+        3. Diversification: θ₃∑ᵢ,ⱼxᵢcov(pᵢ,pⱼ)xⱼ
         
         QUANTUM ANNEALING APPROACH:
         The QUBO formulation can be mapped to the Ising model used by D-Wave quantum annealers:
@@ -87,10 +100,18 @@ serve(async (req) => {
         Where:
         • Jᵢⱼ = Qᵢⱼ/4 (coupler strengths)
         • hᵢ = qᵢ/2 + ∑ⱼJᵢⱼ (qubit weights)
+        • γ = ¼∑ᵢ,ⱼQᵢ,ⱼ + ½∑ᵢqᵢ
+        
+        D-WAVE HARDWARE CONSIDERATIONS:
+        • D-Wave 2000Q has 2048 qubits
+        • Maximum job length of 3s
+        • Variable anneal times: 5μs, 100μs, 250μs
         
         IMPORTANT LIMITATIONS:
         1. Due to the physical constraints of quantum hardware, we can only optimize portfolios with a maximum of 16 assets/positions.
         2. This approach works well for cryptocurrencies and stocks, but the portfolio must stay within the 16-asset limit.
+        3. Embedding time increases sharply when exceeding 16 assets.
+        4. The number of samples needed to approach a 99% solution increases sub-exponentially with problem size.
         
         IMPORTANT GUIDELINES:
         1. When discussing portfolio optimization, always explain both traditional and QUBO formulations.
