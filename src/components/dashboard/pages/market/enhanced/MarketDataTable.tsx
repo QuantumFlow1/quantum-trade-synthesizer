@@ -16,11 +16,10 @@ import {
 } from "lucide-react";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MarketData } from '@/components/market/types';
 import { formatCurrency, formatPercentage, formatLargeNumber } from '@/components/market/utils/formatters';
 
 interface MarketDataTableProps {
-  data: MarketData[];
+  data: any[];
   isLoading: boolean;
 }
 

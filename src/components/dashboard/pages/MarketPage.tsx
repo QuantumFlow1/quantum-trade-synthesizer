@@ -55,7 +55,7 @@ export const MarketPage = () => {
 
       <div className="h-[calc(100vh-220px)] overflow-auto">
         {activeTab === "enhanced" && (
-          <EnhancedMarketTab />
+          <EnhancedMarketTab marketData={marketData} isLoading={isLoading} />
         )}
 
         {activeTab === "tokens" && (

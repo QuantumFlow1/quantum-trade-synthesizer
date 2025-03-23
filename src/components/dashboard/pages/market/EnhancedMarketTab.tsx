@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MarketDataTable } from './enhanced/MarketDataTable';
-import { MarketChart } from './enhanced/MarketChart';
 import { MarketAnalysisCard } from './enhanced/MarketAnalysisCard';
 import { MarketPositionsPage } from './positions/MarketPositionsPage';
 import { MarketTransactionsPage } from './transactions/MarketTransactionsPage';
+import { LineChart } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface EnhancedMarketTabProps {
   marketData: any[];
@@ -26,7 +27,28 @@ export const EnhancedMarketTab: React.FC<EnhancedMarketTabProps> = ({ marketData
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <MarketChart selectedAsset={selectedAsset} />
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Market Chart</h3>
+                {selectedAsset && (
+                  <div className="bg-accent/30 text-accent-foreground px-2 py-1 rounded text-sm">
+                    {selectedAsset}
+                  </div>
+                )}
+              </div>
+              {!selectedAsset ? (
+                <div className="flex flex-col items-center justify-center h-[300px] bg-secondary/20 rounded-md">
+                  <LineChart className="h-12 w-12 text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">Select an asset from the table below to view its chart</p>
+                </div>
+              ) : (
+                <div className="h-[300px] bg-secondary/20 rounded-md flex items-center justify-center">
+                  <p className="text-muted-foreground">Chart for {selectedAsset}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
         <div>
           <MarketAnalysisCard marketData={marketData} isLoading={isLoading} />
@@ -43,7 +65,6 @@ export const EnhancedMarketTab: React.FC<EnhancedMarketTabProps> = ({ marketData
           <MarketDataTable 
             data={marketData}
             isLoading={isLoading}
-            onAssetSelect={handleAssetSelect}
           />
         </TabsContent>
         <TabsContent value="positions" className="mt-0">
