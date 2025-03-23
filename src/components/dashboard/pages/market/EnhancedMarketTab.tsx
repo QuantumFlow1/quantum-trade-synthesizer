@@ -5,8 +5,11 @@ import { MarketDataTable } from './enhanced/MarketDataTable';
 import { MarketAnalysisCard } from './enhanced/MarketAnalysisCard';
 import { MarketPositionsPage } from './positions/MarketPositionsPage';
 import { MarketTransactionsPage } from './transactions/MarketTransactionsPage';
-import { LineChart } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { LineChart, MessageCircle, Send } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface EnhancedMarketTabProps {
   marketData: any[];
@@ -17,10 +20,46 @@ export const EnhancedMarketTab: React.FC<EnhancedMarketTabProps> = ({ marketData
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
   const [currentPositionsPage, setCurrentPositionsPage] = useState(1);
   const [currentTransactionsPage, setCurrentTransactionsPage] = useState(1);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([
+    { id: '1', role: 'assistant', content: 'Hello! I can help you analyze market data and provide insights. What would you like to know?' }
+  ]);
   const itemsPerPage = 5;
 
   const handleAssetSelect = (symbol: string) => {
     setSelectedAsset(symbol);
+  };
+
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+    
+    // Add user message
+    const userMessage = { id: Date.now().toString(), role: 'user', content: chatInput };
+    setChatMessages(prev => [...prev, userMessage]);
+    
+    // Simulate AI response
+    setTimeout(() => {
+      const aiMessage = { 
+        id: (Date.now() + 1).toString(), 
+        role: 'assistant', 
+        content: `I've analyzed ${selectedAsset || 'the market'}. Based on current trends, ${getRandomInsight()}`
+      };
+      setChatMessages(prev => [...prev, aiMessage]);
+    }, 1000);
+    
+    setChatInput('');
+  };
+
+  const getRandomInsight = () => {
+    const insights = [
+      "volume is increasing which could indicate growing interest from traders.",
+      "there's a bearish divergence forming on the RSI indicator.",
+      "the moving averages suggest a potential uptrend forming.",
+      "market sentiment appears to be shifting to a more bullish outlook.",
+      "volatility has decreased over the past few sessions.",
+      "the asset is testing a key resistance level."
+    ];
+    return insights[Math.floor(Math.random() * insights.length)];
   };
 
   return (
@@ -54,6 +93,50 @@ export const EnhancedMarketTab: React.FC<EnhancedMarketTabProps> = ({ marketData
           <MarketAnalysisCard marketData={marketData} isLoading={isLoading} />
         </div>
       </div>
+
+      {/* New AI Chat Interface Section */}
+      <Card className="border-primary/20">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center">
+            <MessageCircle className="w-5 h-5 mr-2 text-primary" />
+            AI Market Insights Chat
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[250px] pr-4 mb-4">
+            <div className="space-y-4">
+              {chatMessages.map(message => (
+                <div 
+                  key={message.id}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div 
+                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                      message.role === 'user' 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-muted'
+                    }`}
+                  >
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          
+          <div className="flex gap-2">
+            <Input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Ask about market trends, specific assets, or trading strategies..."
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            />
+            <Button onClick={handleSendMessage} disabled={!chatInput.trim()}>
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="market-data">
         <TabsList className="mb-2">
