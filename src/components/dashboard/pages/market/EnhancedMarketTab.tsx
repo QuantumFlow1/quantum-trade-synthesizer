@@ -1,100 +1,66 @@
 
-import { useState, useEffect } from "react";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { MarketTabList } from "./tabs/MarketTabList";
-import { EnhancedMarketPage } from "./enhanced/EnhancedMarketPage";
-import { MarketPositionsPage } from "./positions/MarketPositionsPage";
-import { MarketTransactionsPage } from "./transactions/MarketTransactionsPage";
-import { useMarketDataState } from "./enhanced/useMarketDataState";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { MarketSummaryBanner } from "./enhanced/MarketSummaryBanner";
+import React, { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MarketDataTable } from './enhanced/MarketDataTable';
+import { MarketChart } from './enhanced/MarketChart';
+import { MarketAnalysisCard } from './enhanced/MarketAnalysisCard';
+import { MarketPositionsPage } from './positions/MarketPositionsPage';
+import { MarketTransactionsPage } from './transactions/MarketTransactionsPage';
 
-export const EnhancedMarketTab = () => {
-  const [activeTab, setActiveTab] = useState("market");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  
-  const {
-    marketData,
-    filteredData,
-    isLoading,
-    error,
-    isRefreshing,
-    handleRefresh
-  } = useMarketDataState();
+interface EnhancedMarketTabProps {
+  marketData: any[];
+  isLoading: boolean;
+}
 
-  // Handle tab changes explicitly
-  const handleTabChange = (value: string) => {
-    console.log("Enhanced market tab changed to:", value);
-    setActiveTab(value);
+export const EnhancedMarketTab: React.FC<EnhancedMarketTabProps> = ({ marketData, isLoading }) => {
+  const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
+  const [currentPositionsPage, setCurrentPositionsPage] = useState(1);
+  const [currentTransactionsPage, setCurrentTransactionsPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const handleAssetSelect = (symbol: string) => {
+    setSelectedAsset(symbol);
   };
-
-  const handleNextPage = () => {
-    setCurrentPage(prev => prev + 1);
-  };
-
-  const handlePreviousPage = () => {
-    setCurrentPage(prev => Math.max(1, prev - 1));
-  };
-  
-  // Display error if there's an issue loading market data
-  if (error && !isRefreshing) {
-    return (
-      <Alert variant="destructive" className="mb-6">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription className="flex flex-col gap-2">
-          <p>{error}</p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh} 
-            className="w-fit mt-2"
-          >
-            Retry
-          </Button>
-        </AlertDescription>
-      </Alert>
-    );
-  }
 
   return (
-    <div>
-      {/* Added Market Summary Banner for professional overview */}
-      <MarketSummaryBanner marketData={marketData} isLoading={isLoading} />
-      
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <MarketTabList activeTab={activeTab} />
-
-        <div className="h-[calc(100vh-320px)] overflow-auto">
-          <TabsContent value="market" className="mt-6">
-            <EnhancedMarketPage />
-          </TabsContent>
-
-          <TabsContent value="positions" className="mt-6">
-            {activeTab === "positions" && (
-              <MarketPositionsPage 
-                currentPage={currentPage}
-                itemsPerPage={itemsPerPage}
-                onNextPage={handleNextPage}
-                onPreviousPage={handlePreviousPage}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="transactions" className="mt-6">
-            {activeTab === "transactions" && (
-              <MarketTransactionsPage 
-                currentPage={currentPage}
-                itemsPerPage={itemsPerPage}
-                onNextPage={handleNextPage}
-                onPreviousPage={handlePreviousPage}
-              />
-            )}
-          </TabsContent>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <MarketChart selectedAsset={selectedAsset} />
         </div>
+        <div>
+          <MarketAnalysisCard marketData={marketData} isLoading={isLoading} />
+        </div>
+      </div>
+
+      <Tabs defaultValue="market-data">
+        <TabsList className="mb-2">
+          <TabsTrigger value="market-data">Market Data</TabsTrigger>
+          <TabsTrigger value="positions">Positions</TabsTrigger>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
+        </TabsList>
+        <TabsContent value="market-data" className="mt-0">
+          <MarketDataTable 
+            data={marketData}
+            isLoading={isLoading}
+            onAssetSelect={handleAssetSelect}
+          />
+        </TabsContent>
+        <TabsContent value="positions" className="mt-0">
+          <MarketPositionsPage
+            currentPage={currentPositionsPage}
+            itemsPerPage={itemsPerPage}
+            onNextPage={() => setCurrentPositionsPage(prev => prev + 1)}
+            onPreviousPage={() => setCurrentPositionsPage(prev => Math.max(1, prev - 1))}
+          />
+        </TabsContent>
+        <TabsContent value="transactions" className="mt-0">
+          <MarketTransactionsPage
+            currentPage={currentTransactionsPage}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentTransactionsPage}
+          />
+        </TabsContent>
       </Tabs>
     </div>
   );
