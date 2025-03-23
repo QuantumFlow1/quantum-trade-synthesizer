@@ -8,8 +8,13 @@ interface MarketTabsProps {
 }
 
 export const MarketTabs = ({ activeTab, onTabChange }: MarketTabsProps) => {
+  const handleTabClick = (tab: string) => {
+    console.log("Clicked on tab:", tab);
+    onTabChange(tab);
+  };
+
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange} className="mb-4">
+    <Tabs value={activeTab} onValueChange={handleTabClick} className="mb-4">
       <TabsList className="grid grid-cols-3">
         <TabsTrigger value="enhanced" className="flex items-center gap-2">
           <TrendingUp className="h-4 w-4" />

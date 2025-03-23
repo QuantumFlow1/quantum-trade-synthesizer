@@ -9,6 +9,7 @@ import { EnhancedMarketTab } from "./market/EnhancedMarketTab";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const MarketPage = () => {
   const [activeTab, setActiveTab] = useState("enhanced");
@@ -35,32 +36,40 @@ export const MarketPage = () => {
     fetchMarketData();
   };
 
+  // Handle tab changes explicitly with console log for debugging
+  const handleTabChange = (tab: string) => {
+    console.log("Changing main market tab to:", tab);
+    setActiveTab(tab);
+  };
+
   return (
     <div className="space-y-6">
       <MarketHeader isLoading={isLoading} onRefresh={handleRefresh} />
 
-      <MarketTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <MarketTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
-      {activeTab === "enhanced" && (
-        <EnhancedMarketTab />
-      )}
+      <ScrollArea className="h-[calc(100vh-220px)]">
+        {activeTab === "enhanced" && (
+          <EnhancedMarketTab />
+        )}
 
-      {activeTab === "tokens" && (
-        walletConnected ? (
-          <div>
-            <p className="text-center text-gray-500 py-10">
-              Coming soon: Your token balances will appear here
-            </p>
-          </div>
-        ) : (
-          <WalletConnection 
-            onConnect={handleConnectWallet}
-            onDisconnect={handleDisconnectWallet}  
-          />
-        )
-      )}
+        {activeTab === "tokens" && (
+          walletConnected ? (
+            <div>
+              <p className="text-center text-gray-500 py-10">
+                Coming soon: Your token balances will appear here
+              </p>
+            </div>
+          ) : (
+            <WalletConnection 
+              onConnect={handleConnectWallet}
+              onDisconnect={handleDisconnectWallet}  
+            />
+          )
+        )}
 
-      {activeTab === "testnet" && <TestnetTokenTab />}
+        {activeTab === "testnet" && <TestnetTokenTab />}
+      </ScrollArea>
     </div>
   );
 };
