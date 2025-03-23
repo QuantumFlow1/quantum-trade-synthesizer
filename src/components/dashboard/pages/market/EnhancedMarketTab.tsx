@@ -144,12 +144,14 @@ export const EnhancedMarketTab: React.FC<EnhancedMarketTabProps> = ({ marketData
           <TabsTrigger value="positions">Positions</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
+        
         <TabsContent value="market-data" className="mt-0">
           <MarketDataTable 
             data={marketData}
             isLoading={isLoading}
           />
         </TabsContent>
+        
         <TabsContent value="positions" className="mt-0">
           <MarketPositionsPage
             currentPage={currentPositionsPage}
@@ -158,6 +160,7 @@ export const EnhancedMarketTab: React.FC<EnhancedMarketTabProps> = ({ marketData
             onPreviousPage={() => setCurrentPositionsPage(prev => Math.max(1, prev - 1))}
           />
         </TabsContent>
+        
         <TabsContent value="transactions" className="mt-0">
           <MarketTransactionsPage
             currentPage={currentTransactionsPage}
