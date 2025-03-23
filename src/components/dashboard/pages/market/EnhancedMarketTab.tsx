@@ -94,7 +94,7 @@ export const EnhancedMarketTab: React.FC<EnhancedMarketTabProps> = ({ marketData
         </div>
       </div>
 
-      {/* New AI Chat Interface Section */}
+      {/* AI Chat Interface Section */}
       <Card className="border-primary/20">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center">
