@@ -8,12 +8,14 @@ interface MarketTabListProps {
 }
 
 export const MarketTabList: React.FC<MarketTabListProps> = ({ activeTab }) => {
+  console.log("MarketTabList rendering with activeTab:", activeTab);
+  
   return (
     <TabsList className="grid w-full grid-cols-3">
       <TabsTrigger 
         value="market" 
         className="flex items-center gap-2"
-        data-active={activeTab === 'market'}
+        data-state={activeTab === 'market' ? 'active' : 'inactive'}
       >
         <BarChart3 className="h-4 w-4" />
         <span className="hidden sm:inline">Market Overview</span>
@@ -22,7 +24,7 @@ export const MarketTabList: React.FC<MarketTabListProps> = ({ activeTab }) => {
       <TabsTrigger 
         value="positions" 
         className="flex items-center gap-2"
-        data-active={activeTab === 'positions'}
+        data-state={activeTab === 'positions' ? 'active' : 'inactive'}
       >
         <TrendingUp className="h-4 w-4" />
         <span className="hidden sm:inline">Positions</span>
@@ -31,7 +33,7 @@ export const MarketTabList: React.FC<MarketTabListProps> = ({ activeTab }) => {
       <TabsTrigger 
         value="transactions" 
         className="flex items-center gap-2"
-        data-active={activeTab === 'transactions'}
+        data-state={activeTab === 'transactions' ? 'active' : 'inactive'}
       >
         <Activity className="h-4 w-4" />
         <span className="hidden sm:inline">Transactions</span>

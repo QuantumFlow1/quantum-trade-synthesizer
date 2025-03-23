@@ -62,7 +62,7 @@ export const EnhancedMarketTab: React.FC = () => {
 
   // Handle tab changes explicitly
   const handleTabChange = (value: string) => {
-    console.log("Tab changed to:", value);
+    console.log("Enhanced market tab changed to:", value);
     setActiveTab(value);
   };
 
@@ -71,7 +71,7 @@ export const EnhancedMarketTab: React.FC = () => {
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <MarketTabList activeTab={activeTab} />
 
-        <ScrollArea className="h-[calc(100vh-250px)]">
+        <div className="h-[calc(100vh-250px)] overflow-auto">
           <TabsContent value="market" className="mt-6">
             <EnhancedMarketPage />
           </TabsContent>
@@ -99,7 +99,7 @@ export const EnhancedMarketTab: React.FC = () => {
               onPreviousPage={handlePreviousPage}
             />
           </TabsContent>
-        </ScrollArea>
+        </div>
       </Tabs>
     </div>
   );

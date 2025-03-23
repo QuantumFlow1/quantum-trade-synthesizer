@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MarketHeader } from "./market/MarketHeader";
 import { MarketTabs } from "./market/MarketTabs";
 import { TestnetTokenTab } from "./market/TestnetTokenTab";
@@ -22,6 +22,11 @@ export const MarketPage = () => {
     handleSortChange,
     fetchMarketData
   } = useMarketData();
+
+  // Ensure we have a valid tab on component mount
+  useEffect(() => {
+    console.log("MarketPage initialized with activeTab:", activeTab);
+  }, []);
 
   const handleConnectWallet = () => {
     setWalletConnected(true);
@@ -48,7 +53,7 @@ export const MarketPage = () => {
 
       <MarketTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
-      <ScrollArea className="h-[calc(100vh-220px)]">
+      <div className="h-[calc(100vh-220px)] overflow-auto">
         {activeTab === "enhanced" && (
           <EnhancedMarketTab />
         )}
@@ -69,7 +74,7 @@ export const MarketPage = () => {
         )}
 
         {activeTab === "testnet" && <TestnetTokenTab />}
-      </ScrollArea>
+      </div>
     </div>
   );
 };

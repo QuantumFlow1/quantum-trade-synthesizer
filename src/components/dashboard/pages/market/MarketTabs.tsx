@@ -9,7 +9,7 @@ interface MarketTabsProps {
 
 export const MarketTabs = ({ activeTab, onTabChange }: MarketTabsProps) => {
   const handleTabClick = (tab: string) => {
-    console.log("Clicked on tab:", tab);
+    console.log("Tab selected:", tab);
     onTabChange(tab);
   };
 
