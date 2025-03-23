@@ -1,64 +1,29 @@
 
-import React from 'react';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { EnhancedMarketPage } from '@/components/dashboard/pages/market/EnhancedMarketPage';
-import { MarketTabList } from './tabs/MarketTabList';
-import { PositionsTab } from './tabs/PositionsTab';
-import { TransactionsTab } from './tabs/TransactionsTab';
-import { useMarketTabState } from './hooks/useMarketTabState';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useState, useEffect } from "react";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { MarketTabList } from "./tabs/MarketTabList";
+import { EnhancedMarketPage } from "./enhanced/EnhancedMarketPage";
+import { MarketPositionsPage } from "./positions/MarketPositionsPage";
+import { MarketTransactionsPage } from "./transactions/MarketTransactionsPage";
+import { useMarketDataState } from "./enhanced/useMarketDataState";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MarketSummaryBanner } from "./enhanced/MarketSummaryBanner";
 
-export const EnhancedMarketTab: React.FC = () => {
+export const EnhancedMarketTab = () => {
+  const [activeTab, setActiveTab] = useState("market");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
   const {
-    activeTab,
-    setActiveTab,
-    positions,
+    marketData,
+    filteredData,
     isLoading,
-    showCharts,
-    toggleChartsVisibility,
-    searchTerm,
-    setSearchTerm,
-    typeFilter,
-    setTypeFilter,
-    statusFilter,
-    setStatusFilter,
-    currentPage,
-    totalPages,
-    handleNextPage,
-    handlePreviousPage
-  } = useMarketTabState();
-
-  const handleRefresh = () => {
-    window.location.reload();
-  };
-
-  // Render error message in a card instead of using an error boundary
-  const renderErrorState = () => (
-    <Card className="w-full overflow-hidden border bg-background">
-      <CardContent className="p-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error loading market data</AlertTitle>
-          <AlertDescription className="flex flex-col gap-2">
-            <p>We encountered an issue with the market data.</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefresh}
-              className="w-fit"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reload Page
-            </Button>
-          </AlertDescription>
-        </Alert>
-      </CardContent>
-    </Card>
-  );
+    error,
+    isRefreshing,
+    handleRefresh
+  } = useMarketDataState();
 
   // Handle tab changes explicitly
   const handleTabChange = (value: string) => {
@@ -66,38 +31,68 @@ export const EnhancedMarketTab: React.FC = () => {
     setActiveTab(value);
   };
 
+  const handleNextPage = () => {
+    setCurrentPage(prev => prev + 1);
+  };
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+  
+  // Display error if there's an issue loading market data
+  if (error && !isRefreshing) {
+    return (
+      <Alert variant="destructive" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription className="flex flex-col gap-2">
+          <p>{error}</p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefresh} 
+            className="w-fit mt-2"
+          >
+            Retry
+          </Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div>
+      {/* Added Market Summary Banner for professional overview */}
+      <MarketSummaryBanner marketData={marketData} isLoading={isLoading} />
+      
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <MarketTabList activeTab={activeTab} />
 
-        <div className="h-[calc(100vh-250px)] overflow-auto">
+        <div className="h-[calc(100vh-320px)] overflow-auto">
           <TabsContent value="market" className="mt-6">
             <EnhancedMarketPage />
           </TabsContent>
 
           <TabsContent value="positions" className="mt-6">
-            <PositionsTab 
-              positions={positions || []}
-              isLoading={isLoading}
-              showCharts={showCharts}
-              toggleChartsVisibility={toggleChartsVisibility}
-            />
+            {activeTab === "positions" && (
+              <MarketPositionsPage 
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
+                onNextPage={handleNextPage}
+                onPreviousPage={handlePreviousPage}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="transactions" className="mt-6">
-            <TransactionsTab 
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              typeFilter={typeFilter}
-              setTypeFilter={setTypeFilter}
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onNextPage={handleNextPage}
-              onPreviousPage={handlePreviousPage}
-            />
+            {activeTab === "transactions" && (
+              <MarketTransactionsPage 
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
+                onNextPage={handleNextPage}
+                onPreviousPage={handlePreviousPage}
+              />
+            )}
           </TabsContent>
         </div>
       </Tabs>
