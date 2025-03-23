@@ -1,5 +1,5 @@
 
-import { MarketData } from "@/components/trading/types";
+import { MarketData } from "@/components/market/types";
 
 export interface MarketAnalysis {
   trend: "rising" | "falling" | "neutral";
@@ -9,6 +9,15 @@ export interface MarketAnalysis {
   windowSize: number;
 }
 
+export interface MarketAnalysisResult {
+  trend: "rising" | "falling" | "neutral";
+  currentMA: number;
+  previousMA: number;
+  difference: number;
+  windowSize: number;
+  error?: string;
+}
+
 export interface MarketAnalyzer {
-  analyzeMarketTrend: (data: MarketData[], windowSize?: number) => MarketAnalysis;
+  analyzeMarketTrend: (data: MarketData[], windowSize?: number) => MarketAnalysisResult;
 }

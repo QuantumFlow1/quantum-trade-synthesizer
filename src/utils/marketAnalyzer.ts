@@ -1,6 +1,6 @@
 
 import { MarketData } from "@/components/trading/types";
-import { MarketAnalysis } from "@/types/market-analysis";
+import { MarketAnalysisResult } from "@/types/market-analysis";
 
 export class MarketAnalyzer {
   static calculateMA(prices: number[], windowSize: number): number {
@@ -12,40 +12,58 @@ export class MarketAnalyzer {
     return sum / windowSize;
   }
 
-  static analyzeMarketTrend(data: MarketData[], windowSize: number = 10): MarketAnalysis {
+  static analyzeMarketTrend(data: MarketData[], windowSize: number = 10): MarketAnalysisResult {
     console.log(`Analyzing market trend with window size: ${windowSize}`);
     
     if (data.length < windowSize * 2) {
-      throw new Error(`Need at least ${windowSize * 2} data points for trend analysis`);
+      return {
+        error: `Need at least ${windowSize * 2} data points for trend analysis`,
+        trend: "neutral",
+        currentMA: 0,
+        previousMA: 0,
+        difference: 0,
+        windowSize
+      };
     }
 
-    const prices = data.map(d => d.price);
-    
-    // Calculate current and previous MA
-    const currentMA = this.calculateMA(prices, windowSize);
-    const previousMA = this.calculateMA(prices.slice(0, -windowSize), windowSize);
-    
-    // Calculate relative difference
-    const difference = (currentMA - previousMA) / previousMA;
-    
-    console.log(`Current MA: ${currentMA}, Previous MA: ${previousMA}, Difference: ${difference}`);
-    
-    // Determine trend (using 1% threshold like Python implementation)
-    let trend: "rising" | "falling" | "neutral";
-    if (Math.abs(difference) < 0.01) {
-      trend = "neutral";
-    } else {
-      trend = difference > 0 ? "rising" : "falling";
+    try {
+      const prices = data.map(d => d.price);
+      
+      // Calculate current and previous MA
+      const currentMA = this.calculateMA(prices, windowSize);
+      const previousMA = this.calculateMA(prices.slice(0, -windowSize), windowSize);
+      
+      // Calculate relative difference
+      const difference = (currentMA - previousMA) / previousMA;
+      
+      console.log(`Current MA: ${currentMA}, Previous MA: ${previousMA}, Difference: ${difference}`);
+      
+      // Determine trend (using 1% threshold like Python implementation)
+      let trend: "rising" | "falling" | "neutral";
+      if (Math.abs(difference) < 0.01) {
+        trend = "neutral";
+      } else {
+        trend = difference > 0 ? "rising" : "falling";
+      }
+
+      console.log(`Detected trend: ${trend}`);
+
+      return {
+        trend,
+        currentMA,
+        previousMA,
+        difference,
+        windowSize
+      };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : "Unknown error during analysis",
+        trend: "neutral",
+        currentMA: 0,
+        previousMA: 0,
+        difference: 0,
+        windowSize
+      };
     }
-
-    console.log(`Detected trend: ${trend}`);
-
-    return {
-      trend,
-      currentMA,
-      previousMA,
-      difference,
-      windowSize
-    };
   }
 }

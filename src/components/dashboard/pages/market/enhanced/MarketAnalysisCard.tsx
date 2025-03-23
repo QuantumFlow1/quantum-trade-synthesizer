@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BrainCircuit, TrendingUp, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { MarketData } from '@/components/market/types';
 import { MarketAnalyzer } from '@/utils/marketAnalyzer';
+import { MarketAnalysisResult } from '@/types/market-analysis';
 
 interface MarketAnalysisCardProps {
   marketData: MarketData[];
@@ -26,14 +27,28 @@ export const MarketAnalysisCard: React.FC<MarketAnalysisCardProps> = ({
         .slice(0, 10);
       
       if (sortedData.length < 5) {
-        return { error: "Insufficient data for analysis" };
+        return {
+          error: "Insufficient data for analysis",
+          trend: "neutral",
+          currentMA: 0,
+          previousMA: 0,
+          difference: 0,
+          windowSize: 5
+        } as MarketAnalysisResult;
       }
       
       const analysis = MarketAnalyzer.analyzeMarketTrend(sortedData);
       return analysis;
     } catch (error) {
       console.error("Error analyzing market trends:", error);
-      return { error: error instanceof Error ? error.message : "Failed to analyze trends" };
+      return {
+        error: error instanceof Error ? error.message : "Failed to analyze trends",
+        trend: "neutral",
+        currentMA: 0,
+        previousMA: 0,
+        difference: 0,
+        windowSize: 5
+      } as MarketAnalysisResult;
     }
   };
   
