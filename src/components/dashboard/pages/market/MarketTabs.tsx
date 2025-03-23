@@ -1,13 +1,29 @@
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, PieChart, TrendingUp, LineChart, BarChart } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { CreditCard, PieChart, LineChart } from "lucide-react";
+import { EnhancedMarketTab } from "./EnhancedMarketTab";
+import { TestnetTokenTab } from "./TestnetTokenTab";
+import { WalletConnection } from "./WalletConnection";
 
 interface MarketTabsProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  marketData: any[];
+  isLoading: boolean;
+  walletConnected: boolean;
+  onConnect: () => void;
+  onDisconnect: () => void;
 }
 
-export const MarketTabs = ({ activeTab, onTabChange }: MarketTabsProps) => {
+export const MarketTabs = ({ 
+  activeTab, 
+  onTabChange, 
+  marketData, 
+  isLoading, 
+  walletConnected,
+  onConnect,
+  onDisconnect
+}: MarketTabsProps) => {
   const handleTabClick = (tab: string) => {
     console.log("Tab selected:", tab);
     onTabChange(tab);
@@ -41,6 +57,29 @@ export const MarketTabs = ({ activeTab, onTabChange }: MarketTabsProps) => {
           <span className="sm:hidden">Test</span>
         </TabsTrigger>
       </TabsList>
+
+      <TabsContent value="enhanced">
+        <EnhancedMarketTab marketData={marketData} isLoading={isLoading} />
+      </TabsContent>
+      
+      <TabsContent value="tokens">
+        {walletConnected ? (
+          <div>
+            <p className="text-center text-gray-500 py-10">
+              Coming soon: Your token balances will appear here
+            </p>
+          </div>
+        ) : (
+          <WalletConnection 
+            onConnect={onConnect}
+            onDisconnect={onDisconnect}  
+          />
+        )}
+      </TabsContent>
+      
+      <TabsContent value="testnet">
+        <TestnetTokenTab />
+      </TabsContent>
     </Tabs>
   );
 };
