@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generateTradingData } from "@/utils/tradingData";
 import TradingView from './components/trading-view/TradingView';
-import { TradingAgents } from './components/trading-agents/TradingAgents';
+import { AITradingAgents } from '../components/AITradingAgents';
+import PositionsList from "@/components/trading/PositionsList";
 
 interface MinimalTradingTabProps {
   initialOpenAgentsTab?: boolean;
@@ -87,43 +88,11 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <h3 className="text-lg font-medium mb-2">Your Positions</h3>
-            {/* Import and use PositionsList here */}
-            <div className="space-y-2">
-              {samplePositions.map((position) => (
-                <div 
-                  key={position.id}
-                  className={`p-3 rounded-lg border ${
-                    selectedPosition?.id === position.id 
-                      ? 'bg-primary/10 border-primary' 
-                      : 'hover:bg-muted/50 cursor-pointer'
-                  }`}
-                  onClick={() => handlePositionSelect(position.id)}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center">
-                      <span className="font-medium">{position.symbol}</span>
-                    </div>
-                    <div className={`text-sm ${
-                      position.profit_loss >= 0 ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      {position.profit_loss >= 0 ? '+' : ''}
-                      ${position.profit_loss.toFixed(2)} ({position.profit_loss_percentage.toFixed(2)}%)
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Amount:</span>{' '}
-                      <span>{position.amount}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Entry Price:</span>{' '}
-                      <span>${position.entry_price}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <PositionsList 
+              positions={samplePositions} 
+              onPositionSelect={handlePositionSelect}
+              selectedPositionId={selectedPosition?.id}
+            />
           </div>
           
           <div className="md:col-span-2">
@@ -139,7 +108,42 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
       </TabsContent>
       
       <TabsContent value="agents" className="space-y-4">
-        <TradingAgents />
+        <AITradingAgents 
+          agents={[
+            {
+              id: "1",
+              name: "Bitcoin Trend Trader",
+              type: "trader",
+              description: "Analyzes Bitcoin price trends and identifies entry/exit points",
+              status: "active",
+              performance: { successRate: 68, tasksCompleted: 42 }
+            },
+            {
+              id: "2",
+              name: "Portfolio Advisor",
+              type: "advisor",
+              description: "Recommends portfolio allocations based on market conditions",
+              status: "idle",
+              performance: { successRate: 72, tasksCompleted: 31 }
+            },
+            {
+              id: "3",
+              name: "Risk Manager",
+              type: "portfolio_manager",
+              description: "Monitors positions and suggests risk management strategies",
+              status: "active",
+              performance: { successRate: 81, tasksCompleted: 57 }
+            },
+            {
+              id: "4",
+              name: "Market Analyst",
+              type: "analyst",
+              description: "Analyzes market conditions and provides insights",
+              status: "idle",
+              performance: { successRate: 75, tasksCompleted: 24 }
+            }
+          ]}
+        />
       </TabsContent>
     </Tabs>
   );
