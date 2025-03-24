@@ -25,6 +25,31 @@ export const generateClaudeResponse = async (
     
     console.log('Calling Claude API with model:', settings.selectedModel);
     
+    // First ping the API to check connectivity and MCP support
+    try {
+      const pingResponse = await supabase.functions.invoke('claude-ping', {
+        body: { 
+          apiKey: apiKey,
+          checkMCP: settings.useMCP // Check MCP support if enabled
+        }
+      });
+      
+      if (pingResponse.error || pingResponse.data?.status !== 'available') {
+        console.error('Claude API is unavailable:', pingResponse.error || pingResponse.data?.message);
+        throw new Error(pingResponse.data?.message || 'Claude API is currently unavailable');
+      }
+      
+      // If MCP was requested but not supported, log a warning
+      if (settings.useMCP && !pingResponse.data?.mcpSupported) {
+        console.warn('MCP was requested but may not be fully supported by the API');
+      }
+      
+      console.log('Claude API connection verified successfully');
+    } catch (pingError) {
+      console.error('Error checking Claude API status:', pingError);
+      throw new Error(`Claude connection error: ${pingError.message}`);
+    }
+    
     // Determine which Claude model to use
     let modelName = 'claude-3-haiku-20240307';
     if (settings.selectedModel === 'claude-3-sonnet') {
@@ -54,7 +79,7 @@ export const generateClaudeResponse = async (
           temperature: settings.temperature || 0.7,
           max_tokens: settings.maxTokens || 1024,
           apiKey: apiKey,
-          useMCP: true // New flag to indicate we want to use MCP
+          useMCP: settings.useMCP // Pass the MCP flag
         }
       });
       
@@ -68,7 +93,12 @@ export const generateClaudeResponse = async (
         throw new Error('Invalid response from Claude API');
       }
       
-      console.log('Claude response:', data.response.substring(0, 100) + '...');
+      console.log('Claude response received successfully', { 
+        modelName, 
+        usedMCP: settings.useMCP,
+        responseLength: data.response.length 
+      });
+      
       return data.response;
     } catch (innerError) {
       console.error('Error during Claude API call:', innerError);
