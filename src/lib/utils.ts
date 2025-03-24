@@ -36,6 +36,20 @@ export function formatPercentage(value: number): string {
 }
 
 /**
+ * Format a number with commas and specified decimal places
+ */
+export function formatNumber(num: number, decimals = 2): string {
+  if (num === undefined || num === null || isNaN(num)) {
+    return "0.00";
+  }
+  
+  return num.toLocaleString('en-US', { 
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals 
+  });
+}
+
+/**
  * Truncate a string if it's longer than the specified length
  */
 export function truncateString(str: string, maxLength: number = 20): string {
