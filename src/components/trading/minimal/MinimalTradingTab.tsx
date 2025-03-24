@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { generateTradingData } from "@/utils/tradingData";
 import TradingView from './components/trading-view/TradingView';
-import { AITradingAgents } from '../components/AITradingAgents';
+import { AITradingAgents } from '@/components/trading/components/AITradingAgents';
 import PositionsList from "@/components/trading/PositionsList";
 
 interface MinimalTradingTabProps {
