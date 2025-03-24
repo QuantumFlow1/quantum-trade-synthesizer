@@ -1,9 +1,6 @@
 
 import { useState, useCallback } from 'react';
 
-/**
- * Hook for managing the API key dialog state
- */
 export function useApiKeyDialog() {
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false);
   const [currentLLM, setCurrentLLM] = useState<string | null>(null);
@@ -18,11 +15,11 @@ export function useApiKeyDialog() {
     }
   }, []);
   
-  return {
-    isApiKeyDialogOpen,
-    currentLLM,
-    configureApiKey,
-    setIsApiKeyDialogOpen,
-    setCurrentLLM
+  return { 
+    isApiKeyDialogOpen, 
+    setIsApiKeyDialogOpen, 
+    currentLLM, 
+    setCurrentLLM, 
+    configureApiKey 
   };
 }

@@ -3,147 +3,65 @@ import { useState, useCallback } from 'react';
 import { testOllamaConnection } from '@/utils/ollamaApiClient';
 import { testApiKeyConnection } from '@/utils/apiKeyManager';
 import { testGroqApiConnection } from '@/utils/groqApiClient';
-import { supabase } from '@/lib/supabase';
 
-type ConnectionStatus = 'connected' | 'disconnected' | 'unavailable' | 'checking';
-
-interface ConnectionDetails {
-  status: ConnectionStatus;
-  supportsMCP?: boolean;
-}
-
-/**
- * Hook for managing connection status of LLM extensions
- */
 export function useConnectionStatus() {
-  const [connectionStatus, setConnectionStatus] = useState<Record<string, ConnectionDetails>>({
-    deepseek: { status: 'disconnected' },
-    openai: { status: 'disconnected' },
-    grok: { status: 'checking' },
-    claude: { status: 'disconnected' },
-    ollama: { status: 'checking' }
+  const [connectionStatus, setConnectionStatus] = useState<
+    Record<string, 'connected' | 'disconnected' | 'unavailable' | 'checking'>
+  >({
+    deepseek: 'disconnected',
+    openai: 'disconnected',
+    grok: 'checking',    // Start checking Groq since it's enabled by default
+    claude: 'disconnected',
+    ollama: 'checking'   // Start checking Ollama since it's enabled by default
   });
-
-  const checkConnectionStatusForLLM = useCallback(async (llm: string, isEnabled?: boolean, checkMCP = false) => {
-    console.log(`Checking connection status for ${llm}...`);
-    
-    // If explicitly told the LLM is disabled, mark it as disconnected
-    if (isEnabled === false) {
-      console.log(`${llm} is disabled, setting connection status to disconnected`);
-      setConnectionStatus(prev => ({ 
-        ...prev, 
-        [llm]: { status: 'disconnected' } 
-      }));
+  
+  const checkConnectionStatusForLLM = useCallback(async (llm: string, enabled: boolean = true) => {
+    if (!enabled) {
+      console.log(`Skipping connection check for disabled LLM: ${llm}`);
+      setConnectionStatus(prev => ({ ...prev, [llm]: 'disconnected' }));
       return false;
     }
     
-    setConnectionStatus(prev => ({ 
-      ...prev, 
-      [llm]: { ...prev[llm], status: 'checking' } 
-    }));
+    console.log(`Checking connection status for ${llm}...`);
+    setConnectionStatus(prev => ({ ...prev, [llm]: 'checking' }));
     
     // Add some delay to show the checking state
     await new Promise(resolve => setTimeout(resolve, 500));
     
     try {
-      let connectionDetails: ConnectionDetails = { status: 'disconnected' };
+      let status: 'connected' | 'disconnected' | 'unavailable' = 'disconnected';
       
       switch (llm) {
         case 'ollama':
           const ollamaResult = await testOllamaConnection();
           console.log('Ollama connection test result:', ollamaResult);
-          connectionDetails = { 
-            status: ollamaResult.success ? 'connected' : 'unavailable'
-          };
+          status = ollamaResult.success ? 'connected' : 'unavailable';
           break;
           
         case 'grok':
           // Use the specific Groq test function
           const groqResult = await testGroqApiConnection();
           console.log('Groq connection test result:', groqResult);
-          connectionDetails = { 
-            status: groqResult.success ? 'connected' : 'disconnected'
-          };
-          break;
-        
-        case 'claude':
-          // Check the API key and MCP support for Claude
-          const apiKey = localStorage.getItem('claudeApiKey');
-          if (apiKey) {
-            try {
-              const { data, error } = await supabase.functions.invoke('claude-ping', {
-                body: { apiKey, checkMCP }
-              });
-              
-              if (!error && data.status === 'available') {
-                connectionDetails = {
-                  status: 'connected',
-                  supportsMCP: data.mcpSupported
-                };
-              } else {
-                connectionDetails = { status: 'disconnected' };
-              }
-            } catch (err) {
-              console.error('Error checking Claude connection:', err);
-              connectionDetails = { status: 'unavailable' };
-            }
-          } else {
-            connectionDetails = { status: 'disconnected' };
-          }
-          break;
-         
-        case 'openai':
-          // Check the API key and MCP support for OpenAI
-          const openaiKey = localStorage.getItem('openaiApiKey');
-          if (openaiKey) {
-            try {
-              const { data, error } = await supabase.functions.invoke('openai-ping', {
-                body: { apiKey: openaiKey, checkMCP }
-              });
-              
-              if (!error && data.status === 'available') {
-                connectionDetails = {
-                  status: 'connected',
-                  supportsMCP: data.mcpSupported
-                };
-              } else {
-                connectionDetails = { status: 'disconnected' };
-              }
-            } catch (err) {
-              console.error('Error checking OpenAI connection:', err);
-              connectionDetails = { status: 'unavailable' };
-            }
-          } else {
-            connectionDetails = { status: 'disconnected' };
-          }
+          status = groqResult.success ? 'connected' : 'disconnected';
           break;
           
         default:
           // For other LLMs, use the generic API key test
           const apiKeyExists = await testApiKeyConnection(llm as any);
           console.log(`${llm} API key exists:`, apiKeyExists);
-          connectionDetails = { 
-            status: apiKeyExists ? 'connected' : 'disconnected'
-          };
+          status = apiKeyExists ? 'connected' : 'disconnected';
           break;
       }
       
-      console.log(`Setting ${llm} connection status to`, connectionDetails);
-      setConnectionStatus(prev => ({ ...prev, [llm]: connectionDetails }));
-      return connectionDetails.status === 'connected';
+      console.log(`Setting ${llm} connection status to ${status}`);
+      setConnectionStatus(prev => ({ ...prev, [llm]: status }));
+      return status === 'connected';
     } catch (error) {
       console.error(`Error checking connection for ${llm}:`, error);
-      setConnectionStatus(prev => ({ 
-        ...prev, 
-        [llm]: { status: 'unavailable' }
-      }));
+      setConnectionStatus(prev => ({ ...prev, [llm]: 'unavailable' }));
       return false;
     }
   }, []);
-
-  return {
-    connectionStatus,
-    setConnectionStatus,
-    checkConnectionStatusForLLM
-  };
+  
+  return { connectionStatus, setConnectionStatus, checkConnectionStatusForLLM };
 }

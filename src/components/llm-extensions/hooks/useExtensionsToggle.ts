@@ -2,15 +2,12 @@
 import { useCallback } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
-/**
- * Hook for toggling LLM extensions and showing notifications
- */
 export function useExtensionsToggle(
   enabledLLMs: Record<string, boolean>,
   setEnabledLLMs: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
   activeTab: string,
-  setActiveTab: React.Dispatch<React.SetStateAction<string>>,
-  checkConnectionStatusForLLM: (llm: string) => Promise<boolean>
+  setActiveTab: (tab: string) => void,
+  checkConnectionStatusForLLM: (llm: string, enabled?: boolean) => Promise<boolean>
 ) {
   const toggleLLM = useCallback((llm: string, enabled: boolean) => {
     console.log(`Toggling ${llm} to ${enabled ? 'enabled' : 'disabled'}`);
@@ -34,7 +31,6 @@ export function useExtensionsToggle(
         duration: 3000,
       });
     } else {
-      // When disabling, update the connection status as well
       toast({
         title: `${llm.charAt(0).toUpperCase() + llm.slice(1)} Disabled`,
         description: `${llm.charAt(0).toUpperCase() + llm.slice(1)} has been disabled`,
@@ -51,6 +47,6 @@ export function useExtensionsToggle(
       }
     }
   }, [activeTab, enabledLLMs, setEnabledLLMs, setActiveTab, checkConnectionStatusForLLM]);
-
+  
   return { toggleLLM };
 }
