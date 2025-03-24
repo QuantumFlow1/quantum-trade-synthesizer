@@ -6,6 +6,7 @@ import { ApiStatusAlert } from './ApiStatusAlert';
 import { PriceChart } from './PriceChart';
 import { ChartControls } from './ChartControls';
 import { useTradingViewState } from '../../hooks/useTradingViewState';
+import { TradingToolbar } from './TradingToolbar';
 
 interface TradingViewProps {
   apiStatus: ApiStatus;
@@ -26,6 +27,7 @@ const TradingView: React.FC<TradingViewProps> = ({ apiStatus, chartData }) => {
       <CardContent className="p-0 h-full">
         <div className="flex flex-col h-full">
           <ApiStatusAlert apiStatus={apiStatus} />
+          <TradingToolbar chartType={chartType} setChartType={setChartType} />
           <div className="flex-1 relative">
             <ChartControls 
               selectedInterval={selectedInterval}
