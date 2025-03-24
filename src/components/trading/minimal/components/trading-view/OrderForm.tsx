@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,16 +7,35 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowUpCircle, ArrowDownCircle, InfoIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 interface OrderFormProps {
   currentPrice: number;
+  selectedPosition?: any;
 }
 
-export const OrderForm: React.FC<OrderFormProps> = ({ currentPrice }) => {
+export const OrderForm: React.FC<OrderFormProps> = ({ currentPrice, selectedPosition }) => {
   const [orderType, setOrderType] = useState<"buy" | "sell">("buy");
   const [amount, setAmount] = useState<string>("0.01");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const { toast } = useToast();
+
+  // Update form when position is selected
+  useEffect(() => {
+    if (selectedPosition) {
+      console.log("Position selected in OrderForm:", selectedPosition);
+      // If a position is selected, we might want to use its symbol or amount as default
+      if (selectedPosition.amount) {
+        setAmount(selectedPosition.amount.toString());
+      }
+      // If it's a position the user already has, default to sell
+      setOrderType("sell");
+    } else {
+      // Reset to defaults if no position is selected
+      setAmount("0.01");
+      setOrderType("buy");
+    }
+  }, [selectedPosition]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,9 +43,10 @@ export const OrderForm: React.FC<OrderFormProps> = ({ currentPrice }) => {
     
     // Simulate order placement
     setTimeout(() => {
+      const symbol = selectedPosition?.symbol || "BTC";
       toast({
         title: `${orderType === "buy" ? "Buy" : "Sell"} Order Placed`,
-        description: `Successfully placed a ${orderType} order for ${amount} BTC at $${currentPrice.toLocaleString()}.`,
+        description: `Successfully placed a ${orderType} order for ${amount} ${symbol} at $${currentPrice.toLocaleString()}.`,
       });
       setIsSubmitting(false);
     }, 1000);
@@ -34,9 +54,31 @@ export const OrderForm: React.FC<OrderFormProps> = ({ currentPrice }) => {
 
   return (
     <div className="space-y-6">
+      {selectedPosition && (
+        <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg mb-4">
+          <Badge className="mb-2">{selectedPosition.symbol || "BTC"} Position</Badge>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p className="text-muted-foreground">Entry Price</p>
+              <p className="font-medium">${selectedPosition.entry_price || currentPrice}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Current Price</p>
+              <p className="font-medium">${currentPrice.toLocaleString()}</p>
+            </div>
+            {selectedPosition.amount && (
+              <div>
+                <p className="text-muted-foreground">Amount</p>
+                <p className="font-medium">{selectedPosition.amount} {selectedPosition.symbol || "BTC"}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="bg-secondary/20 p-4 rounded-lg flex justify-between items-center">
         <div>
-          <p className="text-sm text-muted-foreground">Current BTC Price</p>
+          <p className="text-sm text-muted-foreground">Current Price</p>
           <p className="text-2xl font-bold">${currentPrice.toLocaleString()}</p>
         </div>
         <div className="text-right">
@@ -72,7 +114,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ currentPrice }) => {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="amount">Amount (BTC)</Label>
+          <Label htmlFor="amount">Amount ({selectedPosition?.symbol || "BTC"})</Label>
           <Input
             id="amount"
             type="number"
@@ -97,7 +139,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ currentPrice }) => {
             className={`w-full ${orderType === "buy" ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Processing..." : `${orderType === "buy" ? "Buy" : "Sell"} Bitcoin`}
+            {isSubmitting ? "Processing..." : `${orderType === "buy" ? "Buy" : "Sell"} ${selectedPosition?.symbol || "Bitcoin"}`}
           </Button>
         </div>
       </form>
