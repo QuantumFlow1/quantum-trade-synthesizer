@@ -33,7 +33,7 @@ export const generateClaudeResponse = async (
       modelName = 'claude-3-opus-20240229';
     }
     
-    // Format conversation history for Claude
+    // Format conversation history for Claude using MCP format
     const messages = conversationHistory.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
       content: msg.content
@@ -46,14 +46,15 @@ export const generateClaudeResponse = async (
     });
     
     try {
-      // Call Supabase Edge Function for Claude response
+      // Call Supabase Edge Function for Claude response with MCP support
       const { data, error } = await supabase.functions.invoke('claude-response', {
         body: {
           messages,
           model: modelName,
           temperature: settings.temperature || 0.7,
           max_tokens: settings.maxTokens || 1024,
-          apiKey: apiKey
+          apiKey: apiKey,
+          useMCP: true // New flag to indicate we want to use MCP
         }
       });
       

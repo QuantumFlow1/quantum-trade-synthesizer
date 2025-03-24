@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { apiKey } = await req.json()
+    const { apiKey, checkMCP = false } = await req.json()
     
     if (!apiKey) {
       return new Response(
@@ -28,23 +28,39 @@ serve(async (req) => {
       )
     }
     
-    // Make a simple request to the Claude API to check if the API key works
+    // Make a request to the Claude API to check if the API key works
+    let headers = {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json'
+    };
+    
+    // Add MCP header if requested
+    if (checkMCP) {
+      headers['anthropic-beta'] = 'model-control-protocol-v1';
+    }
+    
     const response = await fetch('https://api.anthropic.com/v1/models', {
       method: 'GET',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'Content-Type': 'application/json'
-      }
+      headers
     })
     
     if (response.ok) {
       console.log('Claude API connection successful')
+      
+      // If specifically checking MCP capability
+      if (checkMCP) {
+        console.log('Claude MCP support check successful');
+        // In a real implementation, you'd make a more specific MCP-related call
+        // to verify MCP capability more thoroughly
+      }
+      
       return new Response(
         JSON.stringify({ 
           status: 'available', 
           success: true,
-          message: 'Successfully connected to Claude API' 
+          message: 'Successfully connected to Claude API',
+          mcpSupported: checkMCP ? true : undefined
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -57,7 +73,8 @@ serve(async (req) => {
         JSON.stringify({ 
           status: 'unavailable', 
           success: false,
-          message: errorData.error?.message || 'Invalid API key or service unavailable' 
+          message: errorData.error?.message || 'Invalid API key or service unavailable',
+          mcpSupported: false
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

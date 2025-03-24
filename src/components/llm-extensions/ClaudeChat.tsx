@@ -16,7 +16,9 @@ export function ClaudeChat() {
     isLoading,
     showSettings,
     apiKey,
+    useMCP,
     saveApiKey,
+    toggleMCP,
     setInputMessage,
     sendMessage,
     clearChat,
@@ -50,7 +52,7 @@ export function ClaudeChat() {
       <CardHeader className="border-b py-3 px-4 flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-medium flex items-center">
           <MessageSquare className="h-5 w-5 mr-2 text-green-500" />
-          Claude Chat
+          Claude Chat {useMCP && <span className="ml-2 text-xs bg-green-100 text-green-800 rounded-full px-2 py-0.5">MCP</span>}
         </CardTitle>
         <div className="flex gap-2">
           <Button 
@@ -76,7 +78,9 @@ export function ClaudeChat() {
         {showSettings ? (
           <ClaudeSettings 
             apiKey={apiKey} 
+            useMCP={useMCP}
             setApiKey={saveApiKey}
+            toggleMCP={toggleMCP}
             onClose={() => setShowSettings(false)} 
           />
         ) : messages.length === 0 ? (

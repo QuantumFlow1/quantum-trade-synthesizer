@@ -10,6 +10,7 @@ export function useClaudeChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState('');
+  const [useMCP, setUseMCP] = useState(false);
   
   // Load saved API key and messages from localStorage
   useEffect(() => {
@@ -23,6 +24,13 @@ export function useClaudeChat() {
           // Show settings if no API key is found
           console.log('No Claude API key found in localStorage');
           setShowSettings(true);
+        }
+        
+        // Load MCP setting
+        const mcpSetting = localStorage.getItem('claudeUseMCP');
+        if (mcpSetting) {
+          setUseMCP(mcpSetting === 'true');
+          console.log('Claude MCP setting loaded:', mcpSetting === 'true');
         }
         
         const savedMessages = localStorage.getItem('claudeChatMessages');
@@ -147,6 +155,20 @@ export function useClaudeChat() {
     }
   }, []);
 
+  // Toggle MCP setting
+  const toggleMCP = useCallback((enabled: boolean) => {
+    setUseMCP(enabled);
+    localStorage.setItem('claudeUseMCP', String(enabled));
+    
+    toast({
+      title: `Model Control Protocol ${enabled ? 'Enabled' : 'Disabled'}`,
+      description: `Claude will ${enabled ? 'now' : 'no longer'} use the Model Control Protocol.`,
+      duration: 3000,
+    });
+    
+    console.log('Claude MCP setting updated:', enabled);
+  }, []);
+
   const sendMessage = useCallback(async () => {
     if (!inputMessage.trim()) return;
     
@@ -181,6 +203,7 @@ export function useClaudeChat() {
       }));
       
       console.log('Sending messages to Claude API:', apiMessages.length);
+      console.log('Using MCP:', useMCP);
       
       // Call the Claude edge function with error handling
       const { data, error } = await supabase.functions.invoke('claude-response', {
@@ -189,7 +212,8 @@ export function useClaudeChat() {
           model: 'claude-3-haiku-20240307',
           temperature: 0.7,
           max_tokens: 1000,
-          apiKey
+          apiKey,
+          useMCP // Pass the MCP setting to the edge function
         }
       });
       
@@ -217,6 +241,9 @@ export function useClaudeChat() {
         role: 'assistant',
         content: data.response,
         timestamp: new Date(),
+        metadata: {
+          usedMCP: data.usedMCP || useMCP
+        }
       };
 
       setMessages([...newMessages, assistantMessage]);
@@ -244,7 +271,7 @@ export function useClaudeChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [inputMessage, messages, apiKey, generateId]);
+  }, [inputMessage, messages, apiKey, generateId, useMCP]);
 
   const clearChat = useCallback(() => {
     setMessages([]);
@@ -266,7 +293,9 @@ export function useClaudeChat() {
     isLoading,
     showSettings,
     apiKey,
+    useMCP,
     saveApiKey,
+    toggleMCP,
     setInputMessage,
     sendMessage,
     clearChat,

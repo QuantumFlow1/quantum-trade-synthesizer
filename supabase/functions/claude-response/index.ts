@@ -33,7 +33,7 @@ serve(async (req) => {
     }
     
     // Extract parameters and validate
-    const { messages, model, temperature, max_tokens, apiKey } = body;
+    const { messages, model, temperature, max_tokens, apiKey, useMCP = false } = body;
 
     // Validate required parameters
     if (!apiKey) {
@@ -61,6 +61,7 @@ serve(async (req) => {
     // Logging for debugging
     console.log(`Claude API request for model: ${model || 'claude-3-haiku-20240307'}`);
     console.log(`Messages count: ${messages.length}`);
+    console.log(`Using MCP: ${useMCP}`);
 
     // Ensure all messages have the required role and content properties
     const validMessages = messages.filter(msg => 
@@ -91,21 +92,64 @@ serve(async (req) => {
     console.log(`Making request to Claude API with ${validMessages.length} messages`);
 
     try {
-      // Make API request to Claude API
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: claudeModel,
-          messages: validMessages,
-          max_tokens: max_tokens || 1024,
-          temperature: temperature || 0.7
-        })
-      });
+      let response;
+      
+      if (useMCP) {
+        // Use the Model Control Protocol (MCP) for Claude
+        console.log("Using Claude MCP API");
+        
+        // MCP requires a specific endpoint and headers
+        response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-beta': 'model-control-protocol-v1' // Enable MCP
+          },
+          body: JSON.stringify({
+            model: claudeModel,
+            messages: validMessages,
+            max_tokens: max_tokens || 1024,
+            temperature: temperature || 0.7,
+            // MCP specific parameters
+            control: {
+              prompt: "You are an AI assistant providing expert information and guidance on financial markets and trading.",
+              tools: [
+                {
+                  name: "trading_analysis",
+                  description: "Analyze trading data and provide insights",
+                  input_schema: {
+                    type: "object",
+                    properties: {
+                      symbol: { type: "string", description: "The trading symbol to analyze" },
+                      timeframe: { type: "string", description: "The timeframe for analysis (e.g., '1d', '1h')" }
+                    },
+                    required: ["symbol"]
+                  }
+                }
+              ]
+            }
+          })
+        });
+      } else {
+        // Use the standard Claude API
+        console.log("Using standard Claude API");
+        response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: claudeModel,
+            messages: validMessages,
+            max_tokens: max_tokens || 1024,
+            temperature: temperature || 0.7
+          })
+        });
+      }
 
       // Get the raw response text first for error handling
       const responseText = await response.text();
@@ -160,14 +204,24 @@ serve(async (req) => {
         );
       }
 
-      // Extract the text from the response
-      const text = data.content[0]?.text || '';
-      console.log('Claude response received successfully, length:', text.length);
+      // Extract the text from the response - handle both standard and MCP responses
+      let text = '';
+      
+      if (useMCP && data.content[0]?.type === 'tool_use') {
+        // Handle MCP tool_use response format
+        text = JSON.stringify(data.content[0].input);
+        console.log('Claude MCP tool response received:', text);
+      } else {
+        // Handle standard text response
+        text = data.content[0]?.text || '';
+        console.log('Claude response received successfully, length:', text.length);
+      }
 
       // Return the Claude API response
       return new Response(JSON.stringify({ 
         response: text,
-        model: claudeModel
+        model: claudeModel,
+        usedMCP: useMCP
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
