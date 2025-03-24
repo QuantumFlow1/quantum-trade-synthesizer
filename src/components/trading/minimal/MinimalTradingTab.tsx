@@ -18,6 +18,8 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
   const [chartData, setChartData] = useState(generateTradingData());
   const [selectedPosition, setSelectedPosition] = useState<any>(null);
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
+  const [selectedAsset, setSelectedAsset] = useState<string>('BTC/USDT');
+  const [assetType, setAssetType] = useState<'crypto' | 'stock' | 'forex' | 'commodity'>('crypto');
   const { positions } = usePositions();
   
   // Simulate API check
@@ -28,6 +30,43 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
     
     return () => clearTimeout(timer);
   }, []);
+
+  // Update chart data when the asset changes
+  useEffect(() => {
+    // Generate appropriate data based on asset type
+    let newChartData = generateTradingData();
+    
+    // Customize data based on asset type
+    if (assetType === 'stock') {
+      newChartData = newChartData.map(d => ({
+        ...d,
+        // Modify ranges for stocks
+        open: d.open / 100,
+        close: d.close / 100,
+        high: d.high / 100,
+        low: d.low / 100
+      }));
+    } else if (assetType === 'forex') {
+      newChartData = newChartData.map(d => ({
+        ...d,
+        // Modify ranges for forex
+        open: d.open / 10000,
+        close: d.close / 10000,
+        high: d.high / 10000,
+        low: d.low / 10000
+      }));
+    }
+    
+    setChartData(newChartData);
+    console.log(`Updated chart for ${selectedAsset} (${assetType})`);
+  }, [selectedAsset, assetType]);
+
+  // Handle asset selection from TradingPairsList
+  const handleAssetSelect = (symbol: string, type: 'crypto' | 'stock' | 'forex' | 'commodity') => {
+    setSelectedAsset(symbol);
+    setAssetType(type);
+    setSelectedPosition(null); // Clear selected position when changing asset
+  };
 
   // Handle position selection
   const handlePositionSelect = (positionId: string) => {
@@ -56,7 +95,9 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
           apiStatus={apiStatus} 
           chartData={chartData}
           selectedPosition={selectedPosition}
-          currentPrice={42000}
+          currentPrice={assetType === 'crypto' ? 42000 : assetType === 'stock' ? 175 : 1.09}
+          assetType={assetType}
+          assetSymbol={selectedAsset}
         />
       </TabsContent>
       
@@ -78,6 +119,8 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
               chartData={chartData}
               selectedPosition={selectedPosition}
               currentPrice={42000}
+              assetType={assetType}
+              assetSymbol={selectedAsset}
             />
           </div>
         </div>
@@ -117,6 +160,22 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
               description: "Analyzes market conditions and provides insights",
               status: "idle",
               performance: { successRate: 75, tasksCompleted: 24 }
+            },
+            {
+              id: "5",
+              name: "Stock Swing Trader",
+              type: "trader",
+              description: "Specializes in stock swing trading strategies",
+              status: "active",
+              performance: { successRate: 65, tasksCompleted: 38 }
+            },
+            {
+              id: "6",
+              name: "Forex Trend Follower",
+              type: "trader",
+              description: "Tracks and follows major forex pair trends",
+              status: "idle",
+              performance: { successRate: 70, tasksCompleted: 29 }
             }
           ]}
         />

@@ -15,13 +15,17 @@ interface TradingViewProps {
   chartData: any[];
   selectedPosition?: any;
   currentPrice?: number;
+  assetType?: 'crypto' | 'stock' | 'forex' | 'commodity';
+  assetSymbol?: string;
 }
 
 const TradingView: React.FC<TradingViewProps> = ({ 
   apiStatus, 
   chartData, 
   selectedPosition,
-  currentPrice = 42000 
+  currentPrice = 42000,
+  assetType = 'crypto',
+  assetSymbol = 'BTC/USDT'
 }) => {
   const {
     selectedInterval,
@@ -52,6 +56,8 @@ const TradingView: React.FC<TradingViewProps> = ({
             chartType={chartType} 
             setChartType={setChartType} 
             selectedPosition={selectedPosition}
+            assetType={assetType}
+            assetSymbol={assetSymbol}
           />
           <Tabs defaultValue="chart" className="flex-1">
             <TabsList className="mx-4 mt-2">
@@ -71,12 +77,15 @@ const TradingView: React.FC<TradingViewProps> = ({
                   chartType={chartType}
                   visibleIndicators={visibleIndicators}
                   selectedPosition={selectedPosition}
+                  assetType={assetType}
                 />
               </TabsContent>
               <TabsContent value="order" className="mt-0 p-4">
                 <OrderForm 
                   currentPrice={displayPrice} 
                   selectedPosition={selectedPosition}
+                  assetType={assetType}
+                  assetSymbol={assetSymbol}
                 />
               </TabsContent>
             </div>
