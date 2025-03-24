@@ -7,6 +7,7 @@ import { PriceChart } from './PriceChart';
 import { ChartControls } from './ChartControls';
 import { useTradingViewState } from '../../hooks/useTradingViewState';
 import { TradingToolbar } from './TradingToolbar';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 
 interface TradingViewProps {
   apiStatus: ApiStatus;
@@ -28,19 +29,23 @@ const TradingView: React.FC<TradingViewProps> = ({ apiStatus, chartData }) => {
         <div className="flex flex-col h-full">
           <ApiStatusAlert apiStatus={apiStatus} />
           <TradingToolbar chartType={chartType} setChartType={setChartType} />
-          <div className="flex-1 relative">
-            <ChartControls 
-              selectedInterval={selectedInterval}
-              setSelectedInterval={setSelectedInterval}
-              chartType={chartType}
-              setChartType={setChartType}
-            />
-            <PriceChart 
-              data={chartData} 
-              chartType={chartType}
-              visibleIndicators={visibleIndicators}
-            />
-          </div>
+          <Tabs defaultValue="chart" className="flex-1">
+            <div className="flex-1 relative">
+              <ChartControls 
+                selectedInterval={selectedInterval}
+                setSelectedInterval={setSelectedInterval}
+                chartType={chartType}
+                setChartType={setChartType}
+              />
+              <TabsContent value="chart" className="mt-0 h-full">
+                <PriceChart 
+                  data={chartData} 
+                  chartType={chartType}
+                  visibleIndicators={visibleIndicators}
+                />
+              </TabsContent>
+            </div>
+          </Tabs>
         </div>
       </CardContent>
     </Card>

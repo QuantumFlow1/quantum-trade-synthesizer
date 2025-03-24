@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Coins, LineChart } from "lucide-react";
 import MarketOverview from "@/components/MarketOverview";
 import { TradingView } from "./components/trading-view";
-import { Button } from "@/components/ui/button";
 
 interface MinimalTradingTabProps {
   initialOpenAgentsTab?: boolean;
@@ -36,15 +35,16 @@ export const MinimalTradingTab = ({ initialOpenAgentsTab = false }: MinimalTradi
                 Trading Tools
               </TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="market" className="h-[calc(100%-48px)] p-2 mt-0">
+              <MarketOverview />
+            </TabsContent>
+            
+            <TabsContent value="trading" className="h-[calc(100%-48px)] p-2 mt-0">
+              <TradingView apiStatus="available" chartData={[]} />
+            </TabsContent>
           </Tabs>
         </div>
-        
-        <TabsContent value="market" className="h-[calc(100%-48px)] p-2 mt-0">
-          <MarketOverview />
-        </TabsContent>
-        <TabsContent value="trading" className="h-[calc(100%-48px)] p-2 mt-0">
-          <TradingView apiStatus="available" chartData={[]} />
-        </TabsContent>
       </CardContent>
     </Card>
   );
