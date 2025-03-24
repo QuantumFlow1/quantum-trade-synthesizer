@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { apiKey } = await req.json()
+    const { apiKey, checkMCP = false } = await req.json()
     
     if (!apiKey) {
       return new Response(
@@ -37,32 +37,68 @@ serve(async (req) => {
       }
     })
     
-    if (response.ok) {
-      console.log('OpenAI API connection successful')
-      return new Response(
-        JSON.stringify({ 
-          status: 'available', 
-          success: true,
-          message: 'Successfully connected to OpenAI API' 
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    } else {
+    if (!response.ok) {
       const errorData = await response.json()
       console.error('OpenAI API connection failed:', errorData)
       return new Response(
         JSON.stringify({ 
           status: 'unavailable', 
           success: false,
-          message: errorData.error?.message || 'Invalid API key or service unavailable' 
+          message: errorData.error?.message || 'Invalid API key or service unavailable',
+          mcpSupported: false
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       )
     }
+    
+    // OpenAI API connection successful
+    console.log('OpenAI API connection successful')
+    
+    // Check MCP capabilities if requested
+    // For OpenAI, we check support for structured response tools
+    let mcpSupported = false;
+    
+    if (checkMCP) {
+      try {
+        // Test if OpenAI supports JSON mode (which is their equivalent to MCP)
+        const mcpTestResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: 'Hello' }],
+            response_format: { type: "json_object" },
+            max_tokens: 10
+          })
+        });
+        
+        if (mcpTestResponse.ok) {
+          mcpSupported = true;
+          console.log('OpenAI JSON mode (MCP equivalent) supported');
+        } else {
+          console.log('OpenAI JSON mode test failed, but API is available');
+        }
+      } catch (mcpError) {
+        console.error('Error testing OpenAI MCP support:', mcpError);
+      }
+    }
+    
+    return new Response(
+      JSON.stringify({ 
+        status: 'available', 
+        success: true,
+        message: 'Successfully connected to OpenAI API',
+        mcpSupported: checkMCP ? mcpSupported : undefined
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    )
   } catch (error) {
     console.error('Error in openai-ping function:', error)
     return new Response(

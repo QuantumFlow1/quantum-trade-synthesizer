@@ -24,13 +24,14 @@ export const generateClaudeResponse = async (
     }
     
     console.log('Calling Claude API with model:', settings.selectedModel);
+    console.log('MCP enabled:', settings.useMCP || false);
     
     // First ping the API to check connectivity and MCP support
     try {
       const pingResponse = await supabase.functions.invoke('claude-ping', {
         body: { 
           apiKey: apiKey,
-          checkMCP: settings.useMCP // Check MCP support if enabled
+          checkMCP: settings.useMCP || false // Check MCP support if enabled
         }
       });
       
@@ -42,6 +43,8 @@ export const generateClaudeResponse = async (
       // If MCP was requested but not supported, log a warning
       if (settings.useMCP && !pingResponse.data?.mcpSupported) {
         console.warn('MCP was requested but may not be fully supported by the API');
+      } else if (settings.useMCP && pingResponse.data?.mcpSupported) {
+        console.log('MCP support confirmed by the API');
       }
       
       console.log('Claude API connection verified successfully');
@@ -79,7 +82,7 @@ export const generateClaudeResponse = async (
           temperature: settings.temperature || 0.7,
           max_tokens: settings.maxTokens || 1024,
           apiKey: apiKey,
-          useMCP: settings.useMCP // Pass the MCP flag
+          useMCP: settings.useMCP || false // Pass the MCP flag
         }
       });
       
@@ -95,7 +98,7 @@ export const generateClaudeResponse = async (
       
       console.log('Claude response received successfully', { 
         modelName, 
-        usedMCP: settings.useMCP,
+        usedMCP: settings.useMCP || false,
         responseLength: data.response.length 
       });
       

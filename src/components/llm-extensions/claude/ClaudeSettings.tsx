@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Key, AlertCircle, RefreshCw, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Key, AlertCircle, RefreshCw, Loader2, CheckCircle, XCircle, Info } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/components/ui/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ClaudeSettingsProps {
   apiKey: string;
@@ -164,8 +165,24 @@ export function ClaudeSettings({ apiKey, useMCP = false, setApiKey, toggleMCP, o
           <div className="bg-secondary/30 p-3 rounded-md border border-border mt-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="use-mcp" className="text-sm cursor-pointer font-medium">
-                  Use Model Control Protocol (MCP)
+                <Label htmlFor="use-mcp" className="text-sm cursor-pointer font-medium flex items-center">
+                  <span>Use Model Control Protocol (MCP)</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 ml-1 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-80">
+                        <p>MCP (Model Control Protocol) provides more precise control over Claude's outputs, including:</p>
+                        <ul className="list-disc pl-4 mt-1 text-xs">
+                          <li>Structured JSON responses</li>
+                          <li>Better tool usage for external data</li>
+                          <li>More consistent formatting</li>
+                        </ul>
+                        <p className="text-xs mt-1">Learn more at <a href="https://github.com/modelcontextprotocol" className="underline" target="_blank" rel="noreferrer">MCP GitHub</a></p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </Label>
                 <p className="text-xs text-muted-foreground mt-1">
                   Enables advanced control over Claude's responses using Anthropic's Model Control Protocol.
@@ -185,11 +202,11 @@ export function ClaudeSettings({ apiKey, useMCP = false, setApiKey, toggleMCP, o
                   <div className="text-green-600 flex items-center">
                     <CheckCircle className="h-3 w-3 mr-1" /> MCP is supported with your current API key
                   </div>
-                ) : (
+                ) : connectionStatus === 'connected' ? (
                   <div className="text-amber-600 flex items-center">
-                    <AlertCircle className="h-3 w-3 mr-1" /> MCP support could not be verified
+                    <AlertCircle className="h-3 w-3 mr-1" /> MCP support was not detected with your API key
                   </div>
-                )}
+                ) : null}
               </div>
             )}
           </div>
