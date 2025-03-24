@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { Message } from '../../deepseek/types';
+import { Message } from '../../types/chatTypes';
 import { toast } from '@/hooks/use-toast';
 
 export function useClaudeMessages() {

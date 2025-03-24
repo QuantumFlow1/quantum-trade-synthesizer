@@ -5,7 +5,7 @@ import { toast } from '@/hooks/use-toast';
 import { useClaudeApiKey } from './useClaudeApiKey';
 import { useClaudeMessages } from './useClaudeMessages';
 import { useMCPSetting } from './useMCPSetting';
-import { Message } from '../../deepseek/types';
+import { Message } from '../../types/chatTypes';
 
 export function useClaudeChat() {
   const { apiKey, saveApiKey } = useClaudeApiKey();
