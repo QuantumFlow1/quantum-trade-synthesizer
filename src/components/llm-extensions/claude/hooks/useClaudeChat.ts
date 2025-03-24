@@ -14,6 +14,9 @@ export function useClaudeChat() {
   
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [systemPrompt, setSystemPrompt] = useState<string>(
+    "You are Claude, a helpful and harmless AI assistant. You provide accurate, thoughtful responses and admit when you don't know something."
+  );
 
   // Initialize settings if no API key
   useEffect(() => {
@@ -87,7 +90,8 @@ export function useClaudeChat() {
           temperature: 0.7,
           max_tokens: 1000,
           apiKey,
-          useMCP // Pass the MCP setting to the edge function
+          useMCP, // Pass the MCP setting to the edge function
+          systemPrompt // Pass the system prompt for MCP
         }
       });
       
@@ -116,7 +120,9 @@ export function useClaudeChat() {
         content: data.response,
         timestamp: new Date(),
         metadata: {
-          usedMCP: data.usedMCP || useMCP
+          usedMCP: data.usedMCP || useMCP,
+          contentType: data.contentType || 'text',
+          rawContent: data.rawContent || null
         }
       };
 
@@ -133,6 +139,9 @@ export function useClaudeChat() {
           ? `Error: ${error.message}` 
           : 'An unknown error occurred with the Claude API.',
         timestamp: new Date(),
+        metadata: {
+          isError: true
+        }
       };
       
       setMessages([...newMessages, errorMessage]);
@@ -145,11 +154,30 @@ export function useClaudeChat() {
     } finally {
       setIsLoading(false);
     }
-  }, [inputMessage, messages, apiKey, generateId, useMCP, setMessages]);
+  }, [inputMessage, messages, apiKey, generateId, useMCP, setMessages, systemPrompt]);
 
   const toggleSettings = useCallback(() => {
     setShowSettings(!showSettings);
   }, [showSettings]);
+
+  const updateSystemPrompt = useCallback((prompt: string) => {
+    setSystemPrompt(prompt);
+    localStorage.setItem('claudeSystemPrompt', prompt);
+    
+    toast({
+      title: "System prompt updated",
+      description: "Your changes to the system prompt have been saved.",
+      duration: 3000,
+    });
+  }, []);
+
+  // Load system prompt from localStorage
+  useEffect(() => {
+    const savedPrompt = localStorage.getItem('claudeSystemPrompt');
+    if (savedPrompt) {
+      setSystemPrompt(savedPrompt);
+    }
+  }, []);
 
   return {
     messages,
@@ -158,8 +186,10 @@ export function useClaudeChat() {
     showSettings,
     apiKey,
     useMCP,
+    systemPrompt,
     saveApiKey,
     toggleMCP,
+    updateSystemPrompt,
     setInputMessage,
     sendMessage,
     clearChat,

@@ -17,8 +17,10 @@ export function ClaudeChat() {
     showSettings,
     apiKey,
     useMCP,
+    systemPrompt,
     saveApiKey,
     toggleMCP,
+    updateSystemPrompt,
     setInputMessage,
     sendMessage,
     clearChat,
@@ -79,8 +81,10 @@ export function ClaudeChat() {
           <ClaudeSettings 
             apiKey={apiKey} 
             useMCP={useMCP}
+            systemPrompt={systemPrompt}
             setApiKey={saveApiKey}
             toggleMCP={toggleMCP}
+            updateSystemPrompt={updateSystemPrompt}
             onClose={() => setShowSettings(false)} 
           />
         ) : messages.length === 0 ? (
