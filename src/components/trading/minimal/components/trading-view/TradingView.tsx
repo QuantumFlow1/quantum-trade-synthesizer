@@ -7,7 +7,8 @@ import { PriceChart } from './PriceChart';
 import { ChartControls } from './ChartControls';
 import { useTradingViewState } from '../../hooks/useTradingViewState';
 import { TradingToolbar } from './TradingToolbar';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OrderForm } from './OrderForm';
 
 interface TradingViewProps {
   apiStatus: ApiStatus;
@@ -30,19 +31,26 @@ const TradingView: React.FC<TradingViewProps> = ({ apiStatus, chartData }) => {
           <ApiStatusAlert apiStatus={apiStatus} />
           <TradingToolbar chartType={chartType} setChartType={setChartType} />
           <Tabs defaultValue="chart" className="flex-1">
+            <TabsList className="mx-4 mt-2">
+              <TabsTrigger value="chart">Chart</TabsTrigger>
+              <TabsTrigger value="order">Trade</TabsTrigger>
+            </TabsList>
             <div className="flex-1 relative">
-              <ChartControls 
-                selectedInterval={selectedInterval}
-                setSelectedInterval={setSelectedInterval}
-                chartType={chartType}
-                setChartType={setChartType}
-              />
               <TabsContent value="chart" className="mt-0 h-full">
+                <ChartControls 
+                  selectedInterval={selectedInterval}
+                  setSelectedInterval={setSelectedInterval}
+                  chartType={chartType}
+                  setChartType={setChartType}
+                />
                 <PriceChart 
                   data={chartData} 
                   chartType={chartType}
                   visibleIndicators={visibleIndicators}
                 />
+              </TabsContent>
+              <TabsContent value="order" className="mt-0 p-4">
+                <OrderForm currentPrice={42000} />
               </TabsContent>
             </div>
           </Tabs>
