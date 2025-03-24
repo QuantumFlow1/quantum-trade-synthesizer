@@ -5,36 +5,11 @@ import { generateTradingData } from "@/utils/tradingData";
 import TradingView from './components/trading-view/TradingView';
 import { AITradingAgents } from '@/components/trading/AITradingAgents';
 import PositionsList from "@/components/trading/PositionsList";
+import { usePositions } from "@/hooks/use-positions";
 
 interface MinimalTradingTabProps {
   initialOpenAgentsTab?: boolean;
 }
-
-// Sample position data for demonstration
-const samplePositions = [
-  {
-    id: "1",
-    symbol: "BTC",
-    amount: 0.15,
-    entry_price: 43500,
-    current_price: 42000,
-    profit_loss: -225,
-    profit_loss_percentage: -3.45,
-    type: "long" as "long" | "short",
-    timestamp: new Date().toISOString()
-  },
-  {
-    id: "2",
-    symbol: "ETH",
-    amount: 1.5,
-    entry_price: 2800,
-    current_price: 3000,
-    profit_loss: 300,
-    profit_loss_percentage: 7.14,
-    type: "long" as "long" | "short",
-    timestamp: new Date().toISOString()
-  }
-];
 
 export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({ 
   initialOpenAgentsTab = false 
@@ -43,7 +18,8 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
   const [chartData, setChartData] = useState(generateTradingData());
   const [selectedPosition, setSelectedPosition] = useState<any>(null);
   const [apiStatus, setApiStatus] = useState<'checking' | 'available' | 'unavailable'>('checking');
-
+  const { positions } = usePositions();
+  
   // Simulate API check
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -55,7 +31,7 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
 
   // Handle position selection
   const handlePositionSelect = (positionId: string) => {
-    const position = samplePositions.find(p => p.id === positionId);
+    const position = positions.find(p => p.id === positionId);
     setSelectedPosition(position);
     console.log("Selected position:", position);
     
@@ -89,7 +65,7 @@ export const MinimalTradingTab: React.FC<MinimalTradingTabProps> = ({
           <div>
             <h3 className="text-lg font-medium mb-2">Your Positions</h3>
             <PositionsList 
-              positions={samplePositions} 
+              positions={positions} 
               onPositionSelect={handlePositionSelect}
               selectedPositionId={selectedPosition?.id}
             />
