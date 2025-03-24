@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { MessageSquare, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { useClaudeApiKey } from './hooks/useClaudeApiKey';
 
 export function ClaudeChat() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const { apiKey, saveApiKey } = useClaudeApiKey();
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isChecking, setIsChecking] = useState<boolean>(false);
 
@@ -27,12 +28,10 @@ export function ClaudeChat() {
   }, []);
 
   const checkApiKey = () => {
-    const storedKey = localStorage.getItem('claudeApiKey');
-    setApiKey(storedKey);
-    setIsConnected(!!storedKey && storedKey.length > 10);
+    setIsConnected(!!apiKey && apiKey.length > 10);
     
     // Broadcast status to parent components
-    if (!!storedKey && storedKey.length > 10) {
+    if (!!apiKey && apiKey.length > 10) {
       window.dispatchEvent(new CustomEvent('connection-status-changed', {
         detail: { provider: 'claude', status: 'connected' }
       }));
@@ -98,7 +97,7 @@ export function ClaudeChat() {
             className="mt-4"
             onClick={() => {
               localStorage.removeItem('claudeApiKey');
-              setApiKey(null);
+              saveApiKey('');
               setIsConnected(false);
               checkApiKey();
               toast({

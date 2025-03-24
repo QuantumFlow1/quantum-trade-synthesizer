@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare, SendIcon, Loader2, Settings, Trash2 } from 'lucide-react';
-import { useClaudeChat } from './claude/useClaudeChat';
+import { useClaudeChat } from './claude/hooks/useClaudeChat';
 import { ClaudeMessage } from './claude/ClaudeMessage';
 import { ClaudeSettings } from './claude/ClaudeSettings';
 import { ClaudeEmptyState } from './claude/ClaudeEmptyState';
