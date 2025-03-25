@@ -22,6 +22,7 @@ interface PriceChartProps {
   visibleIndicators: ChartIndicators;
   showLegend?: boolean;
   selectedPosition?: any;
+  assetType?: 'crypto' | 'stock' | 'forex' | 'commodity';
 }
 
 export const PriceChart: React.FC<PriceChartProps> = ({ 
@@ -29,7 +30,8 @@ export const PriceChart: React.FC<PriceChartProps> = ({
   chartType, 
   visibleIndicators,
   showLegend = true,
-  selectedPosition
+  selectedPosition,
+  assetType = 'crypto'
 }) => {
   // Check if data exists
   if (!data || data.length === 0) {
@@ -66,6 +68,20 @@ export const PriceChart: React.FC<PriceChartProps> = ({
   // Entry price line for selected position
   const entryPrice = selectedPosition?.entry_price;
 
+  // Format Y-axis tick based on asset type
+  const formatYAxisTick = (value: number) => {
+    if (assetType === 'forex') {
+      return value.toFixed(4);
+    } else if (value < 1 && assetType === 'crypto') {
+      return value.toFixed(6);
+    } else {
+      return value.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      });
+    }
+  };
+
   return (
     <div className="relative h-[300px] w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -84,10 +100,7 @@ export const PriceChart: React.FC<PriceChartProps> = ({
             domain={[minValue, maxValue]} 
             tickCount={6}
             tick={{ fontSize: 10 }}
-            tickFormatter={(value) => value.toLocaleString(undefined, {
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 0
-            })}
+            tickFormatter={formatYAxisTick}
             width={60}
           />
           <Tooltip />
