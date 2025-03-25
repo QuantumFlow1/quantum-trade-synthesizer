@@ -1,85 +1,49 @@
 
-import { useState } from "react";
-import { ShieldAlert, Settings2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "./auth/AuthProvider";
-import { RiskMetrics } from "./risk/RiskMetrics";
-import { RiskSettingsForm } from "./risk/RiskSettingsForm";
-import { RiskWarnings } from "./risk/RiskWarnings";
-import { useRiskSettings } from "@/hooks/use-risk-settings";
-import { RiskMetric } from "@/types/risk";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RiskMetrics } from '@/components/risk/RiskMetrics';
+import { RiskSettings } from '@/components/risk/RiskSettings';
+import { RiskWarnings } from '@/components/risk/RiskWarnings';
+import { RiskMetric } from '@/types/risk';
 
 const RiskManagement = () => {
-  const { user } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
-  const { settings, isLoading, saveRiskSettings, setSettings } = useRiskSettings(user?.id);
-
+  // Example risk metrics
   const riskMetrics: RiskMetric[] = [
-    {
-      name: "Portfolio Risk",
-      value: 65,
-      maxValue: 100,
-      status: "medium",
-    },
-    {
-      name: "Leverage Gebruik",
-      value: 32,
-      maxValue: 100,
-      status: "low",
-    },
-    {
-      name: "Drawdown",
-      value: 15,
-      maxValue: 100,
-      status: "low",
-    },
+    { name: 'Portfolio Volatility', value: 15, maxValue: 40, status: 'low' },
+    { name: 'Leverage Ratio', value: 2.5, maxValue: 5, status: 'medium' },
+    { name: 'Concentration Risk', value: 30, maxValue: 50, status: 'medium' },
+    { name: 'Drawdown', value: 8, maxValue: 25, status: 'low' },
   ];
 
-  const handleSaveSettings = async () => {
-    if (settings) {
-      const success = await saveRiskSettings(settings);
-      if (success) {
-        setIsEditing(false);
-      }
-    }
-  };
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center p-8">Loading risk settings...</div>;
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ShieldAlert className="w-5 h-5" />
-          <h2 className="text-xl font-semibold">Risk Management</h2>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsEditing(!isEditing)}
-          className="flex items-center gap-2"
-        >
-          <Settings2 className="w-4 h-4" />
-          {isEditing ? "Cancel" : "Edit Settings"}
-        </Button>
-      </div>
-
-      {isEditing && settings ? (
-        <RiskSettingsForm 
-          settings={settings}
-          onSettingsChange={setSettings}
-          onSave={handleSaveSettings}
-        />
-      ) : (
-        <RiskMetrics metrics={riskMetrics} />
-      )}
-      
-      {settings && <RiskWarnings settings={settings} />}
-    </div>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Risk Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="metrics">
+          <TabsList className="mb-4">
+            <TabsTrigger value="metrics">Metrics</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="warnings">Warnings</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="metrics">
+            <RiskMetrics metrics={riskMetrics} />
+          </TabsContent>
+          
+          <TabsContent value="settings">
+            <RiskSettings />
+          </TabsContent>
+          
+          <TabsContent value="warnings">
+            <RiskWarnings />
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
 
 export default RiskManagement;
-
