@@ -27,4 +27,3 @@ export const defaultRiskSettings: Partial<RiskSettings> = {
   max_daily_loss: 100,
   max_leverage: 2
 };
-
