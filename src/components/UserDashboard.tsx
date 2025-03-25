@@ -1,80 +1,37 @@
 
-import { useState, useEffect } from "react";
-import { useAuth } from "./auth/AuthProvider";
-import { useDashboard } from "@/contexts/DashboardContext";
-import { DashboardLayout } from "./dashboard/DashboardLayout";
-import { DashboardHeader } from "./dashboard/DashboardHeader";
-import { DashboardNavigation } from "./dashboard/DashboardNavigation";
-import { useDashboardNavigation } from "@/hooks/use-dashboard-navigation";
-import { BackToAdminButton } from "./dashboard/BackToAdminButton";
-import { ApiChecker } from "./dashboard/ApiChecker";
-import { DashboardPageContent } from "./dashboard/DashboardPageContent";
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
-const UserDashboard = () => {
-  const { userProfile, isLovTrader } = useAuth();
-  const { visibleWidgets, apiStatus } = useDashboard();
-  const [showVirtualEnvironment, setShowVirtualEnvironment] = useState<boolean>(false);
-  
-  const {
-    activePage,
-    openAgentsTab,
-    showBackButton,
-    setOpenAgentsTab,
-    handlePageChange,
-    handleBackToAdmin,
-    openTradingAgentsTab
-  } = useDashboardNavigation();
+// Lazy load dashboard pages for better performance
+const DashboardLayout = React.lazy(() => import('./dashboard/DashboardLayout'));
+const MarketPage = React.lazy(() => import('./dashboard/pages/market/MarketPage'));
+const PortfolioPage = React.lazy(() => import('./dashboard/pages/portfolio/PortfolioPage'));
+const TradingPage = React.lazy(() => import('./dashboard/pages/trading/TradingPage'));
+const SettingsPage = React.lazy(() => import('./dashboard/pages/settings/SettingsPage'));
 
-  // Clear the openAgentsTab state after it's been used
-  useEffect(() => {
-    if (openAgentsTab && activePage === 'trading') {
-      setOpenAgentsTab(false);
-    }
-  }, [activePage, openAgentsTab, setOpenAgentsTab]);
+// Loading fallback component
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-screen">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <span className="ml-2">Loading...</span>
+  </div>
+);
 
-  // Setup virtual environment for lov_traders
-  useEffect(() => {
-    if (isLovTrader) {
-      setShowVirtualEnvironment(true);
-    }
-  }, [isLovTrader]);
-
-  // Force disable any chat functionality
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.sessionStorage.setItem('disable-chat-services', 'true');
-    }
-  }, []);
-
+const UserDashboard: React.FC = () => {
   return (
-    <DashboardLayout>
-      {showBackButton && (
-        <div className="px-4 py-2">
-          <BackToAdminButton onClick={handleBackToAdmin} />
-        </div>
-      )}
-      
-      <DashboardHeader 
-        userEmail={userProfile?.email} 
-        isLovTrader={isLovTrader}
-      />
-      
-      <DashboardNavigation
-        activePage={activePage}
-        onChangePage={handlePageChange}
-      />
-      
-      <ApiChecker isLovTrader={isLovTrader} />
-      
-      <DashboardPageContent 
-        activePage={activePage}
-        apiStatus={apiStatus}
-        showVirtualEnvironment={showVirtualEnvironment}
-        visibleWidgets={visibleWidgets}
-        openAgentsTab={openAgentsTab}
-        openTradingAgentsTab={openTradingAgentsTab}
-      />
-    </DashboardLayout>
+    <React.Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route path="/" element={<DashboardLayout />}>
+          <Route index element={<Navigate to="market" replace />} />
+          <Route path="market" element={<MarketPage />} />
+          <Route path="portfolio" element={<PortfolioPage />} />
+          <Route path="trading" element={<TradingPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="*" element={<Navigate to="market" replace />} />
+        </Route>
+      </Routes>
+    </React.Suspense>
   );
 };
 
