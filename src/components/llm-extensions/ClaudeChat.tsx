@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { MessageSquare, SendIcon, Loader2, Settings, Trash2 } from 'lucide-react';
-import { useClaudeChat } from './claude/hooks/useClaudeChat';
+import { useClaudeChat } from './claude/useClaudeChat';
 import { ClaudeMessage } from './claude/ClaudeMessage';
 import { ClaudeSettings } from './claude/ClaudeSettings';
 import { ClaudeEmptyState } from './claude/ClaudeEmptyState';
@@ -16,11 +16,7 @@ export function ClaudeChat() {
     isLoading,
     showSettings,
     apiKey,
-    useMCP,
-    systemPrompt,
     saveApiKey,
-    toggleMCP,
-    updateSystemPrompt,
     setInputMessage,
     sendMessage,
     clearChat,
@@ -54,7 +50,7 @@ export function ClaudeChat() {
       <CardHeader className="border-b py-3 px-4 flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-medium flex items-center">
           <MessageSquare className="h-5 w-5 mr-2 text-green-500" />
-          Claude Chat {useMCP && <span className="ml-2 text-xs bg-green-100 text-green-800 rounded-full px-2 py-0.5">MCP</span>}
+          Claude Chat
         </CardTitle>
         <div className="flex gap-2">
           <Button 
@@ -80,11 +76,7 @@ export function ClaudeChat() {
         {showSettings ? (
           <ClaudeSettings 
             apiKey={apiKey} 
-            useMCP={useMCP}
-            systemPrompt={systemPrompt}
             setApiKey={saveApiKey}
-            toggleMCP={toggleMCP}
-            updateSystemPrompt={updateSystemPrompt}
             onClose={() => setShowSettings(false)} 
           />
         ) : messages.length === 0 ? (

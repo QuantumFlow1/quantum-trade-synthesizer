@@ -2,7 +2,13 @@
 import { useState, useEffect } from "react";
 import { MarketHeader } from "./market/MarketHeader";
 import { MarketTabs } from "./market/MarketTabs";
+import { TestnetTokenTab } from "./market/TestnetTokenTab";
+import { WalletConnection } from "./market/WalletConnection";
 import { useMarketData } from "./market/useMarketData";
+import { EnhancedMarketTab } from "./market/EnhancedMarketTab";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle, RefreshCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const MarketPage = () => {
@@ -11,6 +17,9 @@ export const MarketPage = () => {
   const { 
     marketData, 
     isLoading, 
+    sortField,
+    sortDirection,
+    handleSortChange,
     fetchMarketData
   } = useMarketData();
 
@@ -42,16 +51,29 @@ export const MarketPage = () => {
     <div className="space-y-6">
       <MarketHeader isLoading={isLoading} onRefresh={handleRefresh} />
 
+      <MarketTabs activeTab={activeTab} onTabChange={handleTabChange} />
+
       <div className="h-[calc(100vh-220px)] overflow-auto">
-        <MarketTabs 
-          activeTab={activeTab} 
-          onTabChange={handleTabChange} 
-          marketData={marketData}
-          isLoading={isLoading}
-          walletConnected={walletConnected}
-          onConnect={handleConnectWallet}
-          onDisconnect={handleDisconnectWallet}
-        />
+        {activeTab === "enhanced" && (
+          <EnhancedMarketTab />
+        )}
+
+        {activeTab === "tokens" && (
+          walletConnected ? (
+            <div>
+              <p className="text-center text-gray-500 py-10">
+                Coming soon: Your token balances will appear here
+              </p>
+            </div>
+          ) : (
+            <WalletConnection 
+              onConnect={handleConnectWallet}
+              onDisconnect={handleDisconnectWallet}  
+            />
+          )
+        )}
+
+        {activeTab === "testnet" && <TestnetTokenTab />}
       </div>
     </div>
   );

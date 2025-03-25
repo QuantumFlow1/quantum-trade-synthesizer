@@ -1,6 +1,10 @@
 
 import { useState, useEffect } from 'react';
 
+/**
+ * Hook for managing the enabled state of different LLM extensions
+ * and persisting that state to localStorage
+ */
 export function useExtensionsState() {
   // Set default values for enabled LLMs
   const [enabledLLMs, setEnabledLLMs] = useState<Record<string, boolean>>(() => {
@@ -36,6 +40,11 @@ export function useExtensionsState() {
   useEffect(() => {
     localStorage.setItem('enabledLLMs', JSON.stringify(enabledLLMs));
   }, [enabledLLMs]);
-  
-  return { enabledLLMs, setEnabledLLMs, activeTab, setActiveTab };
+
+  return {
+    enabledLLMs,
+    setEnabledLLMs,
+    activeTab,
+    setActiveTab
+  };
 }

@@ -4,32 +4,37 @@ import { testOllamaConnection } from '@/utils/ollamaApiClient';
 import { testApiKeyConnection } from '@/utils/apiKeyManager';
 import { testGroqApiConnection } from '@/utils/groqApiClient';
 
+type ConnectionStatus = 'connected' | 'disconnected' | 'unavailable' | 'checking';
+
+/**
+ * Hook for managing connection status of LLM extensions
+ */
 export function useConnectionStatus() {
-  const [connectionStatus, setConnectionStatus] = useState<
-    Record<string, 'connected' | 'disconnected' | 'unavailable' | 'checking'>
-  >({
+  const [connectionStatus, setConnectionStatus] = useState<Record<string, ConnectionStatus>>({
     deepseek: 'disconnected',
     openai: 'disconnected',
-    grok: 'checking',    // Start checking Groq since it's enabled by default
+    grok: 'checking',
     claude: 'disconnected',
-    ollama: 'checking'   // Start checking Ollama since it's enabled by default
+    ollama: 'checking'
   });
-  
-  const checkConnectionStatusForLLM = useCallback(async (llm: string, enabled: boolean = true) => {
-    if (!enabled) {
-      console.log(`Skipping connection check for disabled LLM: ${llm}`);
+
+  const checkConnectionStatusForLLM = useCallback(async (llm: string, isEnabled?: boolean) => {
+    console.log(`Checking connection status for ${llm}...`);
+    
+    // If explicitly told the LLM is disabled, mark it as disconnected
+    if (isEnabled === false) {
+      console.log(`${llm} is disabled, setting connection status to disconnected`);
       setConnectionStatus(prev => ({ ...prev, [llm]: 'disconnected' }));
       return false;
     }
     
-    console.log(`Checking connection status for ${llm}...`);
     setConnectionStatus(prev => ({ ...prev, [llm]: 'checking' }));
     
     // Add some delay to show the checking state
     await new Promise(resolve => setTimeout(resolve, 500));
     
     try {
-      let status: 'connected' | 'disconnected' | 'unavailable' = 'disconnected';
+      let status: ConnectionStatus = 'disconnected';
       
       switch (llm) {
         case 'ollama':
@@ -62,6 +67,10 @@ export function useConnectionStatus() {
       return false;
     }
   }, []);
-  
-  return { connectionStatus, setConnectionStatus, checkConnectionStatusForLLM };
+
+  return {
+    connectionStatus,
+    setConnectionStatus,
+    checkConnectionStatusForLLM
+  };
 }

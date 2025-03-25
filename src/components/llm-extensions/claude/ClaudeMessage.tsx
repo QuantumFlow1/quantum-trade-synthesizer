@@ -1,7 +1,7 @@
 
 import { format } from 'date-fns';
 import { UserIcon, Bot } from 'lucide-react';
-import { Message } from '../types/chatTypes';
+import { Message } from '../deepseek/types';
 
 interface MessageProps {
   message: Message;

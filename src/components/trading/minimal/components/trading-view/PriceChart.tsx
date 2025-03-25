@@ -21,17 +21,13 @@ interface PriceChartProps {
   chartType: string;
   visibleIndicators: ChartIndicators;
   showLegend?: boolean;
-  selectedPosition?: any;
-  assetType?: 'crypto' | 'stock' | 'forex' | 'commodity';
 }
 
 export const PriceChart: React.FC<PriceChartProps> = ({ 
   data, 
   chartType, 
   visibleIndicators,
-  showLegend = true,
-  selectedPosition,
-  assetType = 'crypto'
+  showLegend = true
 }) => {
   // Check if data exists
   if (!data || data.length === 0) {
@@ -65,23 +61,6 @@ export const PriceChart: React.FC<PriceChartProps> = ({
   const greenColor = '#22c55e';
   const redColor = '#ef4444';
 
-  // Entry price line for selected position
-  const entryPrice = selectedPosition?.entry_price;
-
-  // Format Y-axis tick based on asset type
-  const formatYAxisTick = (value: number) => {
-    if (assetType === 'forex') {
-      return value.toFixed(4);
-    } else if (value < 1 && assetType === 'crypto') {
-      return value.toFixed(6);
-    } else {
-      return value.toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      });
-    }
-  };
-
   return (
     <div className="relative h-[300px] w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -100,7 +79,10 @@ export const PriceChart: React.FC<PriceChartProps> = ({
             domain={[minValue, maxValue]} 
             tickCount={6}
             tick={{ fontSize: 10 }}
-            tickFormatter={formatYAxisTick}
+            tickFormatter={(value) => value.toLocaleString(undefined, {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0
+            })}
             width={60}
           />
           <Tooltip />
@@ -190,17 +172,6 @@ export const PriceChart: React.FC<PriceChartProps> = ({
               />
             </>
           )}
-
-          {/* Add reference line for position entry price if available */}
-          {entryPrice && (
-            <ReferenceLine
-              y={entryPrice}
-              stroke="#ff9800"
-              strokeWidth={2}
-              strokeDasharray="3 3"
-              label={{ value: `Entry: $${entryPrice}`, position: 'right', fill: '#ff9800' }}
-            />
-          )}
         </ComposedChart>
       </ResponsiveContainer>
       
@@ -210,13 +181,6 @@ export const PriceChart: React.FC<PriceChartProps> = ({
           items={legendItems}
           className="absolute top-2 left-2"
         />
-      )}
-
-      {/* Position indicator badge */}
-      {selectedPosition && (
-        <div className="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded text-xs">
-          {selectedPosition.symbol || "BTC"} Position
-        </div>
       )}
     </div>
   );

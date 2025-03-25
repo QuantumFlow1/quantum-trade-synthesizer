@@ -1,75 +1,100 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "./use-toast";
 
 export interface Position {
   id: string;
-  symbol: string;
+  pair_id: string;
   amount: number;
-  entry_price: number;
-  current_price: number;
-  profit_loss: number;
-  profit_loss_percentage: number;
-  type: 'long' | 'short';
-  timestamp: string;
+  average_entry_price: number;
+  unrealized_pnl: number;
+  created_at: string;
 }
 
 export const usePositions = () => {
   const [positions, setPositions] = useState<Position[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Simulate API call to get positions
-    setTimeout(() => {
-      setPositions([
-        {
-          id: "1",
-          symbol: "BTC",
-          amount: 0.15,
-          entry_price: 43500,
-          current_price: 42000,
-          profit_loss: -225,
-          profit_loss_percentage: -3.45,
-          type: 'long',
-          timestamp: new Date().toISOString()
-        },
-        {
-          id: "2",
-          symbol: "ETH",
-          amount: 1.5,
-          entry_price: 2800,
-          current_price: 3000,
-          profit_loss: 300,
-          profit_loss_percentage: 7.14,
-          type: 'long',
-          timestamp: new Date().toISOString()
-        }
-      ]);
+    if (!user) {
+      console.log("No user found, skipping positions fetch");
       setIsLoading(false);
-    }, 1500);
-  }, []);
+      return;
+    }
+
+    console.log("Fetching positions for user:", user.id);
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    const fetchPositions = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("positions")
+          .select("*")
+          .eq("user_id", user.id);
+
+        if (error) {
+          console.error("Database error fetching positions:", error);
+          throw error;
+        }
+
+        console.log("Positions fetched:", data);
+        setPositions(data || []);
+      } catch (error) {
+        console.error("Error fetching positions:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load positions",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPositions();
+
+    // Subscribe to position updates
+    console.log("Setting up realtime subscription for positions");
+    subscription = supabase
+      .channel("positions_channel")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "positions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log("Received position update:", payload);
+          if (payload.eventType === "INSERT") {
+            setPositions((current) => [...current, payload.new as Position]);
+          } else if (payload.eventType === "UPDATE") {
+            setPositions((current) =>
+              current.map((pos) =>
+                pos.id === payload.new.id ? (payload.new as Position) : pos
+              )
+            );
+          } else if (payload.eventType === "DELETE") {
+            setPositions((current) =>
+              current.filter((pos) => pos.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log("Cleaning up positions subscription");
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [user, toast]);
 
   return { positions, isLoading };
-};
-
-export const useSimulatedPositions = () => {
-  const [positions, setPositions] = useState<Position[]>([
-    {
-      id: "sim1",
-      symbol: "BTC",
-      amount: 0.25,
-      entry_price: 41000,
-      current_price: 42000,
-      profit_loss: 250,
-      profit_loss_percentage: 2.44,
-      type: 'long',
-      timestamp: new Date().toISOString()
-    }
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const closePosition = (positionId: string) => {
-    setPositions(prev => prev.filter(p => p.id !== positionId));
-  };
-
-  return { positions, isLoading, closePosition };
 };

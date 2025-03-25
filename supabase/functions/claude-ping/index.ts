@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { apiKey, checkMCP = false } = await req.json()
+    const { apiKey } = await req.json()
     
     if (!apiKey) {
       return new Response(
@@ -28,89 +28,42 @@ serve(async (req) => {
       )
     }
     
-    // Make a request to the Claude API to check if the API key works
-    let headers = {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'Content-Type': 'application/json'
-    };
-    
-    // Add MCP header if requested
-    if (checkMCP) {
-      headers['anthropic-beta'] = 'model-control-protocol-v1';
-      console.log('Testing Claude API with MCP headers');
-    }
-    
-    // First check if the API key works with the models endpoint
+    // Make a simple request to the Claude API to check if the API key works
     const response = await fetch('https://api.anthropic.com/v1/models', {
       method: 'GET',
-      headers
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json'
+      }
     })
     
-    if (!response.ok) {
+    if (response.ok) {
+      console.log('Claude API connection successful')
+      return new Response(
+        JSON.stringify({ 
+          status: 'available', 
+          success: true,
+          message: 'Successfully connected to Claude API' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    } else {
       const errorData = await response.json()
       console.error('Claude API connection failed:', errorData)
       return new Response(
         JSON.stringify({ 
           status: 'unavailable', 
           success: false,
-          message: errorData.error?.message || 'Invalid API key or service unavailable',
-          mcpSupported: false
+          message: errorData.error?.message || 'Invalid API key or service unavailable' 
         }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       )
     }
-    
-    console.log('Claude API connection successful')
-    
-    // If specifically checking MCP capability, we need to make a test request
-    // that uses MCP features to verify it's actually supported
-    let mcpSupported = false;
-    
-    if (checkMCP) {
-      try {
-        // Make a minimal MCP-specific test request
-        const mcpTestResponse = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            model: 'claude-3-haiku-20240307',
-            messages: [{ role: 'user', content: 'Hello' }],
-            max_tokens: 10,
-            control: {
-              prompt: "You're a helpful assistant responding in JSON format.",
-              format: { type: "json" }
-            }
-          })
-        });
-        
-        if (mcpTestResponse.ok) {
-          const mcpData = await mcpTestResponse.json();
-          // If we got a response with the tool_use type, MCP is supported
-          mcpSupported = true;
-          console.log('Claude MCP support test successful');
-        } else {
-          console.warn('Claude MCP support test failed, but API is available');
-        }
-      } catch (mcpError) {
-        console.error('Error testing Claude MCP support:', mcpError);
-        // API is still available even if MCP test failed
-      }
-    }
-    
-    return new Response(
-      JSON.stringify({ 
-        status: 'available', 
-        success: true,
-        message: 'Successfully connected to Claude API',
-        mcpSupported: checkMCP ? mcpSupported : undefined
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
   } catch (error) {
     console.error('Error in claude-ping function:', error)
     return new Response(

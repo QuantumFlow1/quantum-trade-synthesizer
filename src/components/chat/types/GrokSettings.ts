@@ -25,13 +25,12 @@ export interface ModelInfo {
   description?: string;
   needsApiKey?: boolean;
   isLocal?: boolean;
-  supportsMCP?: boolean;  // Add MCP support flag
 }
 
 export const AI_MODELS: ModelInfo[] = [
   { id: 'grok3', name: 'Grok 3', description: 'Snelle en krachtige AI van xAI' },
-  { id: 'openai', name: 'GPT-4o', description: 'Nieuwste multimodale AI van OpenAI', needsApiKey: true, supportsMCP: true },
-  { id: 'claude', name: 'Claude 3', description: 'Uitstekend voor nuancering en logica', needsApiKey: true, supportsMCP: true },
+  { id: 'openai', name: 'GPT-4o', description: 'Nieuwste multimodale AI van OpenAI', needsApiKey: true },
+  { id: 'claude', name: 'Claude 3', description: 'Uitstekend voor nuancering en logica', needsApiKey: true },
   { id: 'gemini', name: 'Gemini Pro', description: 'Geavanceerde AI van Google', needsApiKey: true },
   { id: 'deepseek', name: 'DeepSeek Coder', description: 'Gespecialiseerd in code en technische analyses', needsApiKey: true },
   { id: 'groq', name: 'Groq LLM', description: 'Ultrasnelle LLM voor analyses en code', needsApiKey: true },
@@ -55,7 +54,6 @@ export interface GrokSettings {
   temperature?: number;
   maxTokens?: number;
   apiKeys: ApiKeySettings;
-  useMCP?: boolean;  // Add MCP toggle for all models
 }
 
 export const DEFAULT_SETTINGS: GrokSettings = {
@@ -64,6 +62,5 @@ export const DEFAULT_SETTINGS: GrokSettings = {
   thinkEnabled: false,
   temperature: 0.7,
   maxTokens: 1024,
-  apiKeys: {},
-  useMCP: false  // Default to not using MCP
+  apiKeys: {}
 };

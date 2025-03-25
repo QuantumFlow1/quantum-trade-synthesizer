@@ -24,34 +24,6 @@ export const generateClaudeResponse = async (
     }
     
     console.log('Calling Claude API with model:', settings.selectedModel);
-    console.log('MCP enabled:', settings.useMCP || false);
-    
-    // First ping the API to check connectivity and MCP support
-    try {
-      const pingResponse = await supabase.functions.invoke('claude-ping', {
-        body: { 
-          apiKey: apiKey,
-          checkMCP: settings.useMCP || false // Check MCP support if enabled
-        }
-      });
-      
-      if (pingResponse.error || pingResponse.data?.status !== 'available') {
-        console.error('Claude API is unavailable:', pingResponse.error || pingResponse.data?.message);
-        throw new Error(pingResponse.data?.message || 'Claude API is currently unavailable');
-      }
-      
-      // If MCP was requested but not supported, log a warning
-      if (settings.useMCP && !pingResponse.data?.mcpSupported) {
-        console.warn('MCP was requested but may not be fully supported by the API');
-      } else if (settings.useMCP && pingResponse.data?.mcpSupported) {
-        console.log('MCP support confirmed by the API');
-      }
-      
-      console.log('Claude API connection verified successfully');
-    } catch (pingError) {
-      console.error('Error checking Claude API status:', pingError);
-      throw new Error(`Claude connection error: ${pingError.message}`);
-    }
     
     // Determine which Claude model to use
     let modelName = 'claude-3-haiku-20240307';
@@ -61,7 +33,7 @@ export const generateClaudeResponse = async (
       modelName = 'claude-3-opus-20240229';
     }
     
-    // Format conversation history for Claude using MCP format
+    // Format conversation history for Claude
     const messages = conversationHistory.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
       content: msg.content
@@ -74,15 +46,14 @@ export const generateClaudeResponse = async (
     });
     
     try {
-      // Call Supabase Edge Function for Claude response with MCP support
+      // Call Supabase Edge Function for Claude response
       const { data, error } = await supabase.functions.invoke('claude-response', {
         body: {
           messages,
           model: modelName,
           temperature: settings.temperature || 0.7,
           max_tokens: settings.maxTokens || 1024,
-          apiKey: apiKey,
-          useMCP: settings.useMCP || false // Pass the MCP flag
+          apiKey: apiKey
         }
       });
       
@@ -96,12 +67,7 @@ export const generateClaudeResponse = async (
         throw new Error('Invalid response from Claude API');
       }
       
-      console.log('Claude response received successfully', { 
-        modelName, 
-        usedMCP: settings.useMCP || false,
-        responseLength: data.response.length 
-      });
-      
+      console.log('Claude response:', data.response.substring(0, 100) + '...');
       return data.response;
     } catch (innerError) {
       console.error('Error during Claude API call:', innerError);
