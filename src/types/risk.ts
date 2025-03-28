@@ -17,6 +17,11 @@ export interface RiskMetric {
   status: "low" | "medium" | "high";
 }
 
+export interface RiskHistoryEntry {
+  date: string;
+  metrics: RiskMetric[];
+}
+
 export const defaultRiskSettings: Partial<RiskSettings> = {
   position_size_calculation: 'fixed',
   risk_reward_target: 2,
