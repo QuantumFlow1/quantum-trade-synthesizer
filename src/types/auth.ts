@@ -1,16 +1,18 @@
 
-export type UserRole = 'admin' | 'trader' | 'viewer' | 'super_admin' | 'lov_trader'
+export type UserRole = 'trader' | 'admin' | 'super_admin' | 'viewer' | 'analyst' | 'lov_trader';
+export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended';
+export type SubscriptionTier = 'free' | 'basic' | 'pro' | 'enterprise';
 
 export interface UserProfile {
-  id: string
-  email: string
-  role: UserRole
-  status: 'active' | 'pending' | 'suspended'
-  created_at: string
-  trading_enabled: boolean
-  max_trade_amount?: number
-  last_login?: string
-  api_access?: boolean
-  enhanced_features?: boolean
-  subscription_tier?: string // Added missing property
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  role: UserRole;
+  status: UserStatus;
+  last_login?: Date;
+  created_at?: Date;
+  subscription_tier?: SubscriptionTier;
+  api_access?: boolean;
+  trading_enabled?: boolean;
 }

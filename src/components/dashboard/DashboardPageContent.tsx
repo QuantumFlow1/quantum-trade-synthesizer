@@ -10,6 +10,8 @@ import { AIToolsPage } from "./pages/AIToolsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { VirtualEnvironmentDemo } from "../visualization/VirtualEnvironmentDemo";
+import { MarketData } from "../market/types";
+import { MarketNLPAnalysis } from "../market/MarketNLPAnalysis";
 
 interface DashboardPageContentProps {
   activePage: string;
@@ -22,6 +24,20 @@ interface DashboardPageContentProps {
   openAgentsTab: boolean;
   openTradingAgentsTab: () => void;
 }
+
+// Mock market data with complete MarketData type
+const mockMarketData: MarketData = {
+  symbol: "BTC/USDT",
+  price: 65432.10,
+  change24h: 2.5,
+  volume: 1234567890,
+  high24h: 66000,
+  low24h: 64000,
+  market: "crypto",
+  timestamp: new Date(),
+  high: 66000,
+  low: 64000
+};
 
 export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({ 
   activePage, 
@@ -48,7 +64,12 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
     case "wallet":
       return <WalletPage />;
     case "risk":
-      return <RiskPage />;
+      return (
+        <div className="space-y-6">
+          <RiskPage />
+          <MarketNLPAnalysis marketData={mockMarketData} />
+        </div>
+      );
     case "ai":
       return <AIToolsPage 
         apiStatus={apiStatus} 

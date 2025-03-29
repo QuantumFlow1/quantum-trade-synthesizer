@@ -1,110 +1,133 @@
 
-import { createContext, useContext, useEffect } from 'react'
-import { Session, User } from '@supabase/supabase-js'
-import { UserProfile, UserRole } from '@/types/auth'
-import { useAuthState } from '@/hooks/use-auth-state'
-import { useAuthSession } from '@/hooks/use-auth-session'
-import { useUserProfile } from '@/hooks/use-user-profile'
-import { useAuthActions } from '@/hooks/use-auth-actions'
-import { checkPermission, getUserRoleInfo } from '@/utils/auth-utils'
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/lib/supabase';
+import { User } from '@supabase/supabase-js';
 
-// Import the disconnectFromDocker function directly to avoid circular dependencies
-let disconnectOllamaFn: (() => void) | null = null;
+export type UserRole = 'trader' | 'admin' | 'super_admin' | 'viewer' | 'analyst' | 'lov_trader';
+export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended';
+export type SubscriptionTier = 'free' | 'basic' | 'pro' | 'enterprise';
 
-// Function to register the disconnect function from outside
-export const registerOllamaDisconnectFn = (fn: () => void) => {
-  disconnectOllamaFn = fn;
-};
-
-type AuthContextType = {
-  session: Session | null
-  user: User | null
-  userProfile: UserProfile | null
-  isAdmin: boolean
-  isTrader: boolean
-  isLovTrader: boolean
-  signIn: {
-    email: (email: string, password: string) => Promise<void>
-    google: () => Promise<void>
-    github: () => Promise<void>
-  }
-  signOut: () => Promise<void>
-  checkPermission: (requiredRole: UserRole | UserRole[]) => boolean
+export interface UserProfile {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  role: UserRole;
+  status: UserStatus;
+  last_login?: Date;
+  created_at?: Date;
+  subscription_tier?: SubscriptionTier;
+  api_access?: boolean;
+  trading_enabled?: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+export interface AuthContextType {
+  user: User | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+  error: Error | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const {
-    session, setSession,
-    user, setUser,
-    userProfile, setUserProfile,
-    isLoading, setIsLoading
-  } = useAuthState()
-  
-  // Setup auth session
-  useAuthSession(setSession, setUser, setIsLoading)
-  
-  // Fetch user profile
-  useUserProfile(user, setUserProfile)
-  
-  // Auth actions (sign in/out)
-  const { signIn, signOut: baseSignOut } = useAuthActions()
-  
-  // Extended sign out function that also disconnects from Ollama
-  const signOut = async () => {
-    // Disconnect from Ollama using the registered function if available
-    if (disconnectOllamaFn) {
-      disconnectOllamaFn();
-    }
-    
-    // Call the original sign out function
-    await baseSignOut()
-  }
-  
-  // Role info
-  const { isAdmin, isTrader, isLovTrader } = getUserRoleInfo(userProfile)
-  
-  // Auto-disconnect Ollama when user logs out or session expires
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  userProfile: null,
+  loading: true,
+  error: null,
+  signIn: async () => {},
+  signOut: async () => {},
+});
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
   useEffect(() => {
-    if (session === null && user === null) {
-      // Disconnect from Ollama using the registered function if available
-      if (disconnectOllamaFn) {
-        disconnectOllamaFn();
-      }
-    }
-  }, [session, user])
-  
-  // Permission checker
-  const handleCheckPermission = (requiredRole: UserRole | UserRole[]): boolean => {
-    return checkPermission(userProfile, requiredRole)
-  }
+    // Mock user for development purposes
+    const mockUser = {
+      id: '123',
+      email: 'test@example.com',
+      user_metadata: {
+        full_name: 'Test User',
+      },
+    } as User;
 
-  if (isLoading) {
-    return null
-  }
+    const mockProfile: UserProfile = {
+      id: '123',
+      email: 'test@example.com',
+      first_name: 'Test',
+      last_name: 'User',
+      role: 'trader',
+      status: 'active',
+      last_login: new Date(),
+      created_at: new Date(),
+      subscription_tier: 'pro',
+      api_access: true,
+      trading_enabled: true,
+    };
+
+    setUser(mockUser);
+    setUserProfile(mockProfile);
+    setLoading(false);
+
+    // In a real implementation, we would fetch the user from Supabase
+    // supabase.auth.getSession().then(({ data: { session } }) => {
+    //   setUser(session?.user ?? null);
+    //   setLoading(false);
+    // });
+
+    // const { data: authListener } = supabase.auth.onAuthStateChange(
+    //   async (event, session) => {
+    //     setUser(session?.user ?? null);
+    //     setLoading(false);
+    //   }
+    // );
+
+    // return () => {
+    //   authListener.subscription.unsubscribe();
+    // };
+  }, []);
+
+  // Sign in function
+  const signIn = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    } catch (error) {
+      setError(error as Error);
+      console.error('Error signing in:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Sign out function
+  const signOut = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      setError(error as Error);
+      console.error('Error signing out:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ 
-      session, 
-      user, 
-      userProfile,
-      isAdmin,
-      isTrader,
-      isLovTrader,
-      signIn, 
-      signOut,
-      checkPermission: handleCheckPermission
-    }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, error, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
-  )
-}
+  );
+};
 
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
+export const useAuth = () => useContext(AuthContext);
