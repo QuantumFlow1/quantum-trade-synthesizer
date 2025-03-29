@@ -1,33 +1,35 @@
 
-/**
- * Helper functions for the onboarding system
- */
+// Helper functions for onboarding
 
-// This function ensures we have valid IDs on elements for onboarding targeting
-export const addOnboardingAttributes = () => {
-  // Add IDs to dashboard tabs if they don't exist
-  setTimeout(() => {
-    // Main dashboard overview
-    const dashboardOverview = document.querySelector('.dashboard-overview');
-    if (dashboardOverview && !dashboardOverview.id) {
-      dashboardOverview.id = 'dashboard-overview';
-    }
+export function addOnboardingAttributes() {
+  // Add data attributes to dashboard elements for onboarding tooltips
+  const dashboardOverview = document.getElementById('dashboard-overview');
+  if (dashboardOverview) {
+    dashboardOverview.setAttribute('data-onboarding-id', 'dashboard-overview');
+  }
 
-    // Tab elements
-    const tabElements = [
-      { selector: '[data-tab="market"]', id: 'market-tab' },
-      { selector: '[data-tab="trading"]', id: 'trading-tab' },
-      { selector: '[data-tab="ai"]', id: 'ai-tab' },
-      { selector: '[data-tab="risk"]', id: 'risk-tab' }
-    ];
+  const marketTab = document.getElementById('market-tab');
+  if (marketTab) {
+    marketTab.setAttribute('data-onboarding-id', 'market-tab');
+  }
 
-    tabElements.forEach(({ selector, id }) => {
-      const element = document.querySelector(selector);
-      if (element && !element.id) {
-        element.id = id;
-      }
-    });
+  const tradingTab = document.getElementById('trading-tab');
+  if (tradingTab) {
+    tradingTab.setAttribute('data-onboarding-id', 'trading-tab');
+  }
 
-    console.log('Onboarding attributes added to DOM elements');
-  }, 1000); // Delay to ensure elements are in the DOM
-};
+  const aiTab = document.getElementById('ai-tab');
+  if (aiTab) {
+    aiTab.setAttribute('data-onboarding-id', 'ai-tab');
+  }
+
+  const riskTab = document.getElementById('risk-tab');
+  if (riskTab) {
+    riskTab.setAttribute('data-onboarding-id', 'risk-tab');
+  }
+}
+
+// Get a reference to an element by its onboarding ID
+export function getOnboardingElement(id: string): HTMLElement | null {
+  return document.querySelector(`[data-onboarding-id="${id}"]`);
+}

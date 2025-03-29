@@ -1,70 +1,95 @@
 
-import React from "react";
-import { OverviewPage } from "./pages/OverviewPage";
-import { MarketPage } from "./pages/MarketPage";
-import { MinimalTradingPage } from "./pages/MinimalTradingPage";
-import { AnalyticsPage } from "./pages/AnalyticsPage";
-import { WalletPage } from "./pages/WalletPage";
-import { RiskPage } from "./pages/RiskPage";
-import { AIToolsPage } from "./pages/AIToolsPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { GamificationPage } from "./pages/GamificationPage";
-import { VirtualEnvironmentDemo } from "../visualization/VirtualEnvironmentDemo";
+import React from 'react';
+import { AIMarketAnalysis } from '@/components/market/AIMarketAnalysis';
+import { CollaborativeInsightsPanel } from '@/components/trading/CollaborativeInsightsPanel';
+import { StockbotChat } from '@/components/trading/minimal/StockbotChat';
+import { VoiceAssistant } from '@/components/VoiceAssistant';
 
 interface DashboardPageContentProps {
   activePage: string;
   apiStatus: 'checking' | 'available' | 'unavailable';
   showVirtualEnvironment: boolean;
   visibleWidgets: {
-    apiAccess: boolean;
-    [key: string]: boolean;
+    apiAccess?: boolean;
   };
-  openAgentsTab: boolean;
+  openAgentsTab: () => void;
   openTradingAgentsTab: () => void;
 }
 
-export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({ 
-  activePage, 
-  apiStatus, 
+export const DashboardPageContent = ({ 
+  activePage,
+  apiStatus,
   showVirtualEnvironment,
   visibleWidgets,
   openAgentsTab,
   openTradingAgentsTab
-}) => {
+}: DashboardPageContentProps) => {
+  // Mock market data for demonstration purposes
+  const mockMarketData = {
+    symbol: 'BTC',
+    price: 62549.23,
+    change24h: 2.5,
+    volume: 28500000000,
+    high24h: 63100.50,
+    low24h: 61200.75,
+    market: 'Cryptocurrency'
+  };
+
+  // We'll render different content based on the active page
   switch (activePage) {
-    case "overview":
+    case 'overview':
       return (
-        <>
-          {showVirtualEnvironment && <VirtualEnvironmentDemo />}
-          <OverviewPage />
-        </>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h1 className="text-2xl font-bold col-span-full">Dashboard Overview</h1>
+          <AIMarketAnalysis marketData={mockMarketData} />
+          <CollaborativeInsightsPanel currentData={mockMarketData} isSimulationMode={true} />
+        </div>
       );
-    case "market":
-      return <MarketPage />;
-    case "trading":
-      return <MinimalTradingPage initialOpenAgentsTab={openAgentsTab} />;
-    case "analytics":
-      return <AnalyticsPage />;
-    case "wallet":
-      return <WalletPage />;
-    case "risk":
-      return <RiskPage />;
-    case "ai":
-      return <AIToolsPage 
-        apiStatus={apiStatus} 
-        showApiAccess={visibleWidgets.apiAccess} 
-        openTradingAgents={openTradingAgentsTab}
-      />;
-    case "gamification":
-      return <GamificationPage />;
-    case "settings":
-      return <SettingsPage />;
+    
+    case 'ai':
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <h1 className="text-2xl font-bold col-span-full">AI Tools</h1>
+          <div className="col-span-full md:col-span-1">
+            <StockbotChat />
+          </div>
+          <div className="col-span-full md:col-span-1">
+            <VoiceAssistant />
+          </div>
+        </div>
+      );
+    
+    // Add cases for other pages as needed
+    case 'market':
+      return (
+        <div className="space-y-6">
+          <h1 className="text-2xl font-bold">Market Analysis</h1>
+          <AIMarketAnalysis marketData={mockMarketData} className="w-full" />
+        </div>
+      );
+    
+    case 'trading':
+      return (
+        <div className="space-y-6">
+          <h1 className="text-2xl font-bold">Trading Platform</h1>
+          <CollaborativeInsightsPanel currentData={mockMarketData} isSimulationMode={false} />
+        </div>
+      );
+    
+    case 'risk':
+      return (
+        <div className="space-y-6">
+          <h1 className="text-2xl font-bold">Risk Management</h1>
+          <p>Risk management tools and analysis will be displayed here.</p>
+        </div>
+      );
+    
     default:
       return (
-        <>
-          {showVirtualEnvironment && <VirtualEnvironmentDemo />}
-          <OverviewPage />
-        </>
+        <div className="space-y-6">
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p>Select a section from the navigation menu.</p>
+        </div>
       );
   }
 };

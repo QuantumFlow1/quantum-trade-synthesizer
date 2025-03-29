@@ -3,6 +3,7 @@ import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { DashboardPageContent } from './DashboardPageContent';
 import { useDashboardNavigation } from '@/hooks/use-dashboard-navigation';
+import { AIMarketAnalysisPage } from '@/components/ai/AIMarketAnalysisPage';
 
 export const DashboardContent = () => {
   const location = useLocation();
@@ -79,14 +80,7 @@ export const DashboardContent = () => {
         <Route 
           path="/ai" 
           element={
-            <DashboardPageContent 
-              activePage="ai"
-              apiStatus={apiStatus}
-              showVirtualEnvironment={false}
-              visibleWidgets={visibleWidgets}
-              openAgentsTab={openAgentsTab}
-              openTradingAgentsTab={openTradingAgentsTab}
-            />
+            <AIMarketAnalysisPage />
           } 
         />
         <Route 
