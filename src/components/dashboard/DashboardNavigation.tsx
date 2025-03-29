@@ -30,7 +30,7 @@ const DashboardNavigation = ({ activePage, onChangePage }: DashboardNavigationPr
   ];
 
   return (
-    <nav className="space-y-1">
+    <nav className="flex items-center space-x-2 overflow-x-auto py-2 px-1">
       {navItems.map((item) => (
         <Link
           key={item.path}
