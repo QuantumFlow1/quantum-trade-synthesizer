@@ -1,134 +1,110 @@
 
-// Import necessary packages
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { UserRole } from '@/types/auth';
+import { createContext, useContext, useEffect } from 'react'
+import { Session, User } from '@supabase/supabase-js'
+import { UserProfile, UserRole } from '@/types/auth'
+import { useAuthState } from '@/hooks/use-auth-state'
+import { useAuthSession } from '@/hooks/use-auth-session'
+import { useUserProfile } from '@/hooks/use-user-profile'
+import { useAuthActions } from '@/hooks/use-auth-actions'
+import { checkPermission, getUserRoleInfo } from '@/utils/auth-utils'
 
-// Define the UserProfile type
-export interface UserProfile {
-  id: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  role?: string;
-  last_login?: Date;
-  status: string;
-  created_at: Date;
-  trading_enabled: boolean;
-  subscription_tier?: string;
+// Import the disconnectFromDocker function directly to avoid circular dependencies
+let disconnectOllamaFn: (() => void) | null = null;
+
+// Function to register the disconnect function from outside
+export const registerOllamaDisconnectFn = (fn: () => void) => {
+  disconnectOllamaFn = fn;
+};
+
+type AuthContextType = {
+  session: Session | null
+  user: User | null
+  userProfile: UserProfile | null
+  isAdmin: boolean
+  isTrader: boolean
+  isLovTrader: boolean
+  signIn: {
+    email: (email: string, password: string) => Promise<void>
+    google: () => Promise<void>
+    github: () => Promise<void>
+  }
+  signOut: () => Promise<void>
+  checkPermission: (requiredRole: UserRole | UserRole[]) => boolean
 }
 
-// Define the Auth Context type
-export interface AuthContextType {
-  user: any | null;
-  userProfile: UserProfile | null;
-  loading: boolean;
-  error: Error | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => Promise<void>;
-}
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Create the context with a default value
-const AuthContext = createContext<AuthContextType | null>(null);
-
-// Props for the AuthProvider component
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-// Create the AuthProvider component
-export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<any | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  // Mock sign in function
-  const signIn = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      // In a real app, this would be an API call to authenticate
-      // Mock user authentication
-      const mockUser = { uid: '123', email };
-      const mockProfile: UserProfile = {
-        id: '123',
-        email,
-        first_name: 'Test',
-        last_name: 'User',
-        role: 'user',
-        status: 'active',
-        created_at: new Date(),
-        trading_enabled: true,
-        subscription_tier: 'premium'
-      };
-      
-      setUser(mockUser);
-      setUserProfile(mockProfile);
-      setError(null);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Mock sign out function
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const {
+    session, setSession,
+    user, setUser,
+    userProfile, setUserProfile,
+    isLoading, setIsLoading
+  } = useAuthState()
+  
+  // Setup auth session
+  useAuthSession(setSession, setUser, setIsLoading)
+  
+  // Fetch user profile
+  useUserProfile(user, setUserProfile)
+  
+  // Auth actions (sign in/out)
+  const { signIn, signOut: baseSignOut } = useAuthActions()
+  
+  // Extended sign out function that also disconnects from Ollama
   const signOut = async () => {
-    try {
-      setLoading(true);
-      // In a real app, this would be an API call to sign out
-      setUser(null);
-      setUserProfile(null);
-      setError(null);
-    } catch (err) {
-      setError(err as Error);
-    } finally {
-      setLoading(false);
+    // Disconnect from Ollama using the registered function if available
+    if (disconnectOllamaFn) {
+      disconnectOllamaFn();
     }
-  };
-
-  // Mock user authentication effect
+    
+    // Call the original sign out function
+    await baseSignOut()
+  }
+  
+  // Role info
+  const { isAdmin, isTrader, isLovTrader } = getUserRoleInfo(userProfile)
+  
+  // Auto-disconnect Ollama when user logs out or session expires
   useEffect(() => {
-    // In a real app, this would check if the user is already authenticated
-    const checkAuth = async () => {
-      try {
-        // Mock auto-authentication for demonstration
-        const mockUser = { uid: '123', email: 'user@example.com' };
-        const mockProfile: UserProfile = {
-          id: '123',
-          email: 'user@example.com',
-          first_name: 'Test',
-          last_name: 'User',
-          role: 'user',
-          status: 'active',
-          created_at: new Date(),
-          trading_enabled: true,
-          subscription_tier: 'premium'
-        };
-        
-        setUser(mockUser);
-        setUserProfile(mockProfile);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setLoading(false);
+    if (session === null && user === null) {
+      // Disconnect from Ollama using the registered function if available
+      if (disconnectOllamaFn) {
+        disconnectOllamaFn();
       }
-    };
+    }
+  }, [session, user])
+  
+  // Permission checker
+  const handleCheckPermission = (requiredRole: UserRole | UserRole[]): boolean => {
+    return checkPermission(userProfile, requiredRole)
+  }
 
-    checkAuth();
-  }, []);
+  if (isLoading) {
+    return null
+  }
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, error, signIn, signOut }}>
+    <AuthContext.Provider value={{ 
+      session, 
+      user, 
+      userProfile,
+      isAdmin,
+      isTrader,
+      isLovTrader,
+      signIn, 
+      signOut,
+      checkPermission: handleCheckPermission
+    }}>
       {children}
     </AuthContext.Provider>
-  );
-};
+  )
+}
 
-// Create a hook to use the auth context
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider')
   }
-  return context;
-};
+  return context
+}

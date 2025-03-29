@@ -70,7 +70,7 @@ const ApiKeyManagement = () => {
     is_active: true
   });
 
-  const isSuperAdmin = userProfile && checkPermission(userProfile, 'super_admin');
+  const isSuperAdmin = checkPermission(userProfile, 'super_admin');
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -128,7 +128,7 @@ const ApiKeyManagement = () => {
         setAdminApiKeyStatus(data.allKeys);
         console.log('Admin API key status:', data.allKeys);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error checking admin API keys:', error);
       toast({
         title: "Error",
