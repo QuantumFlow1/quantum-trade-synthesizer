@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
-import { NavBar } from './NavBar';
-import { BottomNavigation } from './BottomNavigation';
+import { Sidebar } from '@/components/dashboard/Sidebar';
+import { NavBar } from '@/components/dashboard/NavBar';
+import { BottomNavigation } from '@/components/dashboard/BottomNavigation';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;

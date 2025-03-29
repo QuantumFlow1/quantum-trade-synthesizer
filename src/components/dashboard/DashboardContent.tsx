@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { DashboardPageContent } from './DashboardPageContent';
 import { useDashboardNavigation } from '@/hooks/use-dashboard-navigation';
 
