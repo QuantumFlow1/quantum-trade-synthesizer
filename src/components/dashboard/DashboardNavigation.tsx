@@ -1,49 +1,50 @@
 
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { 
-  LayoutDashboard, LineChart, TrendingUp, 
-  BarChart3, Wallet, Shield, Brain, 
-  Settings, Trophy, Atom
-} from "lucide-react";
+  Home, ChartBar, Wallet, Settings, Shield, 
+  BadgeDollarSign, Brain, AreaChart, Zap 
+} from 'lucide-react';
 
-interface DashboardNavigationProps {
-  activePage: string;
-  onChangePage: (page: string) => void;
-}
+const DashboardNavigation = () => {
+  const location = useLocation();
+  const currentPath = location.pathname;
 
-export const DashboardNavigation = ({ activePage, onChangePage }: DashboardNavigationProps) => {
-  const navigationItems = [
-    { id: "overview", label: "Overview", icon: <LayoutDashboard className="h-5 w-5" /> },
-    { id: "market", label: "Market", icon: <LineChart className="h-5 w-5" /> },
-    { id: "trading", label: "Trading", icon: <TrendingUp className="h-5 w-5" /> },
-    { id: "analytics", label: "Quantalytics", icon: <Atom className="h-5 w-5" /> },
-    { id: "wallet", label: "Wallet", icon: <Wallet className="h-5 w-5" /> },
-    { id: "risk", label: "Risk", icon: <Shield className="h-5 w-5" /> },
-    { id: "ai", label: "AI Tools", icon: <Brain className="h-5 w-5" /> },
-    { id: "gamification", label: "Gamification", icon: <Trophy className="h-5 w-5" /> },
-    { id: "settings", label: "Settings", icon: <Settings className="h-5 w-5" /> },
+  const isActive = (path: string) => {
+    return currentPath.includes(path);
+  };
+
+  const navItems = [
+    { path: "/dashboard/overview", label: "Overview", icon: <Home className="h-5 w-5" /> },
+    { path: "/dashboard/market", label: "Market", icon: <ChartBar className="h-5 w-5" /> },
+    { path: "/dashboard/trading", label: "Trading", icon: <AreaChart className="h-5 w-5" /> },
+    { path: "/dashboard/wallet", label: "Wallet", icon: <Wallet className="h-5 w-5" /> },
+    { path: "/dashboard/risk", label: "Risk Mgmt", icon: <Shield className="h-5 w-5" /> },
+    { path: "/dashboard/ai", label: "AI Tools", icon: <Brain className="h-5 w-5" /> },
+    { path: "/subscription", label: "Subscription", icon: <Zap className="h-5 w-5" /> },
+    { path: "/dashboard/settings", label: "Settings", icon: <Settings className="h-5 w-5" /> },
   ];
 
   return (
-    <div className="mb-6 px-4 overflow-x-auto">
-      <div className="flex items-center space-x-1 pb-2 min-w-max">
-        {navigationItems.map((item) => (
-          <Button
-            key={item.id}
-            variant={activePage === item.id ? "default" : "ghost"}
-            size="sm"
-            className={`flex items-center gap-1 ${
-              activePage === item.id ? "bg-primary text-primary-foreground" : ""
-            }`}
-            onClick={() => onChangePage(item.id)}
-          >
+    <nav className="space-y-1">
+      {navItems.map((item) => (
+        <Link
+          key={item.path}
+          to={item.path}
+          className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+            isActive(item.path)
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:bg-muted"
+          }`}
+        >
+          <span className={`mr-3 ${isActive(item.path) ? "text-primary" : ""}`}>
             {item.icon}
-            <span>{item.label}</span>
-          </Button>
-        ))}
-      </div>
-      <Separator />
-    </div>
+          </span>
+          {item.label}
+        </Link>
+      ))}
+    </nav>
   );
 };
+
+export default DashboardNavigation;
