@@ -3,7 +3,7 @@ import React from 'react';
 import { AIMarketAnalysis } from '@/components/market/AIMarketAnalysis';
 import { CollaborativeInsightsPanel } from '@/components/trading/CollaborativeInsightsPanel';
 import { StockbotChat } from '@/components/trading/minimal/StockbotChat';
-import { VoiceAssistant } from '@/components/VoiceAssistant';
+import VoiceAssistant from '@/components/VoiceAssistant';
 
 interface DashboardPageContentProps {
   activePage: string;
@@ -32,7 +32,10 @@ export const DashboardPageContent = ({
     volume: 28500000000,
     high24h: 63100.50,
     low24h: 61200.75,
-    market: 'Cryptocurrency'
+    market: 'Cryptocurrency',
+    timestamp: new Date(),
+    high: 63100.50,  // Add missing properties to match MarketData type
+    low: 61200.75    // Add missing properties to match MarketData type
   };
 
   // We'll render different content based on the active page

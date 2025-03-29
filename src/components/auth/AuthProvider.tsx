@@ -1,107 +1,132 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+// Import necessary packages
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Define types for our authentication context
-type User = {
-  id: string;
-  email: string;
-} | null;
-
-type UserProfile = {
+// Define the UserProfile type
+export interface UserProfile {
   id: string;
   email: string;
   first_name?: string;
   last_name?: string;
   role?: string;
-  last_login?: Date | null;
-} | null;
-
-interface AuthContextType {
-  user: User;
-  userProfile: UserProfile;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  last_login?: Date;
+  status?: string;
+  created_at?: Date;
+  trading_enabled?: boolean;
+  subscription_tier?: string;
 }
 
-// Create the authentication context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Define the Auth Context type
+export interface AuthContextType {
+  user: any | null;
+  userProfile: UserProfile | null;
+  loading: boolean;
+  error: Error | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
 
-// Create a provider component for the authentication context
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile>(null);
+// Create the context with a default value
+const AuthContext = createContext<AuthContextType | null>(null);
+
+// Props for the AuthProvider component
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// Create the AuthProvider component
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [user, setUser] = useState<any | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Mock authentication for demonstration purposes
-  useEffect(() => {
-    // Simulate loading auth state
-    setTimeout(() => {
-      const mockUser = {
-        id: '1',
-        email: 'user@example.com'
-      };
-      
-      const mockProfile = {
-        id: '1',
-        email: 'user@example.com',
-        first_name: 'Demo',
+  // Mock sign in function
+  const signIn = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      // In a real app, this would be an API call to authenticate
+      // Mock user authentication
+      const mockUser = { uid: '123', email };
+      const mockProfile: UserProfile = {
+        id: '123',
+        email,
+        first_name: 'Test',
         last_name: 'User',
         role: 'user',
-        last_login: new Date()
+        status: 'active',
+        created_at: new Date(),
+        trading_enabled: true,
+        subscription_tier: 'premium'
       };
       
       setUser(mockUser);
       setUserProfile(mockProfile);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
+  };
+
+  // Mock sign out function
+  const signOut = async () => {
+    try {
+      setLoading(true);
+      // In a real app, this would be an API call to sign out
+      setUser(null);
+      setUserProfile(null);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Mock user authentication effect
+  useEffect(() => {
+    // In a real app, this would check if the user is already authenticated
+    const checkAuth = async () => {
+      try {
+        // Mock auto-authentication for demonstration
+        const mockUser = { uid: '123', email: 'user@example.com' };
+        const mockProfile: UserProfile = {
+          id: '123',
+          email: 'user@example.com',
+          first_name: 'Test',
+          last_name: 'User',
+          role: 'user',
+          status: 'active',
+          created_at: new Date(),
+          trading_enabled: true,
+          subscription_tier: 'premium'
+        };
+        
+        setUser(mockUser);
+        setUserProfile(mockProfile);
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
-  // Mock authentication functions
-  const login = async (email: string, password: string) => {
-    // Mock implementation
-    setUser({ id: '1', email });
-    setUserProfile({
-      id: '1',
-      email,
-      first_name: 'Demo',
-      last_name: 'User',
-      role: 'user',
-      last_login: new Date()
-    });
-  };
-
-  const logout = async () => {
-    // Mock implementation
-    setUser(null);
-    setUserProfile(null);
-  };
-
-  const signup = async (email: string, password: string, firstName: string, lastName: string) => {
-    // Mock implementation
-    setUser({ id: '1', email });
-    setUserProfile({
-      id: '1',
-      email,
-      first_name: firstName,
-      last_name: lastName,
-      role: 'user',
-      last_login: null
-    });
-  };
-
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, login, logout, signup }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, error, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Create a custom hook for using the authentication context
+// Create a hook to use the auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
