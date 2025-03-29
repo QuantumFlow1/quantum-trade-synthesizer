@@ -1,9 +1,14 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OnboardingTrigger } from '@/components/OnboardingTrigger';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 
-export const OverviewPage = () => {
+interface OverviewPageProps {
+  apiStatus?: 'checking' | 'available' | 'unavailable';
+}
+
+export const OverviewPage: React.FC<OverviewPageProps> = ({ apiStatus }) => {
   const { isOnboardingActive } = useOnboarding();
 
   return (

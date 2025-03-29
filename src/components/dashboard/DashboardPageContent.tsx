@@ -36,7 +36,7 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
       return (
         <>
           {showVirtualEnvironment && <VirtualEnvironmentDemo />}
-          <OverviewPage apiStatus={apiStatus} />
+          <OverviewPage />
         </>
       );
     case "market":
@@ -63,7 +63,7 @@ export const DashboardPageContent: React.FC<DashboardPageContentProps> = ({
       return (
         <>
           {showVirtualEnvironment && <VirtualEnvironmentDemo />}
-          <OverviewPage apiStatus={apiStatus} />
+          <OverviewPage />
         </>
       );
   }
