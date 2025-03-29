@@ -33,9 +33,9 @@ export const DashboardPageContent = ({
     high24h: 63100.50,
     low24h: 61200.75,
     market: 'Cryptocurrency',
-    timestamp: new Date(),
-    high: 63100.50,  // Add missing properties to match MarketData type
-    low: 61200.75    // Add missing properties to match MarketData type
+    timestamp: Date.now(), // Convert to number
+    high: 63100.50,
+    low: 61200.75
   };
 
   // We'll render different content based on the active page

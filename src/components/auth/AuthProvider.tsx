@@ -1,6 +1,7 @@
 
 // Import necessary packages
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { UserRole } from '@/types/auth';
 
 // Define the UserProfile type
 export interface UserProfile {
@@ -10,9 +11,9 @@ export interface UserProfile {
   last_name?: string;
   role?: string;
   last_login?: Date;
-  status?: string;
-  created_at?: Date;
-  trading_enabled?: boolean;
+  status: string;
+  created_at: Date;
+  trading_enabled: boolean;
   subscription_tier?: string;
 }
 
