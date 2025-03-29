@@ -2,7 +2,7 @@
 import React from 'react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
+import { AlertTriangle, Info } from 'lucide-react';
 import { useRiskSettings } from '@/hooks/use-risk-settings';
 
 export const RiskWarnings = () => {
@@ -12,21 +12,21 @@ export const RiskWarnings = () => {
   const warnings = [
     {
       id: 1,
-      level: 'high',
+      level: 'high' as const,
       title: 'High Daily Loss Risk',
       description: `Your max daily loss is set to ${riskSettings.max_daily_loss}. This is higher than the recommended 5% of portfolio value.`,
       show: riskSettings.max_daily_loss > 100
     },
     {
       id: 2,
-      level: 'medium',
+      level: 'medium' as const,
       title: 'Leverage Warning',
       description: `You're currently using a maximum leverage of ${riskSettings.max_leverage}x. Consider reducing leverage to minimize risk.`,
       show: riskSettings.max_leverage > 1.5
     },
     {
       id: 3,
-      level: 'low',
+      level: 'low' as const,
       title: 'Risk/Reward Ratio',
       description: `Your risk/reward target is ${riskSettings.risk_reward_target}. A minimum of 2:1 is generally recommended.`,
       show: riskSettings.risk_reward_target < 2
@@ -41,7 +41,7 @@ export const RiskWarnings = () => {
       
       {activeWarnings.length === 0 ? (
         <Alert className="bg-green-50 border-green-200">
-          <InfoCircledIcon className="h-4 w-4 text-green-600" />
+          <Info className="h-4 w-4 text-green-600" />
           <AlertTitle className="text-green-800">All Clear</AlertTitle>
           <AlertDescription className="text-green-700">
             No risk warnings detected with your current settings. Good job maintaining a balanced risk profile!
@@ -59,7 +59,7 @@ export const RiskWarnings = () => {
                 : 'bg-blue-50 border-blue-200'
               }
             >
-              <ExclamationTriangleIcon className={`h-4 w-4 ${
+              <AlertTriangle className={`h-4 w-4 ${
                 warning.level === 'high' 
                   ? 'text-red-600' 
                   : warning.level === 'medium'

@@ -33,15 +33,15 @@ const RiskManagement = () => {
     const interval = setInterval(() => {
       // In a real app, you would fetch the latest metrics here
       // For demo, we'll generate slightly different metrics
-      const updatedMetrics = riskMetrics.map(metric => ({
+      const updatedMetrics: RiskMetric[] = riskMetrics.map(metric => ({
         ...metric,
         value: Math.min(
           metric.maxValue, 
           Math.max(1, metric.value + (Math.random() > 0.5 ? 1 : -1) * Math.random() * 5)
         ),
         status: Math.random() > 0.8 ? 
-          (Math.random() > 0.5 ? 'high' : 'medium') : 
-          (Math.random() > 0.5 ? 'medium' : 'low')
+          (Math.random() > 0.5 ? 'high' : 'medium') as const : 
+          (Math.random() > 0.5 ? 'medium' : 'low') as const
       }));
       
       addHistoryEntry(updatedMetrics);
