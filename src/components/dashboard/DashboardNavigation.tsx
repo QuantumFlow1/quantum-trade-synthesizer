@@ -1,95 +1,71 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  Home, ChartBar, Wallet, Settings, Shield, 
-  BadgeDollarSign, Brain, AreaChart, Zap 
-} from 'lucide-react';
-import { OnboardingTooltip } from '@/components/ui/tooltip-custom';
-import { useOnboarding } from '@/contexts/OnboardingContext';
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Home, BarChart2, TrendingUp, Zap, Shield } from 'lucide-react';
 
-interface DashboardNavigationProps {
-  activePage: string;
-  onChangePage: (page: string) => void;
+interface Tab {
+  id: string;
+  label: string;
+  path: string;
+  icon: React.ReactNode;
 }
 
-const DashboardNavigation = ({ activePage, onChangePage }: DashboardNavigationProps) => {
+export const DashboardNavigation = () => {
   const location = useLocation();
-  const { 
-    steps, 
-    currentStepIndex, 
-    isOnboardingActive, 
-    goToNextStep 
-  } = useOnboarding();
-
-  const isActive = (path: string) => {
-    return activePage === path;
-  };
-
-  const navItems = [
-    { path: "overview", label: "Overview", icon: <Home className="h-5 w-5" />, id: "dashboard-overview" },
-    { path: "market", label: "Market", icon: <ChartBar className="h-5 w-5" />, id: "market-tab" },
-    { path: "trading", label: "Trading", icon: <AreaChart className="h-5 w-5" />, id: "trading-tab" },
-    { path: "wallet", label: "Wallet", icon: <Wallet className="h-5 w-5" />, id: "wallet-tab" },
-    { path: "risk", label: "Risk Mgmt", icon: <Shield className="h-5 w-5" />, id: "risk-tab" },
-    { path: "ai", label: "AI Tools", icon: <Brain className="h-5 w-5" />, id: "ai-tab" },
-    { path: "subscription", label: "Subscription", icon: <Zap className="h-5 w-5" />, id: "subscription-tab" },
-    { path: "settings", label: "Settings", icon: <Settings className="h-5 w-5" />, id: "settings-tab" },
+  const currentPath = location.pathname.split('/').slice(0, 3).join('/');
+  
+  const tabs: Tab[] = [
+    {
+      id: "overview",
+      label: "Overview",
+      path: "/dashboard/overview",
+      icon: <Home className="h-4 w-4" />
+    },
+    {
+      id: "market",
+      label: "Market",
+      path: "/dashboard/market",
+      icon: <BarChart2 className="h-4 w-4" />
+    },
+    {
+      id: "trading",
+      label: "Trading",
+      path: "/dashboard/trading",
+      icon: <TrendingUp className="h-4 w-4" />
+    },
+    {
+      id: "ai",
+      label: "AI",
+      path: "/dashboard/ai",
+      icon: <Zap className="h-4 w-4" />
+    },
+    {
+      id: "risk",
+      label: "Risk",
+      path: "/dashboard/risk",
+      icon: <Shield className="h-4 w-4" />
+    }
   ];
 
-  const getTooltipForNavItem = (itemId: string) => {
-    if (!isOnboardingActive) return null;
-    
-    const currentStep = steps[currentStepIndex];
-    if (currentStep?.elementId === itemId) {
-      return {
-        title: currentStep.title,
-        content: currentStep.content,
-        position: currentStep.position,
-        isOpen: true
-      };
-    }
-    
-    return null;
-  };
-
   return (
-    <nav className="flex items-center space-x-2 overflow-x-auto py-2 px-1">
-      {navItems.map((item) => {
-        const tooltip = getTooltipForNavItem(item.id);
-        
-        return (
-          <OnboardingTooltip
-            key={item.path}
-            id={item.id}
-            title={tooltip?.title || ""}
-            content={tooltip?.content || ""}
-            position={tooltip?.position as any || "bottom"}
-            isOpen={tooltip?.isOpen}
-            highlight={tooltip?.isOpen}
-            showNext={tooltip?.isOpen}
-            onNext={goToNextStep}
+    <Tabs value={currentPath} className="w-full">
+      <TabsList className="grid grid-cols-5 h-12">
+        {tabs.map((tab) => (
+          <TabsTrigger
+            key={tab.id}
+            value={tab.path}
+            asChild
+            id={`${tab.id}-tab`}
+            data-tab={tab.id}
           >
-            <Link
-              to={item.path === "subscription" ? "/subscription" : `/dashboard/${item.path}`}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-                isActive(item.path)
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
-              onClick={() => item.path !== "subscription" && onChangePage(item.path)}
-              id={item.id}
-            >
-              <span className={`mr-3 ${isActive(item.path) ? "text-primary" : ""}`}>
-                {item.icon}
-              </span>
-              {item.label}
+            <Link to={tab.path} className="flex flex-col items-center py-1">
+              {tab.icon}
+              <span className="text-xs mt-1">{tab.label}</span>
             </Link>
-          </OnboardingTooltip>
-        );
-      })}
-    </nav>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 };
-
-export default DashboardNavigation;

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -26,40 +27,40 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 const defaultSteps: OnboardingStep[] = [
   {
     id: "dashboard-overview",
-    title: "Welkom bij het Dashboard",
-    content: "Hier vindt u een overzicht van uw portefeuille en marktgegevens.",
+    title: "Welcome to the Dashboard",
+    content: "Here you'll find an overview of your portfolio and market data.",
     elementId: "dashboard-overview",
     position: "bottom",
     completed: false,
   },
   {
     id: "market-analysis",
-    title: "Marktanalyse",
-    content: "Bekijk gedetailleerde marktanalyses en trends.",
+    title: "Market Analysis",
+    content: "View detailed market analyses and trends.",
     elementId: "market-tab",
     position: "bottom",
     completed: false,
   },
   {
     id: "trading-tools",
-    title: "Handelsplatform",
-    content: "Plaats handelsorders en beheer uw posities.",
+    title: "Trading Platform",
+    content: "Place trade orders and manage your positions.",
     elementId: "trading-tab",
     position: "bottom",
     completed: false,
   },
   {
     id: "ai-tools",
-    title: "AI Hulpmiddelen",
-    content: "Gebruik geavanceerde AI-tools voor marktinzichten en voorspellingen.",
+    title: "AI Tools",
+    content: "Use advanced AI tools for market insights and predictions.",
     elementId: "ai-tab",
     position: "bottom",
     completed: false,
   },
   {
     id: "risk-management",
-    title: "Risicobeheer",
-    content: "Beheer uw risicoparameters en stel limieten in.",
+    title: "Risk Management",
+    content: "Manage your risk parameters and set limits.",
     elementId: "risk-tab",
     position: "bottom",
     completed: false,
@@ -90,12 +91,14 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   }, [userProfile]);
 
   const startOnboarding = () => {
+    console.log("Starting onboarding process");
     setSteps(defaultSteps.map(step => ({ ...step, completed: false })));
     setCurrentStepIndex(0);
     setIsOnboardingActive(true);
   };
 
   const completeCurrentStep = () => {
+    console.log("Completing current step:", steps[currentStepIndex]?.id);
     setSteps(prev => 
       prev.map((step, index) => 
         index === currentStepIndex ? { ...step, completed: true } : step
@@ -107,9 +110,11 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     completeCurrentStep();
     
     if (currentStepIndex < steps.length - 1) {
+      console.log("Moving to next step");
       setCurrentStepIndex(prev => prev + 1);
     } else {
       // All steps completed
+      console.log("All onboarding steps completed");
       if (userProfile) {
         localStorage.setItem(`onboarding-completed-${userProfile.id}`, 'true');
       }
@@ -118,6 +123,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   };
 
   const skipOnboarding = () => {
+    console.log("Skipping onboarding");
     if (userProfile) {
       localStorage.setItem(`onboarding-completed-${userProfile.id}`, 'true');
     }
@@ -125,6 +131,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   };
 
   const resetOnboarding = () => {
+    console.log("Resetting onboarding");
     if (userProfile) {
       localStorage.removeItem(`onboarding-completed-${userProfile.id}`);
     }

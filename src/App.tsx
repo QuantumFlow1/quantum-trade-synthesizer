@@ -12,6 +12,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { setupFirebaseErrorHandling } from "@/utils/firebase-error-handler";
 import SubscriptionPage from "./pages/subscription";
 import { OnboardingProvider } from "./contexts/OnboardingContext";
+import { OnboardingTooltipWrapper } from "./components/OnboardingTooltipWrapper";
 
 const App = () => {
   const { user, userProfile } = useAuth();
@@ -27,15 +28,17 @@ const App = () => {
   return (
     <Router>
       <OnboardingProvider>
-        <Routes>
-          <Route path="/" element={<IndexPage />} />
-          <Route path="/dashboard/*" element={<UserDashboard />} />
-          <Route path="/admin/*" element={<AdminPanel />} />
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/subscription" element={<SubscriptionPage />} />
-          <Route path="/research" element={<ResearchPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <OnboardingTooltipWrapper>
+          <Routes>
+            <Route path="/" element={<IndexPage />} />
+            <Route path="/dashboard/*" element={<UserDashboard />} />
+            <Route path="/admin/*" element={<AdminPanel />} />
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route path="/research" element={<ResearchPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </OnboardingTooltipWrapper>
         <Toaster />
       </OnboardingProvider>
     </Router>
