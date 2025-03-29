@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -78,8 +77,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     if (userProfile) {
       const hasSeenOnboarding = localStorage.getItem(`onboarding-completed-${userProfile.id}`);
       if (!hasSeenOnboarding) {
-        // Only auto-start for brand new users
-        const isNewUser = userProfile.last_login_at === null;
+        // Only auto-start for brand new users, checking 'last_login' instead of 'last_login_at'
+        const isNewUser = userProfile.last_login === null;
         if (isNewUser) {
           // Wait a moment for the UI to load before starting
           setTimeout(() => {
