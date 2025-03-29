@@ -22,7 +22,7 @@ export interface RiskHistoryEntry {
   metrics: RiskMetric[];
 }
 
-export const defaultRiskSettings: Partial<RiskSettings> = {
+export const defaultRiskSettings: RiskSettings = {
   position_size_calculation: 'fixed',
   risk_reward_target: 2,
   portfolio_allocation_limit: 20,
