@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RiskMetrics } from '@/components/risk/RiskMetrics';
@@ -10,6 +10,27 @@ import { RiskReportGenerator } from '@/components/risk/RiskReportGenerator';
 import { RiskMetric } from '@/types/risk';
 import { useRiskSettings } from '@/hooks/use-risk-settings';
 import { useRiskHistory } from '@/hooks/use-risk-history';
+import { Switch } from '@/components/ui/switch';
+import { Settings, BarChart3, AlertTriangle, History, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+
+type RiskWidgetVisibility = {
+  metrics: boolean;
+  history: boolean;
+  settings: boolean;
+  warnings: boolean;
+  reports: boolean;
+};
+
+const defaultWidgetVisibility: RiskWidgetVisibility = {
+  metrics: true,
+  history: true,
+  settings: true,
+  warnings: true,
+  reports: true,
+};
 
 const RiskManagement = () => {
   // Example risk metrics
@@ -22,6 +43,14 @@ const RiskManagement = () => {
   
   const { riskSettings } = useRiskSettings();
   const { riskHistory, addHistoryEntry, clearHistory } = useRiskHistory();
+  const { toast } = useToast();
+  
+  const [activeTab, setActiveTab] = useState('metrics');
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [widgetVisibility, setWidgetVisibility] = useLocalStorage<RiskWidgetVisibility>(
+    'risk-widget-visibility', 
+    defaultWidgetVisibility
+  );
   
   // Record risk metrics in history periodically
   useEffect(() => {
@@ -59,48 +88,133 @@ const RiskManagement = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleWidgetToggle = (widgetKey: keyof RiskWidgetVisibility) => {
+    setWidgetVisibility(prev => ({
+      ...prev,
+      [widgetKey]: !prev[widgetKey]
+    }));
+
+    toast({
+      title: "Widget visibility updated",
+      description: `${widgetKey.charAt(0).toUpperCase() + widgetKey.slice(1)} widget is now ${!widgetVisibility[widgetKey] ? 'visible' : 'hidden'}`,
+    });
+  };
+
+  const resetWidgetVisibility = () => {
+    setWidgetVisibility(defaultWidgetVisibility);
+    toast({
+      title: "Widget visibility reset",
+      description: "All widgets are now visible",
+    });
+  };
+
+  const visibleTabTriggers = [
+    { key: 'metrics', label: 'Metrics', visible: widgetVisibility.metrics, icon: <BarChart3 className="h-4 w-4 mr-2" /> },
+    { key: 'history', label: 'History', visible: widgetVisibility.history, icon: <History className="h-4 w-4 mr-2" /> },
+    { key: 'settings', label: 'Settings', visible: widgetVisibility.settings, icon: <Settings className="h-4 w-4 mr-2" /> },
+    { key: 'warnings', label: 'Warnings', visible: widgetVisibility.warnings, icon: <AlertTriangle className="h-4 w-4 mr-2" /> },
+    { key: 'reports', label: 'Reports', visible: widgetVisibility.reports, icon: <FileText className="h-4 w-4 mr-2" /> },
+  ];
+
+  // Ensure the active tab is visible; if not, switch to the first visible tab
+  useEffect(() => {
+    const currentTabVisible = visibleTabTriggers.find(tab => tab.key === activeTab)?.visible;
+    if (!currentTabVisible) {
+      const firstVisibleTab = visibleTabTriggers.find(tab => tab.visible)?.key;
+      if (firstVisibleTab) {
+        setActiveTab(firstVisibleTab);
+      }
+    }
+  }, [widgetVisibility, activeTab]);
+
   return (
     <Card className="w-full">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Risk Management</CardTitle>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setIsCustomizing(!isCustomizing)}
+          className="flex items-center gap-2"
+        >
+          <Settings className="h-4 w-4" />
+          {isCustomizing ? 'Done' : 'Customize'}
+        </Button>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="metrics">
-          <TabsList className="mb-4">
-            <TabsTrigger value="metrics">Metrics</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-            <TabsTrigger value="warnings">Warnings</TabsTrigger>
-            <TabsTrigger value="reports">Reports</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="metrics">
-            <RiskMetrics metrics={riskMetrics} />
-          </TabsContent>
-          
-          <TabsContent value="history">
-            <RiskHistory 
-              history={riskHistory} 
-              onClearHistory={clearHistory} 
-            />
-          </TabsContent>
-          
-          <TabsContent value="settings">
-            <RiskSettings />
-          </TabsContent>
-          
-          <TabsContent value="warnings">
-            <RiskWarnings />
-          </TabsContent>
-          
-          <TabsContent value="reports">
-            <RiskReportGenerator 
-              settings={riskSettings}
-              currentMetrics={riskMetrics}
-              history={riskHistory}
-            />
-          </TabsContent>
-        </Tabs>
+        {isCustomizing ? (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-medium mb-4">Customize Visible Widgets</h3>
+              <div className="grid gap-4">
+                {visibleTabTriggers.map(tab => (
+                  <div key={tab.key} className="flex items-center justify-between border p-3 rounded-md">
+                    <div className="flex items-center gap-2">
+                      {tab.icon}
+                      <span>{tab.label}</span>
+                    </div>
+                    <Switch 
+                      checked={widgetVisibility[tab.key as keyof RiskWidgetVisibility]} 
+                      onCheckedChange={() => handleWidgetToggle(tab.key as keyof RiskWidgetVisibility)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Button variant="outline" onClick={resetWidgetVisibility}>Reset to Defaults</Button>
+          </div>
+        ) : (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-4">
+              {visibleTabTriggers
+                .filter(tab => tab.visible)
+                .map(tab => (
+                  <TabsTrigger key={tab.key} value={tab.key} className="flex items-center gap-1">
+                    {tab.icon}
+                    {tab.label}
+                  </TabsTrigger>
+                ))
+              }
+            </TabsList>
+            
+            {widgetVisibility.metrics && (
+              <TabsContent value="metrics">
+                <RiskMetrics metrics={riskMetrics} />
+              </TabsContent>
+            )}
+            
+            {widgetVisibility.history && (
+              <TabsContent value="history">
+                <RiskHistory 
+                  history={riskHistory} 
+                  onClearHistory={clearHistory} 
+                />
+              </TabsContent>
+            )}
+            
+            {widgetVisibility.settings && (
+              <TabsContent value="settings">
+                <RiskSettings />
+              </TabsContent>
+            )}
+            
+            {widgetVisibility.warnings && (
+              <TabsContent value="warnings">
+                <RiskWarnings />
+              </TabsContent>
+            )}
+            
+            {widgetVisibility.reports && (
+              <TabsContent value="reports">
+                <RiskReportGenerator 
+                  settings={riskSettings}
+                  currentMetrics={riskMetrics}
+                  history={riskHistory}
+                />
+              </TabsContent>
+            )}
+          </Tabs>
+        )}
       </CardContent>
     </Card>
   );
