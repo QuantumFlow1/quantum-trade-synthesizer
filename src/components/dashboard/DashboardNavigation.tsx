@@ -6,23 +6,27 @@ import {
   BadgeDollarSign, Brain, AreaChart, Zap 
 } from 'lucide-react';
 
-const DashboardNavigation = () => {
+interface DashboardNavigationProps {
+  activePage: string;
+  onChangePage: (page: string) => void;
+}
+
+const DashboardNavigation = ({ activePage, onChangePage }: DashboardNavigationProps) => {
   const location = useLocation();
-  const currentPath = location.pathname;
 
   const isActive = (path: string) => {
-    return currentPath.includes(path);
+    return activePage === path;
   };
 
   const navItems = [
-    { path: "/dashboard/overview", label: "Overview", icon: <Home className="h-5 w-5" /> },
-    { path: "/dashboard/market", label: "Market", icon: <ChartBar className="h-5 w-5" /> },
-    { path: "/dashboard/trading", label: "Trading", icon: <AreaChart className="h-5 w-5" /> },
-    { path: "/dashboard/wallet", label: "Wallet", icon: <Wallet className="h-5 w-5" /> },
-    { path: "/dashboard/risk", label: "Risk Mgmt", icon: <Shield className="h-5 w-5" /> },
-    { path: "/dashboard/ai", label: "AI Tools", icon: <Brain className="h-5 w-5" /> },
-    { path: "/subscription", label: "Subscription", icon: <Zap className="h-5 w-5" /> },
-    { path: "/dashboard/settings", label: "Settings", icon: <Settings className="h-5 w-5" /> },
+    { path: "overview", label: "Overview", icon: <Home className="h-5 w-5" /> },
+    { path: "market", label: "Market", icon: <ChartBar className="h-5 w-5" /> },
+    { path: "trading", label: "Trading", icon: <AreaChart className="h-5 w-5" /> },
+    { path: "wallet", label: "Wallet", icon: <Wallet className="h-5 w-5" /> },
+    { path: "risk", label: "Risk Mgmt", icon: <Shield className="h-5 w-5" /> },
+    { path: "ai", label: "AI Tools", icon: <Brain className="h-5 w-5" /> },
+    { path: "subscription", label: "Subscription", icon: <Zap className="h-5 w-5" /> },
+    { path: "settings", label: "Settings", icon: <Settings className="h-5 w-5" /> },
   ];
 
   return (
@@ -30,12 +34,13 @@ const DashboardNavigation = () => {
       {navItems.map((item) => (
         <Link
           key={item.path}
-          to={item.path}
+          to={item.path === "subscription" ? "/subscription" : `/dashboard/${item.path}`}
           className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
             isActive(item.path)
               ? "bg-primary/10 text-primary"
               : "text-muted-foreground hover:bg-muted"
           }`}
+          onClick={() => item.path !== "subscription" && onChangePage(item.path)}
         >
           <span className={`mr-3 ${isActive(item.path) ? "text-primary" : ""}`}>
             {item.icon}
