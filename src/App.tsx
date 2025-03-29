@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import IndexPage from "./pages";
 import UserDashboard from "./components/UserDashboard";
 import AdminPanel from "./components/AdminPanel";
 import ChatPage from "./pages/chat";
-import ResearchPage from "./pages/research";
+import ResearchPage from "./pages/ResearchPage"; // Fixed import path
 import NotFound from "./pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
 import { useAuth } from "@/components/auth/AuthProvider";

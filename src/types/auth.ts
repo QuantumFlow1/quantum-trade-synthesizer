@@ -12,4 +12,5 @@ export interface UserProfile {
   last_login?: string
   api_access?: boolean
   enhanced_features?: boolean
+  subscription_tier?: string // Added missing property
 }

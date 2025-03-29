@@ -5,7 +5,7 @@ import { useAuth } from "./auth/AuthProvider";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { DashboardLayout } from "./dashboard/DashboardLayout";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
-import { DashboardNavigation } from "./dashboard/DashboardNavigation";
+import DashboardNavigation from "./dashboard/DashboardNavigation"; // Fixed import
 import { useDashboardNavigation } from "@/hooks/use-dashboard-navigation";
 import { BackToAdminButton } from "./dashboard/BackToAdminButton";
 import { ApiChecker } from "./dashboard/ApiChecker";
