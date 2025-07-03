@@ -34,7 +34,7 @@ const mockMarketData: MarketData = {
   high24h: 66000,
   low24h: 64000,
   market: "crypto",
-  timestamp: new Date(),
+  timestamp: Date.now(),
   high: 66000,
   low: 64000
 };

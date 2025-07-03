@@ -26,6 +26,7 @@ export interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   error: Error | null;
+  isLovTrader: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -35,6 +36,7 @@ const AuthContext = createContext<AuthContextType>({
   userProfile: null,
   loading: true,
   error: null,
+  isLovTrader: false,
   signIn: async () => {},
   signOut: async () => {},
 });
@@ -48,6 +50,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  
+  const isLovTrader = userProfile?.role === 'lov_trader';
 
   useEffect(() => {
     // Mock user for development purposes
@@ -57,6 +61,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       user_metadata: {
         full_name: 'Test User',
       },
+      app_metadata: {},
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
     } as User;
 
     const mockProfile: UserProfile = {
@@ -124,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, error, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, error, isLovTrader, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
