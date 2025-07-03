@@ -3,8 +3,8 @@
 /* The code snippet you provided is a TypeScript script that sets up a simple HTTP server using Deno
 runtime. Here's a breakdown of what the code does: */
 
-import "xhr";
-import { serve } from "std/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 interface RequestBody {
   service?: string;
