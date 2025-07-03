@@ -19,7 +19,7 @@ export function MessageEditor({
     <div className="space-y-2">
       <textarea
         value={editingContent}
-        onChange={(e) => setEditingContent(e.target.value)}
+        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditingContent(e.target.value)}
         className="w-full p-2 bg-background border rounded-md text-foreground"
         rows={4}
       />
