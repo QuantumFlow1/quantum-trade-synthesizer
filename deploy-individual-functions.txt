@@ -1,0 +1,61 @@
+# Individual Supabase Edge Function Deployment Commands
+
+# Prerequisites:
+# 1. Install Supabase CLI: npm install -g supabase
+# 2. Login to Supabase: supabase login
+# 3. Link your project: supabase link --project-ref dztvrtogefhgeyxpcmkm
+
+# Deploy functions individually:
+
+supabase functions deploy agent-communication
+supabase functions deploy agent-network-coordinator
+supabase functions deploy check-api-keys
+supabase functions deploy claude-ping
+supabase functions deploy claude-response
+supabase functions deploy close-simulation
+supabase functions deploy coinmarketcap-global-metrics
+supabase functions deploy crypto-groq-assistant
+supabase functions deploy crypto-price-data
+supabase functions deploy deepseek-ping
+supabase functions deploy deepseek-response
+supabase functions deploy fetch-crypto-prices
+supabase functions deploy fetch-market-data
+supabase functions deploy gemini-response
+supabase functions deploy generate-advice
+supabase functions deploy generate-ai-response
+supabase functions deploy generate-trading-advice
+supabase functions deploy get-admin-key
+supabase functions deploy grok-ping
+supabase functions deploy grok3-ping
+supabase functions deploy grok3-response
+supabase functions deploy groq-analysis
+supabase functions deploy groq-chat
+supabase functions deploy log-api-call
+supabase functions deploy log-transaction-audit
+supabase functions deploy market-analysis
+supabase functions deploy market-data-collector
+supabase functions deploy market-data-validator
+supabase functions deploy market-data-validator-enhanced
+supabase functions deploy openai-ping
+supabase functions deploy openai-response
+supabase functions deploy portfolio-decision
+supabase functions deploy process-voice
+supabase functions deploy quantum-portfolio
+supabase functions deploy real-crypto-data
+supabase functions deploy save-api-key
+supabase functions deploy security-services
+supabase functions deploy social-monitor
+supabase functions deploy submit-kyc
+supabase functions deploy text-to-speech
+supabase functions deploy trade-simulation
+supabase functions deploy trading-analysis
+supabase functions deploy update-positions
+
+# Check function status:
+supabase functions list
+
+# View function logs (replace function-name):
+supabase functions logs function-name
+
+# Delete a function (if needed):
+supabase functions delete function-name
